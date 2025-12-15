@@ -1,12 +1,21 @@
 import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import MainTabNavigator from "@/navigation/MainTabNavigator";
-import ModalScreen from "@/screens/ModalScreen";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
 
+import RoleSelectionScreen from "@/screens/RoleSelectionScreen";
+import DriverTabNavigator from "@/navigation/DriverTabNavigator";
+import ProviderTabNavigator from "@/navigation/ProviderTabNavigator";
+import ServiceRequestScreen from "@/screens/ServiceRequestScreen";
+import ActiveServiceScreen from "@/screens/ActiveServiceScreen";
+import ChatScreen from "@/screens/ChatScreen";
+
 export type RootStackParamList = {
-  Main: undefined;
-  Modal: undefined;
+  RoleSelection: undefined;
+  DriverTabs: undefined;
+  ProviderTabs: undefined;
+  ServiceRequest: undefined;
+  ActiveService: undefined;
+  Chat: { conversationId: string; providerName: string };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -17,17 +26,41 @@ export default function RootStackNavigator() {
   return (
     <Stack.Navigator screenOptions={screenOptions}>
       <Stack.Screen
-        name="Main"
-        component={MainTabNavigator}
+        name="RoleSelection"
+        component={RoleSelectionScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="Modal"
-        component={ModalScreen}
+        name="DriverTabs"
+        component={DriverTabNavigator}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ProviderTabs"
+        component={ProviderTabNavigator}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ServiceRequest"
+        component={ServiceRequestScreen}
         options={{
           presentation: "modal",
-          headerTitle: "Modal",
+          headerTitle: "Request Service",
         }}
+      />
+      <Stack.Screen
+        name="ActiveService"
+        component={ActiveServiceScreen}
+        options={{
+          headerTitle: "Service Status",
+        }}
+      />
+      <Stack.Screen
+        name="Chat"
+        component={ChatScreen}
+        options={({ route }) => ({
+          headerTitle: route.params.providerName,
+        })}
       />
     </Stack.Navigator>
   );

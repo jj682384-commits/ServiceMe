@@ -1,0 +1,176 @@
+import React, { createContext, useContext, useState, ReactNode } from "react";
+
+export type UserRole = "driver" | "provider" | null;
+
+export type ServiceType = "flat_tire" | "jump_start" | "tow" | "fuel" | "lockout" | "other";
+
+export type ServiceStatus = "pending" | "accepted" | "en_route" | "arrived" | "in_progress" | "completed" | "cancelled";
+
+export interface ServiceRequest {
+  id: string;
+  serviceType: ServiceType;
+  location: {
+    address: string;
+    latitude: number;
+    longitude: number;
+  };
+  notes: string;
+  status: ServiceStatus;
+  estimatedCost: number;
+  createdAt: Date;
+  provider?: Provider;
+  driver?: Driver;
+  eta?: number;
+}
+
+export interface Driver {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  avatarPreset: number;
+}
+
+export interface Provider {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  rating: number;
+  reviewCount: number;
+  vehicleType: "tow_truck" | "service_van" | "pickup";
+  vehicleMake: string;
+  vehicleModel: string;
+  licensePlate: string;
+  servicesOffered: ServiceType[];
+  isAvailable: boolean;
+  location?: {
+    latitude: number;
+    longitude: number;
+  };
+}
+
+export interface Message {
+  id: string;
+  senderId: string;
+  senderRole: UserRole;
+  content: string;
+  timestamp: Date;
+  requestId: string;
+}
+
+interface AppContextType {
+  userRole: UserRole;
+  setUserRole: (role: UserRole) => void;
+  currentDriver: Driver | null;
+  setCurrentDriver: (driver: Driver | null) => void;
+  currentProvider: Provider | null;
+  setCurrentProvider: (provider: Provider | null) => void;
+  activeRequest: ServiceRequest | null;
+  setActiveRequest: (request: ServiceRequest | null) => void;
+  requestHistory: ServiceRequest[];
+  addToHistory: (request: ServiceRequest) => void;
+  messages: Message[];
+  addMessage: (message: Message) => void;
+  nearbyProviders: Provider[];
+  setNearbyProviders: (providers: Provider[]) => void;
+}
+
+const AppContext = createContext<AppContextType | undefined>(undefined);
+
+const mockProviders: Provider[] = [
+  {
+    id: "p1",
+    name: "Mike's Towing",
+    phone: "+1 555-0101",
+    email: "mike@towing.com",
+    rating: 4.8,
+    reviewCount: 156,
+    vehicleType: "tow_truck",
+    vehicleMake: "Ford",
+    vehicleModel: "F-550",
+    licensePlate: "TOW-123",
+    servicesOffered: ["tow", "flat_tire", "jump_start", "lockout"],
+    isAvailable: true,
+    location: { latitude: 37.7849, longitude: -122.4094 },
+  },
+  {
+    id: "p2",
+    name: "Quick Fix Auto",
+    phone: "+1 555-0102",
+    email: "quick@fixauto.com",
+    rating: 4.6,
+    reviewCount: 89,
+    vehicleType: "service_van",
+    vehicleMake: "Mercedes",
+    vehicleModel: "Sprinter",
+    licensePlate: "FIX-456",
+    servicesOffered: ["flat_tire", "jump_start", "fuel", "lockout"],
+    isAvailable: true,
+    location: { latitude: 37.7899, longitude: -122.4034 },
+  },
+  {
+    id: "p3",
+    name: "Road Rescue",
+    phone: "+1 555-0103",
+    email: "help@roadrescue.com",
+    rating: 4.9,
+    reviewCount: 234,
+    vehicleType: "pickup",
+    vehicleMake: "Chevrolet",
+    vehicleModel: "Silverado",
+    licensePlate: "RES-789",
+    servicesOffered: ["flat_tire", "jump_start", "fuel", "other"],
+    isAvailable: true,
+    location: { latitude: 37.7799, longitude: -122.4194 },
+  },
+];
+
+export function AppProvider({ children }: { children: ReactNode }) {
+  const [userRole, setUserRole] = useState<UserRole>(null);
+  const [currentDriver, setCurrentDriver] = useState<Driver | null>(null);
+  const [currentProvider, setCurrentProvider] = useState<Provider | null>(null);
+  const [activeRequest, setActiveRequest] = useState<ServiceRequest | null>(null);
+  const [requestHistory, setRequestHistory] = useState<ServiceRequest[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [nearbyProviders, setNearbyProviders] = useState<Provider[]>(mockProviders);
+
+  const addToHistory = (request: ServiceRequest) => {
+    setRequestHistory((prev) => [request, ...prev]);
+  };
+
+  const addMessage = (message: Message) => {
+    setMessages((prev) => [...prev, message]);
+  };
+
+  return (
+    <AppContext.Provider
+      value={{
+        userRole,
+        setUserRole,
+        currentDriver,
+        setCurrentDriver,
+        currentProvider,
+        setCurrentProvider,
+        activeRequest,
+        setActiveRequest,
+        requestHistory,
+        addToHistory,
+        messages,
+        addMessage,
+        nearbyProviders,
+        setNearbyProviders,
+      }}
+    >
+      {children}
+    </AppContext.Provider>
+  );
+}
+
+export function useApp() {
+  const context = useContext(AppContext);
+  if (context === undefined) {
+    throw new Error("useApp must be used within an AppProvider");
+  }
+  return context;
+}
