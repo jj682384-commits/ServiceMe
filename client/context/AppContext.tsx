@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, ReactNode } from "react";
 
 export type UserRole = "driver" | "provider" | null;
 
+export type MembershipTier = "free" | "premium";
+
 export type ServiceType = "flat_tire" | "jump_start" | "tow" | "fuel" | "lockout" | "other";
 
 export type ServiceStatus = "pending" | "accepted" | "en_route" | "arrived" | "in_progress" | "completed" | "cancelled";
@@ -29,6 +31,7 @@ export interface Driver {
   phone: string;
   email: string;
   avatarPreset: number;
+  membership?: MembershipTier;
 }
 
 export interface Provider {
@@ -74,6 +77,7 @@ interface AppContextType {
   addMessage: (message: Message) => void;
   nearbyProviders: Provider[];
   setNearbyProviders: (providers: Provider[]) => void;
+  upgradeMembership: (tier: MembershipTier) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -143,6 +147,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setMessages((prev) => [...prev, message]);
   };
 
+  const upgradeMembership = (tier: MembershipTier) => {
+    if (currentDriver) {
+      setCurrentDriver({ ...currentDriver, membership: tier });
+    }
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -160,6 +170,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         addMessage,
         nearbyProviders,
         setNearbyProviders,
+        upgradeMembership,
       }}
     >
       {children}

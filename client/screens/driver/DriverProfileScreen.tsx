@@ -11,7 +11,7 @@ import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/context/AppContext";
-import { Spacing, BorderRadius } from "@/constants/theme";
+import { Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 const avatarColors = ["#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#14B8A6"];
@@ -90,9 +90,10 @@ export default function DriverProfileScreen() {
   const headerHeight = useHeaderHeight();
   const tabBarHeight = useBottomTabBarHeight();
   const { theme } = useTheme();
-  const { currentDriver, setUserRole } = useApp();
+  const { currentDriver, setUserRole, upgradeMembership } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
+  const isPremium = currentDriver?.membership === "premium";
 
   const avatarColor = avatarColors[(currentDriver?.avatarPreset || 1) % avatarColors.length];
 
@@ -141,6 +142,44 @@ export default function DriverProfileScreen() {
             {currentDriver?.email || "alex@email.com"}
           </ThemedText>
         </View>
+
+        {!isPremium && (
+          <Pressable
+            onPress={() => upgradeMembership("premium")}
+            style={[
+              styles.premiumCard,
+              { backgroundColor: theme.primary, ...Shadows.lg },
+            ]}
+          >
+            <Feather name="star" size={24} color="#FFFFFF" />
+            <View style={styles.premiumContent}>
+              <ThemedText type="h4" style={{ color: "#FFFFFF", marginBottom: Spacing.xs }}>
+                Go Premium
+              </ThemedText>
+              <ThemedText type="small" style={{ color: "rgba(255,255,255,0.9)" }}>
+                20% off all services + priority matching
+              </ThemedText>
+            </View>
+            <Feather name="chevron-right" size={20} color="#FFFFFF" />
+          </Pressable>
+        )}
+
+        {isPremium && (
+          <View
+            style={[
+              styles.premiumBadge,
+              { backgroundColor: theme.secondary, borderColor: theme.secondary },
+            ]}
+          >
+            <Feather name="star" size={18} color={theme.primary} />
+            <ThemedText
+              type="body"
+              style={{ color: theme.primary, fontWeight: "600", marginLeft: Spacing.sm }}
+            >
+              Premium Member
+            </ThemedText>
+          </View>
+        )}
 
         <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
           <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
