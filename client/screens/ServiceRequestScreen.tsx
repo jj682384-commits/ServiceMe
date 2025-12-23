@@ -21,12 +21,12 @@ import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const serviceTypes: { type: ServiceType; label: string; icon: keyof typeof Feather.glyphMap; price: number }[] = [
-  { type: "flat_tire", label: "Flat Tire", icon: "disc", price: 85 },
-  { type: "jump_start", label: "Jump Start", icon: "battery-charging", price: 55 },
-  { type: "tow", label: "Tow Truck", icon: "truck", price: 150 },
-  { type: "fuel", label: "Fuel Delivery", icon: "droplet", price: 45 },
-  { type: "lockout", label: "Lockout", icon: "key", price: 65 },
-  { type: "other", label: "Other", icon: "more-horizontal", price: 75 },
+  { type: "flat_tire", label: "Flat Tire", icon: "disc", price: 75 },
+  { type: "jump_start", label: "Jump Start", icon: "battery-charging", price: 45 },
+  { type: "tow", label: "Tow Truck", icon: "truck", price: 140 },
+  { type: "fuel", label: "Fuel Delivery", icon: "droplet", price: 35 },
+  { type: "lockout", label: "Lockout", icon: "key", price: 55 },
+  { type: "other", label: "Other", icon: "more-horizontal", price: 65 },
 ];
 
 interface ServiceTypeCardProps {
