@@ -136,7 +136,7 @@ export default function ServiceRequestScreen() {
         ]}
       >
         <ThemedText type="h4" style={styles.sectionTitle}>
-          What do you need help with?
+          What do you need? {nearbyProviders.length}+ providers nearby
         </ThemedText>
         <View style={styles.serviceGrid}>
           {serviceTypes.map((service) => (
@@ -150,7 +150,7 @@ export default function ServiceRequestScreen() {
         </View>
 
         <ThemedText type="h4" style={styles.sectionTitle}>
-          Your Location
+          Your Exact Location
         </ThemedText>
         <View style={[styles.locationCard, { backgroundColor: theme.backgroundSecondary }]}>
           <Feather name="map-pin" size={20} color={theme.primary} />
@@ -159,7 +159,7 @@ export default function ServiceRequestScreen() {
               Current Location
             </ThemedText>
             <ThemedText type="small" style={{ color: theme.textSecondary }}>
-              Using your GPS location
+              Sharing GPS • Average response: 8 min
             </ThemedText>
           </View>
           <Feather name="edit-2" size={18} color={theme.textSecondary} />
@@ -231,9 +231,9 @@ export default function ServiceRequestScreen() {
             </ThemedText>
           ) : (
             <>
-              <Feather name="alert-circle" size={20} color="#FFFFFF" />
+              <Feather name="zap" size={20} color="#FFFFFF" />
               <ThemedText type="button" style={styles.submitButtonText}>
-                Request Service Now
+                Connect Nearby Provider
               </ThemedText>
             </>
           )}

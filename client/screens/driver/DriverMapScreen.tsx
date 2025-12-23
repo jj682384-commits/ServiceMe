@@ -123,7 +123,7 @@ export default function DriverMapScreen() {
         >
           <Feather name="search" size={20} color={theme.primary} />
           <ThemedText type="body" style={{ color: theme.textSecondary, flex: 1, marginLeft: Spacing.sm }}>
-            Enter your location
+            Nearby providers in your area
           </ThemedText>
           <Feather name="map-pin" size={20} color={theme.primary} />
         </View>
@@ -141,13 +141,13 @@ export default function DriverMapScreen() {
             },
           ]}
         >
-          <View style={[styles.statusDot, { backgroundColor: theme.warning }]} />
+          <View style={[styles.statusDot, { backgroundColor: theme.success }]} />
           <View style={styles.activeServiceInfo}>
             <ThemedText type="body" style={{ fontWeight: "600" }}>
-              Service in Progress
+              Provider en route
             </ThemedText>
             <ThemedText type="small" style={{ color: theme.textSecondary }}>
-              {activeRequest.provider?.name} is on the way
+              {activeRequest.eta ? `${activeRequest.eta} min away • ${activeRequest.provider?.name}` : activeRequest.provider?.name}
             </ThemedText>
           </View>
           <Feather name="chevron-right" size={24} color={theme.textSecondary} />
@@ -169,9 +169,9 @@ export default function DriverMapScreen() {
             fabAnimatedStyle,
           ]}
         >
-          <Feather name="alert-circle" size={28} color="#FFFFFF" />
-          <ThemedText type="body" style={styles.fabText}>
-            Request Help
+          <Feather name="zap" size={28} color="#FFFFFF" />
+          <ThemedText type="button" style={styles.fabText}>
+            Get Help Fast
           </ThemedText>
         </AnimatedPressable>
       ) : null}

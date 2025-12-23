@@ -1,5 +1,15 @@
 # ServiceMe - Modern Design Guidelines (2025)
 
+## Core Message: Fast, Nearby Service
+
+**Mission**: Reliable connectivity between drivers and service providers with zero wasted time. Every interaction is optimized for speed and proximity—find nearby help in minutes, not hours.
+
+**Key Brand Values**:
+- ⚡ **Speed**: Fast response times, quick connections, instant service
+- 📍 **Proximity**: Only nearby providers, hyper-local service area
+- 🔗 **Connectivity**: Seamless two-way communication
+- ✅ **Reliability**: Vetted providers, transparent ETAs
+
 ## Modern Design Principles
 
 This app embraces contemporary design trends with:

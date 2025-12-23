@@ -140,13 +140,13 @@ export default function RoleSelectionScreen() {
             resizeMode="contain"
           />
           <ThemedText type="h1" style={styles.welcomeTitle}>
-            Welcome to ServiceMe
+            Help is Nearby
           </ThemedText>
           <ThemedText
             type="body"
             style={[styles.welcomeSubtitle, { color: theme.textSecondary }]}
           >
-            Fast roadside assistance when you need it most
+            Connect with nearby service providers in minutes, not hours
           </ThemedText>
         </View>
 
@@ -154,14 +154,14 @@ export default function RoleSelectionScreen() {
           <RoleCard
             icon="truck"
             title="I Need Help"
-            description="Get fast roadside assistance from nearby service providers"
+            description="Find nearby service providers instantly. Average response time: 8 minutes"
             onPress={handleDriverSelect}
             color={theme.primary}
           />
           <RoleCard
             icon="tool"
             title="I Provide Service"
-            description="Help stranded drivers and earn money on your schedule"
+            description="Get requests from nearby drivers in real-time. Earn on your own terms"
             onPress={handleProviderSelect}
             color={theme.secondary}
           />
