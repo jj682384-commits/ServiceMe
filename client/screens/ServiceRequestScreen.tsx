@@ -220,18 +220,19 @@ export default function ServiceRequestScreen() {
             styles.submitButton,
             {
               backgroundColor: theme.primary,
-              opacity: !selectedService || isSubmitting ? 0.5 : pressed ? 0.8 : 1,
+              opacity: !selectedService || isSubmitting ? 0.5 : pressed ? 0.9 : 1,
+              ...(!(!selectedService || isSubmitting) && { elevation: 4 }),
             },
           ]}
         >
           {isSubmitting ? (
-            <ThemedText type="body" style={styles.submitButtonText}>
+            <ThemedText type="button" style={styles.submitButtonText}>
               Finding Provider...
             </ThemedText>
           ) : (
             <>
               <Feather name="alert-circle" size={20} color="#FFFFFF" />
-              <ThemedText type="body" style={styles.submitButtonText}>
+              <ThemedText type="button" style={styles.submitButtonText}>
                 Request Service Now
               </ThemedText>
             </>

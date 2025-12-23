@@ -1,4 +1,13 @@
-# ServiceMe - Design Guidelines
+# ServiceMe - Modern Design Guidelines (2025)
+
+## Modern Design Principles
+
+This app embraces contemporary design trends with:
+- **Glassmorphism**: Layered frosted glass effects with blur and subtle tints
+- **Bold Gradients**: Vibrant, dynamic color transitions for primary actions
+- **Micro-interactions**: Smooth, premium animations on all interactive elements
+- **Minimalist Clarity**: Clean typography and generous negative space
+- **Color Dynamism**: Rich, saturated accent colors that feel current
 
 ## Architecture Decisions
 
@@ -22,7 +31,7 @@
 - Tab 2: History (past service requests)
 - Tab 3: Messages (conversations with providers)
 - Tab 4: Profile (account, payment methods, settings)
-- **Floating Action Button**: "Request Service" (emergency red, always visible)
+- **Floating Action Button**: "Request Service" (vibrant gradient, always visible)
 
 **Service Provider Mode - Tab Navigation (4 tabs):**
 - Tab 1: Dashboard (earnings, active jobs)
@@ -40,6 +49,7 @@
   - Two equal-height cards (60% screen height each, stacked vertically)
   - Driver card: Car icon, "I Need Help" heading, description
   - Provider card: Wrench icon, "I Provide Service" heading, description
+  - Cards use glassmorphic background with subtle blur
 - **Insets**: top: insets.top + Spacing.xl, bottom: insets.bottom + Spacing.xl
 
 #### Map Screen (Driver & Provider - different variants)
@@ -49,9 +59,9 @@
   - User's current location marker
   - Provider locations (Driver mode) / Request locations (Provider mode)
 - **Floating Elements**:
-  - Top: Search bar for address entry (white card, subtle shadow)
-  - Bottom: Slide-up panel for active service or quick actions
-  - All floating elements: shadow with shadowOffset {width: 0, height: 2}, shadowOpacity: 0.10, shadowRadius: 2
+  - Top: Search bar for address entry (glassmorphic background, blur effect)
+  - Bottom: Slide-up panel for active service or quick actions (glassmorphic)
+  - All floating elements: Blur background, subtle color tint
 - **Insets**: 
   - Floating search bar: top: insets.top + Spacing.xl
   - Bottom panel: bottom: tabBarHeight + Spacing.xl
@@ -64,7 +74,7 @@
   - Location confirmation (current address, editable)
   - Additional notes (text area, 3 rows)
   - Cost estimate display (read-only, updates based on selection)
-- **Submit Button**: Fixed at bottom of modal, large, emergency red
+- **Submit Button**: Fixed at bottom of modal, vibrant gradient
 - **Insets**: bottom: insets.bottom + Spacing.xl
 
 #### Active Service Tracking (Driver & Provider)
@@ -88,6 +98,7 @@
 - **Content**: FlatList of service cards
   - Each card: Service type icon, date/time, provider name, cost, status
   - Tap to view detailed receipt
+  - Cards with glassmorphic effect on scroll
 - **Insets**: 
   - top: Spacing.xl
   - bottom: tabBarHeight + Spacing.xl
@@ -107,59 +118,102 @@
 
 ## Design System
 
-### Color Palette
-- **Primary (Emergency Red)**: #DC2626 (for Request Service FAB, urgent actions)
-- **Primary Dark**: #991B1B (pressed state)
-- **Secondary (Trust Blue)**: #2563EB (for provider actions, links)
-- **Success**: #16A34A (service completed, available status)
-- **Warning**: #F59E0B (en route status)
-- **Background**: #F9FAFB (light mode), #111827 (dark mode)
-- **Surface**: #FFFFFF (light), #1F2937 (dark)
-- **Text Primary**: #111827 (light), #F9FAFB (dark)
-- **Text Secondary**: #6B7280
-- **Border**: #E5E7EB
+### Color Palette (Modern 2025)
 
-### Typography
-- **Headings**: System font, Bold, 24-28pt (emergency contexts use larger)
-- **Body**: System font, Regular, 16pt
-- **Captions**: System font, Regular, 14pt
-- **Buttons**: System font, Semibold, 16-18pt
+**Primary Actions:**
+- **Primary (Vibrant Purple)**: #7C3AED (for critical actions, FAB)
+- **Primary Dark**: #6D28D9 (pressed state)
+- **Primary Light**: #A78BFA (hover/disabled states)
+
+**Accent Colors:**
+- **Accent (Cyan)**: #06B6D4 (secondary actions, highlights)
+- **Accent Dark**: #0891B2 (pressed state)
+- **Accent Magenta**: #EC4899 (tertiary actions, notifications)
+
+**Status Colors:**
+- **Success**: #10B981 (service completed, available)
+- **Warning**: #F59E0B (en route status, attention needed)
+- **Error**: #EF4444 (cancellation, critical alerts)
+
+**Backgrounds & Surfaces:**
+- **Background**: #F9FAFB (light mode), #0F172A (dark mode)
+- **Surface**: #FFFFFF (light), #1E293B (dark)
+- **Surface Secondary**: #F3F4F6 (light), #334155 (dark)
+- **Glassmorphic**: rgba(255, 255, 255, 0.8) with blur effect (light)
+- **Glassmorphic Dark**: rgba(30, 41, 59, 0.8) with blur effect (dark)
+
+**Text:**
+- **Text Primary**: #0F172A (light), #F8FAFC (dark)
+- **Text Secondary**: #64748B
+- **Border**: #E2E8F0 (light), #334155 (dark)
+
+### Gradients (Modern)
+
+**Primary Action Gradient:**
+- Start: #7C3AED (purple)
+- End: #06B6D4 (cyan)
+- Direction: 135deg (diagonal, bottom-left to top-right)
+
+**Secondary Gradient:**
+- Start: #06B6D4 (cyan)
+- End: #EC4899 (magenta)
+- Direction: 45deg
+
+**Dark Gradient:**
+- Start: #A78BFA (light purple)
+- End: #22D3EE (light cyan)
+- Direction: 135deg
+
+### Typography (Modern)
+
+- **Display**: 36pt, Bold (for hero sections)
+- **Headings (h1)**: 32pt, Bold (main titles)
+- **Headings (h2)**: 28pt, Bold
+- **Headings (h3)**: 24pt, Semibold
+- **Headings (h4)**: 20pt, Semibold
+- **Body**: 16pt, Regular
+- **Small**: 14pt, Regular
+- **Button**: 16pt, Semibold
+
+**Letter Spacing:**
+- Headings: +0.5pt (subtle, modern feel)
+- Body: Normal
 
 ### Visual Design
-- **Icons**: Feather icons from @expo/vector-icons
-  - Map markers: Use colored circle backgrounds
-  - Service types: Use large icons (32pt) with labels
-- **Touch Feedback**: All buttons use opacity: 0.7 on press
-- **FAB Shadow** (Request Service button only):
-  - shadowOffset: {width: 0, height: 2}
-  - shadowOpacity: 0.10
-  - shadowRadius: 2
-- **Cards**: 12pt border radius, no shadow (use subtle border instead)
-- **Bottom Sheets**: 20pt top border radius
 
-### Required Assets
-1. **Service Type Icons** (6 custom illustrations):
-   - Flat tire (tire with wrench)
-   - Jump start (battery with lightning bolt)
-   - Tow truck (hook icon)
-   - Fuel delivery (gas pump)
-   - Lockout (key)
-   - Other (ellipsis)
-   - Style: Simple, two-tone (primary color + background)
+**Icons:**
+- Feather icons from @expo/vector-icons
+- Size: 20-24pt (icons in cards), 32pt (service type selector)
+- Color: Match current theme (primary, accent, or text)
 
-2. **User Avatars** (5 presets for Driver profiles):
-   - Professional, automotive-themed abstract avatars
-   - Colors: Blue, green, orange, purple, teal gradients
-   - Circular, minimal geometric designs
+**Cards & Components:**
+- **Border Radius**: 16-20pt (modern, not too rounded)
+- **Card Elevation**: Use glassmorphic effect with blur instead of traditional shadows
+- **Blur Effect**: 10-15pt blur radius for glassmorphic elements
+- **Touch Feedback**: Scale 0.95 on press with spring animation
 
-3. **Provider Vehicle Icons** (3 types):
-   - Tow truck, Service van, Pickup truck
-   - Side-view silhouettes
+**Buttons:**
+- **Primary Button**: Full width, gradient background, 52pt height
+- **Secondary Button**: Outlined, accent border, 44pt height
+- **Button Border Radius**: 12pt
+- **Button Font**: Semibold, 16pt
+
+**Bottom Sheets:**
+- Border radius: 24pt
+- Glassmorphic background with blur
+- Subtle shadow effect
+
+**Micro-interactions:**
+- Button press: Scale down 0.95 with spring animation (damping: 12, stiffness: 150)
+- Card tap: Scale down 0.98 with smooth transition
+- Scroll effects: Glassmorphic blur increases on scroll
+- Tab transitions: Smooth opacity fade (200ms)
 
 ### Accessibility
+
 - Minimum touch target: 44×44pt
 - Color contrast ratio: 4.5:1 for text, 3:1 for UI components
 - All interactive elements have accessible labels
-- Emergency/urgent actions use red + text labels (not color alone)
+- Emergency/urgent actions use clear visual hierarchy (not color alone)
 - Map markers include text labels for service types
 - Support VoiceOver/TalkBack with semantic labels

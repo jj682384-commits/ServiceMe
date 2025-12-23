@@ -1,50 +1,59 @@
 import { Platform } from "react-native";
 
-const emergencyRed = "#DC2626";
-const emergencyRedDark = "#991B1B";
-const trustBlue = "#2563EB";
-const trustBlueDark = "#1D4ED8";
+// Modern 2025 Color Palette
+const vibrantPurple = "#7C3AED";
+const vibrantPurpleDark = "#6D28D9";
+const vibrantPurpleLight = "#A78BFA";
+const cyan = "#06B6D4";
+const cyanDark = "#0891B2";
+const magenta = "#EC4899";
 
 export const Colors = {
   light: {
-    text: "#111827",
-    textSecondary: "#6B7280",
+    text: "#0F172A",
+    textSecondary: "#64748B",
     buttonText: "#FFFFFF",
-    tabIconDefault: "#6B7280",
-    tabIconSelected: trustBlue,
-    link: trustBlue,
-    primary: emergencyRed,
-    primaryDark: emergencyRedDark,
-    secondary: trustBlue,
-    secondaryDark: trustBlueDark,
-    success: "#16A34A",
+    tabIconDefault: "#94A3B8",
+    tabIconSelected: vibrantPurple,
+    link: vibrantPurple,
+    primary: vibrantPurple,
+    primaryDark: vibrantPurpleDark,
+    primaryLight: vibrantPurpleLight,
+    secondary: cyan,
+    secondaryDark: cyanDark,
+    accent: magenta,
+    success: "#10B981",
     warning: "#F59E0B",
-    error: emergencyRed,
+    error: "#EF4444",
     backgroundRoot: "#F9FAFB",
     backgroundDefault: "#FFFFFF",
     backgroundSecondary: "#F3F4F6",
-    backgroundTertiary: "#E5E7EB",
-    border: "#E5E7EB",
+    backgroundTertiary: "#E2E8F0",
+    border: "#E2E8F0",
+    glassmorphic: "rgba(255, 255, 255, 0.8)",
   },
   dark: {
-    text: "#F9FAFB",
-    textSecondary: "#9CA3AF",
+    text: "#F8FAFC",
+    textSecondary: "#CBD5E1",
     buttonText: "#FFFFFF",
-    tabIconDefault: "#9BA1A6",
-    tabIconSelected: trustBlue,
-    link: "#3B82F6",
-    primary: emergencyRed,
-    primaryDark: emergencyRedDark,
-    secondary: trustBlue,
-    secondaryDark: trustBlueDark,
-    success: "#22C55E",
+    tabIconDefault: "#64748B",
+    tabIconSelected: "#22D3EE",
+    link: "#22D3EE",
+    primary: vibrantPurple,
+    primaryDark: vibrantPurpleDark,
+    primaryLight: vibrantPurpleLight,
+    secondary: cyan,
+    secondaryDark: cyanDark,
+    accent: magenta,
+    success: "#10B981",
     warning: "#FBBF24",
-    error: emergencyRed,
-    backgroundRoot: "#111827",
-    backgroundDefault: "#1F2937",
-    backgroundSecondary: "#374151",
-    backgroundTertiary: "#4B5563",
-    border: "#374151",
+    error: "#EF4444",
+    backgroundRoot: "#0F172A",
+    backgroundDefault: "#1E293B",
+    backgroundSecondary: "#334155",
+    backgroundTertiary: "#475569",
+    border: "#334155",
+    glassmorphic: "rgba(30, 41, 59, 0.8)",
   },
 };
 
@@ -66,30 +75,39 @@ export const Spacing = {
 export const BorderRadius = {
   xs: 8,
   sm: 12,
-  md: 18,
-  lg: 24,
-  xl: 30,
-  "2xl": 40,
+  md: 16,
+  lg: 20,
+  xl: 24,
+  "2xl": 32,
   "3xl": 50,
   full: 9999,
 };
 
 export const Typography = {
+  display: {
+    fontSize: 36,
+    fontWeight: "700" as const,
+    letterSpacing: 0.5,
+  },
   h1: {
     fontSize: 32,
     fontWeight: "700" as const,
+    letterSpacing: 0.5,
   },
   h2: {
     fontSize: 28,
     fontWeight: "700" as const,
+    letterSpacing: 0.5,
   },
   h3: {
     fontSize: 24,
     fontWeight: "600" as const,
+    letterSpacing: 0.3,
   },
   h4: {
     fontSize: 20,
     fontWeight: "600" as const,
+    letterSpacing: 0.2,
   },
   body: {
     fontSize: 16,
@@ -98,6 +116,10 @@ export const Typography = {
   small: {
     fontSize: 14,
     fontWeight: "400" as const,
+  },
+  button: {
+    fontSize: 16,
+    fontWeight: "600" as const,
   },
   link: {
     fontSize: 16,
@@ -127,19 +149,60 @@ export const Fonts = Platform.select({
   },
 });
 
+// Modern Glassmorphic Shadows & Effects
 export const Shadows = {
-  fab: {
+  sm: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  md: {
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.10,
-    shadowRadius: 2,
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  lg: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
     elevation: 4,
   },
-  card: {
+  xl: {
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.10,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  fab: {
+    shadowColor: "#7C3AED",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+};
+
+// Gradient Definitions (for reference in components)
+export const Gradients = {
+  primary: {
+    colors: ["#7C3AED", "#06B6D4"],
+    start: { x: 0, y: 0 },
+    end: { x: 1, y: 1 },
+  },
+  secondary: {
+    colors: ["#06B6D4", "#EC4899"],
+    start: { x: 0, y: 0 },
+    end: { x: 1, y: 1 },
+  },
+  dark: {
+    colors: ["#A78BFA", "#22D3EE"],
+    start: { x: 0, y: 0 },
+    end: { x: 1, y: 1 },
   },
 };

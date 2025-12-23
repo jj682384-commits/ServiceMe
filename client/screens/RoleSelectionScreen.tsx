@@ -36,11 +36,11 @@ function RoleCard({ icon, title, description, onPress, color }: RoleCardProps) {
   }));
 
   const handlePressIn = () => {
-    scale.value = withSpring(0.97, { damping: 15, stiffness: 150 });
+    scale.value = withSpring(0.95, { damping: 12, stiffness: 150 });
   };
 
   const handlePressOut = () => {
-    scale.value = withSpring(1, { damping: 15, stiffness: 150 });
+    scale.value = withSpring(1, { damping: 12, stiffness: 150 });
   };
 
   return (
@@ -50,11 +50,15 @@ function RoleCard({ icon, title, description, onPress, color }: RoleCardProps) {
       onPressOut={handlePressOut}
       style={[
         styles.roleCard,
-        { backgroundColor: theme.backgroundDefault },
+        { 
+          backgroundColor: theme.backgroundDefault,
+          borderWidth: 2,
+          borderColor: color + "20",
+        },
         animatedStyle,
       ]}
     >
-      <View style={[styles.iconContainer, { backgroundColor: color + "15" }]}>
+      <View style={[styles.iconContainer, { backgroundColor: color + "20" }]}>
         <Feather name={icon} size={40} color={color} />
       </View>
       <ThemedText type="h3" style={styles.cardTitle}>

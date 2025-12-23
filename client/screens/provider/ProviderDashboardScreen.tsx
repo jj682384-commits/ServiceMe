@@ -25,11 +25,11 @@ function StatCard({
   const { theme } = useTheme();
 
   return (
-    <View style={[styles.statCard, { backgroundColor: theme.backgroundDefault }]}>
-      <View style={[styles.statIcon, { backgroundColor: color + "15" }]}>
+    <View style={[styles.statCard, { backgroundColor: theme.backgroundDefault, borderLeftWidth: 4, borderLeftColor: color }]}>
+      <View style={[styles.statIcon, { backgroundColor: color + "20" }]}>
         <Feather name={icon} size={20} color={color} />
       </View>
-      <ThemedText type="h3" style={styles.statValue}>
+      <ThemedText type="h3" style={[styles.statValue, { color: theme.text }]}>
         {value}
       </ThemedText>
       <ThemedText type="small" style={{ color: theme.textSecondary }}>

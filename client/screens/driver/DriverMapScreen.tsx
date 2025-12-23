@@ -87,7 +87,7 @@ export default function DriverMapScreen() {
             ))}
           </View>
           
-          <View style={[styles.userMarker, { backgroundColor: theme.primary }]}>
+          <View style={[styles.userMarker, { backgroundColor: theme.primary, ...Shadows.lg }]}>
             <Feather name="navigation" size={20} color="#FFFFFF" />
           </View>
 
@@ -115,11 +115,13 @@ export default function DriverMapScreen() {
             {
               top: insets.top + Spacing.lg,
               backgroundColor: theme.backgroundDefault,
-              ...Shadows.card,
+              borderWidth: 1,
+              borderColor: theme.border,
+              ...Shadows.md,
             },
           ]}
         >
-          <Feather name="search" size={20} color={theme.textSecondary} />
+          <Feather name="search" size={20} color={theme.primary} />
           <ThemedText type="body" style={{ color: theme.textSecondary, flex: 1, marginLeft: Spacing.sm }}>
             Enter your location
           </ThemedText>
