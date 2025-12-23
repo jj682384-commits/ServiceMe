@@ -1,59 +1,59 @@
 import { Platform } from "react-native";
 
-// Modern 2025 Color Palette
-const vibrantPurple = "#7C3AED";
-const vibrantPurpleDark = "#6D28D9";
-const vibrantPurpleLight = "#A78BFA";
-const cyan = "#06B6D4";
-const cyanDark = "#0891B2";
-const magenta = "#EC4899";
+// Modern 2025 Dark-First Color Palette
+// Electric cyan + coral gradient aesthetic
+const electricCyan = "#00D9FF";
+const electricCyanDark = "#00A8CC";
+const vibrantCoral = "#FF6B35";
+const coralDark = "#E54B1B";
+const brightLime = "#39FF14";
 
 export const Colors = {
   light: {
-    text: "#0F172A",
-    textSecondary: "#64748B",
+    text: "#0F1419",
+    textSecondary: "#5A6370",
     buttonText: "#FFFFFF",
-    tabIconDefault: "#94A3B8",
-    tabIconSelected: vibrantPurple,
-    link: vibrantPurple,
-    primary: vibrantPurple,
-    primaryDark: vibrantPurpleDark,
-    primaryLight: vibrantPurpleLight,
-    secondary: cyan,
-    secondaryDark: cyanDark,
-    accent: magenta,
-    success: "#10B981",
-    warning: "#F59E0B",
-    error: "#EF4444",
-    backgroundRoot: "#F9FAFB",
+    tabIconDefault: "#8B92A0",
+    tabIconSelected: electricCyan,
+    link: electricCyan,
+    primary: vibrantCoral,
+    primaryDark: coralDark,
+    primaryLight: "#FF8C5A",
+    secondary: electricCyan,
+    secondaryDark: electricCyanDark,
+    accent: brightLime,
+    success: "#00E676",
+    warning: "#FFB300",
+    error: "#FF5252",
+    backgroundRoot: "#FAFBFC",
     backgroundDefault: "#FFFFFF",
-    backgroundSecondary: "#F3F4F6",
-    backgroundTertiary: "#E2E8F0",
-    border: "#E2E8F0",
-    glassmorphic: "rgba(255, 255, 255, 0.8)",
+    backgroundSecondary: "#F5F6F8",
+    backgroundTertiary: "#ECEDF0",
+    border: "#E0E4E8",
+    glassmorphic: "rgba(255, 255, 255, 0.85)",
   },
   dark: {
-    text: "#F8FAFC",
-    textSecondary: "#CBD5E1",
-    buttonText: "#FFFFFF",
-    tabIconDefault: "#64748B",
-    tabIconSelected: "#22D3EE",
-    link: "#22D3EE",
-    primary: vibrantPurple,
-    primaryDark: vibrantPurpleDark,
-    primaryLight: vibrantPurpleLight,
-    secondary: cyan,
-    secondaryDark: cyanDark,
-    accent: magenta,
-    success: "#10B981",
-    warning: "#FBBF24",
-    error: "#EF4444",
-    backgroundRoot: "#0F172A",
-    backgroundDefault: "#1E293B",
-    backgroundSecondary: "#334155",
-    backgroundTertiary: "#475569",
-    border: "#334155",
-    glassmorphic: "rgba(30, 41, 59, 0.8)",
+    text: "#F0F2F5",
+    textSecondary: "#B4BAC4",
+    buttonText: "#0F1419",
+    tabIconDefault: "#6B7280",
+    tabIconSelected: electricCyan,
+    link: electricCyan,
+    primary: vibrantCoral,
+    primaryDark: coralDark,
+    primaryLight: "#FF8C5A",
+    secondary: electricCyan,
+    secondaryDark: electricCyanDark,
+    accent: brightLime,
+    success: "#00E676",
+    warning: "#FFB300",
+    error: "#FF5252",
+    backgroundRoot: "#0A0E27",
+    backgroundDefault: "#0F1419",
+    backgroundSecondary: "#151D35",
+    backgroundTertiary: "#1A2442",
+    border: "#242E52",
+    glassmorphic: "rgba(15, 20, 41, 0.85)",
   },
 };
 
@@ -149,12 +149,12 @@ export const Fonts = Platform.select({
   },
 });
 
-// Modern Glassmorphic Shadows & Effects
+// Modern Shadows & Effects
 export const Shadows = {
   sm: {
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.06,
     shadowRadius: 2,
     elevation: 1,
   },
@@ -166,42 +166,42 @@ export const Shadows = {
     elevation: 2,
   },
   lg: {
-    shadowColor: "#000",
+    shadowColor: "#FF6B35",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.12,
     shadowRadius: 8,
     elevation: 4,
   },
   xl: {
-    shadowColor: "#000",
+    shadowColor: "#00D9FF",
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
+    shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 6,
   },
   fab: {
-    shadowColor: "#7C3AED",
+    shadowColor: "#FF6B35",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.35,
     shadowRadius: 8,
     elevation: 6,
   },
 };
 
-// Gradient Definitions (for reference in components)
+// Gradient Definitions
 export const Gradients = {
   primary: {
-    colors: ["#7C3AED", "#06B6D4"],
+    colors: ["#FF6B35", "#FF8C5A"],
     start: { x: 0, y: 0 },
     end: { x: 1, y: 1 },
   },
   secondary: {
-    colors: ["#06B6D4", "#EC4899"],
+    colors: ["#00D9FF", "#00FFFF"],
     start: { x: 0, y: 0 },
     end: { x: 1, y: 1 },
   },
   dark: {
-    colors: ["#A78BFA", "#22D3EE"],
+    colors: ["#FF6B35", "#00D9FF"],
     start: { x: 0, y: 0 },
     end: { x: 1, y: 1 },
   },

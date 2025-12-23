@@ -139,14 +139,14 @@ export default function RoleSelectionScreen() {
             style={styles.logo}
             resizeMode="contain"
           />
-          <ThemedText type="h1" style={styles.welcomeTitle}>
+          <ThemedText type="h1" style={[styles.welcomeTitle, { color: theme.primary }]}>
             Help is Nearby
           </ThemedText>
           <ThemedText
             type="body"
             style={[styles.welcomeSubtitle, { color: theme.textSecondary }]}
           >
-            Connect with nearby service providers in minutes, not hours
+            Connect instantly with local providers
           </ThemedText>
         </View>
 
@@ -204,6 +204,7 @@ const styles = StyleSheet.create({
     padding: Spacing["2xl"],
     borderRadius: BorderRadius.lg,
     alignItems: "center",
+    borderWidth: 2,
   },
   iconContainer: {
     width: 80,
