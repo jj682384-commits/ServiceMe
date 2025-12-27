@@ -17,7 +17,7 @@ import LegalDocumentsScreen from "@/screens/LegalDocumentsScreen";
 
 export type RootStackParamList = {
   Welcome: undefined;
-  SignUp: undefined;
+  SignUp: { becomeProvider?: boolean } | undefined;
   SignIn: undefined;
   RoleSelection: undefined;
   ProviderTypeSelection: undefined;

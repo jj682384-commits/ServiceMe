@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, StyleSheet, TextInput, Pressable, Alert, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useNavigation, CommonActions } from "@react-navigation/native";
+import { useNavigation, useRoute, CommonActions, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import Animated, {
   useAnimatedStyle,
@@ -91,6 +91,8 @@ export default function SignUpScreen() {
   const { theme } = useTheme();
   const { setIsAuthenticated, setAuthUser } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, "SignUp">>();
+  const becomeProvider = route.params?.becomeProvider ?? false;
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -136,7 +138,7 @@ export default function SignUpScreen() {
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
-          routes: [{ name: "RoleSelection" }],
+          routes: [{ name: becomeProvider ? "ProviderTypeSelection" : "RoleSelection" }],
         })
       );
     }, 1000);
@@ -158,10 +160,12 @@ export default function SignUpScreen() {
             <Feather name="arrow-left" size={24} color={theme.text} />
           </Pressable>
           <ThemedText type="h2" style={styles.title}>
-            Create Account
+            {becomeProvider ? "Become a Provider" : "Create Account"}
           </ThemedText>
           <ThemedText type="body" style={[styles.subtitle, { color: theme.textSecondary }]}>
-            Sign up to get started with roadside assistance
+            {becomeProvider
+              ? "Sign up to start earning by helping others"
+              : "Sign up to get started with roadside assistance"}
           </ThemedText>
         </View>
 

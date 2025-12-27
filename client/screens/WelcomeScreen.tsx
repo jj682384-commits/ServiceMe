@@ -154,6 +154,24 @@ export default function WelcomeScreen() {
           />
         </View>
 
+        <Pressable
+          style={styles.providerLink}
+          onPress={() => navigation.navigate("SignUp", { becomeProvider: true })}
+        >
+          <View style={[styles.providerLinkIcon, { backgroundColor: theme.backgroundTertiary }]}>
+            <Feather name="heart" size={18} color={theme.secondary} />
+          </View>
+          <View style={styles.providerLinkText}>
+            <ThemedText type="body" style={{ color: theme.text }}>
+              Want to earn helping others?
+            </ThemedText>
+            <ThemedText type="small" style={{ color: theme.secondary }}>
+              Become a service provider
+            </ThemedText>
+          </View>
+          <Feather name="arrow-right" size={18} color={theme.secondary} />
+        </Pressable>
+
         <ThemedText type="small" style={[styles.termsText, { color: theme.textSecondary }]}>
           By continuing, you agree to our Terms of Service and Privacy Policy
         </ThemedText>
@@ -205,6 +223,22 @@ const styles = StyleSheet.create({
   },
   actionsContainer: {
     gap: Spacing.md,
+  },
+  providerLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: Spacing.md,
+    gap: Spacing.md,
+  },
+  providerLinkIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  providerLinkText: {
+    flex: 1,
   },
   actionButton: {
     flexDirection: "row",
