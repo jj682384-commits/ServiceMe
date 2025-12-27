@@ -20,7 +20,7 @@ import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-const SERVICE_FEE = 4.99;
+const SERVICE_FEE = 2.95;
 
 const serviceTypes: { type: ServiceType; label: string; icon: keyof typeof Feather.glyphMap; price: number; priceLabel?: string }[] = [
   { type: "flat_tire", label: "Flat Tire", icon: "disc", price: 60 },

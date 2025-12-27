@@ -19,7 +19,7 @@ import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-const SERVICE_FEE = 4.99;
+const SERVICE_FEE = 2.95;
 
 const TIP_OPTIONS = [
   { label: "No Tip", value: 0 },
