@@ -4,7 +4,7 @@ export type UserRole = "driver" | "provider" | null;
 
 export type MembershipTier = "free" | "premium";
 
-export type ServiceType = "flat_tire" | "jump_start" | "tow" | "fuel" | "lockout" | "other";
+export type ServiceType = "flat_tire" | "jump_start" | "tow" | "fuel" | "lockout" | "obd_diagnostic" | "other";
 
 export type ServiceStatus = "pending" | "accepted" | "en_route" | "arrived" | "in_progress" | "completed" | "cancelled";
 

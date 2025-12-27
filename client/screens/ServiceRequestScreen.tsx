@@ -28,6 +28,7 @@ const serviceTypes: { type: ServiceType; label: string; icon: keyof typeof Feath
   { type: "tow", label: "Tow Truck", icon: "truck", price: 70, priceLabel: "Starting at $70" },
   { type: "fuel", label: "Fuel Delivery", icon: "droplet", price: 35 },
   { type: "lockout", label: "Lockout", icon: "key", price: 55 },
+  { type: "obd_diagnostic", label: "OBD Diagnostic", icon: "cpu", price: 25 },
   { type: "other", label: "Other", icon: "more-horizontal", price: 65 },
 ];
 
