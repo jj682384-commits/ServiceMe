@@ -152,20 +152,7 @@ export default function ActiveServiceScreen() {
 
   const handleComplete = () => {
     setActiveRequest({ ...activeRequest, status: "completed" });
-    Alert.alert(
-      "Service Completed",
-      "Thank you for using ServiceMe! Would you like to rate your provider?",
-      [
-        { text: "Skip", onPress: () => {
-          setActiveRequest(null);
-          navigation.goBack();
-        }},
-        { text: "Rate Provider", onPress: () => {
-          setActiveRequest(null);
-          navigation.goBack();
-        }},
-      ]
-    );
+    navigation.navigate("ServiceCompletion");
   };
 
   const handleAdvanceStatus = () => {
@@ -216,7 +203,7 @@ export default function ActiveServiceScreen() {
           {
             backgroundColor: theme.backgroundDefault,
             paddingBottom: insets.bottom + Spacing.lg,
-            ...Shadows.card,
+            ...Shadows.md,
           },
         ]}
       >

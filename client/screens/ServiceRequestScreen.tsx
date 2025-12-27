@@ -20,10 +20,12 @@ import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-const serviceTypes: { type: ServiceType; label: string; icon: keyof typeof Feather.glyphMap; price: number }[] = [
-  { type: "flat_tire", label: "Flat Tire", icon: "disc", price: 75 },
+const SERVICE_FEE = 4.99;
+
+const serviceTypes: { type: ServiceType; label: string; icon: keyof typeof Feather.glyphMap; price: number; priceLabel?: string }[] = [
+  { type: "flat_tire", label: "Flat Tire", icon: "disc", price: 60 },
   { type: "jump_start", label: "Jump Start", icon: "battery-charging", price: 45 },
-  { type: "tow", label: "Tow Truck", icon: "truck", price: 140 },
+  { type: "tow", label: "Tow Truck", icon: "truck", price: 70, priceLabel: "From $70" },
   { type: "fuel", label: "Fuel Delivery", icon: "droplet", price: 35 },
   { type: "lockout", label: "Lockout", icon: "key", price: 55 },
   { type: "other", label: "Other", icon: "more-horizontal", price: 65 },
@@ -34,11 +36,12 @@ interface ServiceTypeCardProps {
   label: string;
   icon: keyof typeof Feather.glyphMap;
   price: number;
+  priceLabel?: string;
   isSelected: boolean;
   onPress: () => void;
 }
 
-function ServiceTypeCard({ label, icon, price, isSelected, onPress }: ServiceTypeCardProps) {
+function ServiceTypeCard({ label, icon, price, priceLabel, isSelected, onPress }: ServiceTypeCardProps) {
   const { theme } = useTheme();
   const scale = useSharedValue(1);
 
@@ -77,7 +80,7 @@ function ServiceTypeCard({ label, icon, price, isSelected, onPress }: ServiceTyp
         {label}
       </ThemedText>
       <ThemedText type="small" style={{ color: theme.textSecondary }}>
-        ${price}
+        {priceLabel || `$${price}`}
       </ThemedText>
     </AnimatedPressable>
   );
@@ -188,15 +191,34 @@ export default function ServiceRequestScreen() {
 
         {selectedService ? (
           <View style={[styles.costCard, { backgroundColor: theme.backgroundSecondary }]}>
-            <View>
-              <ThemedText type="small" style={{ color: theme.textSecondary }}>
-                Estimated Cost
-              </ThemedText>
-              <ThemedText type="h3" style={{ color: theme.success }}>
-                ${estimatedCost}
-              </ThemedText>
+            <View style={styles.costBreakdown}>
+              <View style={styles.costRow}>
+                <ThemedText type="body" style={{ color: theme.text }}>
+                  {selectedServiceData?.label || "Service"}
+                </ThemedText>
+                <ThemedText type="body" style={{ color: theme.text }}>
+                  {selectedServiceData?.priceLabel || `$${estimatedCost.toFixed(2)}`}
+                </ThemedText>
+              </View>
+              <View style={styles.costRow}>
+                <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                  Service Fee
+                </ThemedText>
+                <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                  ${SERVICE_FEE.toFixed(2)}
+                </ThemedText>
+              </View>
+              <View style={[styles.costDivider, { backgroundColor: theme.border }]} />
+              <View style={styles.costRow}>
+                <ThemedText type="body" style={{ color: theme.text, fontWeight: "600" }}>
+                  Estimated Total
+                </ThemedText>
+                <ThemedText type="h4" style={{ color: theme.success }}>
+                  ${(estimatedCost + SERVICE_FEE).toFixed(2)}
+                </ThemedText>
+              </View>
             </View>
-            <ThemedText type="small" style={{ color: theme.textSecondary, flex: 1, textAlign: "right" }}>
+            <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: Spacing.sm }}>
               Final cost may vary based on actual service
             </ThemedText>
           </View>
@@ -226,13 +248,13 @@ export default function ServiceRequestScreen() {
           ]}
         >
           {isSubmitting ? (
-            <ThemedText type="button" style={styles.submitButtonText}>
+            <ThemedText type="body" style={styles.submitButtonText}>
               Finding Provider...
             </ThemedText>
           ) : (
             <>
               <Feather name="zap" size={20} color="#FFFFFF" />
-              <ThemedText type="button" style={styles.submitButtonText}>
+              <ThemedText type="body" style={styles.submitButtonText}>
                 Connect Nearby Provider
               </ThemedText>
             </>
@@ -289,11 +311,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   costCard: {
-    flexDirection: "row",
-    alignItems: "center",
     padding: Spacing.lg,
     borderRadius: BorderRadius.md,
     marginTop: Spacing.lg,
+  },
+  costBreakdown: {
+    gap: Spacing.sm,
+  },
+  costRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  costDivider: {
+    height: 1,
+    marginVertical: Spacing.sm,
   },
   bottomBar: {
     position: "absolute",

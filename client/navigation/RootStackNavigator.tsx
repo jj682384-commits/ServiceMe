@@ -8,6 +8,7 @@ import DriverTabNavigator from "@/navigation/DriverTabNavigator";
 import ProviderTabNavigator from "@/navigation/ProviderTabNavigator";
 import ServiceRequestScreen from "@/screens/ServiceRequestScreen";
 import ActiveServiceScreen from "@/screens/ActiveServiceScreen";
+import ServiceCompletionScreen from "@/screens/ServiceCompletionScreen";
 import ChatScreen from "@/screens/ChatScreen";
 import LegalDocumentsScreen from "@/screens/LegalDocumentsScreen";
 
@@ -18,6 +19,7 @@ export type RootStackParamList = {
   ProviderTabs: undefined;
   ServiceRequest: undefined;
   ActiveService: undefined;
+  ServiceCompletion: undefined;
   Chat: { conversationId: string; providerName: string };
   LegalDocuments: undefined;
 };
@@ -62,6 +64,14 @@ export default function RootStackNavigator() {
         component={ActiveServiceScreen}
         options={{
           headerTitle: "Service Status",
+        }}
+      />
+      <Stack.Screen
+        name="ServiceCompletion"
+        component={ServiceCompletionScreen}
+        options={{
+          headerTitle: "Complete Service",
+          headerBackVisible: false,
         }}
       />
       <Stack.Screen
