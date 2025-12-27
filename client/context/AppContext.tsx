@@ -51,6 +51,23 @@ export interface Provider {
     latitude: number;
     longitude: number;
   };
+  distance?: number;
+}
+
+export interface UserLocation {
+  latitude: number;
+  longitude: number;
+}
+
+export function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 3959;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c * 10) / 10;
 }
 
 export interface Message {
@@ -78,6 +95,9 @@ interface AppContextType {
   nearbyProviders: Provider[];
   setNearbyProviders: (providers: Provider[]) => void;
   upgradeMembership: (tier: MembershipTier) => void;
+  userLocation: UserLocation | null;
+  setUserLocation: (location: UserLocation | null) => void;
+  getProvidersWithDistance: () => Provider[];
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -138,6 +158,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [requestHistory, setRequestHistory] = useState<ServiceRequest[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [nearbyProviders, setNearbyProviders] = useState<Provider[]>(mockProviders);
+  const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
 
   const addToHistory = (request: ServiceRequest) => {
     setRequestHistory((prev) => [request, ...prev]);
@@ -151,6 +172,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (currentDriver) {
       setCurrentDriver({ ...currentDriver, membership: tier });
     }
+  };
+
+  const getProvidersWithDistance = (): Provider[] => {
+    if (!userLocation) return nearbyProviders;
+    return nearbyProviders
+      .map((provider) => ({
+        ...provider,
+        distance: provider.location
+          ? calculateDistance(
+              userLocation.latitude,
+              userLocation.longitude,
+              provider.location.latitude,
+              provider.location.longitude
+            )
+          : undefined,
+      }))
+      .sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
   };
 
   return (
@@ -171,6 +209,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         nearbyProviders,
         setNearbyProviders,
         upgradeMembership,
+        userLocation,
+        setUserLocation,
+        getProvidersWithDistance,
       }}
     >
       {children}

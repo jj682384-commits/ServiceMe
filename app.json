@@ -10,7 +10,10 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.serviceme.app"
+      "bundleIdentifier": "com.serviceme.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "ServiceMe needs your location to find nearby mechanics and service providers."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -19,7 +22,8 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.serviceme.app"
+      "package": "com.serviceme.app",
+      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
     },
     "web": {
       "output": "single",
@@ -38,7 +42,13 @@
           }
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "ServiceMe needs your location to find nearby mechanics."
+        }
+      ]
     ],
     "experiments": {
       "reactCompiler": true
