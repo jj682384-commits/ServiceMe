@@ -8,6 +8,8 @@ export type ServiceType = "flat_tire" | "jump_start" | "tow" | "fuel" | "lockout
 
 export type ServiceStatus = "pending" | "accepted" | "en_route" | "arrived" | "in_progress" | "completed" | "cancelled";
 
+export type VerificationStatus = "verified" | "pending" | "not_started";
+
 export interface ServiceRequest {
   id: string;
   serviceType: ServiceType;
@@ -47,6 +49,7 @@ export interface Provider {
   licensePlate: string;
   servicesOffered: ServiceType[];
   isAvailable: boolean;
+  verificationStatus: VerificationStatus;
   location?: {
     latitude: number;
     longitude: number;
@@ -116,6 +119,7 @@ const mockProviders: Provider[] = [
     licensePlate: "TOW-123",
     servicesOffered: ["tow", "flat_tire", "jump_start", "lockout"],
     isAvailable: true,
+    verificationStatus: "verified",
     location: { latitude: 37.7849, longitude: -122.4094 },
   },
   {
@@ -131,6 +135,7 @@ const mockProviders: Provider[] = [
     licensePlate: "FIX-456",
     servicesOffered: ["flat_tire", "jump_start", "fuel", "lockout"],
     isAvailable: true,
+    verificationStatus: "verified",
     location: { latitude: 37.7899, longitude: -122.4034 },
   },
   {
@@ -146,6 +151,7 @@ const mockProviders: Provider[] = [
     licensePlate: "RES-789",
     servicesOffered: ["flat_tire", "jump_start", "fuel", "other"],
     isAvailable: true,
+    verificationStatus: "verified",
     location: { latitude: 37.7799, longitude: -122.4194 },
   },
 ];

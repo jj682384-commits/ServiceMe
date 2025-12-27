@@ -113,6 +113,7 @@ export default function RoleSelectionScreen() {
       licensePlate: "SVC-001",
       servicesOffered: ["flat_tire", "jump_start", "fuel", "lockout"],
       isAvailable: true,
+      verificationStatus: "verified",
     });
     navigation.dispatch(
       CommonActions.reset({
