@@ -77,18 +77,19 @@ function RoleCard({ icon, title, description, onPress, color }: RoleCardProps) {
 export default function RoleSelectionScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
-  const { setUserRole, setCurrentDriver } = useApp();
+  const { setUserRole, setCurrentDriver, authUser } = useApp();
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const handleDriverSelect = () => {
     setUserRole("driver");
     setCurrentDriver({
-      id: "d1",
-      name: "Alex Johnson",
-      phone: "+1 555-1234",
-      email: "alex@email.com",
-      avatarPreset: 1,
+      id: authUser?.id || "d1",
+      name: authUser?.name || "Driver",
+      phone: authUser?.phone || "+1 555-0000",
+      email: authUser?.email || "driver@email.com",
+      avatarPreset: Math.floor(Math.random() * 5) + 1,
+      membership: "free",
     });
     navigation.dispatch(
       CommonActions.reset({
