@@ -8,6 +8,7 @@ import ProviderTabNavigator from "@/navigation/ProviderTabNavigator";
 import ServiceRequestScreen from "@/screens/ServiceRequestScreen";
 import ActiveServiceScreen from "@/screens/ActiveServiceScreen";
 import ChatScreen from "@/screens/ChatScreen";
+import LegalDocumentsScreen from "@/screens/LegalDocumentsScreen";
 
 export type RootStackParamList = {
   RoleSelection: undefined;
@@ -16,6 +17,7 @@ export type RootStackParamList = {
   ServiceRequest: undefined;
   ActiveService: undefined;
   Chat: { conversationId: string; providerName: string };
+  LegalDocuments: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -61,6 +63,13 @@ export default function RootStackNavigator() {
         options={({ route }) => ({
           headerTitle: route.params.providerName,
         })}
+      />
+      <Stack.Screen
+        name="LegalDocuments"
+        component={LegalDocumentsScreen}
+        options={{
+          headerTitle: "Legal",
+        }}
       />
     </Stack.Navigator>
   );

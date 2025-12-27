@@ -200,6 +200,18 @@ export default function ProviderProfileScreen() {
         </View>
 
         <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
+          <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
+            OTHER
+          </ThemedText>
+          <MenuItem icon="help-circle" label="Help & Support" />
+          <MenuItem 
+            icon="file-text" 
+            label="Terms & Privacy" 
+            onPress={() => navigation.navigate("LegalDocuments")}
+          />
+        </View>
+
+        <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
           <MenuItem icon="refresh-cw" label="Switch to Driver Mode" onPress={handleSwitchRole} />
           <MenuItem icon="log-out" label="Sign Out" isDestructive />
         </View>

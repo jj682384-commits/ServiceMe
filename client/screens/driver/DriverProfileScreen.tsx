@@ -216,8 +216,11 @@ export default function DriverProfileScreen() {
             OTHER
           </ThemedText>
           <MenuItem icon="help-circle" label="Help & Support" />
-          <MenuItem icon="file-text" label="Terms of Service" />
-          <MenuItem icon="shield" label="Privacy Policy" />
+          <MenuItem 
+            icon="file-text" 
+            label="Terms & Privacy" 
+            onPress={() => navigation.navigate("LegalDocuments")}
+          />
         </View>
 
         <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
@@ -247,6 +250,27 @@ const styles = StyleSheet.create({
   },
   profileName: {
     marginBottom: Spacing.xs,
+  },
+  premiumCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing.lg,
+    gap: Spacing.md,
+  },
+  premiumContent: {
+    flex: 1,
+  },
+  premiumBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.full,
+    alignSelf: "center",
+    marginBottom: Spacing.lg,
+    borderWidth: 1,
   },
   section: {
     borderRadius: BorderRadius.md,
