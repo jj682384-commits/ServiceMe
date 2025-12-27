@@ -139,9 +139,9 @@ export default function WelcomeScreen() {
 
         <View style={styles.actionsContainer}>
           <ActionButton
-            title="Get Started"
-            subtitle="Create a new account"
-            icon="user-plus"
+            title="I Need Help"
+            subtitle="Get roadside assistance now"
+            icon="alert-circle"
             onPress={() => navigation.navigate("SignUp")}
             variant="primary"
           />

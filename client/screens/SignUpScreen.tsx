@@ -89,7 +89,7 @@ function InputField({
 export default function SignUpScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
-  const { setIsAuthenticated, setAuthUser } = useApp();
+  const { setIsAuthenticated, setAuthUser, setUserRole, setCurrentDriver } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, "SignUp">>();
   const becomeProvider = route.params?.becomeProvider ?? false;
@@ -128,19 +128,39 @@ export default function SignUpScreen() {
     // Simulate API call
     setTimeout(() => {
       setIsLoading(false);
+      const userId = `user_${Date.now()}`;
       setAuthUser({
-        id: `user_${Date.now()}`,
+        id: userId,
         name: fullName.trim(),
         email: email.trim(),
         phone: phone.trim(),
       });
       setIsAuthenticated(true);
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [{ name: becomeProvider ? "ProviderTypeSelection" : "RoleSelection" }],
-        })
-      );
+
+      if (becomeProvider) {
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: "ProviderTypeSelection" }],
+          })
+        );
+      } else {
+        setUserRole("driver");
+        setCurrentDriver({
+          id: userId,
+          name: fullName.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
+          avatarPreset: Math.floor(Math.random() * 5) + 1,
+          membership: "free",
+        });
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: "DriverTabs" }],
+          })
+        );
+      }
     }, 1000);
   };
 
