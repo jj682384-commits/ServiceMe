@@ -77,7 +77,7 @@ function RoleCard({ icon, title, description, onPress, color }: RoleCardProps) {
 export default function RoleSelectionScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
-  const { setUserRole, setCurrentDriver, setCurrentProvider } = useApp();
+  const { setUserRole, setCurrentDriver } = useApp();
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
@@ -99,28 +99,7 @@ export default function RoleSelectionScreen() {
   };
 
   const handleProviderSelect = () => {
-    setUserRole("provider");
-    setCurrentProvider({
-      id: "p4",
-      name: "Your Service Co",
-      phone: "+1 555-9999",
-      email: "you@service.com",
-      rating: 5.0,
-      reviewCount: 0,
-      vehicleType: "service_van",
-      vehicleMake: "Ford",
-      vehicleModel: "Transit",
-      licensePlate: "SVC-001",
-      servicesOffered: ["flat_tire", "jump_start", "fuel", "lockout"],
-      isAvailable: true,
-      verificationStatus: "verified",
-    });
-    navigation.dispatch(
-      CommonActions.reset({
-        index: 0,
-        routes: [{ name: "ProviderTabs" }],
-      })
-    );
+    navigation.navigate("ProviderTypeSelection");
   };
 
   return (

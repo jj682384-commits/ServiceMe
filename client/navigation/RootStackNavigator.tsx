@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
 
 import RoleSelectionScreen from "@/screens/RoleSelectionScreen";
+import ProviderTypeSelectionScreen from "@/screens/ProviderTypeSelectionScreen";
 import DriverTabNavigator from "@/navigation/DriverTabNavigator";
 import ProviderTabNavigator from "@/navigation/ProviderTabNavigator";
 import ServiceRequestScreen from "@/screens/ServiceRequestScreen";
@@ -12,6 +13,7 @@ import LegalDocumentsScreen from "@/screens/LegalDocumentsScreen";
 
 export type RootStackParamList = {
   RoleSelection: undefined;
+  ProviderTypeSelection: undefined;
   DriverTabs: undefined;
   ProviderTabs: undefined;
   ServiceRequest: undefined;
@@ -30,6 +32,11 @@ export default function RootStackNavigator() {
       <Stack.Screen
         name="RoleSelection"
         component={RoleSelectionScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ProviderTypeSelection"
+        component={ProviderTypeSelectionScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen

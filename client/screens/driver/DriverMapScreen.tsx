@@ -15,6 +15,7 @@ import * as Location from "expo-location";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { VerificationBadge } from "@/components/VerificationBadge";
+import { ProviderTypeBadge } from "@/components/ProviderTypeBadge";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceType, Provider } from "@/context/AppContext";
 import { Spacing, BorderRadius, Shadows } from "@/constants/theme";
@@ -95,12 +96,15 @@ function MechanicCard({ provider, onPress }: { provider: Provider; onPress: () =
       </View>
       <View style={styles.mechanicInfo}>
         <View style={styles.nameRow}>
-          <ThemedText type="body" style={{ fontWeight: "600" }}>
+          <ThemedText type="body" style={{ fontWeight: "600", flex: 1 }}>
             {provider.name}
           </ThemedText>
-          {provider.verificationStatus === "verified" ? (
-            <VerificationBadge status="verified" size="small" showLabel={false} />
-          ) : null}
+          <View style={styles.badgesRow}>
+            <ProviderTypeBadge type={provider.providerType} size="small" />
+            {provider.verificationStatus === "verified" ? (
+              <VerificationBadge status="verified" size="small" showLabel={false} />
+            ) : null}
+          </View>
         </View>
         <View style={styles.mechanicMeta}>
           <Feather name="star" size={12} color={theme.warning} />
@@ -614,6 +618,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+  },
+  badgesRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.xs,
