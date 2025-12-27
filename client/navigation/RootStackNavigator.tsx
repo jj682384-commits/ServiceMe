@@ -14,6 +14,7 @@ import ActiveServiceScreen from "@/screens/ActiveServiceScreen";
 import ServiceCompletionScreen from "@/screens/ServiceCompletionScreen";
 import ChatScreen from "@/screens/ChatScreen";
 import LegalDocumentsScreen from "@/screens/LegalDocumentsScreen";
+import ReportProblemScreen from "@/screens/ReportProblemScreen";
 
 export type RootStackParamList = {
   Welcome: undefined;
@@ -28,6 +29,7 @@ export type RootStackParamList = {
   ServiceCompletion: undefined;
   Chat: { conversationId: string; providerName: string };
   LegalDocuments: undefined;
+  ReportProblem: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -107,6 +109,13 @@ export default function RootStackNavigator() {
         component={LegalDocumentsScreen}
         options={{
           headerTitle: "Legal",
+        }}
+      />
+      <Stack.Screen
+        name="ReportProblem"
+        component={ReportProblemScreen}
+        options={{
+          headerTitle: "Report a Problem",
         }}
       />
     </Stack.Navigator>

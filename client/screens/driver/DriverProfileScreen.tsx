@@ -236,9 +236,14 @@ export default function DriverProfileScreen() {
 
         <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
           <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
-            OTHER
+            SUPPORT
           </ThemedText>
           <MenuItem icon="help-circle" label="Help & Support" />
+          <MenuItem 
+            icon="alert-triangle" 
+            label="Report a Problem" 
+            onPress={() => navigation.navigate("ReportProblem")}
+          />
           <MenuItem 
             icon="file-text" 
             label="Terms & Privacy" 
