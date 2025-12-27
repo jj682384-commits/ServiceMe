@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { View, StyleSheet, Platform, Pressable, ScrollView, Linking, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
@@ -10,7 +10,6 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from "react-native-reanimated";
-import MapView, { Marker, PROVIDER_DEFAULT } from "react-native-maps";
 import * as Location from "expo-location";
 
 import { ThemedView } from "@/components/ThemedView";
@@ -130,13 +129,81 @@ function MechanicCard({ provider, onPress }: { provider: Provider; onPress: () =
   );
 }
 
+function ProviderMarker({ name, rating }: { name: string; rating: number }) {
+  const { theme } = useTheme();
+
+  return (
+    <View style={[styles.markerContainer, { backgroundColor: theme.secondary }]}>
+      <Feather name="truck" size={16} color="#FFFFFF" />
+      <View style={[styles.markerBubble, { backgroundColor: theme.backgroundDefault }]}>
+        <ThemedText type="small" style={styles.markerName} numberOfLines={1}>
+          {name}
+        </ThemedText>
+        <View style={styles.ratingRow}>
+          <Feather name="star" size={12} color={theme.warning} />
+          <ThemedText type="small" style={styles.ratingText}>
+            {rating.toFixed(1)}
+          </ThemedText>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function WebMapPlaceholder({ providers }: { providers: Provider[] }) {
+  const { theme } = useTheme();
+
+  return (
+    <View style={[styles.mapBackground, { backgroundColor: theme.backgroundSecondary }]}>
+      <View style={styles.mapGrid}>
+        {[...Array(6)].map((_, i) => (
+          <View
+            key={i}
+            style={[
+              styles.gridLine,
+              { backgroundColor: theme.border, opacity: 0.3 },
+            ]}
+          />
+        ))}
+      </View>
+      
+      <View style={[styles.userMarker, { backgroundColor: theme.primary, ...Shadows.lg }]}>
+        <Feather name="navigation" size={20} color="#FFFFFF" />
+      </View>
+
+      <View style={styles.providersOnMap}>
+        {providers.slice(0, 3).map((provider, index) => (
+          <View
+            key={provider.id}
+            style={[
+              styles.providerOnMap,
+              {
+                top: 80 + index * 60,
+                left: 40 + index * 80,
+              },
+            ]}
+          >
+            <ProviderMarker name={provider.name} rating={provider.rating} />
+          </View>
+        ))}
+      </View>
+      
+      <View style={styles.webMapOverlay}>
+        <Feather name="map" size={32} color={theme.primary} />
+        <ThemedText type="body" style={{ color: theme.textSecondary, textAlign: "center", marginTop: Spacing.sm }}>
+          Interactive map available in Expo Go
+        </ThemedText>
+      </View>
+    </View>
+  );
+}
+
 export default function DriverMapScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
-  const { theme, isDark } = useTheme();
-  const { activeRequest, setUserLocation, getProvidersWithDistance, userLocation } = useApp();
+  const { theme } = useTheme();
+  const { activeRequest, setUserLocation, getProvidersWithDistance, userLocation, nearbyProviders } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const mapRef = useRef<MapView>(null);
   
   const [permission, requestPermission] = Location.useForegroundPermissions();
   const [selectedFilter, setSelectedFilter] = useState<ServiceType | "all">("all");
@@ -165,7 +232,7 @@ export default function DriverMapScreen() {
   };
 
   useEffect(() => {
-    if (permission?.granted) {
+    if (permission?.granted && Platform.OS !== "web") {
       (async () => {
         try {
           const location = await Location.getCurrentPositionAsync({
@@ -179,6 +246,8 @@ export default function DriverMapScreen() {
           setUserLocation({ latitude: 37.7849, longitude: -122.4094 });
         }
       })();
+    } else if (Platform.OS === "web") {
+      setUserLocation({ latitude: 37.7849, longitude: -122.4094 });
     }
   }, [permission?.granted, setUserLocation]);
 
@@ -186,13 +255,6 @@ export default function DriverMapScreen() {
   const filteredProviders = selectedFilter === "all" 
     ? providers 
     : providers.filter(p => p.servicesOffered.includes(selectedFilter));
-
-  const defaultRegion = {
-    latitude: userLocation?.latitude ?? 37.7849,
-    longitude: userLocation?.longitude ?? -122.4094,
-    latitudeDelta: 0.05,
-    longitudeDelta: 0.05,
-  };
 
   const handleOpenSettings = async () => {
     if (Platform.OS !== "web") {
@@ -242,7 +304,7 @@ export default function DriverMapScreen() {
     </View>
   );
 
-  if (!permission) {
+  if (!permission && Platform.OS !== "web") {
     return (
       <ThemedView style={styles.container}>
         <View style={[styles.loadingContainer, { backgroundColor: theme.backgroundSecondary }]}>
@@ -254,36 +316,13 @@ export default function DriverMapScreen() {
     );
   }
 
+  const isWeb = Platform.OS === "web";
+  const hasPermission = isWeb || permission?.granted;
+
   return (
     <ThemedView style={styles.container}>
-      {permission.granted ? (
-        <MapView
-          ref={mapRef}
-          style={styles.map}
-          provider={PROVIDER_DEFAULT}
-          initialRegion={defaultRegion}
-          showsUserLocation
-          showsMyLocationButton={false}
-          userInterfaceStyle={isDark ? "dark" : "light"}
-        >
-          {filteredProviders.map((provider) => 
-            provider.location ? (
-              <Marker
-                key={provider.id}
-                coordinate={{
-                  latitude: provider.location.latitude,
-                  longitude: provider.location.longitude,
-                }}
-                title={provider.name}
-                description={`${provider.rating.toFixed(1)} stars • ${provider.distance ?? "?"} mi away`}
-              >
-                <View style={[styles.markerContainer, { backgroundColor: theme.secondary }]}>
-                  <Feather name="truck" size={16} color="#FFFFFF" />
-                </View>
-              </Marker>
-            ) : null
-          )}
-        </MapView>
+      {hasPermission ? (
+        <WebMapPlaceholder providers={filteredProviders} />
       ) : (
         renderPermissionRequest()
       )}
@@ -326,7 +365,7 @@ export default function DriverMapScreen() {
         ))}
       </ScrollView>
 
-      {showList && permission.granted ? (
+      {showList && hasPermission ? (
         <View
           style={[
             styles.listContainer,
@@ -353,16 +392,7 @@ export default function DriverMapScreen() {
               <MechanicCard
                 key={provider.id}
                 provider={provider}
-                onPress={() => {
-                  if (provider.location && mapRef.current) {
-                    mapRef.current.animateToRegion({
-                      latitude: provider.location.latitude,
-                      longitude: provider.location.longitude,
-                      latitudeDelta: 0.01,
-                      longitudeDelta: 0.01,
-                    });
-                  }
-                }}
+                onPress={() => {}}
               />
             ))}
           </ScrollView>
@@ -423,9 +453,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  map: {
-    flex: 1,
-  },
   loadingContainer: {
     flex: 1,
     alignItems: "center",
@@ -444,6 +471,81 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.full,
     marginTop: Spacing.xl,
+  },
+  mapBackground: {
+    flex: 1,
+    position: "relative",
+    overflow: "hidden",
+  },
+  mapGrid: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    flexDirection: "row",
+    justifyContent: "space-around",
+  },
+  gridLine: {
+    width: 1,
+    height: "100%",
+  },
+  userMarker: {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    marginLeft: -20,
+    marginTop: -20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 10,
+  },
+  providersOnMap: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  providerOnMap: {
+    position: "absolute",
+  },
+  markerContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  markerBubble: {
+    marginTop: Spacing.xs,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.xs,
+    minWidth: 80,
+    alignItems: "center",
+  },
+  markerName: {
+    fontWeight: "500",
+    fontSize: 12,
+  },
+  ratingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+  },
+  ratingText: {
+    fontSize: 11,
+  },
+  webMapOverlay: {
+    position: "absolute",
+    bottom: "40%",
+    left: 0,
+    right: 0,
+    alignItems: "center",
   },
   searchBar: {
     position: "absolute",
@@ -525,13 +627,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.sm,
     paddingVertical: 2,
     borderRadius: BorderRadius.xs,
-  },
-  markerContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
   },
   activeServiceBar: {
     position: "absolute",
