@@ -2,6 +2,9 @@ import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
 
+import WelcomeScreen from "@/screens/WelcomeScreen";
+import SignUpScreen from "@/screens/SignUpScreen";
+import SignInScreen from "@/screens/SignInScreen";
 import RoleSelectionScreen from "@/screens/RoleSelectionScreen";
 import ProviderTypeSelectionScreen from "@/screens/ProviderTypeSelectionScreen";
 import DriverTabNavigator from "@/navigation/DriverTabNavigator";
@@ -13,6 +16,9 @@ import ChatScreen from "@/screens/ChatScreen";
 import LegalDocumentsScreen from "@/screens/LegalDocumentsScreen";
 
 export type RootStackParamList = {
+  Welcome: undefined;
+  SignUp: undefined;
+  SignIn: undefined;
   RoleSelection: undefined;
   ProviderTypeSelection: undefined;
   DriverTabs: undefined;
@@ -31,6 +37,21 @@ export default function RootStackNavigator() {
 
   return (
     <Stack.Navigator screenOptions={screenOptions}>
+      <Stack.Screen
+        name="Welcome"
+        component={WelcomeScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="SignUp"
+        component={SignUpScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="SignIn"
+        component={SignInScreen}
+        options={{ headerShown: false }}
+      />
       <Stack.Screen
         name="RoleSelection"
         component={RoleSelectionScreen}

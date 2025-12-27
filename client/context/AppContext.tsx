@@ -85,7 +85,18 @@ export interface Message {
   requestId: string;
 }
 
+export interface AuthUser {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+}
+
 interface AppContextType {
+  isAuthenticated: boolean;
+  setIsAuthenticated: (value: boolean) => void;
+  authUser: AuthUser | null;
+  setAuthUser: (user: AuthUser | null) => void;
   userRole: UserRole;
   setUserRole: (role: UserRole) => void;
   currentDriver: Driver | null;
@@ -104,6 +115,7 @@ interface AppContextType {
   userLocation: UserLocation | null;
   setUserLocation: (location: UserLocation | null) => void;
   getProvidersWithDistance: () => Provider[];
+  logout: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -163,6 +175,8 @@ const mockProviders: Provider[] = [
 ];
 
 export function AppProvider({ children }: { children: ReactNode }) {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [userRole, setUserRole] = useState<UserRole>(null);
   const [currentDriver, setCurrentDriver] = useState<Driver | null>(null);
   const [currentProvider, setCurrentProvider] = useState<Provider | null>(null);
@@ -203,9 +217,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
       .sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
   };
 
+  const logout = () => {
+    setIsAuthenticated(false);
+    setAuthUser(null);
+    setUserRole(null);
+    setCurrentDriver(null);
+    setCurrentProvider(null);
+    setActiveRequest(null);
+  };
+
   return (
     <AppContext.Provider
       value={{
+        isAuthenticated,
+        setIsAuthenticated,
+        authUser,
+        setAuthUser,
         userRole,
         setUserRole,
         currentDriver,
@@ -224,6 +251,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         userLocation,
         setUserLocation,
         getProvidersWithDistance,
+        logout,
       }}
     >
       {children}
