@@ -203,17 +203,17 @@ export default function ProviderJobsScreen() {
         scrollIndicatorInsets={{ bottom: insets.bottom }}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Feather name="briefcase" size={48} color={theme.textSecondary} />
+            <Feather name="heart" size={48} color={theme.textSecondary} />
             <ThemedText type="h4" style={{ marginTop: Spacing.lg }}>
-              {currentProvider?.isAvailable ? "No Jobs Available" : "You're Offline"}
+              {currentProvider?.isAvailable ? "Ready to Help" : "You're Offline"}
             </ThemedText>
             <ThemedText
               type="body"
               style={{ color: theme.textSecondary, textAlign: "center", marginTop: Spacing.sm }}
             >
               {currentProvider?.isAvailable
-                ? "New job requests will appear here"
-                : "Go online from the Dashboard to see available jobs"}
+                ? "When someone nearby needs help, their request will appear here. You decide which jobs to accept!"
+                : "Go online when you're ready to earn. Work on your own schedule."}
             </ThemedText>
           </View>
         }

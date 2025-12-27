@@ -109,10 +109,10 @@ export default function ProviderProfileScreen() {
       >
         <View style={styles.profileHeader}>
           <View style={[styles.avatar, { backgroundColor: theme.secondary }]}>
-            <Feather name="truck" size={32} color="#FFFFFF" />
+            <Feather name="heart" size={32} color="#FFFFFF" />
           </View>
           <ThemedText type="h3" style={styles.profileName}>
-            {currentProvider?.name || "Your Service Co"}
+            {currentProvider?.name || "Helpful Neighbor"}
           </ThemedText>
           <View style={styles.ratingRow}>
             <Feather name="star" size={16} color={theme.warning} />
@@ -120,6 +120,9 @@ export default function ProviderProfileScreen() {
               {currentProvider?.rating?.toFixed(1) || "5.0"} ({currentProvider?.reviewCount || 0} reviews)
             </ThemedText>
           </View>
+          <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: Spacing.xs }}>
+            Earning by helping others on your own time
+          </ThemedText>
         </View>
 
         <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>

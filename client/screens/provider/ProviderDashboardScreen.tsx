@@ -64,12 +64,19 @@ export default function ProviderDashboardScreen() {
         }}
         scrollIndicatorInsets={{ bottom: insets.bottom }}
       >
+        <View style={[styles.welcomeBanner, { backgroundColor: theme.secondary + "15" }]}>
+          <Feather name="heart" size={20} color={theme.secondary} />
+          <ThemedText type="body" style={{ color: theme.secondary, marginLeft: Spacing.sm, flex: 1 }}>
+            You're making a difference. Help someone get back on the road today!
+          </ThemedText>
+        </View>
+
         <View style={[styles.availabilityCard, { backgroundColor: theme.backgroundDefault }]}>
           <View style={styles.availabilityRow}>
             <View>
-              <ThemedText type="h4">Availability</ThemedText>
+              <ThemedText type="h4">Ready to Earn?</ThemedText>
               <ThemedText type="body" style={{ color: theme.textSecondary }}>
-                {isAvailable ? "You're online and visible to drivers" : "You're offline"}
+                {isAvailable ? "You're visible to nearby drivers" : "Go online when you're ready"}
               </ThemedText>
             </View>
             <Switch
@@ -154,6 +161,13 @@ export default function ProviderDashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  welcomeBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing.lg,
   },
   availabilityCard: {
     padding: Spacing.lg,

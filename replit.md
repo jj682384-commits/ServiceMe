@@ -6,6 +6,12 @@ ServiceMe is a cross-platform mobile application that connects drivers in need o
 
 **Core Value Proposition**: Fast, proximity-based connections between stranded drivers and local service providers with real-time communication and service tracking.
 
+**Provider Messaging Priority**: The app emphasizes that ANYONE can sign up as a provider to help others and earn extra income on their own time - similar to Uber's gig model. No professional mechanic experience required. Key messaging themes:
+- "Earn Helping Others" - welcoming everyday people
+- "No experience needed" - lowering barriers to entry
+- "Work on your own schedule" - flexibility focus
+- "You're making a difference" - community-driven motivation
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.

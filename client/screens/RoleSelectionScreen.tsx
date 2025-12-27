@@ -146,7 +146,7 @@ export default function RoleSelectionScreen() {
             type="body"
             style={[styles.welcomeSubtitle, { color: theme.textSecondary }]}
           >
-            Connect instantly with local providers
+            Get help fast or earn helping others
           </ThemedText>
         </View>
 
@@ -160,8 +160,8 @@ export default function RoleSelectionScreen() {
           />
           <RoleCard
             icon="tool"
-            title="I Provide Service"
-            description="Get requests from nearby drivers in real-time. Earn on your own terms"
+            title="Earn Helping Others"
+            description="No experience needed. Help nearby drivers on your own time and earn extra income"
             onPress={handleProviderSelect}
             color={theme.secondary}
           />
