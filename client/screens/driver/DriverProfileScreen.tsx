@@ -90,7 +90,7 @@ export default function DriverProfileScreen() {
   const headerHeight = useHeaderHeight();
   const tabBarHeight = useBottomTabBarHeight();
   const { theme } = useTheme();
-  const { currentDriver, setUserRole, upgradeMembership } = useApp();
+  const { currentDriver, setUserRole, upgradeMembership, logout } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
   const isPremium = currentDriver?.membership === "premium";
@@ -111,6 +111,29 @@ export default function DriverProfileScreen() {
               CommonActions.reset({
                 index: 0,
                 routes: [{ name: "RoleSelection" }],
+              })
+            );
+          },
+        },
+      ]
+    );
+  };
+
+  const handleSignOut = () => {
+    Alert.alert(
+      "Sign Out",
+      "Are you sure you want to sign out?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Sign Out",
+          style: "destructive",
+          onPress: () => {
+            logout();
+            navigation.dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [{ name: "Welcome" }],
               })
             );
           },
@@ -225,7 +248,7 @@ export default function DriverProfileScreen() {
 
         <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
           <MenuItem icon="refresh-cw" label="Switch to Provider Mode" onPress={handleSwitchRole} />
-          <MenuItem icon="log-out" label="Sign Out" isDestructive />
+          <MenuItem icon="log-out" label="Sign Out" isDestructive onPress={handleSignOut} />
         </View>
       </ScrollView>
     </ThemedView>

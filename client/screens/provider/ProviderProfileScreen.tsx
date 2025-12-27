@@ -21,6 +21,7 @@ const serviceTypeLabels: Record<ServiceType, string> = {
   tow: "Tow Service",
   fuel: "Fuel Delivery",
   lockout: "Lockout",
+  obd_diagnostic: "OBD Diagnostic",
   other: "Other",
 };
 
@@ -72,7 +73,7 @@ export default function ProviderProfileScreen() {
   const headerHeight = useHeaderHeight();
   const tabBarHeight = useBottomTabBarHeight();
   const { theme } = useTheme();
-  const { currentProvider, setUserRole } = useApp();
+  const { currentProvider, setUserRole, logout } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
 
@@ -90,6 +91,29 @@ export default function ProviderProfileScreen() {
               CommonActions.reset({
                 index: 0,
                 routes: [{ name: "RoleSelection" }],
+              })
+            );
+          },
+        },
+      ]
+    );
+  };
+
+  const handleSignOut = () => {
+    Alert.alert(
+      "Sign Out",
+      "Are you sure you want to sign out?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Sign Out",
+          style: "destructive",
+          onPress: () => {
+            logout();
+            navigation.dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [{ name: "Welcome" }],
               })
             );
           },
@@ -223,7 +247,7 @@ export default function ProviderProfileScreen() {
 
         <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
           <MenuItem icon="refresh-cw" label="Switch to Driver Mode" onPress={handleSwitchRole} />
-          <MenuItem icon="log-out" label="Sign Out" isDestructive />
+          <MenuItem icon="log-out" label="Sign Out" isDestructive onPress={handleSignOut} />
         </View>
       </ScrollView>
     </ThemedView>
