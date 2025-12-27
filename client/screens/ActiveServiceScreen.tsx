@@ -28,6 +28,7 @@ const serviceTypeLabels: Record<ServiceType, string> = {
   tow: "Tow Service",
   fuel: "Fuel Delivery",
   lockout: "Lockout",
+  obd_diagnostic: "OBD Diagnostic",
   other: "Other",
 };
 
@@ -152,7 +153,20 @@ export default function ActiveServiceScreen() {
 
   const handleComplete = () => {
     setActiveRequest({ ...activeRequest, status: "completed" });
-    navigation.navigate("ServiceCompletion");
+    if (userRole === "driver") {
+      navigation.navigate("ServiceCompletion");
+    } else {
+      Alert.alert(
+        "Service Completed",
+        "Great job! The service has been marked as complete. Payment will be processed automatically.",
+        [
+          {
+            text: "Done",
+            onPress: () => navigation.goBack(),
+          },
+        ]
+      );
+    }
   };
 
   const handleAdvanceStatus = () => {
