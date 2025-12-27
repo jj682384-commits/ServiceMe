@@ -71,6 +71,18 @@ export default function ProviderDashboardScreen() {
           </ThemedText>
         </View>
 
+        <View style={[styles.verificationBanner, { backgroundColor: theme.success + "15" }]}>
+          <Feather name="shield" size={20} color={theme.success} />
+          <View style={{ marginLeft: Spacing.sm, flex: 1 }}>
+            <ThemedText type="body" style={{ color: theme.success, fontWeight: "600" }}>
+              ID Verified Provider
+            </ThemedText>
+            <ThemedText type="small" style={{ color: theme.textSecondary }}>
+              Your identity has been verified for driver safety
+            </ThemedText>
+          </View>
+        </View>
+
         <View style={[styles.availabilityCard, { backgroundColor: theme.backgroundDefault }]}>
           <View style={styles.availabilityRow}>
             <View>
@@ -163,6 +175,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   welcomeBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing.sm,
+  },
+  verificationBanner: {
     flexDirection: "row",
     alignItems: "center",
     padding: Spacing.md,

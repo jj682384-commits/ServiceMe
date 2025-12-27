@@ -162,7 +162,7 @@ export default function RoleSelectionScreen() {
           <RoleCard
             icon="tool"
             title="Earn Helping Others"
-            description="No experience needed. Help nearby drivers on your own time and earn extra income"
+            description="No experience needed. Help nearby drivers on your own time. ID verification required for safety"
             onPress={handleProviderSelect}
             color={theme.secondary}
           />

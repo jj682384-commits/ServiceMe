@@ -9,6 +9,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
+import { VerificationBadge } from "@/components/VerificationBadge";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceType } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
@@ -114,7 +115,13 @@ export default function ProviderProfileScreen() {
           <ThemedText type="h3" style={styles.profileName}>
             {currentProvider?.name || "Helpful Neighbor"}
           </ThemedText>
-          <View style={styles.ratingRow}>
+          <View style={{ marginTop: Spacing.sm }}>
+            <VerificationBadge 
+              status={currentProvider?.verificationStatus || "not_started"} 
+              size="medium" 
+            />
+          </View>
+          <View style={[styles.ratingRow, { marginTop: Spacing.sm }]}>
             <Feather name="star" size={16} color={theme.warning} />
             <ThemedText type="body" style={{ marginLeft: 4 }}>
               {currentProvider?.rating?.toFixed(1) || "5.0"} ({currentProvider?.reviewCount || 0} reviews)
