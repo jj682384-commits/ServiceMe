@@ -224,11 +224,21 @@ export default function ActiveServiceScreen() {
         <View style={styles.panelHandle} />
 
         <View style={styles.statusHeader}>
-          <View style={[styles.statusBadge, { backgroundColor: statusColors[activeRequest.status] + "20" }]}>
-            <View style={[styles.statusDot, { backgroundColor: statusColors[activeRequest.status] }]} />
-            <ThemedText type="body" style={{ color: statusColors[activeRequest.status], fontWeight: "600" }}>
-              {statusLabels[activeRequest.status]}
-            </ThemedText>
+          <View style={styles.statusBadges}>
+            <View style={[styles.statusBadge, { backgroundColor: statusColors[activeRequest.status] + "20" }]}>
+              <View style={[styles.statusDot, { backgroundColor: statusColors[activeRequest.status] }]} />
+              <ThemedText type="body" style={{ color: statusColors[activeRequest.status], fontWeight: "600" }}>
+                {statusLabels[activeRequest.status]}
+              </ThemedText>
+            </View>
+            {activeRequest.isExpress ? (
+              <View style={[styles.expressBadge, { backgroundColor: theme.warning }]}>
+                <Feather name="zap" size={12} color="#FFFFFF" />
+                <ThemedText type="small" style={{ color: "#FFFFFF", fontWeight: "600", marginLeft: 2 }}>
+                  Express
+                </ThemedText>
+              </View>
+            ) : null}
           </View>
           {eta > 0 && (activeRequest.status === "en_route" || activeRequest.status === "accepted") ? (
             <ThemedText type="h3">
@@ -254,7 +264,7 @@ export default function ActiveServiceScreen() {
             </View>
           </View>
           <ThemedText type="h4" style={{ color: theme.success }}>
-            ${activeRequest.estimatedCost}
+            ${activeRequest.totalCost?.toFixed(2) || activeRequest.estimatedCost}
           </ThemedText>
         </View>
 
@@ -386,6 +396,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: Spacing.lg,
   },
+  statusBadges: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
   statusBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -393,6 +408,13 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.full,
     gap: Spacing.xs,
+  },
+  expressBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
   },
   statusDot: {
     width: 8,

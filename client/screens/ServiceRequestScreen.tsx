@@ -21,6 +21,7 @@ import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const SERVICE_FEE = 2.95;
+const EXPRESS_FEE = 19.95;
 
 const serviceTypes: { type: ServiceType; label: string; icon: keyof typeof Feather.glyphMap; price: number; priceLabel?: string }[] = [
   { type: "flat_tire", label: "Flat Tire", icon: "disc", price: 60 },
@@ -96,9 +97,12 @@ export default function ServiceRequestScreen() {
   const [selectedService, setSelectedService] = useState<ServiceType | null>(null);
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isExpress, setIsExpress] = useState(false);
 
   const selectedServiceData = serviceTypes.find((s) => s.type === selectedService);
-  const estimatedCost = selectedServiceData?.price || 0;
+  const basePrice = selectedServiceData?.price || 0;
+  const expressFee = isExpress ? EXPRESS_FEE : 0;
+  const totalCost = basePrice + SERVICE_FEE + expressFee;
 
   const handleSubmit = () => {
     if (!selectedService) return;
@@ -116,10 +120,14 @@ export default function ServiceRequestScreen() {
       },
       notes,
       status: "accepted",
-      estimatedCost,
+      estimatedCost: basePrice,
       createdAt: new Date(),
       provider,
-      eta: 8,
+      eta: isExpress ? 4 : 8,
+      isExpress,
+      expressFee: isExpress ? EXPRESS_FEE : 0,
+      serviceFee: SERVICE_FEE,
+      totalCost,
     };
 
     setTimeout(() => {
@@ -170,6 +178,49 @@ export default function ServiceRequestScreen() {
         </View>
 
         <ThemedText type="h4" style={styles.sectionTitle}>
+          Priority Service
+        </ThemedText>
+        <Pressable
+          onPress={() => setIsExpress(!isExpress)}
+          style={[
+            styles.expressCard,
+            {
+              backgroundColor: isExpress ? theme.warning + "15" : theme.backgroundSecondary,
+              borderColor: isExpress ? theme.warning : "transparent",
+              borderWidth: 2,
+            },
+          ]}
+        >
+          <View style={[styles.expressIcon, { backgroundColor: isExpress ? theme.warning : theme.backgroundDefault }]}>
+            <Feather name="zap" size={20} color={isExpress ? "#FFFFFF" : theme.warning} />
+          </View>
+          <View style={styles.expressContent}>
+            <View style={styles.expressHeader}>
+              <ThemedText type="body" style={{ fontWeight: "600", color: isExpress ? theme.warning : theme.text }}>
+                Express Service
+              </ThemedText>
+              <ThemedText type="body" style={{ fontWeight: "600", color: theme.warning }}>
+                +${EXPRESS_FEE.toFixed(2)}
+              </ThemedText>
+            </View>
+            <ThemedText type="small" style={{ color: theme.textSecondary }}>
+              Get help ~50% faster • Average arrival: 4 min
+            </ThemedText>
+          </View>
+          <View
+            style={[
+              styles.expressCheckbox,
+              {
+                backgroundColor: isExpress ? theme.warning : "transparent",
+                borderColor: isExpress ? theme.warning : theme.border,
+              },
+            ]}
+          >
+            {isExpress ? <Feather name="check" size={14} color="#FFFFFF" /> : null}
+          </View>
+        </Pressable>
+
+        <ThemedText type="h4" style={styles.sectionTitle}>
           Additional Notes
         </ThemedText>
         <TextInput
@@ -198,7 +249,7 @@ export default function ServiceRequestScreen() {
                   {selectedServiceData?.label || "Service"}
                 </ThemedText>
                 <ThemedText type="body" style={{ color: theme.text }}>
-                  {selectedServiceData?.priceLabel || `$${estimatedCost.toFixed(2)}`}
+                  {selectedServiceData?.priceLabel || `$${basePrice.toFixed(2)}`}
                 </ThemedText>
               </View>
               <View style={styles.costRow}>
@@ -209,13 +260,23 @@ export default function ServiceRequestScreen() {
                   ${SERVICE_FEE.toFixed(2)}
                 </ThemedText>
               </View>
+              {isExpress ? (
+                <View style={styles.costRow}>
+                  <ThemedText type="small" style={{ color: theme.warning }}>
+                    Express Service
+                  </ThemedText>
+                  <ThemedText type="small" style={{ color: theme.warning }}>
+                    ${EXPRESS_FEE.toFixed(2)}
+                  </ThemedText>
+                </View>
+              ) : null}
               <View style={[styles.costDivider, { backgroundColor: theme.border }]} />
               <View style={styles.costRow}>
                 <ThemedText type="body" style={{ color: theme.text, fontWeight: "600" }}>
                   Estimated Total
                 </ThemedText>
                 <ThemedText type="h4" style={{ color: theme.success }}>
-                  ${(estimatedCost + SERVICE_FEE).toFixed(2)}
+                  ${totalCost.toFixed(2)}
                 </ThemedText>
               </View>
             </View>
@@ -310,6 +371,37 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     minHeight: 100,
     fontSize: 16,
+  },
+  expressCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    gap: Spacing.md,
+  },
+  expressIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  expressContent: {
+    flex: 1,
+    gap: 2,
+  },
+  expressHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  expressCheckbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    justifyContent: "center",
+    alignItems: "center",
   },
   costCard: {
     padding: Spacing.lg,

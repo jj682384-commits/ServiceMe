@@ -27,6 +27,10 @@ export interface ServiceRequest {
   provider?: Provider;
   driver?: Driver;
   eta?: number;
+  isExpress?: boolean;
+  expressFee?: number;
+  serviceFee?: number;
+  totalCost?: number;
 }
 
 export interface Driver {
