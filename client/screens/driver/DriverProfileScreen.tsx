@@ -208,7 +208,7 @@ export default function DriverProfileScreen() {
           <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
             ACCOUNT
           </ThemedText>
-          <MenuItem icon="user" label="Edit Profile" />
+          <MenuItem icon="user" label="Edit Profile" onPress={() => navigation.navigate("EditProfile")} />
           <MenuItem icon="phone" label="Phone" value={currentDriver?.phone || "+1 555-1234"} showArrow={false} />
           <MenuItem icon="mail" label="Email" value={currentDriver?.email || "alex@email.com"} showArrow={false} />
         </View>

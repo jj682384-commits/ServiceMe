@@ -200,7 +200,7 @@ export default function ProviderProfileScreen() {
           <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
             ACCOUNT
           </ThemedText>
-          <MenuItem icon="user" label="Edit Profile" />
+          <MenuItem icon="user" label="Edit Profile" onPress={() => navigation.navigate("EditProfile")} />
           <MenuItem icon="phone" label="Phone" value={currentProvider?.phone || "+1 555-9999"} showArrow={false} />
           <MenuItem icon="mail" label="Email" value={currentProvider?.email || "you@service.com"} showArrow={false} />
         </View>
