@@ -73,7 +73,7 @@ export default function ProviderProfileScreen() {
   const headerHeight = useHeaderHeight();
   const tabBarHeight = useBottomTabBarHeight();
   const { theme } = useTheme();
-  const { currentProvider, setUserRole, logout } = useApp();
+  const { currentProvider, setUserRole, logout, serviceRadius } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
 
@@ -230,7 +230,7 @@ export default function ProviderProfileScreen() {
               thumbColor="#FFFFFF"
             />
           </View>
-          <MenuItem icon="map-pin" label="Service Radius" value="15 miles" />
+          <MenuItem icon="map-pin" label="Service Radius" value={`${serviceRadius} miles`} onPress={() => navigation.navigate("SearchRadius")} />
         </View>
 
         <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>

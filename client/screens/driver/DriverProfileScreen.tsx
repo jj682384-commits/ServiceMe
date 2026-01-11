@@ -90,7 +90,7 @@ export default function DriverProfileScreen() {
   const headerHeight = useHeaderHeight();
   const tabBarHeight = useBottomTabBarHeight();
   const { theme } = useTheme();
-  const { currentDriver, setUserRole, upgradeMembership, logout } = useApp();
+  const { currentDriver, setUserRole, upgradeMembership, logout, searchRadius } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
   const isPremium = currentDriver?.membership === "premium";
@@ -231,7 +231,7 @@ export default function DriverProfileScreen() {
             value={notificationsEnabled}
             onValueChange={setNotificationsEnabled}
           />
-          <MenuItem icon="map-pin" label="Search Radius" value="10 miles" />
+          <MenuItem icon="map-pin" label="Search Radius" value={`${searchRadius} miles`} onPress={() => navigation.navigate("SearchRadius")} />
         </View>
 
         <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>

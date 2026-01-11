@@ -115,6 +115,10 @@ interface AppContextType {
   userLocation: UserLocation | null;
   setUserLocation: (location: UserLocation | null) => void;
   getProvidersWithDistance: () => Provider[];
+  searchRadius: number;
+  setSearchRadius: (radius: number) => void;
+  serviceRadius: number;
+  setServiceRadius: (radius: number) => void;
   logout: () => void;
 }
 
@@ -185,6 +189,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [nearbyProviders, setNearbyProviders] = useState<Provider[]>(mockProviders);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
+  const [searchRadius, setSearchRadius] = useState(10);
+  const [serviceRadius, setServiceRadius] = useState(15);
 
   const addToHistory = (request: ServiceRequest) => {
     setRequestHistory((prev) => [request, ...prev]);
@@ -214,6 +220,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             )
           : undefined,
       }))
+      .filter((provider) => provider.distance === undefined || provider.distance <= searchRadius)
       .sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
   };
 
@@ -251,6 +258,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         userLocation,
         setUserLocation,
         getProvidersWithDistance,
+        searchRadius,
+        setSearchRadius,
+        serviceRadius,
+        setServiceRadius,
         logout,
       }}
     >

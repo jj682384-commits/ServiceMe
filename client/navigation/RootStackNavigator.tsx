@@ -16,6 +16,7 @@ import ChatScreen from "@/screens/ChatScreen";
 import LegalDocumentsScreen from "@/screens/LegalDocumentsScreen";
 import ReportProblemScreen from "@/screens/ReportProblemScreen";
 import EditProfileScreen from "@/screens/EditProfileScreen";
+import SearchRadiusScreen from "@/screens/SearchRadiusScreen";
 
 export type RootStackParamList = {
   Welcome: undefined;
@@ -32,6 +33,7 @@ export type RootStackParamList = {
   LegalDocuments: undefined;
   ReportProblem: undefined;
   EditProfile: undefined;
+  SearchRadius: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -125,6 +127,13 @@ export default function RootStackNavigator() {
         component={EditProfileScreen}
         options={{
           headerTitle: "Edit Profile",
+        }}
+      />
+      <Stack.Screen
+        name="SearchRadius"
+        component={SearchRadiusScreen}
+        options={{
+          headerTitle: "Search Radius",
         }}
       />
     </Stack.Navigator>
