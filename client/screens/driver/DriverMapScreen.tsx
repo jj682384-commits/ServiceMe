@@ -27,7 +27,6 @@ const SERVICE_FILTERS: { type: ServiceType | "all"; label: string; icon: keyof t
   { type: "all", label: "All", icon: "grid" },
   { type: "flat_tire", label: "Tire", icon: "disc" },
   { type: "jump_start", label: "Battery", icon: "battery-charging" },
-  { type: "tow", label: "Tow", icon: "truck" },
   { type: "fuel", label: "Fuel", icon: "droplet" },
   { type: "lockout", label: "Lockout", icon: "key" },
 ];
@@ -435,25 +434,43 @@ export default function DriverMapScreen() {
       ) : null}
 
       {!activeRequest ? (
-        <AnimatedPressable
-          onPress={handleRequestService}
-          onPressIn={handleFabPressIn}
-          onPressOut={handleFabPressOut}
-          style={[
-            styles.fab,
-            {
-              bottom: tabBarHeight + Spacing.xl,
-              backgroundColor: theme.primary,
-              ...Shadows.xl,
-            },
-            fabAnimatedStyle,
-          ]}
-        >
-          <Feather name="zap" size={28} color="#FFFFFF" />
-          <ThemedText type="body" style={styles.fabText}>
-            Get Help Fast
-          </ThemedText>
-        </AnimatedPressable>
+        <View style={[styles.fabContainer, { bottom: tabBarHeight + Spacing.xl }]}>
+          <AnimatedPressable
+            onPress={() => navigation.navigate("TowRequest")}
+            onPressIn={handleFabPressIn}
+            onPressOut={handleFabPressOut}
+            style={[
+              styles.towFab,
+              {
+                backgroundColor: theme.secondary,
+                ...Shadows.lg,
+              },
+            ]}
+          >
+            <Feather name="truck" size={22} color="#FFFFFF" />
+            <ThemedText type="small" style={styles.towFabText}>
+              Need a Tow?
+            </ThemedText>
+          </AnimatedPressable>
+          <AnimatedPressable
+            onPress={handleRequestService}
+            onPressIn={handleFabPressIn}
+            onPressOut={handleFabPressOut}
+            style={[
+              styles.fab,
+              {
+                backgroundColor: theme.primary,
+                ...Shadows.xl,
+              },
+              fabAnimatedStyle,
+            ]}
+          >
+            <Feather name="zap" size={28} color="#FFFFFF" />
+            <ThemedText type="body" style={styles.fabText}>
+              Get Help Fast
+            </ThemedText>
+          </AnimatedPressable>
+        </View>
       ) : null}
     </ThemedView>
   );
@@ -667,10 +684,25 @@ const styles = StyleSheet.create({
   activeServiceInfo: {
     flex: 1,
   },
-  fab: {
+  fabContainer: {
     position: "absolute",
-    right: Spacing.lg,
     left: Spacing.lg,
+    right: Spacing.lg,
+    gap: Spacing.md,
+  },
+  towFab: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.full,
+    gap: Spacing.sm,
+  },
+  towFabText: {
+    color: "#FFFFFF",
+    fontWeight: "600",
+  },
+  fab: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",

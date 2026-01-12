@@ -18,6 +18,7 @@ import ReportProblemScreen from "@/screens/ReportProblemScreen";
 import EditProfileScreen from "@/screens/EditProfileScreen";
 import SearchRadiusScreen from "@/screens/SearchRadiusScreen";
 import SupportScreen from "@/screens/SupportScreen";
+import TowRequestScreen from "@/screens/TowRequestScreen";
 
 export type RootStackParamList = {
   Welcome: undefined;
@@ -36,6 +37,7 @@ export type RootStackParamList = {
   EditProfile: undefined;
   SearchRadius: undefined;
   Support: undefined;
+  TowRequest: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -143,6 +145,14 @@ export default function RootStackNavigator() {
         component={SupportScreen}
         options={{
           headerTitle: "Help & Support",
+        }}
+      />
+      <Stack.Screen
+        name="TowRequest"
+        component={TowRequestScreen}
+        options={{
+          presentation: "modal",
+          headerTitle: "Tow Service",
         }}
       />
     </Stack.Navigator>

@@ -26,7 +26,6 @@ const EXPRESS_FEE = 19.95;
 const serviceTypes: { type: ServiceType; label: string; icon: keyof typeof Feather.glyphMap; price: number; priceLabel?: string }[] = [
   { type: "flat_tire", label: "Flat Tire", icon: "disc", price: 60 },
   { type: "jump_start", label: "Jump Start", icon: "battery-charging", price: 45 },
-  { type: "tow", label: "Tow Truck", icon: "truck", price: 70, priceLabel: "Starting at $70" },
   { type: "fuel", label: "Fuel Delivery", icon: "droplet", price: 35 },
   { type: "lockout", label: "Lockout", icon: "key", price: 55 },
   { type: "obd_diagnostic", label: "OBD Diagnostic", icon: "cpu", price: 25 },

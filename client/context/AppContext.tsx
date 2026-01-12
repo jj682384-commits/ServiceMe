@@ -119,6 +119,7 @@ interface AppContextType {
   userLocation: UserLocation | null;
   setUserLocation: (location: UserLocation | null) => void;
   getProvidersWithDistance: () => Provider[];
+  getTowProviders: () => Provider[];
   searchRadius: number;
   setSearchRadius: (radius: number) => void;
   serviceRadius: number;
@@ -228,6 +229,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       .sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
   };
 
+  const getTowProviders = (): Provider[] => {
+    const allProviders = getProvidersWithDistance();
+    return allProviders.filter(
+      (provider) =>
+        provider.servicesOffered.includes("tow") && provider.vehicleType === "tow_truck"
+    );
+  };
+
   const logout = () => {
     setIsAuthenticated(false);
     setAuthUser(null);
@@ -262,6 +271,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         userLocation,
         setUserLocation,
         getProvidersWithDistance,
+        getTowProviders,
         searchRadius,
         setSearchRadius,
         serviceRadius,
