@@ -238,7 +238,7 @@ export default function DriverProfileScreen() {
           <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
             SUPPORT
           </ThemedText>
-          <MenuItem icon="help-circle" label="Help & Support" />
+          <MenuItem icon="help-circle" label="Help & Support" onPress={() => navigation.navigate("Support")} />
           <MenuItem 
             icon="alert-triangle" 
             label="Report a Problem" 
