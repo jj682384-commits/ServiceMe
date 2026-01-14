@@ -22,8 +22,9 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const SERVICE_FEE = 2.95;
 const EXPRESS_FEE = 19.95;
+const PREMIUM_DISCOUNT = 0.20;
 
-const serviceTypes: { type: ServiceType; label: string; icon: keyof typeof Feather.glyphMap; price: number; priceLabel?: string }[] = [
+const serviceTypes: { type: ServiceType; label: string; icon: keyof typeof Feather.glyphMap; price: number }[] = [
   { type: "flat_tire", label: "Flat Tire", icon: "disc", price: 60 },
   { type: "jump_start", label: "Jump Start", icon: "battery-charging", price: 45 },
   { type: "fuel", label: "Fuel Delivery", icon: "droplet", price: 35 },
@@ -37,12 +38,13 @@ interface ServiceTypeCardProps {
   label: string;
   icon: keyof typeof Feather.glyphMap;
   price: number;
-  priceLabel?: string;
+  discountedPrice?: number;
+  isPremium: boolean;
   isSelected: boolean;
   onPress: () => void;
 }
 
-function ServiceTypeCard({ label, icon, price, priceLabel, isSelected, onPress }: ServiceTypeCardProps) {
+function ServiceTypeCard({ label, icon, price, discountedPrice, isPremium, isSelected, onPress }: ServiceTypeCardProps) {
   const { theme } = useTheme();
   const scale = useSharedValue(1);
 
@@ -80,9 +82,20 @@ function ServiceTypeCard({ label, icon, price, priceLabel, isSelected, onPress }
       >
         {label}
       </ThemedText>
-      <ThemedText type="small" style={{ color: theme.textSecondary }}>
-        {priceLabel || `$${price}`}
-      </ThemedText>
+      {isPremium && discountedPrice ? (
+        <View style={styles.priceContainer}>
+          <ThemedText type="small" style={[styles.originalPrice, { color: theme.textSecondary }]}>
+            ${price}
+          </ThemedText>
+          <ThemedText type="small" style={{ color: theme.success, fontWeight: "600" }}>
+            ${discountedPrice.toFixed(0)}
+          </ThemedText>
+        </View>
+      ) : (
+        <ThemedText type="small" style={{ color: theme.textSecondary }}>
+          ${price}
+        </ThemedText>
+      )}
     </AnimatedPressable>
   );
 }
@@ -90,7 +103,7 @@ function ServiceTypeCard({ label, icon, price, priceLabel, isSelected, onPress }
 export default function ServiceRequestScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
-  const { nearbyProviders, setActiveRequest, addToHistory } = useApp();
+  const { nearbyProviders, setActiveRequest, addToHistory, currentDriver } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const [selectedService, setSelectedService] = useState<ServiceType | null>(null);
@@ -98,10 +111,13 @@ export default function ServiceRequestScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExpress, setIsExpress] = useState(false);
 
+  const isPremium = currentDriver?.membership === "premium";
   const selectedServiceData = serviceTypes.find((s) => s.type === selectedService);
   const basePrice = selectedServiceData?.price || 0;
+  const discountAmount = isPremium ? basePrice * PREMIUM_DISCOUNT : 0;
+  const discountedBasePrice = basePrice - discountAmount;
   const expressFee = isExpress ? EXPRESS_FEE : 0;
-  const totalCost = basePrice + SERVICE_FEE + expressFee;
+  const totalCost = discountedBasePrice + SERVICE_FEE + expressFee;
 
   const handleSubmit = () => {
     if (!selectedService) return;
@@ -119,7 +135,7 @@ export default function ServiceRequestScreen() {
       },
       notes,
       status: "accepted",
-      estimatedCost: basePrice,
+      estimatedCost: discountedBasePrice,
       createdAt: new Date(),
       provider,
       eta: isExpress ? 4 : 8,
@@ -146,6 +162,15 @@ export default function ServiceRequestScreen() {
           { paddingBottom: insets.bottom + Spacing.xl + 80 },
         ]}
       >
+        {isPremium && (
+          <View style={[styles.premiumBanner, { backgroundColor: theme.success + "15" }]}>
+            <Feather name="star" size={16} color={theme.success} />
+            <ThemedText type="small" style={{ color: theme.success, fontWeight: "600", marginLeft: Spacing.sm }}>
+              Premium Member - 20% off all services
+            </ThemedText>
+          </View>
+        )}
+
         <ThemedText type="h4" style={styles.sectionTitle}>
           What do you need? {nearbyProviders.length}+ providers nearby
         </ThemedText>
@@ -154,6 +179,8 @@ export default function ServiceRequestScreen() {
             <ServiceTypeCard
               key={service.type}
               {...service}
+              discountedPrice={isPremium ? service.price * (1 - PREMIUM_DISCOUNT) : undefined}
+              isPremium={isPremium}
               isSelected={selectedService === service.type}
               onPress={() => setSelectedService(service.type)}
             />
@@ -247,10 +274,31 @@ export default function ServiceRequestScreen() {
                 <ThemedText type="body" style={{ color: theme.text }}>
                   {selectedServiceData?.label || "Service"}
                 </ThemedText>
-                <ThemedText type="body" style={{ color: theme.text }}>
-                  {selectedServiceData?.priceLabel || `$${basePrice.toFixed(2)}`}
-                </ThemedText>
+                {isPremium ? (
+                  <View style={styles.priceWithDiscount}>
+                    <ThemedText type="small" style={[styles.strikethrough, { color: theme.textSecondary }]}>
+                      ${basePrice.toFixed(2)}
+                    </ThemedText>
+                    <ThemedText type="body" style={{ color: theme.success }}>
+                      ${discountedBasePrice.toFixed(2)}
+                    </ThemedText>
+                  </View>
+                ) : (
+                  <ThemedText type="body" style={{ color: theme.text }}>
+                    ${basePrice.toFixed(2)}
+                  </ThemedText>
+                )}
               </View>
+              {isPremium && (
+                <View style={styles.costRow}>
+                  <ThemedText type="small" style={{ color: theme.success }}>
+                    Premium Discount (20%)
+                  </ThemedText>
+                  <ThemedText type="small" style={{ color: theme.success }}>
+                    -${discountAmount.toFixed(2)}
+                  </ThemedText>
+                </View>
+              )}
               <View style={styles.costRow}>
                 <ThemedText type="small" style={{ color: theme.textSecondary }}>
                   Service Fee
@@ -279,9 +327,18 @@ export default function ServiceRequestScreen() {
                 </ThemedText>
               </View>
             </View>
-            <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: Spacing.sm }}>
-              Final cost may vary based on actual service
-            </ThemedText>
+            {isPremium ? (
+              <View style={[styles.savingsBanner, { backgroundColor: theme.success + "15" }]}>
+                <Feather name="tag" size={14} color={theme.success} />
+                <ThemedText type="small" style={{ color: theme.success, fontWeight: "600", marginLeft: Spacing.xs }}>
+                  You're saving ${discountAmount.toFixed(2)} with Premium
+                </ThemedText>
+              </View>
+            ) : (
+              <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: Spacing.sm }}>
+                Final cost may vary based on actual service
+              </ThemedText>
+            )}
           </View>
         ) : null}
       </KeyboardAwareScrollViewCompat>
@@ -354,6 +411,39 @@ const styles = StyleSheet.create({
     marginTop: Spacing.sm,
     textAlign: "center",
     fontSize: 13,
+  },
+  priceContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  originalPrice: {
+    textDecorationLine: "line-through",
+    fontSize: 11,
+  },
+  premiumBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing.sm,
+  },
+  priceWithDiscount: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  strikethrough: {
+    textDecorationLine: "line-through",
+  },
+  savingsBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: Spacing.sm,
+    borderRadius: BorderRadius.sm,
+    marginTop: Spacing.md,
   },
   locationCard: {
     flexDirection: "row",
