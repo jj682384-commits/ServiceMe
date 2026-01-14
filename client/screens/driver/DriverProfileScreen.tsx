@@ -90,10 +90,12 @@ export default function DriverProfileScreen() {
   const headerHeight = useHeaderHeight();
   const tabBarHeight = useBottomTabBarHeight();
   const { theme } = useTheme();
-  const { currentDriver, setUserRole, upgradeMembership, logout, searchRadius } = useApp();
+  const { currentDriver, setUserRole, logout, searchRadius, getTrialDaysRemaining } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
   const isPremium = currentDriver?.membership === "premium";
+  const isOnTrial = currentDriver?.isOnTrial;
+  const daysRemaining = getTrialDaysRemaining();
 
   const avatarColor = avatarColors[(currentDriver?.avatarPreset || 1) % avatarColors.length];
 
@@ -168,7 +170,7 @@ export default function DriverProfileScreen() {
 
         {!isPremium && (
           <Pressable
-            onPress={() => upgradeMembership("premium")}
+            onPress={() => navigation.navigate("PremiumUpgrade")}
             style={[
               styles.premiumCard,
               { backgroundColor: theme.primary, ...Shadows.lg },
@@ -180,14 +182,38 @@ export default function DriverProfileScreen() {
                 Go Premium
               </ThemedText>
               <ThemedText type="small" style={{ color: "rgba(255,255,255,0.9)" }}>
-                20% off all services + priority matching
+                10-day free trial - cancel anytime
               </ThemedText>
             </View>
             <Feather name="chevron-right" size={20} color="#FFFFFF" />
           </Pressable>
         )}
 
-        {isPremium && (
+        {isPremium && isOnTrial && (
+          <Pressable
+            onPress={() => navigation.navigate("PremiumUpgrade")}
+            style={[
+              styles.trialBadge,
+              { backgroundColor: theme.success + "20", borderColor: theme.success },
+            ]}
+          >
+            <Feather name="clock" size={18} color={theme.success} />
+            <View style={{ flex: 1, marginLeft: Spacing.sm }}>
+              <ThemedText
+                type="body"
+                style={{ color: theme.success, fontWeight: "600" }}
+              >
+                Free Trial Active
+              </ThemedText>
+              <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                {daysRemaining} days remaining - Cancel anytime
+              </ThemedText>
+            </View>
+            <Feather name="chevron-right" size={18} color={theme.success} />
+          </Pressable>
+        )}
+
+        {isPremium && !isOnTrial && (
           <View
             style={[
               styles.premiumBadge,
@@ -297,6 +323,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     borderRadius: BorderRadius.full,
     alignSelf: "center",
+    marginBottom: Spacing.lg,
+    borderWidth: 1,
+  },
+  trialBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
     marginBottom: Spacing.lg,
     borderWidth: 1,
   },

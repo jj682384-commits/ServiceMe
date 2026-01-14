@@ -19,6 +19,7 @@ import EditProfileScreen from "@/screens/EditProfileScreen";
 import SearchRadiusScreen from "@/screens/SearchRadiusScreen";
 import SupportScreen from "@/screens/SupportScreen";
 import TowRequestScreen from "@/screens/TowRequestScreen";
+import PremiumUpgradeScreen from "@/screens/PremiumUpgradeScreen";
 
 export type RootStackParamList = {
   Welcome: undefined;
@@ -38,6 +39,7 @@ export type RootStackParamList = {
   SearchRadius: undefined;
   Support: undefined;
   TowRequest: undefined;
+  PremiumUpgrade: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -153,6 +155,14 @@ export default function RootStackNavigator() {
         options={{
           presentation: "modal",
           headerTitle: "Tow Service",
+        }}
+      />
+      <Stack.Screen
+        name="PremiumUpgrade"
+        component={PremiumUpgradeScreen}
+        options={{
+          presentation: "modal",
+          headerTitle: "Go Premium",
         }}
       />
     </Stack.Navigator>

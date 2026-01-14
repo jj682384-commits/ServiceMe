@@ -40,6 +40,9 @@ export interface Driver {
   email: string;
   avatarPreset: number;
   membership?: MembershipTier;
+  trialStartDate?: Date;
+  trialEndDate?: Date;
+  isOnTrial?: boolean;
 }
 
 export interface Provider {
@@ -116,6 +119,9 @@ interface AppContextType {
   nearbyProviders: Provider[];
   setNearbyProviders: (providers: Provider[]) => void;
   upgradeMembership: (tier: MembershipTier) => void;
+  startFreeTrial: () => void;
+  cancelTrial: () => void;
+  getTrialDaysRemaining: () => number;
   userLocation: UserLocation | null;
   setUserLocation: (location: UserLocation | null) => void;
   getProvidersWithDistance: () => Provider[];
@@ -207,8 +213,42 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const upgradeMembership = (tier: MembershipTier) => {
     if (currentDriver) {
-      setCurrentDriver({ ...currentDriver, membership: tier });
+      setCurrentDriver({ ...currentDriver, membership: tier, isOnTrial: false });
     }
+  };
+
+  const startFreeTrial = () => {
+    if (currentDriver) {
+      const now = new Date();
+      const trialEnd = new Date(now.getTime() + 10 * 24 * 60 * 60 * 1000);
+      setCurrentDriver({
+        ...currentDriver,
+        membership: "premium",
+        isOnTrial: true,
+        trialStartDate: now,
+        trialEndDate: trialEnd,
+      });
+    }
+  };
+
+  const cancelTrial = () => {
+    if (currentDriver) {
+      setCurrentDriver({
+        ...currentDriver,
+        membership: "free",
+        isOnTrial: false,
+        trialStartDate: undefined,
+        trialEndDate: undefined,
+      });
+    }
+  };
+
+  const getTrialDaysRemaining = (): number => {
+    if (!currentDriver?.isOnTrial || !currentDriver.trialEndDate) return 0;
+    const now = new Date();
+    const end = new Date(currentDriver.trialEndDate);
+    const diff = end.getTime() - now.getTime();
+    return Math.max(0, Math.ceil(diff / (24 * 60 * 60 * 1000)));
   };
 
   const getProvidersWithDistance = (): Provider[] => {
@@ -268,6 +308,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         nearbyProviders,
         setNearbyProviders,
         upgradeMembership,
+        startFreeTrial,
+        cancelTrial,
+        getTrialDaysRemaining,
         userLocation,
         setUserLocation,
         getProvidersWithDistance,
