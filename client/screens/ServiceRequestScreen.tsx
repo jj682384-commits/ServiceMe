@@ -2,8 +2,9 @@ import React, { useState } from "react";
 import { View, StyleSheet, Pressable, TextInput } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RouteProp } from "@react-navigation/native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -103,8 +104,15 @@ function ServiceTypeCard({ label, icon, price, discountedPrice, isPremium, isSel
 export default function ServiceRequestScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
-  const { nearbyProviders, setActiveRequest, addToHistory, currentDriver } = useApp();
+  const { nearbyProviders, getProvidersWithDistance, setActiveRequest, addToHistory, currentDriver } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, "ServiceRequest">>();
+
+  const selectedProviderId = route.params?.providerId;
+  const allProviders = getProvidersWithDistance();
+  const selectedProvider = selectedProviderId
+    ? allProviders.find((p) => p.id === selectedProviderId)
+    : undefined;
 
   const [selectedService, setSelectedService] = useState<ServiceType | null>(null);
   const [notes, setNotes] = useState("");
@@ -124,7 +132,7 @@ export default function ServiceRequestScreen() {
 
     setIsSubmitting(true);
 
-    const provider = nearbyProviders[0];
+    const provider = selectedProvider || nearbyProviders[0];
     const newRequest: ServiceRequest = {
       id: `req-${Date.now()}`,
       serviceType: selectedService,
@@ -162,6 +170,23 @@ export default function ServiceRequestScreen() {
           { paddingBottom: insets.bottom + Spacing.xl + 80 },
         ]}
       >
+        {selectedProvider ? (
+          <View style={[styles.selectedProviderBanner, { backgroundColor: theme.secondary + "15", borderColor: theme.secondary }]}>
+            <View style={styles.selectedProviderRow}>
+              <Feather name="user-check" size={18} color={theme.secondary} />
+              <View style={{ flex: 1, marginLeft: Spacing.sm }}>
+                <ThemedText type="body" style={{ fontWeight: "600" }}>
+                  Requesting from {selectedProvider.name}
+                </ThemedText>
+                <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                  {selectedProvider.rating.toFixed(1)} rating
+                  {selectedProvider.distance !== undefined ? ` \u2022 ${selectedProvider.distance} mi away` : ""}
+                </ThemedText>
+              </View>
+            </View>
+          </View>
+        ) : null}
+
         {isPremium && (
           <View style={[styles.premiumBanner, { backgroundColor: theme.success + "15" }]}>
             <Feather name="star" size={16} color={theme.success} />
@@ -420,6 +445,16 @@ const styles = StyleSheet.create({
   originalPrice: {
     textDecorationLine: "line-through",
     fontSize: 11,
+  },
+  selectedProviderBanner: {
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing.sm,
+    borderWidth: 1,
+  },
+  selectedProviderRow: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   premiumBanner: {
     flexDirection: "row",

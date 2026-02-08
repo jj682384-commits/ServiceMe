@@ -20,6 +20,8 @@ import SearchRadiusScreen from "@/screens/SearchRadiusScreen";
 import SupportScreen from "@/screens/SupportScreen";
 import TowRequestScreen from "@/screens/TowRequestScreen";
 import PremiumUpgradeScreen from "@/screens/PremiumUpgradeScreen";
+import BrowseProvidersScreen from "@/screens/BrowseProvidersScreen";
+import ProviderDetailScreen from "@/screens/ProviderDetailScreen";
 
 export type RootStackParamList = {
   Welcome: undefined;
@@ -29,7 +31,7 @@ export type RootStackParamList = {
   ProviderTypeSelection: undefined;
   DriverTabs: undefined;
   ProviderTabs: undefined;
-  ServiceRequest: undefined;
+  ServiceRequest: { providerId?: string } | undefined;
   ActiveService: undefined;
   ServiceCompletion: undefined;
   Chat: { conversationId: string; providerName: string };
@@ -40,6 +42,8 @@ export type RootStackParamList = {
   Support: undefined;
   TowRequest: undefined;
   PremiumUpgrade: undefined;
+  BrowseProviders: undefined;
+  ProviderDetail: { providerId: string };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -163,6 +167,20 @@ export default function RootStackNavigator() {
         options={{
           presentation: "modal",
           headerTitle: "Go Premium",
+        }}
+      />
+      <Stack.Screen
+        name="BrowseProviders"
+        component={BrowseProvidersScreen}
+        options={{
+          headerTitle: "Browse Providers",
+        }}
+      />
+      <Stack.Screen
+        name="ProviderDetail"
+        component={ProviderDetailScreen}
+        options={{
+          headerTitle: "Provider Details",
         }}
       />
     </Stack.Navigator>
