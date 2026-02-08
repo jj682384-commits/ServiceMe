@@ -389,9 +389,11 @@ export default function DriverMapScreen() {
             <ThemedText type="h4">
               Nearby Mechanics
             </ThemedText>
-            <ThemedText type="small" style={{ color: theme.textSecondary }}>
-              {filteredProviders.length} found
-            </ThemedText>
+            <Pressable onPress={() => navigation.navigate("BrowseProviders")}>
+              <ThemedText type="small" style={{ color: theme.primary, fontWeight: "600" }}>
+                Browse All ({filteredProviders.length})
+              </ThemedText>
+            </Pressable>
           </View>
           <ScrollView 
             style={styles.listScroll}
@@ -401,7 +403,7 @@ export default function DriverMapScreen() {
               <MechanicCard
                 key={provider.id}
                 provider={provider}
-                onPress={() => {}}
+                onPress={() => navigation.navigate("ProviderDetail", { providerId: provider.id })}
               />
             ))}
           </ScrollView>
