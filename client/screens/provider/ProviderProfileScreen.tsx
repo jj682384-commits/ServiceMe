@@ -248,6 +248,11 @@ export default function ProviderProfileScreen() {
             label="Terms & Privacy" 
             onPress={() => navigation.navigate("LegalDocuments")}
           />
+          <MenuItem 
+            icon="book" 
+            label="Liability Disclaimer" 
+            onPress={() => navigation.navigate("LegalDocuments", { initialTab: "liability" })}
+          />
         </View>
 
         <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>

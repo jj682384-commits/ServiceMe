@@ -35,7 +35,7 @@ export type RootStackParamList = {
   ActiveService: undefined;
   ServiceCompletion: undefined;
   Chat: { conversationId: string; providerName: string };
-  LegalDocuments: undefined;
+  LegalDocuments: { initialTab?: "privacy" | "terms" | "liability" } | undefined;
   ReportProblem: undefined;
   EditProfile: undefined;
   SearchRadius: undefined;

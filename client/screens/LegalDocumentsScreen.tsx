@@ -3,15 +3,18 @@ import { View, StyleSheet, ScrollView, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Feather } from "@expo/vector-icons";
+import { useRoute } from "@react-navigation/native";
+import type { RouteProp } from "@react-navigation/native";
 
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing, BorderRadius } from "@/constants/theme";
+import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
-type DocumentType = "privacy" | "terms";
+type DocumentType = "privacy" | "terms" | "liability";
 
-const LAST_UPDATED = "December 27, 2025";
+const LAST_UPDATED = "February 19, 2026";
 
 const PRIVACY_POLICY = {
   title: "Privacy Policy",
@@ -362,6 +365,159 @@ Hours: 24/7 Support Available`
   ]
 };
 
+const LIABILITY_DISCLAIMER = {
+  title: "Liability Disclaimer",
+  sections: [
+    {
+      heading: "Purpose of This Disclaimer",
+      content: `This Liability Disclaimer ("Disclaimer") applies to all users of the ServiceMe platform, including both Customers (drivers requesting roadside assistance) and Service Providers (individuals and businesses offering roadside assistance services).
+
+By using ServiceMe, you acknowledge that you have read, understood, and agree to the terms outlined in this Disclaimer. If you do not agree, you must discontinue use of the platform immediately.`
+    },
+    {
+      heading: "Platform Role",
+      content: `ServiceMe operates solely as a technology platform that connects Customers with independent Service Providers. ServiceMe does not provide roadside assistance services directly. We are not a roadside assistance company, towing company, or automotive repair shop.
+
+ServiceMe is not responsible for:
+- The quality, safety, or legality of services performed
+- The qualifications or competence of Service Providers
+- The condition or suitability of equipment or tools used
+- The outcome or result of any roadside assistance service
+- Any damage to vehicles, property, or persons during service delivery`
+    },
+    {
+      heading: "For Customers (Drivers)",
+      content: `By requesting roadside assistance through ServiceMe, you acknowledge and agree to the following:
+
+Assumption of Risk:
+- Roadside assistance involves inherent risks, including but not limited to vehicle damage, personal injury, and property damage
+- You voluntarily assume all risks associated with receiving roadside assistance services
+- You understand that ServiceMe has no control over the actions or quality of work performed by Service Providers
+
+Vehicle and Property:
+- You are responsible for ensuring your vehicle is in a safe location before requesting service
+- You acknowledge that minor cosmetic or mechanical damage may occur during towing, tire changes, jump starts, or other services
+- ServiceMe is not liable for any pre-existing conditions or damage to your vehicle
+- You should remove all valuables from your vehicle before any tow service
+
+Personal Safety:
+- You are responsible for your own safety and the safety of your passengers while awaiting service
+- You should remain in a safe location, away from traffic, until your Service Provider arrives
+- You should verify the identity of your Service Provider before allowing them to work on your vehicle
+
+Service Expectations:
+- ServiceMe does not guarantee response times, availability, or service outcomes
+- Estimated arrival times are approximations and may vary based on traffic, weather, and other factors
+- Service Providers may decline or be unable to complete a service request for any reason
+- You are responsible for verifying that the service performed meets your expectations before confirming completion`
+    },
+    {
+      heading: "For Service Providers",
+      content: `By offering roadside assistance services through ServiceMe, you acknowledge and agree to the following:
+
+Independent Contractor Status:
+- You are an independent contractor, not an employee of ServiceMe
+- You are solely responsible for your own actions, conduct, and the quality of services you provide
+- You are responsible for maintaining your own insurance, licenses, and certifications as required by applicable law
+
+Liability and Insurance:
+- You assume full liability for any injury, damage, or loss that occurs as a result of your services
+- You are required to maintain adequate general liability insurance at all times while providing services
+- You agree to indemnify and hold ServiceMe harmless from any claims, damages, or losses arising from your services
+- Commercial auto insurance is strongly recommended for providers using personal vehicles
+
+Safety and Compliance:
+- You are responsible for assessing road conditions and ensuring it is safe to perform the requested service
+- You must comply with all applicable traffic laws, safety regulations, and industry standards
+- You must use appropriate personal protective equipment and follow proper safety procedures
+- You should decline any service request that you determine to be unsafe or beyond your capabilities
+
+Duty of Care:
+- You agree to exercise reasonable care and skill when performing services
+- You must not perform services for which you are not qualified or adequately equipped
+- You must clearly communicate any limitations or concerns to the Customer before beginning work
+- You are responsible for properly securing vehicles during towing and transport`
+    },
+    {
+      heading: "Limitation of Liability",
+      content: `TO THE FULLEST EXTENT PERMITTED BY APPLICABLE LAW:
+
+ServiceMe, its affiliates, officers, directors, employees, agents, and licensors shall not be liable for any direct, indirect, incidental, special, consequential, or punitive damages, including but not limited to:
+
+- Personal injury or death arising from roadside assistance services
+- Damage to vehicles, property, or equipment during or after service
+- Loss of income, profits, or business opportunities
+- Emotional distress or inconvenience
+- Data loss or security breaches
+- Any damages exceeding the service fee paid for the specific transaction giving rise to the claim
+
+ServiceMe's total aggregate liability to any user for all claims arising from or related to the use of the platform shall not exceed the greater of (a) the total fees paid by the user to ServiceMe in the twelve (12) months preceding the claim, or (b) one hundred dollars ($100).`
+    },
+    {
+      heading: "Mutual Waiver of Claims",
+      content: `Both Customers and Service Providers agree to:
+
+- Waive any right to bring class action claims against ServiceMe
+- Resolve all disputes through the arbitration process outlined in our Terms of Service
+- Release ServiceMe from any claims arising from interactions between Customers and Service Providers
+- Acknowledge that ServiceMe's role is limited to facilitating connections between parties
+
+This waiver does not apply to claims that cannot be waived under applicable law, including claims for gross negligence or willful misconduct by ServiceMe.`
+    },
+    {
+      heading: "Insurance Recommendations",
+      content: `ServiceMe strongly recommends the following insurance coverage:
+
+For Customers:
+- Comprehensive auto insurance that covers roadside incidents
+- Personal property insurance for valuables left in vehicles
+- Consider adding roadside assistance coverage to your existing auto policy as a supplement
+
+For Service Providers:
+- General liability insurance (minimum $1,000,000 per occurrence recommended)
+- Commercial auto insurance if using a personal vehicle for service calls
+- Professional liability (errors and omissions) insurance
+- Workers' compensation insurance if employing helpers or assistants
+- Garagekeepers liability insurance for providers handling customer vehicles
+
+ServiceMe does not provide insurance coverage to Customers or Service Providers. Each party is responsible for obtaining and maintaining their own insurance coverage.`
+    },
+    {
+      heading: "Reporting Incidents",
+      content: `In the event of any injury, damage, or dispute during a service interaction:
+
+Immediate Steps:
+- Ensure the safety of all parties involved
+- Call emergency services (911) if there is any injury or immediate danger
+- Document the incident with photos and written notes
+- Exchange insurance information with the other party
+
+Reporting to ServiceMe:
+- Report the incident through the app using the "Report a Problem" feature
+- Contact our support team at safety@serviceme.app
+- Provide all relevant details, photos, and documentation
+- Cooperate fully with any investigation
+
+ServiceMe may assist in facilitating communication between parties but is not responsible for resolving disputes or mediating claims between Customers and Service Providers.`
+    },
+    {
+      heading: "Acknowledgment",
+      content: `By using ServiceMe as either a Customer or Service Provider, you confirm that:
+
+- You have read and understood this Liability Disclaimer in its entirety
+- You voluntarily agree to all terms and conditions stated herein
+- You understand that roadside assistance services carry inherent risks
+- You acknowledge that ServiceMe is a platform facilitator, not a service provider
+- You agree to maintain appropriate insurance coverage for your role
+- You understand that this Disclaimer supplements the Terms of Service and Privacy Policy
+
+This Disclaimer is effective as of your first use of the ServiceMe platform and remains in effect for the duration of your use of the platform and any services obtained or provided through it.
+
+For questions about this Disclaimer, contact: legal@serviceme.app`
+    }
+  ]
+};
+
 function TabButton({
   label,
   isSelected,
@@ -419,9 +575,10 @@ export default function LegalDocumentsScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const { theme } = useTheme();
-  const [activeTab, setActiveTab] = useState<DocumentType>("privacy");
+  const route = useRoute<RouteProp<RootStackParamList, "LegalDocuments">>();
+  const [activeTab, setActiveTab] = useState<DocumentType>(route.params?.initialTab || "privacy");
 
-  const document = activeTab === "privacy" ? PRIVACY_POLICY : TERMS_OF_SERVICE;
+  const document = activeTab === "privacy" ? PRIVACY_POLICY : activeTab === "terms" ? TERMS_OF_SERVICE : LIABILITY_DISCLAIMER;
 
   return (
     <ThemedView style={styles.container}>
@@ -438,14 +595,19 @@ export default function LegalDocumentsScreen() {
       >
         <View style={styles.tabContainer}>
           <TabButton
-            label="Privacy Policy"
+            label="Privacy"
             isSelected={activeTab === "privacy"}
             onPress={() => setActiveTab("privacy")}
           />
           <TabButton
-            label="Terms of Service"
+            label="Terms"
             isSelected={activeTab === "terms"}
             onPress={() => setActiveTab("terms")}
+          />
+          <TabButton
+            label="Disclaimer"
+            isSelected={activeTab === "liability"}
+            onPress={() => setActiveTab("liability")}
           />
         </View>
 
@@ -460,9 +622,9 @@ export default function LegalDocumentsScreen() {
         >
           <View style={styles.documentHeader}>
             <Feather
-              name={activeTab === "privacy" ? "shield" : "file-text"}
+              name={activeTab === "privacy" ? "shield" : activeTab === "terms" ? "file-text" : "alert-triangle"}
               size={24}
-              color={theme.primary}
+              color={activeTab === "liability" ? "#F59E0B" : theme.primary}
             />
             <ThemedText type="h3" style={{ marginLeft: Spacing.md }}>
               {document.title}
