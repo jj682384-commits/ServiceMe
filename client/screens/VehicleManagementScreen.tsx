@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { View, StyleSheet, Pressable, ScrollView, TextInput, Alert } from "react-native";
+import React, { useState, useMemo } from "react";
+import { View, StyleSheet, Pressable, ScrollView, TextInput, Alert, FlatList, Modal, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -15,6 +15,7 @@ import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollV
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, Vehicle, TireType, FuelType } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
+import { VEHICLE_MAKES, VEHICLE_MAKES_MODELS } from "@/constants/vehicleData";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -33,6 +34,154 @@ const FUEL_TYPES: { value: FuelType; label: string; icon: keyof typeof Feather.g
 
 const currentYear = new Date().getFullYear();
 const YEARS = Array.from({ length: 30 }, (_, i) => currentYear - i);
+
+function SearchablePicker({
+  visible,
+  onClose,
+  onSelect,
+  items,
+  title,
+  searchPlaceholder,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onSelect: (item: string) => void;
+  items: string[];
+  title: string;
+  searchPlaceholder: string;
+}) {
+  const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
+  const [search, setSearch] = useState("");
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return items;
+    const q = search.toLowerCase();
+    return items.filter((item) => item.toLowerCase().includes(q));
+  }, [items, search]);
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent>
+      <View style={[styles.modalOverlay]}>
+        <View
+          style={[
+            styles.modalContent,
+            {
+              backgroundColor: theme.backgroundDefault,
+              paddingTop: insets.top + Spacing.md,
+              paddingBottom: insets.bottom + Spacing.md,
+            },
+          ]}
+        >
+          <View style={styles.modalHeader}>
+            <ThemedText type="h3">{title}</ThemedText>
+            <Pressable onPress={() => { setSearch(""); onClose(); }} hitSlop={12}>
+              <Feather name="x" size={24} color={theme.text} />
+            </Pressable>
+          </View>
+          <View
+            style={[
+              styles.searchBar,
+              { backgroundColor: theme.backgroundSecondary, borderColor: theme.border },
+            ]}
+          >
+            <Feather name="search" size={18} color={theme.textSecondary} />
+            <TextInput
+              style={[styles.searchInput, { color: theme.text }]}
+              placeholder={searchPlaceholder}
+              placeholderTextColor={theme.textSecondary}
+              value={search}
+              onChangeText={setSearch}
+              autoFocus
+              autoCorrect={false}
+            />
+            {search.length > 0 ? (
+              <Pressable onPress={() => setSearch("")} hitSlop={8}>
+                <Feather name="x-circle" size={16} color={theme.textSecondary} />
+              </Pressable>
+            ) : null}
+          </View>
+          <FlatList
+            data={filtered}
+            keyExtractor={(item) => item}
+            keyboardShouldPersistTaps="handled"
+            renderItem={({ item }) => (
+              <Pressable
+                onPress={() => {
+                  setSearch("");
+                  onSelect(item);
+                }}
+                style={({ pressed }) => [
+                  styles.pickerItem,
+                  {
+                    backgroundColor: pressed ? theme.backgroundSecondary : "transparent",
+                  },
+                ]}
+              >
+                <ThemedText type="body">{item}</ThemedText>
+                <Feather name="chevron-right" size={16} color={theme.textSecondary} />
+              </Pressable>
+            )}
+            ListEmptyComponent={
+              <View style={styles.emptySearch}>
+                <ThemedText type="body" style={{ color: theme.textSecondary }}>
+                  No results for "{search}"
+                </ThemedText>
+              </View>
+            }
+            ItemSeparatorComponent={() => (
+              <View style={[styles.separator, { backgroundColor: theme.border }]} />
+            )}
+          />
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+function PickerButton({
+  label,
+  value,
+  placeholder,
+  onPress,
+  disabled,
+}: {
+  label: string;
+  value: string;
+  placeholder: string;
+  onPress: () => void;
+  disabled?: boolean;
+}) {
+  const { theme } = useTheme();
+
+  return (
+    <>
+      <ThemedText type="small" style={[styles.fieldLabel, { color: theme.textSecondary }]}>
+        {label}
+      </ThemedText>
+      <Pressable
+        onPress={onPress}
+        disabled={disabled}
+        style={[
+          styles.pickerButton,
+          {
+            backgroundColor: theme.backgroundDefault,
+            borderColor: value ? theme.primary : theme.border,
+            opacity: disabled ? 0.5 : 1,
+          },
+        ]}
+      >
+        <ThemedText
+          type="body"
+          style={{ color: value ? theme.text : theme.textSecondary, flex: 1 }}
+        >
+          {value || placeholder}
+        </ThemedText>
+        <Feather name="chevron-down" size={18} color={theme.textSecondary} />
+      </Pressable>
+    </>
+  );
+}
 
 function VehicleCard({
   vehicle,
@@ -135,6 +284,14 @@ export default function VehicleManagementScreen() {
   const [tireType, setTireType] = useState<TireType>("spare");
   const [fuelType, setFuelType] = useState<FuelType>("regular");
 
+  const [showMakePicker, setShowMakePicker] = useState(false);
+  const [showModelPicker, setShowModelPicker] = useState(false);
+
+  const availableModels = useMemo(() => {
+    if (!make) return [];
+    return VEHICLE_MAKES_MODELS[make] || [];
+  }, [make]);
+
   const resetForm = () => {
     setMake("");
     setModel("");
@@ -144,9 +301,20 @@ export default function VehicleManagementScreen() {
     setShowAddForm(false);
   };
 
+  const handleSelectMake = (selectedMake: string) => {
+    setMake(selectedMake);
+    setModel("");
+    setShowMakePicker(false);
+  };
+
+  const handleSelectModel = (selectedModel: string) => {
+    setModel(selectedModel);
+    setShowModelPicker(false);
+  };
+
   const handleAdd = () => {
     if (!make.trim() || !model.trim()) {
-      Alert.alert("Missing Info", "Please enter a make and model for your vehicle.");
+      Alert.alert("Missing Info", "Please select a make and model for your vehicle.");
       return;
     }
     addVehicle({
@@ -199,26 +367,19 @@ export default function VehicleManagementScreen() {
               Add Vehicle
             </ThemedText>
 
-            <ThemedText type="small" style={[styles.fieldLabel, { color: theme.textSecondary }]}>
-              Make
-            </ThemedText>
-            <TextInput
-              style={[styles.input, { backgroundColor: theme.backgroundDefault, color: theme.text, borderColor: theme.border }]}
-              placeholder="e.g. Toyota"
-              placeholderTextColor={theme.textSecondary}
+            <PickerButton
+              label="Make"
               value={make}
-              onChangeText={setMake}
+              placeholder="Select make..."
+              onPress={() => setShowMakePicker(true)}
             />
 
-            <ThemedText type="small" style={[styles.fieldLabel, { color: theme.textSecondary }]}>
-              Model
-            </ThemedText>
-            <TextInput
-              style={[styles.input, { backgroundColor: theme.backgroundDefault, color: theme.text, borderColor: theme.border }]}
-              placeholder="e.g. Camry"
-              placeholderTextColor={theme.textSecondary}
+            <PickerButton
+              label="Model"
               value={model}
-              onChangeText={setModel}
+              placeholder={make ? "Select model..." : "Select a make first"}
+              onPress={() => setShowModelPicker(true)}
+              disabled={!make}
             />
 
             <ThemedText type="small" style={[styles.fieldLabel, { color: theme.textSecondary }]}>
@@ -350,6 +511,24 @@ export default function VehicleManagementScreen() {
           </Pressable>
         )}
       </KeyboardAwareScrollViewCompat>
+
+      <SearchablePicker
+        visible={showMakePicker}
+        onClose={() => setShowMakePicker(false)}
+        onSelect={handleSelectMake}
+        items={VEHICLE_MAKES}
+        title="Select Make"
+        searchPlaceholder="Search makes..."
+      />
+
+      <SearchablePicker
+        visible={showModelPicker}
+        onClose={() => setShowModelPicker(false)}
+        onSelect={handleSelectModel}
+        items={availableModels}
+        title={`${make} Models`}
+        searchPlaceholder="Search models..."
+      />
     </ThemedView>
   );
 }
@@ -427,11 +606,12 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
     marginTop: Spacing.md,
   },
-  input: {
+  pickerButton: {
+    flexDirection: "row",
+    alignItems: "center",
     padding: Spacing.md,
     borderRadius: BorderRadius.md,
     borderWidth: 1,
-    fontSize: 16,
   },
   yearChip: {
     paddingHorizontal: Spacing.md,
@@ -480,5 +660,52 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderStyle: "dashed",
     marginTop: Spacing.md,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+  },
+  modalContent: {
+    flex: 1,
+    borderTopLeftRadius: BorderRadius.xl,
+    borderTopRightRadius: BorderRadius.xl,
+    marginTop: 60,
+    paddingHorizontal: Spacing.lg,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: Spacing.lg,
+  },
+  searchBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Platform.OS === "ios" ? Spacing.md : Spacing.sm,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    marginBottom: Spacing.md,
+    gap: Spacing.sm,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    paddingVertical: 0,
+  },
+  pickerItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.md,
+  },
+  separator: {
+    height: StyleSheet.hairlineWidth,
+    marginHorizontal: Spacing.md,
+  },
+  emptySearch: {
+    alignItems: "center",
+    padding: Spacing["2xl"],
   },
 });
