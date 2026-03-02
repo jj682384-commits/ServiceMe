@@ -24,6 +24,7 @@ import BrowseProvidersScreen from "@/screens/BrowseProvidersScreen";
 import ProviderDetailScreen from "@/screens/ProviderDetailScreen";
 import SmartDiagnosticScreen from "@/screens/SmartDiagnosticScreen";
 import EmergencyModeScreen from "@/screens/EmergencyModeScreen";
+import VehicleManagementScreen from "@/screens/VehicleManagementScreen";
 
 export type RootStackParamList = {
   Welcome: undefined;
@@ -48,6 +49,7 @@ export type RootStackParamList = {
   BrowseProviders: undefined;
   ProviderDetail: { providerId: string };
   EmergencyMode: undefined;
+  VehicleManagement: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -202,6 +204,13 @@ export default function RootStackNavigator() {
           presentation: "fullScreenModal",
           headerShown: false,
           animation: "fade",
+        }}
+      />
+      <Stack.Screen
+        name="VehicleManagement"
+        component={VehicleManagementScreen}
+        options={{
+          headerTitle: "My Vehicles",
         }}
       />
     </Stack.Navigator>

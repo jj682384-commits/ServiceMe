@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, StyleSheet, FlatList, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -17,6 +17,7 @@ const serviceTypeLabels: Record<ServiceType, string> = {
   tow: "Tow Service",
   fuel: "Fuel Delivery",
   lockout: "Lockout",
+  obd_diagnostic: "OBD Diagnostic",
   other: "Other",
 };
 
@@ -26,6 +27,7 @@ const serviceTypeIcons: Record<ServiceType, keyof typeof Feather.glyphMap> = {
   tow: "truck",
   fuel: "droplet",
   lockout: "key",
+  obd_diagnostic: "cpu",
   other: "more-horizontal",
 };
 
@@ -38,6 +40,8 @@ const mockHistory: ServiceRequest[] = [
     status: "completed",
     estimatedCost: 85,
     createdAt: new Date(Date.now() - 86400000 * 2),
+    timeSaved: 35,
+    receiptNumber: "SM-ABC123",
     provider: {
       id: "p1",
       name: "Mike's Towing",
@@ -51,6 +55,8 @@ const mockHistory: ServiceRequest[] = [
       licensePlate: "TOW-123",
       servicesOffered: ["tow", "flat_tire", "jump_start", "lockout"],
       isAvailable: true,
+      providerType: "shop",
+      verificationStatus: "verified",
     },
   },
   {
@@ -61,6 +67,8 @@ const mockHistory: ServiceRequest[] = [
     status: "completed",
     estimatedCost: 55,
     createdAt: new Date(Date.now() - 86400000 * 7),
+    timeSaved: 22,
+    receiptNumber: "SM-DEF456",
     provider: {
       id: "p2",
       name: "Quick Fix Auto",
@@ -74,6 +82,8 @@ const mockHistory: ServiceRequest[] = [
       licensePlate: "FIX-456",
       servicesOffered: ["flat_tire", "jump_start", "fuel", "lockout"],
       isAvailable: true,
+      providerType: "shop",
+      verificationStatus: "verified",
     },
   },
   {
@@ -84,6 +94,8 @@ const mockHistory: ServiceRequest[] = [
     status: "completed",
     estimatedCost: 45,
     createdAt: new Date(Date.now() - 86400000 * 14),
+    timeSaved: 40,
+    receiptNumber: "SM-GHI789",
     provider: {
       id: "p3",
       name: "Road Rescue",
@@ -97,9 +109,64 @@ const mockHistory: ServiceRequest[] = [
       licensePlate: "RES-789",
       servicesOffered: ["flat_tire", "jump_start", "fuel", "other"],
       isAvailable: true,
+      providerType: "independent",
+      verificationStatus: "verified",
+    },
+  },
+  {
+    id: "h4",
+    serviceType: "lockout",
+    location: { address: "321 Market St, San Francisco, CA", latitude: 37.79, longitude: -122.40 },
+    notes: "Keys locked inside car",
+    status: "completed",
+    estimatedCost: 65,
+    createdAt: new Date(Date.now() - 86400000 * 30),
+    timeSaved: 28,
+    receiptNumber: "SM-JKL012",
+    provider: {
+      id: "p5",
+      name: "Carlos H.",
+      phone: "+1 555-0105",
+      email: "carlos@helpers.com",
+      rating: 4.7,
+      reviewCount: 42,
+      vehicleType: "pickup",
+      vehicleMake: "Toyota",
+      vehicleModel: "Tacoma",
+      licensePlate: "HLP-555",
+      servicesOffered: ["flat_tire", "jump_start", "fuel"],
+      isAvailable: true,
+      providerType: "independent",
+      verificationStatus: "verified",
     },
   },
 ];
+
+function StatCard({
+  icon,
+  value,
+  label,
+  color,
+}: {
+  icon: keyof typeof Feather.glyphMap;
+  value: string;
+  label: string;
+  color: string;
+}) {
+  const { theme } = useTheme();
+
+  return (
+    <View style={[styles.statCard, { backgroundColor: theme.backgroundSecondary }]}>
+      <Feather name={icon} size={20} color={color} />
+      <ThemedText type="h4" style={{ marginTop: Spacing.xs }}>
+        {value}
+      </ThemedText>
+      <ThemedText type="small" style={{ color: theme.textSecondary, textAlign: "center" }}>
+        {label}
+      </ThemedText>
+    </View>
+  );
+}
 
 function HistoryItem({ item }: { item: ServiceRequest }) {
   const { theme } = useTheme();
@@ -112,6 +179,12 @@ function HistoryItem({ item }: { item: ServiceRequest }) {
     });
   };
 
+  const statusColor = item.status === "completed" ? theme.success :
+    item.status === "cancelled" ? theme.error : theme.warning;
+
+  const statusLabel = item.status === "completed" ? "Completed" :
+    item.status === "cancelled" ? "Cancelled" : "In Progress";
+
   return (
     <Pressable
       style={({ pressed }) => [
@@ -121,29 +194,43 @@ function HistoryItem({ item }: { item: ServiceRequest }) {
     >
       <View style={[styles.serviceIcon, { backgroundColor: theme.secondary + "15" }]}>
         <Feather
-          name={serviceTypeIcons[item.serviceType]}
+          name={serviceTypeIcons[item.serviceType] || "more-horizontal"}
           size={24}
           color={theme.secondary}
         />
       </View>
       <View style={styles.historyContent}>
         <ThemedText type="body" style={{ fontWeight: "600" }}>
-          {serviceTypeLabels[item.serviceType]}
+          {serviceTypeLabels[item.serviceType] || "Service"}
         </ThemedText>
         <ThemedText type="small" style={{ color: theme.textSecondary }} numberOfLines={1}>
           {item.provider?.name}
         </ThemedText>
-        <ThemedText type="small" style={{ color: theme.textSecondary }}>
-          {formatDate(item.createdAt)}
+        <ThemedText type="small" style={{ color: theme.textSecondary }} numberOfLines={1}>
+          {item.location?.address || "Unknown location"}
         </ThemedText>
+        <View style={styles.historyMeta}>
+          <ThemedText type="small" style={{ color: theme.textSecondary }}>
+            {formatDate(item.createdAt)}
+          </ThemedText>
+          {item.timeSaved ? (
+            <>
+              <View style={[styles.metaDot, { backgroundColor: theme.textSecondary }]} />
+              <Feather name="clock" size={10} color={theme.success} />
+              <ThemedText type="small" style={{ color: theme.success, marginLeft: 2 }}>
+                Saved ~{item.timeSaved} min
+              </ThemedText>
+            </>
+          ) : null}
+        </View>
       </View>
       <View style={styles.historyRight}>
         <ThemedText type="body" style={{ fontWeight: "600" }}>
           ${item.estimatedCost}
         </ThemedText>
-        <View style={[styles.statusBadge, { backgroundColor: theme.success + "20" }]}>
-          <ThemedText type="small" style={{ color: theme.success, fontWeight: "500" }}>
-            Completed
+        <View style={[styles.statusBadge, { backgroundColor: statusColor + "20" }]}>
+          <ThemedText type="small" style={{ color: statusColor, fontWeight: "500", fontSize: 10 }}>
+            {statusLabel}
           </ThemedText>
         </View>
       </View>
@@ -160,12 +247,42 @@ export default function DriverHistoryScreen() {
 
   const displayHistory = requestHistory.length > 0 ? requestHistory : mockHistory;
 
+  const totalServices = displayHistory.length;
+  const totalSpent = displayHistory.reduce((sum, r) => sum + (r.estimatedCost || 0), 0);
+  const totalTimeSaved = displayHistory.reduce((sum, r) => sum + (r.timeSaved || 0), 0);
+
+  const renderHeader = () => (
+    <View style={styles.headerSection}>
+      <View style={styles.statsRow}>
+        <StatCard
+          icon="tool"
+          value={`${totalServices}`}
+          label="Total Services"
+          color={theme.primary}
+        />
+        <StatCard
+          icon="dollar-sign"
+          value={`$${totalSpent}`}
+          label="Total Spent"
+          color={theme.secondary}
+        />
+        <StatCard
+          icon="clock"
+          value={`${totalTimeSaved}m`}
+          label="Time Saved"
+          color={theme.success}
+        />
+      </View>
+    </View>
+  );
+
   return (
     <ThemedView style={styles.container}>
       <FlatList
         data={displayHistory}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <HistoryItem item={item} />}
+        ListHeaderComponent={renderHeader}
         contentContainerStyle={{
           paddingTop: headerHeight + Spacing.lg,
           paddingBottom: tabBarHeight + Spacing.xl,
@@ -196,6 +313,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  headerSection: {
+    marginBottom: Spacing.md,
+  },
+  statsRow: {
+    flexDirection: "row",
+    gap: Spacing.md,
+  },
+  statCard: {
+    flex: 1,
+    alignItems: "center",
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+  },
   historyItem: {
     flexDirection: "row",
     alignItems: "center",
@@ -213,6 +343,17 @@ const styles = StyleSheet.create({
   historyContent: {
     flex: 1,
     gap: 2,
+  },
+  historyMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 2,
+  },
+  metaDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    marginHorizontal: Spacing.xs,
   },
   historyRight: {
     alignItems: "flex-end",

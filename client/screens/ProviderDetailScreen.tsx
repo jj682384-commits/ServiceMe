@@ -11,7 +11,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { VerificationBadge } from "@/components/VerificationBadge";
 import { ProviderTypeBadge } from "@/components/ProviderTypeBadge";
 import { useTheme } from "@/hooks/useTheme";
-import { useApp } from "@/context/AppContext";
+import { useApp, BADGE_CONFIG, BadgeType } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
@@ -114,6 +114,25 @@ export default function ProviderDetailScreen() {
             </View>
           ) : null}
         </View>
+
+        {provider.badges && provider.badges.length > 0 ? (
+          <View style={detailStyles.badgesSection}>
+            {provider.badges.map((badge) => {
+              const config = BADGE_CONFIG[badge.type as BadgeType];
+              return (
+                <View
+                  key={badge.type}
+                  style={[detailStyles.trustBadge, { backgroundColor: config.color + "15", borderColor: config.color + "40" }]}
+                >
+                  <Feather name={config.icon as keyof typeof Feather.glyphMap} size={14} color={config.color} />
+                  <ThemedText type="small" style={{ color: config.color, fontWeight: "600", marginLeft: 4 }}>
+                    {config.label}
+                  </ThemedText>
+                </View>
+              );
+            })}
+          </View>
+        ) : null}
 
         <View style={detailStyles.statsRow}>
           <View style={[detailStyles.statCard, { backgroundColor: theme.backgroundSecondary }]}>
@@ -339,6 +358,21 @@ const detailStyles = StyleSheet.create({
   contactRow: {
     flexDirection: "row",
     alignItems: "center",
+  },
+  badgesSection: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.sm,
+    marginTop: Spacing.lg,
+    justifyContent: "center",
+  },
+  trustBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
   },
   bottomBar: {
     position: "absolute",

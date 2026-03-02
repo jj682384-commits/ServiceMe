@@ -109,10 +109,47 @@ Configured in both `tsconfig.json` and `babel.config.js` for universal resolutio
 - Billing cycle tracked in AppContext (`BillingCycle` type)
 - MEMBERSHIP section added to DriverProfileScreen
 
+### Vehicle Profiles (`VehicleManagementScreen`)
+- Save multiple vehicles with make, model, year, tire type (run-flat/spare/none), fuel type (regular/premium/diesel/electric)
+- Set default vehicle for faster service requests
+- Add/remove vehicles with form validation
+- Default vehicle info shown on ServiceRequestScreen during service requests
+- Accessible from "My Vehicles" in DriverProfileScreen ACCOUNT section
+
+### Verified Technician Badges
+- Trust badges on provider profiles: 5-Star for 6 Months, 100+ Successful Calls, Night Shift Specialist, Fast Response, 3+ Years Experience
+- Badge config with colors/icons defined in `BADGE_CONFIG` in AppContext
+- Displayed as colored chips on ProviderDetailScreen
+- Top badge shown on provider cards in BrowseProvidersScreen and DriverMapScreen MechanicCard
+
+### Price Anchoring
+- Competitor price comparison shown on ServiceRequestScreen when selecting a service
+- "Traditional roadside services typically charge $X-$Y" vs "ServiceMe price: $Z"
+- Savings banner on ServiceCompletionScreen: "You saved ~$XX vs traditional services"
+- Per-service competitor ranges (flat tire: $120-$180, jump start: $80-$150, etc.)
+
+### Service Receipt/Invoice
+- Full receipt on ServiceCompletionScreen: date, service type, provider, receipt number
+- Itemized breakdown: base cost, service fee, express fee, tip, total
+- "Download Receipt" button (simulated)
+- Receipt number auto-generated per request
+
+### Tipping (Enhanced)
+- Tip section language changed to "Would you like to thank [provider name]?"
+- No-guilt language: "100% of your tip goes directly to them"
+- No Tip option equally prominent with $5/$10/$15/20% options
+
+### Breakdown History (Enhanced `DriverHistoryScreen`)
+- Summary stats at top: total services, total spent, estimated time saved
+- Each entry shows: service type, provider, location, date, cost, status, time saved
+- 4 mock history entries with varied services and locations
+- Color-coded status badges (completed/cancelled/in-progress)
+
 ### Driver Profile Sections
 - MEMBERSHIP: Upgrade/manage premium membership
+- ACCOUNT: Edit Profile, My Vehicles, Phone, Email
 - SAFETY: Emergency Contacts, Emergency Mode quick access
-- ACCOUNT, PAYMENT, PREFERENCES, SUPPORT: Standard profile sections
+- PAYMENT, PREFERENCES, SUPPORT: Standard profile sections
 
 ### Legal Compliance
 - Three legal documents required at sign-up: Privacy Policy, Terms of Service, Liability Disclaimer

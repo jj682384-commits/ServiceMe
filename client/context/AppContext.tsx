@@ -12,6 +12,34 @@ export type VerificationStatus = "verified" | "pending" | "not_started";
 
 export type ProviderType = "shop" | "independent";
 
+export type TireType = "run_flat" | "spare" | "none";
+export type FuelType = "regular" | "premium" | "diesel" | "electric";
+
+export interface Vehicle {
+  id: string;
+  make: string;
+  model: string;
+  year: number;
+  tireType: TireType;
+  fuelType: FuelType;
+  isDefault: boolean;
+}
+
+export type BadgeType = "five_star" | "centurion" | "night_owl" | "speed_demon" | "veteran";
+
+export interface ProviderBadge {
+  type: BadgeType;
+  label: string;
+}
+
+export const BADGE_CONFIG: Record<BadgeType, { label: string; icon: string; color: string }> = {
+  five_star: { label: "5-Star for 6 Months", icon: "award", color: "#F59E0B" },
+  centurion: { label: "100+ Successful Calls", icon: "check-circle", color: "#10B981" },
+  night_owl: { label: "Night Shift Specialist", icon: "moon", color: "#8B5CF6" },
+  speed_demon: { label: "Fast Response", icon: "zap", color: "#EF4444" },
+  veteran: { label: "3+ Years Experience", icon: "shield", color: "#3B82F6" },
+};
+
 export interface ServiceRequest {
   id: string;
   serviceType: ServiceType;
@@ -31,6 +59,9 @@ export interface ServiceRequest {
   expressFee?: number;
   serviceFee?: number;
   totalCost?: number;
+  tip?: number;
+  receiptNumber?: string;
+  timeSaved?: number;
 }
 
 export type BillingCycle = "monthly" | "yearly";
@@ -63,6 +94,7 @@ export interface Provider {
   isAvailable: boolean;
   providerType: ProviderType;
   verificationStatus: VerificationStatus;
+  badges?: ProviderBadge[];
   location?: {
     latitude: number;
     longitude: number;
@@ -145,6 +177,11 @@ interface AppContextType {
   setEmergencyContacts: (contacts: EmergencyContact[]) => void;
   addEmergencyContact: (contact: EmergencyContact) => void;
   removeEmergencyContact: (index: number) => void;
+  vehicles: Vehicle[];
+  addVehicle: (vehicle: Omit<Vehicle, "id">) => void;
+  removeVehicle: (id: string) => void;
+  setDefaultVehicle: (id: string) => void;
+  getDefaultVehicle: () => Vehicle | undefined;
   logout: () => void;
 }
 
@@ -166,6 +203,10 @@ const mockProviders: Provider[] = [
     isAvailable: true,
     providerType: "shop",
     verificationStatus: "verified",
+    badges: [
+      { type: "centurion", label: "100+ Successful Calls" },
+      { type: "veteran", label: "3+ Years Experience" },
+    ],
     location: { latitude: 37.7849, longitude: -122.4094 },
   },
   {
@@ -183,6 +224,9 @@ const mockProviders: Provider[] = [
     isAvailable: true,
     providerType: "shop",
     verificationStatus: "verified",
+    badges: [
+      { type: "speed_demon", label: "Fast Response" },
+    ],
     location: { latitude: 37.7899, longitude: -122.4034 },
   },
   {
@@ -200,6 +244,11 @@ const mockProviders: Provider[] = [
     isAvailable: true,
     providerType: "independent",
     verificationStatus: "verified",
+    badges: [
+      { type: "five_star", label: "5-Star for 6 Months" },
+      { type: "centurion", label: "100+ Successful Calls" },
+      { type: "night_owl", label: "Night Shift Specialist" },
+    ],
     location: { latitude: 37.7799, longitude: -122.4194 },
   },
   {
@@ -217,6 +266,9 @@ const mockProviders: Provider[] = [
     isAvailable: true,
     providerType: "shop",
     verificationStatus: "verified",
+    badges: [
+      { type: "veteran", label: "3+ Years Experience" },
+    ],
     location: { latitude: 37.7920, longitude: -122.4150 },
   },
   {
@@ -234,6 +286,10 @@ const mockProviders: Provider[] = [
     isAvailable: true,
     providerType: "independent",
     verificationStatus: "verified",
+    badges: [
+      { type: "speed_demon", label: "Fast Response" },
+      { type: "night_owl", label: "Night Shift Specialist" },
+    ],
     location: { latitude: 37.7780, longitude: -122.4050 },
   },
   {
@@ -251,6 +307,9 @@ const mockProviders: Provider[] = [
     isAvailable: true,
     providerType: "shop",
     verificationStatus: "verified",
+    badges: [
+      { type: "centurion", label: "100+ Successful Calls" },
+    ],
     location: { latitude: 37.7950, longitude: -122.4200 },
   },
   {
@@ -268,6 +327,9 @@ const mockProviders: Provider[] = [
     isAvailable: true,
     providerType: "independent",
     verificationStatus: "verified",
+    badges: [
+      { type: "five_star", label: "5-Star for 6 Months" },
+    ],
     location: { latitude: 37.7830, longitude: -122.3990 },
   },
   {
@@ -285,6 +347,11 @@ const mockProviders: Provider[] = [
     isAvailable: true,
     providerType: "shop",
     verificationStatus: "verified",
+    badges: [
+      { type: "centurion", label: "100+ Successful Calls" },
+      { type: "veteran", label: "3+ Years Experience" },
+      { type: "speed_demon", label: "Fast Response" },
+    ],
     location: { latitude: 37.7870, longitude: -122.4250 },
   },
 ];
@@ -304,6 +371,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [serviceRadius, setServiceRadius] = useState(15);
   const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContact[]>([]);
   const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
 
   const addToHistory = (request: ServiceRequest) => {
     setRequestHistory((prev) => [request, ...prev]);
@@ -389,6 +457,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setEmergencyContacts((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const addVehicle = (vehicle: Omit<Vehicle, "id">) => {
+    const newVehicle: Vehicle = { ...vehicle, id: `v-${Date.now()}` };
+    setVehicles((prev) => {
+      if (newVehicle.isDefault) {
+        return [...prev.map((v) => ({ ...v, isDefault: false })), newVehicle];
+      }
+      if (prev.length === 0) {
+        return [{ ...newVehicle, isDefault: true }];
+      }
+      return [...prev, newVehicle];
+    });
+  };
+
+  const removeVehicle = (id: string) => {
+    setVehicles((prev) => {
+      const filtered = prev.filter((v) => v.id !== id);
+      if (filtered.length > 0 && !filtered.some((v) => v.isDefault)) {
+        filtered[0].isDefault = true;
+      }
+      return filtered;
+    });
+  };
+
+  const setDefaultVehicle = (id: string) => {
+    setVehicles((prev) =>
+      prev.map((v) => ({ ...v, isDefault: v.id === id }))
+    );
+  };
+
+  const getDefaultVehicle = (): Vehicle | undefined => {
+    return vehicles.find((v) => v.isDefault) || vehicles[0];
+  };
+
   const logout = () => {
     setIsAuthenticated(false);
     setAuthUser(null);
@@ -437,6 +538,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setEmergencyContacts,
         addEmergencyContact,
         removeEmergencyContact,
+        vehicles,
+        addVehicle,
+        removeVehicle,
+        setDefaultVehicle,
+        getDefaultVehicle,
         logout,
       }}
     >

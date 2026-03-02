@@ -17,7 +17,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { VerificationBadge } from "@/components/VerificationBadge";
 import { ProviderTypeBadge } from "@/components/ProviderTypeBadge";
 import { useTheme } from "@/hooks/useTheme";
-import { useApp, ServiceType, Provider } from "@/context/AppContext";
+import { useApp, ServiceType, Provider, BADGE_CONFIG, BadgeType } from "@/context/AppContext";
 import { Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
@@ -121,7 +121,21 @@ function MechanicCard({ provider, onPress }: { provider: Provider; onPress: () =
           ) : null}
         </View>
         <View style={styles.servicesRow}>
-          {provider.servicesOffered.slice(0, 3).map((service) => (
+          {provider.badges && provider.badges.length > 0 ? (
+            (() => {
+              const topBadge = provider.badges[0];
+              const config = BADGE_CONFIG[topBadge.type as BadgeType];
+              return (
+                <View style={[styles.serviceTag, { backgroundColor: config.color + "15" }]}>
+                  <Feather name={config.icon as keyof typeof Feather.glyphMap} size={9} color={config.color} />
+                  <ThemedText type="small" style={{ fontSize: 9, color: config.color, fontWeight: "600", marginLeft: 2 }}>
+                    {config.label}
+                  </ThemedText>
+                </View>
+              );
+            })()
+          ) : null}
+          {provider.servicesOffered.slice(0, 2).map((service) => (
             <View 
               key={service} 
               style={[styles.serviceTag, { backgroundColor: theme.backgroundSecondary }]}

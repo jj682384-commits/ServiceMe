@@ -17,12 +17,10 @@ import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollV
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceType, ServiceRequest } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
+import { COMPETITOR_PRICES, SERVICE_FEE, EXPRESS_FEE } from "@/constants/pricing";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-
-const SERVICE_FEE = 2.95;
-const EXPRESS_FEE = 19.95;
 const PREMIUM_DISCOUNT = 0.20;
 
 const serviceTypes: { type: ServiceType; label: string; icon: keyof typeof Feather.glyphMap; price: number }[] = [
@@ -104,7 +102,8 @@ function ServiceTypeCard({ label, icon, price, discountedPrice, isPremium, isSel
 export default function ServiceRequestScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
-  const { nearbyProviders, getProvidersWithDistance, setActiveRequest, addToHistory, currentDriver } = useApp();
+  const { nearbyProviders, getProvidersWithDistance, setActiveRequest, addToHistory, currentDriver, getDefaultVehicle } = useApp();
+  const defaultVehicle = getDefaultVehicle();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, "ServiceRequest">>();
 
@@ -153,6 +152,8 @@ export default function ServiceRequestScreen() {
       expressFee: isExpress ? EXPRESS_FEE : 0,
       serviceFee: SERVICE_FEE,
       totalCost,
+      receiptNumber: `SM-${Date.now().toString(36).toUpperCase()}`,
+      timeSaved: Math.floor(Math.random() * 30) + 15,
     };
 
     setTimeout(() => {
@@ -213,6 +214,70 @@ export default function ServiceRequestScreen() {
             />
           ))}
         </View>
+
+        {selectedService && (() => {
+          const comp = COMPETITOR_PRICES[selectedService];
+          return (
+            <View style={[styles.priceAnchorCard, { backgroundColor: theme.backgroundSecondary }]}>
+              <View style={styles.priceAnchorHeader}>
+                <Feather name="info" size={16} color={theme.textSecondary} />
+                <ThemedText type="small" style={{ color: theme.textSecondary, marginLeft: Spacing.xs, flex: 1 }}>
+                  Traditional roadside services typically charge
+                </ThemedText>
+              </View>
+              <View style={styles.priceAnchorCompare}>
+                <View style={styles.priceAnchorOld}>
+                  <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                    Others
+                  </ThemedText>
+                  <ThemedText type="body" style={{ color: theme.textSecondary, textDecorationLine: "line-through" }}>
+                    ${comp.low}-${comp.high}
+                  </ThemedText>
+                </View>
+                <View style={[styles.priceAnchorArrow, { backgroundColor: theme.success + "20" }]}>
+                  <Feather name="arrow-right" size={16} color={theme.success} />
+                </View>
+                <View style={styles.priceAnchorNew}>
+                  <ThemedText type="small" style={{ color: theme.success, fontWeight: "600" }}>
+                    ServiceMe
+                  </ThemedText>
+                  <ThemedText type="h4" style={{ color: theme.success }}>
+                    ${discountedBasePrice.toFixed(0)}
+                  </ThemedText>
+                </View>
+              </View>
+            </View>
+          );
+        })()}
+
+        {defaultVehicle ? (
+          <>
+            <ThemedText type="h4" style={styles.sectionTitle}>
+              Your Vehicle
+            </ThemedText>
+            <View style={[styles.vehicleInfoCard, { backgroundColor: theme.backgroundSecondary }]}>
+              <Feather
+                name={defaultVehicle.fuelType === "electric" ? "battery-charging" : "truck"}
+                size={20}
+                color={theme.primary}
+              />
+              <View style={styles.vehicleInfoContent}>
+                <ThemedText type="body" style={{ fontWeight: "500" }}>
+                  {defaultVehicle.year} {defaultVehicle.make} {defaultVehicle.model}
+                </ThemedText>
+                <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                  {defaultVehicle.fuelType.charAt(0).toUpperCase() + defaultVehicle.fuelType.slice(1)} •{" "}
+                  {defaultVehicle.tireType === "run_flat" ? "Run-Flat Tires" : defaultVehicle.tireType === "spare" ? "Has Spare" : "No Spare"}
+                </ThemedText>
+              </View>
+              <View style={[styles.vehicleDefaultTag, { backgroundColor: theme.primary + "15" }]}>
+                <ThemedText type="small" style={{ color: theme.primary, fontSize: 10, fontWeight: "600" }}>
+                  DEFAULT
+                </ThemedText>
+              </View>
+            </View>
+          </>
+        ) : null}
 
         <ThemedText type="h4" style={styles.sectionTitle}>
           Your Exact Location
@@ -541,6 +606,52 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+  },
+  priceAnchorCard: {
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    marginTop: Spacing.lg,
+  },
+  priceAnchorHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: Spacing.md,
+  },
+  priceAnchorCompare: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.lg,
+  },
+  priceAnchorOld: {
+    alignItems: "center",
+    gap: 2,
+  },
+  priceAnchorArrow: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  priceAnchorNew: {
+    alignItems: "center",
+    gap: 2,
+  },
+  vehicleInfoCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    gap: Spacing.md,
+  },
+  vehicleInfoContent: {
+    flex: 1,
+  },
+  vehicleDefaultTag: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.xs,
   },
   costDivider: {
     height: 1,

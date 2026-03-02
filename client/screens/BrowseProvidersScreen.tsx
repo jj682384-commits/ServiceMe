@@ -10,7 +10,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { VerificationBadge } from "@/components/VerificationBadge";
 import { ProviderTypeBadge } from "@/components/ProviderTypeBadge";
 import { useTheme } from "@/hooks/useTheme";
-import { useApp, Provider, ServiceType } from "@/context/AppContext";
+import { useApp, Provider, ServiceType, BADGE_CONFIG, BadgeType } from "@/context/AppContext";
 import { Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
@@ -118,6 +118,20 @@ function ProviderCard({ provider, onPress }: { provider: Provider; onPress: () =
         <View style={styles.badgeRow}>
           {provider.verificationStatus === "verified" ? (
             <VerificationBadge status="verified" size="small" showLabel />
+          ) : null}
+          {provider.badges && provider.badges.length > 0 ? (
+            (() => {
+              const topBadge = provider.badges[0];
+              const config = BADGE_CONFIG[topBadge.type as BadgeType];
+              return (
+                <View style={[styles.trustBadgeSmall, { backgroundColor: config.color + "15" }]}>
+                  <Feather name={config.icon as keyof typeof Feather.glyphMap} size={10} color={config.color} />
+                  <ThemedText type="small" style={{ color: config.color, fontWeight: "600", fontSize: 10, marginLeft: 2 }}>
+                    {config.label}
+                  </ThemedText>
+                </View>
+              );
+            })()
           ) : null}
         </View>
         <View style={styles.viewProfileRow}>
@@ -420,6 +434,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 2,
+  },
+  trustBadgeSmall: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.full,
   },
   emptyState: {
     alignItems: "center",

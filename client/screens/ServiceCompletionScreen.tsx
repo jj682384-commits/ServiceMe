@@ -13,13 +13,12 @@ import Animated, {
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
-import { useApp } from "@/context/AppContext";
+import { useApp, ServiceType } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
+import { COMPETITOR_PRICES, SERVICE_FEE, SERVICE_TYPE_LABELS } from "@/constants/pricing";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-
-const SERVICE_FEE = 2.95;
 
 const TIP_OPTIONS = [
   { label: "No Tip", value: 0 },
@@ -179,10 +178,10 @@ export default function ServiceCompletionScreen() {
 
         <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
           <ThemedText type="h4" style={styles.sectionTitle}>
-            Add a Tip (Optional)
+            Would you like to thank {activeRequest?.provider?.name || "your provider"}?
           </ThemedText>
           <ThemedText type="small" style={{ color: theme.textSecondary, textAlign: "center", marginBottom: Spacing.md }}>
-            100% of your tip goes directly to your provider
+            100% of your tip goes directly to them
           </ThemedText>
           <View style={styles.tipGrid}>
             {TIP_OPTIONS.map((option, index) => (
@@ -196,12 +195,45 @@ export default function ServiceCompletionScreen() {
           </View>
         </View>
 
-        <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
-          <ThemedText type="h4" style={styles.sectionTitle}>
-            Payment Summary
-          </ThemedText>
+        <View style={[styles.section, { backgroundColor: theme.backgroundDefault, alignItems: "stretch" }]}>
+          <View style={styles.receiptHeader}>
+            <Feather name="file-text" size={18} color={theme.primary} />
+            <ThemedText type="h4" style={{ marginLeft: Spacing.sm }}>
+              Service Receipt
+            </ThemedText>
+          </View>
+          {activeRequest?.receiptNumber ? (
+            <ThemedText type="small" style={{ color: theme.textSecondary, textAlign: "center", marginBottom: Spacing.md }}>
+              Receipt #{activeRequest.receiptNumber}
+            </ThemedText>
+          ) : null}
           <View style={styles.summaryRow}>
-            <ThemedText type="body">Service</ThemedText>
+            <ThemedText type="small" style={{ color: theme.textSecondary }}>
+              Date
+            </ThemedText>
+            <ThemedText type="small" style={{ color: theme.textSecondary }}>
+              {new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+            </ThemedText>
+          </View>
+          <View style={styles.summaryRow}>
+            <ThemedText type="small" style={{ color: theme.textSecondary }}>
+              Provider
+            </ThemedText>
+            <ThemedText type="small" style={{ color: theme.text, fontWeight: "500" }}>
+              {activeRequest?.provider?.name || "N/A"}
+            </ThemedText>
+          </View>
+          <View style={styles.summaryRow}>
+            <ThemedText type="small" style={{ color: theme.textSecondary }}>
+              Service
+            </ThemedText>
+            <ThemedText type="small" style={{ color: theme.text, fontWeight: "500" }}>
+              {activeRequest?.serviceType ? SERVICE_TYPE_LABELS[activeRequest.serviceType as ServiceType] : "Service"}
+            </ThemedText>
+          </View>
+          <View style={[styles.divider, { backgroundColor: theme.border }]} />
+          <View style={styles.summaryRow}>
+            <ThemedText type="body">Base Cost</ThemedText>
             <ThemedText type="body">${serviceCost.toFixed(2)}</ThemedText>
           </View>
           <View style={styles.summaryRow}>
@@ -212,6 +244,16 @@ export default function ServiceCompletionScreen() {
               ${SERVICE_FEE.toFixed(2)}
             </ThemedText>
           </View>
+          {activeRequest?.isExpress ? (
+            <View style={styles.summaryRow}>
+              <ThemedText type="small" style={{ color: theme.warning }}>
+                Express Service
+              </ThemedText>
+              <ThemedText type="small" style={{ color: theme.warning }}>
+                ${(activeRequest.expressFee || 0).toFixed(2)}
+              </ThemedText>
+            </View>
+          ) : null}
           {tipAmount > 0 ? (
             <View style={styles.summaryRow}>
               <ThemedText type="small" style={{ color: theme.textSecondary }}>
@@ -232,6 +274,35 @@ export default function ServiceCompletionScreen() {
             </ThemedText>
           </View>
         </View>
+
+        {activeRequest?.serviceType ? (() => {
+          const comp = COMPETITOR_PRICES[activeRequest.serviceType as ServiceType];
+          const avgComp = Math.round((comp.low + comp.high) / 2);
+          const saved = Math.max(0, avgComp - serviceCost);
+          return saved > 0 ? (
+            <View style={[styles.savingsBanner, { backgroundColor: theme.success + "15" }]}>
+              <Feather name="trending-down" size={18} color={theme.success} />
+              <View style={{ flex: 1, marginLeft: Spacing.sm }}>
+                <ThemedText type="body" style={{ color: theme.success, fontWeight: "600" }}>
+                  You saved ~${saved} vs traditional services
+                </ThemedText>
+                <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                  Average roadside assistance charges ${comp.low}-${comp.high}
+                </ThemedText>
+              </View>
+            </View>
+          ) : null;
+        })() : null}
+
+        <Pressable
+          style={[styles.downloadButton, { borderColor: theme.border }]}
+          onPress={() => {}}
+        >
+          <Feather name="download" size={18} color={theme.primary} />
+          <ThemedText type="body" style={{ color: theme.primary, fontWeight: "600", marginLeft: Spacing.sm }}>
+            Download Receipt
+          </ThemedText>
+        </Pressable>
       </ScrollView>
 
       <View
@@ -352,5 +423,27 @@ const styles = StyleSheet.create({
   skipButton: {
     alignItems: "center",
     paddingTop: Spacing.md,
+  },
+  receiptHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: Spacing.sm,
+  },
+  savingsBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing.lg,
+  },
+  downloadButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    marginBottom: Spacing.lg,
   },
 });

@@ -247,6 +247,7 @@ export default function DriverProfileScreen() {
             ACCOUNT
           </ThemedText>
           <MenuItem icon="user" label="Edit Profile" onPress={() => navigation.navigate("EditProfile")} />
+          <MenuItem icon="truck" label="My Vehicles" onPress={() => navigation.navigate("VehicleManagement")} />
           <MenuItem icon="phone" label="Phone" value={currentDriver?.phone || "+1 555-1234"} showArrow={false} />
           <MenuItem icon="mail" label="Email" value={currentDriver?.email || "alex@email.com"} showArrow={false} />
         </View>
