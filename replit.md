@@ -111,6 +111,7 @@ Configured in both `tsconfig.json` and `babel.config.js` for universal resolutio
 
 ### EV Mode Tab (`EVModeScreen`)
 - Dedicated tab for electric vehicle owners with completely unique futuristic visual design
+- **Animated Techno Background** (`EVAnimatedBackground`): Neon green/cyan/purple floating orbs, faint pulsing grid lines, and horizontal scan lines sweeping across — gives an electric, futuristic motion feel similar to the home page but with a techno aesthetic
 - **EV-Only Gate**: Tab shows locked state if no electric vehicle is saved; "Add Electric Vehicle" button navigates to VehicleManagement
 - Custom dark neon color palette (neon green #00FF88, cyan #00E5FF, purple #B44DFF, blue #4D7CFF) — visually distinct from rest of app
 - Battery dashboard: animated charge ring (73%), estimated range, time to full, efficiency (mi/kWh)

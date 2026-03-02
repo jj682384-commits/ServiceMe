@@ -26,6 +26,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { useApp } from "@/context/AppContext";
+import EVAnimatedBackground from "@/components/EVAnimatedBackground";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -308,6 +309,7 @@ export default function EVModeScreen() {
   if (!hasEV) {
     return (
       <View style={[styles.container, { backgroundColor: EV.bg }]}>
+        <EVAnimatedBackground />
         <LinearGradient
           colors={["#00FF8808", "#00E5FF05", "transparent"]}
           start={{ x: 0.5, y: 0 }}
@@ -361,6 +363,7 @@ export default function EVModeScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: EV.bg }]}>
+      <EVAnimatedBackground />
       <LinearGradient
         colors={["#00FF8808", "#00E5FF05", "transparent"]}
         start={{ x: 0.5, y: 0 }}
