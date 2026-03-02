@@ -276,21 +276,39 @@ function ChargingStation({
 
 function PulsingZapIcon() {
   const pulseScale = useSharedValue(1);
-  const glowOpacity = useSharedValue(0.3);
+  const glowOpacity = useSharedValue(0.2);
+  const ringScale = useSharedValue(0.8);
+  const ringOpacity = useSharedValue(0.5);
 
   useEffect(() => {
     pulseScale.value = withRepeat(
       withSequence(
-        withTiming(1.25, { duration: 800, easing: Easing.inOut(Easing.sin) }),
-        withTiming(1, { duration: 800, easing: Easing.inOut(Easing.sin) })
+        withTiming(1.15, { duration: 1000, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0.95, { duration: 1000, easing: Easing.inOut(Easing.sin) })
       ),
       -1,
       false
     );
     glowOpacity.value = withRepeat(
       withSequence(
-        withTiming(0.8, { duration: 800, easing: Easing.inOut(Easing.sin) }),
-        withTiming(0.2, { duration: 800, easing: Easing.inOut(Easing.sin) })
+        withTiming(0.5, { duration: 1000, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0.1, { duration: 1000, easing: Easing.inOut(Easing.sin) })
+      ),
+      -1,
+      false
+    );
+    ringScale.value = withRepeat(
+      withSequence(
+        withTiming(1.8, { duration: 1800, easing: Easing.out(Easing.ease) }),
+        withTiming(0.8, { duration: 0 })
+      ),
+      -1,
+      false
+    );
+    ringOpacity.value = withRepeat(
+      withSequence(
+        withTiming(0, { duration: 1800, easing: Easing.out(Easing.ease) }),
+        withTiming(0.5, { duration: 0 })
       ),
       -1,
       false
@@ -305,23 +323,52 @@ function PulsingZapIcon() {
     opacity: glowOpacity.value,
   }));
 
+  const ringStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: ringScale.value }],
+    opacity: ringOpacity.value,
+  }));
+
   return (
-    <View style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}>
+    <View style={{ width: 130, height: 130, alignItems: "center", justifyContent: "center" }}>
       <Animated.View
         style={[
           {
             position: "absolute",
-            width: 44,
-            height: 44,
-            borderRadius: 22,
+            width: 130,
+            height: 130,
+            borderRadius: 65,
+            borderWidth: 2,
+            borderColor: EV.neonGreen,
+          },
+          ringStyle,
+        ]}
+      />
+      <Animated.View
+        style={[
+          {
+            position: "absolute",
+            width: 110,
+            height: 110,
+            borderRadius: 55,
             backgroundColor: EV.neonGreen,
           },
           glowStyle,
         ]}
       />
-      <Animated.View style={iconStyle}>
-        <Feather name="zap" size={28} color={EV.neonGreen} />
-      </Animated.View>
+      <LinearGradient
+        colors={[EV.neonGreen + "25", EV.bgCard]}
+        style={{
+          width: 110,
+          height: 110,
+          borderRadius: 55,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Animated.View style={iconStyle}>
+          <Feather name="zap" size={56} color={EV.neonGreen} />
+        </Animated.View>
+      </LinearGradient>
     </View>
   );
 }
@@ -370,12 +417,7 @@ export default function EVModeScreen() {
         />
         <View style={[styles.gateContainer, { paddingTop: insets.top + 60, paddingBottom: insets.bottom + tabBarHeight + 20 }]}>
           <View style={styles.gateIconWrap}>
-            <LinearGradient
-              colors={[EV.neonGreen + "20", EV.bgCard]}
-              style={styles.gateIconBg}
-            >
-              <Feather name="zap" size={52} color={EV.neonGreen} />
-            </LinearGradient>
+            <PulsingZapIcon />
           </View>
           <Animated.Text style={styles.gateTitle}>EV Mode</Animated.Text>
           <Animated.Text style={styles.gateSub}>
@@ -391,7 +433,7 @@ export default function EVModeScreen() {
               end={{ x: 1, y: 0 }}
               style={styles.gateButtonGradient}
             >
-              <Feather name="plus-circle" size={20} color="#000" />
+              <Feather name="plus-circle" size={24} color="#000" />
               <Animated.Text style={styles.gateButtonText}>Add Electric Vehicle</Animated.Text>
             </LinearGradient>
           </Pressable>
@@ -403,7 +445,7 @@ export default function EVModeScreen() {
               { icon: "shield" as const, text: "Range alerts" },
             ].map((f, i) => (
               <View key={i} style={styles.gateFeatureRow}>
-                <Feather name={f.icon} size={14} color={EV.neonGreen} />
+                <Feather name={f.icon} size={18} color={EV.neonGreen} />
                 <Animated.Text style={styles.gateFeatureText}>{f.text}</Animated.Text>
               </View>
             ))}
@@ -435,7 +477,7 @@ export default function EVModeScreen() {
         <View style={styles.header}>
           <Animated.Text style={styles.headerLabel}>EV MODE</Animated.Text>
           <View style={styles.headerTitleRow}>
-            <PulsingZapIcon />
+            <Feather name="zap" size={26} color={EV.neonGreen} />
             <Animated.Text style={styles.headerTitle}>Electric Hub</Animated.Text>
           </View>
           {evVehicle ? (
@@ -861,62 +903,55 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 32,
+    paddingHorizontal: 28,
   },
   gateIconWrap: {
-    marginBottom: 24,
-  },
-  gateIconBg: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    alignItems: "center",
-    justifyContent: "center",
+    marginBottom: 32,
   },
   gateTitle: {
     color: EV.white,
-    fontSize: 28,
+    fontSize: 36,
     fontWeight: "800",
-    marginBottom: 12,
+    marginBottom: 16,
     letterSpacing: -0.5,
   },
   gateSub: {
     color: EV.whiteDim,
-    fontSize: 15,
+    fontSize: 17,
     textAlign: "center",
-    lineHeight: 22,
-    marginBottom: 28,
+    lineHeight: 26,
+    marginBottom: 36,
   },
   gateButton: {
-    borderRadius: 16,
+    borderRadius: 18,
     overflow: "hidden",
-    marginBottom: 32,
+    marginBottom: 40,
     width: "100%",
   },
   gateButtonGradient: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 10,
-    paddingVertical: 18,
-    borderRadius: 16,
+    gap: 12,
+    paddingVertical: 20,
+    borderRadius: 18,
   },
   gateButtonText: {
     color: "#000",
-    fontSize: 17,
+    fontSize: 19,
     fontWeight: "800",
     letterSpacing: 0.3,
   },
   gateFeatures: {
-    gap: 14,
+    gap: 18,
   },
   gateFeatureRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 14,
   },
   gateFeatureText: {
     color: EV.whiteDim,
-    fontSize: 15,
+    fontSize: 17,
   },
 });
