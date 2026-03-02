@@ -8,10 +8,11 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from "react-native-reanimated";
+import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
-import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
+import AnimatedBackground, { DARK_BG } from "@/components/AnimatedBackground";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
@@ -31,41 +32,23 @@ interface InputFieldProps {
 }
 
 function InputField({
-  label,
-  value,
-  onChangeText,
-  placeholder,
-  icon,
-  secureTextEntry,
-  keyboardType = "default",
-  autoCapitalize = "sentences",
+  label, value, onChangeText, placeholder, icon,
+  secureTextEntry, keyboardType = "default", autoCapitalize = "sentences",
 }: InputFieldProps) {
-  const { theme } = useTheme();
   const [isFocused, setIsFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   return (
     <View style={styles.inputContainer}>
-      <ThemedText type="small" style={[styles.inputLabel, { color: theme.textSecondary }]}>
-        {label}
-      </ThemedText>
-      <View
-        style={[
-          styles.inputWrapper,
-          {
-            backgroundColor: theme.backgroundSecondary,
-            borderColor: isFocused ? theme.primary : theme.border,
-            borderWidth: 1,
-          },
-        ]}
-      >
-        <Feather name={icon} size={20} color={isFocused ? theme.primary : theme.textSecondary} />
+      <ThemedText type="small" style={styles.inputLabel}>{label}</ThemedText>
+      <View style={[styles.inputWrapper, isFocused ? styles.inputWrapperFocused : null]}>
+        <Feather name={icon} size={18} color={isFocused ? "#00D9FF" : "rgba(255,255,255,0.4)"} />
         <TextInput
-          style={[styles.input, { color: theme.text }]}
+          style={styles.input}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor={theme.textSecondary}
+          placeholderTextColor="rgba(255,255,255,0.25)"
           secureTextEntry={secureTextEntry && !showPassword}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
@@ -74,11 +57,7 @@ function InputField({
         />
         {secureTextEntry ? (
           <Pressable onPress={() => setShowPassword(!showPassword)}>
-            <Feather
-              name={showPassword ? "eye-off" : "eye"}
-              size={20}
-              color={theme.textSecondary}
-            />
+            <Feather name={showPassword ? "eye-off" : "eye"} size={18} color="rgba(255,255,255,0.4)" />
           </Pressable>
         ) : null}
       </View>
@@ -97,10 +76,7 @@ export default function SignInScreen() {
   const [isLoading, setIsLoading] = useState(false);
 
   const scale = useSharedValue(1);
-
-  const animatedButtonStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
+  const animatedButtonStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
   const handleSignIn = async () => {
     if (!email.trim() || !password.trim()) {
@@ -109,171 +85,81 @@ export default function SignInScreen() {
     }
 
     setIsLoading(true);
-
-    // Simulate API call
     setTimeout(() => {
       setIsLoading(false);
-      setAuthUser({
-        id: `user_${Date.now()}`,
-        name: "Returning User",
-        email: email.trim(),
-        phone: "+1 555-0000",
-      });
+      setAuthUser({ id: `user_${Date.now()}`, name: "Returning User", email: email.trim(), phone: "+1 555-0000" });
       setIsAuthenticated(true);
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [{ name: "RoleSelection" }],
-        })
-      );
+      navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "RoleSelection" }] }));
     }, 1000);
   };
 
   return (
-    <ThemedView style={styles.container}>
+    <View style={[styles.container, { backgroundColor: DARK_BG }]}>
+      <AnimatedBackground />
       <KeyboardAwareScrollViewCompat
-        contentContainerStyle={[
-          styles.scrollContent,
-          {
-            paddingTop: insets.top + Spacing.lg,
-            paddingBottom: insets.bottom + Spacing.xl,
-          },
-        ]}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + Spacing.lg, paddingBottom: insets.bottom + Spacing.xl }]}
       >
         <View style={styles.header}>
           <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Feather name="arrow-left" size={24} color={theme.text} />
+            <View style={styles.backButtonBg}>
+              <Feather name="arrow-left" size={20} color="#FFF" />
+            </View>
           </Pressable>
-          <ThemedText type="h2" style={styles.title}>
-            Welcome Back
-          </ThemedText>
-          <ThemedText type="body" style={[styles.subtitle, { color: theme.textSecondary }]}>
-            Sign in to continue with ServiceMe
-          </ThemedText>
+          <ThemedText type="h2" style={styles.title}>Welcome Back</ThemedText>
+          <ThemedText type="body" style={styles.subtitle}>Sign in to continue with ServiceMe</ThemedText>
         </View>
 
         <View style={styles.form}>
-          <InputField
-            label="Email Address"
-            value={email}
-            onChangeText={setEmail}
-            placeholder="Enter your email"
-            icon="mail"
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-          <InputField
-            label="Password"
-            value={password}
-            onChangeText={setPassword}
-            placeholder="Enter your password"
-            icon="lock"
-            secureTextEntry
-            autoCapitalize="none"
-          />
-
+          <InputField label="Email Address" value={email} onChangeText={setEmail} placeholder="Enter your email" icon="mail" keyboardType="email-address" autoCapitalize="none" />
+          <InputField label="Password" value={password} onChangeText={setPassword} placeholder="Enter your password" icon="lock" secureTextEntry autoCapitalize="none" />
           <Pressable style={styles.forgotPassword}>
-            <ThemedText type="small" style={{ color: theme.primary }}>
-              Forgot Password?
-            </ThemedText>
+            <ThemedText type="small" style={{ color: "#00D9FF" }}>Forgot Password?</ThemedText>
           </Pressable>
         </View>
 
         <View style={styles.footer}>
           <AnimatedPressable
-            style={[
-              styles.signInButton,
-              animatedButtonStyle,
-              { backgroundColor: theme.primary, opacity: isLoading ? 0.7 : 1 },
-            ]}
+            style={[styles.signInButton, animatedButtonStyle, { opacity: isLoading ? 0.7 : 1 }]}
             onPress={handleSignIn}
             onPressIn={() => { scale.value = withSpring(0.97); }}
             onPressOut={() => { scale.value = withSpring(1); }}
             disabled={isLoading}
           >
+            <LinearGradient colors={["#FF6B35", "#FF3D00"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[StyleSheet.absoluteFill, { borderRadius: 16 }]} />
             <ThemedText type="body" style={styles.signInButtonText}>
               {isLoading ? "Signing In..." : "Sign In"}
             </ThemedText>
           </AnimatedPressable>
 
           <View style={styles.signUpRow}>
-            <ThemedText type="body" style={{ color: theme.textSecondary }}>
-              Don't have an account?
-            </ThemedText>
+            <ThemedText type="body" style={{ color: "rgba(255,255,255,0.5)" }}>Don't have an account?</ThemedText>
             <Pressable onPress={() => navigation.navigate("SignUp")}>
-              <ThemedText type="body" style={{ color: theme.primary, fontWeight: "600" }}>
-                {" "}Sign Up
-              </ThemedText>
+              <ThemedText type="body" style={{ color: "#00D9FF", fontWeight: "600" }}> Sign Up</ThemedText>
             </Pressable>
           </View>
         </View>
       </KeyboardAwareScrollViewCompat>
-    </ThemedView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: Spacing.lg,
-  },
-  header: {
-    marginBottom: Spacing.xl,
-  },
-  backButton: {
-    marginBottom: Spacing.lg,
-    width: 40,
-    height: 40,
-    justifyContent: "center",
-  },
-  title: {
-    marginBottom: Spacing.xs,
-  },
-  subtitle: {},
-  form: {
-    gap: Spacing.md,
-    marginBottom: Spacing.xl,
-  },
-  inputContainer: {
-    gap: Spacing.xs,
-  },
-  inputLabel: {
-    fontWeight: "500",
-  },
-  inputWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Platform.OS === "ios" ? Spacing.md : Spacing.sm,
-    borderRadius: BorderRadius.md,
-    gap: Spacing.sm,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-  },
-  forgotPassword: {
-    alignSelf: "flex-end",
-    marginTop: Spacing.xs,
-  },
-  footer: {
-    marginTop: "auto",
-    gap: Spacing.lg,
-  },
-  signInButton: {
-    paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.md,
-    alignItems: "center",
-  },
-  signInButtonText: {
-    color: "#FFF",
-    fontWeight: "600",
-  },
-  signUpRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-  },
+  container: { flex: 1 },
+  scrollContent: { flexGrow: 1, paddingHorizontal: 24 },
+  header: { marginBottom: Spacing.xl },
+  backButton: { marginBottom: Spacing.lg },
+  backButtonBg: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.08)", alignItems: "center", justifyContent: "center" },
+  title: { color: "#FFF", marginBottom: Spacing.xs },
+  subtitle: { color: "rgba(255,255,255,0.5)" },
+  form: { gap: 16, marginBottom: Spacing.xl },
+  inputContainer: { gap: 6 },
+  inputLabel: { fontWeight: "500", color: "rgba(255,255,255,0.6)", fontSize: 13 },
+  inputWrapper: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: Platform.OS === "ios" ? 14 : 10, borderRadius: 14, gap: 10, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
+  inputWrapperFocused: { borderColor: "rgba(0,217,255,0.4)", backgroundColor: "rgba(0,217,255,0.06)" },
+  input: { flex: 1, fontSize: 16, color: "#FFF" },
+  forgotPassword: { alignSelf: "flex-end", marginTop: 4 },
+  footer: { marginTop: "auto", gap: Spacing.lg },
+  signInButton: { paddingVertical: 16, borderRadius: 16, alignItems: "center", overflow: "hidden" },
+  signInButtonText: { color: "#FFF", fontWeight: "700", fontSize: 16 },
+  signUpRow: { flexDirection: "row", justifyContent: "center" },
 });
