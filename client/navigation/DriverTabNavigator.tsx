@@ -9,10 +9,12 @@ import DriverMapScreen from "@/screens/driver/DriverMapScreen";
 import DriverHistoryScreen from "@/screens/driver/DriverHistoryScreen";
 import DriverMessagesScreen from "@/screens/driver/DriverMessagesScreen";
 import DriverProfileScreen from "@/screens/driver/DriverProfileScreen";
+import EVModeScreen from "@/screens/driver/EVModeScreen";
 import { HeaderTitle } from "@/components/HeaderTitle";
 
 export type DriverTabParamList = {
   MapTab: undefined;
+  EVTab: undefined;
   HistoryTab: undefined;
   MessagesTab: undefined;
   ProfileTab: undefined;
@@ -74,6 +76,17 @@ export default function DriverTabNavigator() {
           headerShown: false,
           tabBarIcon: ({ color, size }) => (
             <Feather name="map" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="EVTab"
+        component={EVModeScreen}
+        options={{
+          title: "EV",
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => (
+            <Feather name="zap" size={size} color={color} />
           ),
         }}
       />

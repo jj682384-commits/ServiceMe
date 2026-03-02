@@ -109,6 +109,18 @@ Configured in both `tsconfig.json` and `babel.config.js` for universal resolutio
 - Billing cycle tracked in AppContext (`BillingCycle` type)
 - MEMBERSHIP section added to DriverProfileScreen
 
+### EV Mode Tab (`EVModeScreen`)
+- Dedicated tab for electric vehicle owners with completely unique futuristic visual design
+- Custom dark neon color palette (neon green #00FF88, cyan #00E5FF, purple #B44DFF, blue #4D7CFF) — visually distinct from rest of app
+- Battery dashboard: animated charge ring (73%), estimated range, time to full, efficiency (mi/kWh)
+- Stat pills: Last Charge type, Nearest Charger distance, Estimated Cost, Battery Temperature
+- Quick Actions grid: Find Charger, Mobile Charge, EV Tow, EV Diagnostic, Trip Planner, Range Alert
+- Mobile Charge and EV Tow actions link to ServiceRequestScreen with pre-filled EV-specific notes
+- Nearby Chargers list with station name, distance, speed type (DC Fast/Level 2), availability indicator
+- EV Tips section with educational cards about preconditioning, optimal charge range, regenerative braking
+- Uses expo-linear-gradient for gradient effects and pulse ring animations
+- Shows default vehicle name from AppContext if set
+
 ### Vehicle Profiles (`VehicleManagementScreen`)
 - Save multiple vehicles with make, model, year, tire type (run-flat/spare/none), fuel type (regular/premium/diesel/electric)
 - Set default vehicle for faster service requests
