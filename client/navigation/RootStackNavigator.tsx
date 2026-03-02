@@ -73,48 +73,32 @@ export default function RootStackNavigator() {
       <Stack.Screen
         name="SignUp"
         component={SignUpScreen}
-        options={{
-          headerShown: false,
-          animation: "fade_from_bottom",
-          animationDuration: 350,
-        }}
+        options={{ headerShown: false, animation: "slide_from_bottom" }}
       />
       <Stack.Screen
         name="SignIn"
         component={SignInScreen}
-        options={{
-          headerShown: false,
-          animation: "fade_from_bottom",
-          animationDuration: 350,
-        }}
+        options={{ headerShown: false, animation: "slide_from_bottom" }}
       />
       <Stack.Screen
         name="RoleSelection"
         component={RoleSelectionScreen}
-        options={{
-          headerShown: false,
-          animation: "fade",
-          animationDuration: 400,
-        }}
+        options={{ headerShown: false, animation: "fade" }}
       />
       <Stack.Screen
         name="ProviderTypeSelection"
         component={ProviderTypeSelectionScreen}
-        options={{
-          headerShown: false,
-          animation: "slide_from_right",
-          animationDuration: 350,
-        }}
+        options={{ headerShown: false, animation: "slide_from_right" }}
       />
       <Stack.Screen
         name="DriverTabs"
         component={DriverTabNavigator}
-        options={{ headerShown: false, animation: "fade", animationDuration: 400 }}
+        options={{ headerShown: false, animation: "fade" }}
       />
       <Stack.Screen
         name="ProviderTabs"
         component={ProviderTabNavigator}
-        options={{ headerShown: false, animation: "fade", animationDuration: 400 }}
+        options={{ headerShown: false, animation: "fade" }}
       />
       <Stack.Screen
         name="ServiceRequest"

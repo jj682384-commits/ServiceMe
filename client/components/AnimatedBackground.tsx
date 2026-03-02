@@ -101,7 +101,7 @@ export const DARK_BG = "#060918";
 
 export default function AnimatedBackground() {
   return (
-    <View style={styles.container} pointerEvents="none">
+    <View style={[styles.container, { pointerEvents: "none" }]}>
       {ORB_CONFIGS.map((config, index) => (
         <FloatingOrb key={index} config={config} />
       ))}
