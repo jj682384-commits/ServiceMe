@@ -428,9 +428,18 @@ export default function EVModeScreen() {
             style={styles.gateButton}
           >
             <LinearGradient
-              colors={[EV.neonGreen, EV.neonCyan]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
+              colors={[
+                EV.neonGreen,
+                "#33FFAA",
+                EV.neonCyan,
+                "#33BBFF",
+                EV.neonBlue,
+                "#7F66FF",
+                EV.neonPurple,
+              ]}
+              locations={[0, 0.15, 0.33, 0.5, 0.67, 0.83, 1]}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
               style={styles.gateButtonGradient}
             >
               <Feather name="plus-circle" size={24} color="#000" />
