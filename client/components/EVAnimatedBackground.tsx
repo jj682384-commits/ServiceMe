@@ -14,8 +14,12 @@ import { LinearGradient } from "expo-linear-gradient";
 
 const { width: SW, height: SH } = Dimensions.get("window");
 
-interface EVOrbConfig {
-  size: number;
+type ShapeType = "diamond" | "hexagon" | "streak" | "triangle" | "pill";
+
+interface EVShapeConfig {
+  width: number;
+  height: number;
+  shape: ShapeType;
   colors: string[];
   startX: number;
   startY: number;
@@ -24,17 +28,19 @@ interface EVOrbConfig {
   duration: number;
   delay: number;
   opacityRange: [number, number];
-  shape?: "circle" | "streak";
+  rotation?: number;
 }
 
-const EV_ORB_CONFIGS: EVOrbConfig[] = [
-  { size: 260, colors: ["#00FF88", "#00CC6A"], startX: -40, startY: SH * 0.08, driftX: 130, driftY: -35, duration: 5500, delay: 0, opacityRange: [0.04, 0.12] },
-  { size: 200, colors: ["#00E5FF", "#0088CC"], startX: SW - 30, startY: SH * 0.35, driftX: -120, driftY: 60, duration: 6200, delay: 400, opacityRange: [0.03, 0.10] },
-  { size: 180, colors: ["#B44DFF", "#7C3AED"], startX: SW * 0.3, startY: SH * 0.7, driftX: 80, driftY: -90, duration: 7000, delay: 1000, opacityRange: [0.03, 0.09] },
-  { size: 140, colors: ["#4D7CFF", "#00E5FF"], startX: SW * 0.7, startY: SH * 0.12, driftX: -70, driftY: 80, duration: 5800, delay: 600, opacityRange: [0.03, 0.08] },
-  { size: 300, colors: ["#00FF88", "#00E5FF"], startX: SW * 0.1, startY: SH * 0.5, driftX: 90, driftY: 50, duration: 8000, delay: 1400, opacityRange: [0.02, 0.07] },
-  { size: 160, colors: ["#B44DFF", "#FF4DA6"], startX: SW * 0.55, startY: SH * 0.85, driftX: -60, driftY: -70, duration: 6500, delay: 800, opacityRange: [0.02, 0.06] },
-  { size: 120, colors: ["#00FF88", "#4D7CFF"], startX: SW * 0.8, startY: SH * 0.55, driftX: -50, driftY: -40, duration: 4800, delay: 200, opacityRange: [0.03, 0.08] },
+const EV_SHAPE_CONFIGS: EVShapeConfig[] = [
+  { width: 220, height: 220, shape: "diamond", colors: ["#00FF88", "#00CC6A"], startX: -20, startY: SH * 0.08, driftX: 160, driftY: -40, duration: 3800, delay: 0, opacityRange: [0.04, 0.13], rotation: 45 },
+  { width: 280, height: 40, shape: "streak", colors: ["#00E5FF", "#0088CC"], startX: SW + 50, startY: SH * 0.28, driftX: -SW - 100, driftY: 30, duration: 3200, delay: 300, opacityRange: [0.03, 0.10] },
+  { width: 180, height: 200, shape: "hexagon", colors: ["#B44DFF", "#7C3AED"], startX: SW * 0.25, startY: SH * 0.65, driftX: 100, driftY: -110, duration: 4200, delay: 700, opacityRange: [0.03, 0.10] },
+  { width: 160, height: 160, shape: "triangle", colors: ["#4D7CFF", "#00E5FF"], startX: SW * 0.75, startY: SH * 0.1, driftX: -90, driftY: 100, duration: 3600, delay: 400, opacityRange: [0.03, 0.09] },
+  { width: 320, height: 50, shape: "streak", colors: ["#00FF88", "#00E5FF"], startX: -100, startY: SH * 0.5, driftX: SW + 200, driftY: 20, duration: 2800, delay: 1200, opacityRange: [0.02, 0.08] },
+  { width: 140, height: 140, shape: "diamond", colors: ["#B44DFF", "#FF4DA6"], startX: SW * 0.6, startY: SH * 0.82, driftX: -80, driftY: -90, duration: 3500, delay: 500, opacityRange: [0.03, 0.08], rotation: 30 },
+  { width: 200, height: 60, shape: "pill", colors: ["#00FF88", "#4D7CFF"], startX: SW * 0.8, startY: SH * 0.42, driftX: -130, driftY: -50, duration: 3000, delay: 200, opacityRange: [0.03, 0.09] },
+  { width: 150, height: 170, shape: "hexagon", colors: ["#00E5FF", "#B44DFF"], startX: SW * 0.05, startY: SH * 0.35, driftX: 110, driftY: 70, duration: 4000, delay: 900, opacityRange: [0.02, 0.07] },
+  { width: 240, height: 35, shape: "streak", colors: ["#B44DFF", "#00E5FF"], startX: SW * 0.3, startY: SH * 0.9, driftX: -SW * 0.6, driftY: -15, duration: 2600, delay: 1600, opacityRange: [0.02, 0.07] },
 ];
 
 interface ScanLineConfig {
@@ -45,12 +51,52 @@ interface ScanLineConfig {
 }
 
 const SCAN_LINES: ScanLineConfig[] = [
-  { startY: SH * 0.15, duration: 6000, delay: 0, width: SW * 0.7 },
-  { startY: SH * 0.45, duration: 7500, delay: 2000, width: SW * 0.5 },
-  { startY: SH * 0.75, duration: 5500, delay: 3500, width: SW * 0.6 },
+  { startY: SH * 0.12, duration: 3500, delay: 0, width: SW * 0.8 },
+  { startY: SH * 0.38, duration: 4200, delay: 1200, width: SW * 0.6 },
+  { startY: SH * 0.65, duration: 3000, delay: 2500, width: SW * 0.7 },
+  { startY: SH * 0.88, duration: 3800, delay: 800, width: SW * 0.5 },
 ];
 
-function EVOrb({ config }: { config: EVOrbConfig }) {
+function ShapeInner({ shape, width, height, colors }: { shape: ShapeType; width: number; height: number; colors: string[] }) {
+  if (shape === "diamond") {
+    return (
+      <View style={{ width, height, transform: [{ rotate: "45deg" }], overflow: "hidden" }}>
+        <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ width, height }} />
+      </View>
+    );
+  }
+  if (shape === "streak") {
+    return (
+      <LinearGradient
+        colors={["transparent", colors[0], colors[1], "transparent"]}
+        start={{ x: 0, y: 0.5 }}
+        end={{ x: 1, y: 0.5 }}
+        style={{ width, height, borderRadius: height / 2 }}
+      />
+    );
+  }
+  if (shape === "triangle") {
+    return (
+      <View style={{ width: 0, height: 0, borderLeftWidth: width / 2, borderRightWidth: width / 2, borderBottomWidth: height, borderLeftColor: "transparent", borderRightColor: "transparent", borderBottomColor: colors[0], opacity: 0.7 }} />
+    );
+  }
+  if (shape === "pill") {
+    return (
+      <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ width, height, borderRadius: height / 2 }} />
+    );
+  }
+  if (shape === "hexagon") {
+    const s = Math.min(width, height);
+    return (
+      <View style={{ width: s, height: s, overflow: "hidden", transform: [{ rotate: "30deg" }] }}>
+        <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ width: s, height: s, borderRadius: s * 0.22 }} />
+      </View>
+    );
+  }
+  return null;
+}
+
+function EVShape({ config }: { config: EVShapeConfig }) {
   const progress = useSharedValue(0);
   const pulse = useSharedValue(0);
 
@@ -58,16 +104,16 @@ function EVOrb({ config }: { config: EVOrbConfig }) {
     const timer = setTimeout(() => {
       progress.value = withRepeat(
         withSequence(
-          withTiming(1, { duration: config.duration, easing: Easing.inOut(Easing.sin) }),
-          withTiming(0, { duration: config.duration, easing: Easing.inOut(Easing.sin) })
+          withTiming(1, { duration: config.duration, easing: Easing.inOut(Easing.quad) }),
+          withTiming(0, { duration: config.duration, easing: Easing.inOut(Easing.quad) })
         ),
         -1,
         false
       );
       pulse.value = withRepeat(
         withSequence(
-          withTiming(1, { duration: config.duration * 0.45, easing: Easing.inOut(Easing.sin) }),
-          withTiming(0, { duration: config.duration * 0.45, easing: Easing.inOut(Easing.sin) })
+          withTiming(1, { duration: config.duration * 0.4, easing: Easing.inOut(Easing.sin) }),
+          withTiming(0, { duration: config.duration * 0.4, easing: Easing.inOut(Easing.sin) })
         ),
         -1,
         false
@@ -77,13 +123,16 @@ function EVOrb({ config }: { config: EVOrbConfig }) {
   }, []);
 
   const animatedStyle = useAnimatedStyle(() => {
-    const translateX = interpolate(progress.value, [0, 0.3, 0.7, 1], [0, config.driftX * 0.6, config.driftX, 0]);
-    const translateY = interpolate(progress.value, [0, 0.3, 0.7, 1], [0, config.driftY * 0.6, config.driftY, 0]);
+    const translateX = interpolate(progress.value, [0, 0.25, 0.75, 1], [0, config.driftX * 0.4, config.driftX, 0]);
+    const translateY = interpolate(progress.value, [0, 0.25, 0.75, 1], [0, config.driftY * 0.4, config.driftY, 0]);
     const opacity = interpolate(pulse.value, [0, 1], [config.opacityRange[0], config.opacityRange[1]]);
-    const scale = interpolate(pulse.value, [0, 1], [0.8, 1.2]);
+    const scale = interpolate(pulse.value, [0, 1], [0.85, 1.15]);
+    const rotate = config.rotation
+      ? interpolate(progress.value, [0, 1], [0, config.rotation])
+      : 0;
 
     return {
-      transform: [{ translateX }, { translateY }, { scale }],
+      transform: [{ translateX }, { translateY }, { scale }, { rotate: `${rotate}deg` }],
       opacity,
     };
   });
@@ -93,22 +142,17 @@ function EVOrb({ config }: { config: EVOrbConfig }) {
       style={[
         {
           position: "absolute",
-          left: config.startX - config.size / 2,
-          top: config.startY - config.size / 2,
-          width: config.size,
-          height: config.size,
-          borderRadius: config.size / 2,
-          overflow: "hidden",
+          left: config.startX - config.width / 2,
+          top: config.startY - config.height / 2,
+          width: config.width,
+          height: config.height,
+          alignItems: "center",
+          justifyContent: "center",
         },
         animatedStyle,
       ]}
     >
-      <LinearGradient
-        colors={config.colors}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ width: config.size, height: config.size, borderRadius: config.size / 2 }}
-      />
+      <ShapeInner shape={config.shape} width={config.width} height={config.height} colors={config.colors} />
     </Animated.View>
   );
 }
@@ -132,7 +176,7 @@ function ScanLine({ config }: { config: ScanLineConfig }) {
 
   const animatedStyle = useAnimatedStyle(() => {
     const translateX = interpolate(sweep.value, [0, 1], [-config.width, SW + config.width]);
-    const opacity = interpolate(sweep.value, [0, 0.3, 0.7, 1], [0, 0.06, 0.06, 0]);
+    const opacity = interpolate(sweep.value, [0, 0.2, 0.8, 1], [0, 0.08, 0.08, 0]);
 
     return {
       transform: [{ translateX }],
@@ -148,16 +192,16 @@ function ScanLine({ config }: { config: ScanLineConfig }) {
           top: config.startY,
           left: 0,
           width: config.width,
-          height: 1,
+          height: 2,
         },
         animatedStyle,
       ]}
     >
       <LinearGradient
-        colors={["transparent", "#00FF8840", "#00E5FF60", "#00FF8840", "transparent"]}
+        colors={["transparent", "#00FF8850", "#00E5FF70", "#B44DFF50", "transparent"]}
         start={{ x: 0, y: 0.5 }}
         end={{ x: 1, y: 0.5 }}
-        style={{ width: config.width, height: 1 }}
+        style={{ width: config.width, height: 2 }}
       />
     </Animated.View>
   );
@@ -169,8 +213,8 @@ function GridPulse() {
   useEffect(() => {
     gridOpacity.value = withRepeat(
       withSequence(
-        withDelay(1000, withTiming(1, { duration: 3000, easing: Easing.inOut(Easing.sin) })),
-        withTiming(0, { duration: 3000, easing: Easing.inOut(Easing.sin) })
+        withDelay(500, withTiming(1, { duration: 2000, easing: Easing.inOut(Easing.sin) })),
+        withTiming(0, { duration: 2000, easing: Easing.inOut(Easing.sin) })
       ),
       -1,
       false
@@ -178,11 +222,11 @@ function GridPulse() {
   }, []);
 
   const animStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(gridOpacity.value, [0, 1], [0.01, 0.04]),
+    opacity: interpolate(gridOpacity.value, [0, 1], [0.01, 0.05]),
   }));
 
   const lines = [];
-  const spacing = 60;
+  const spacing = 50;
   for (let i = 0; i < Math.ceil(SW / spacing); i++) {
     lines.push(
       <View
@@ -225,8 +269,8 @@ export default function EVAnimatedBackground() {
   return (
     <View style={[StyleSheet.absoluteFill, { overflow: "hidden", pointerEvents: "none" }]}>
       <GridPulse />
-      {EV_ORB_CONFIGS.map((config, index) => (
-        <EVOrb key={index} config={config} />
+      {EV_SHAPE_CONFIGS.map((config, index) => (
+        <EVShape key={index} config={config} />
       ))}
       {SCAN_LINES.map((config, index) => (
         <ScanLine key={`scan-${index}`} config={config} />

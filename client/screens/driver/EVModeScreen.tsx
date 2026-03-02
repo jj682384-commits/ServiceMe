@@ -87,9 +87,9 @@ function PulseRing({ delay = 0 }: { delay?: number }) {
       style={[
         {
           position: "absolute",
-          width: 120,
-          height: 120,
-          borderRadius: 60,
+          width: 140,
+          height: 140,
+          borderRadius: 70,
           borderWidth: 1,
           borderColor: EV.neonGreen,
         },
@@ -225,7 +225,7 @@ function QuickAction({
         style={styles.quickActionGradient}
       >
         <View style={[styles.quickActionIcon, { backgroundColor: color + "20" }]}>
-          <Feather name={icon} size={22} color={color} />
+          <Feather name={icon} size={24} color={color} />
         </View>
         <Animated.Text style={[styles.quickActionLabel, { color: EV.white }]} numberOfLines={2}>
           {label}
@@ -270,6 +270,58 @@ function ChargingStation({
           {available}/{chargerCount} open
         </Animated.Text>
       </View>
+    </View>
+  );
+}
+
+function PulsingZapIcon() {
+  const pulseScale = useSharedValue(1);
+  const glowOpacity = useSharedValue(0.3);
+
+  useEffect(() => {
+    pulseScale.value = withRepeat(
+      withSequence(
+        withTiming(1.25, { duration: 800, easing: Easing.inOut(Easing.sin) }),
+        withTiming(1, { duration: 800, easing: Easing.inOut(Easing.sin) })
+      ),
+      -1,
+      false
+    );
+    glowOpacity.value = withRepeat(
+      withSequence(
+        withTiming(0.8, { duration: 800, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0.2, { duration: 800, easing: Easing.inOut(Easing.sin) })
+      ),
+      -1,
+      false
+    );
+  }, []);
+
+  const iconStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulseScale.value }],
+  }));
+
+  const glowStyle = useAnimatedStyle(() => ({
+    opacity: glowOpacity.value,
+  }));
+
+  return (
+    <View style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}>
+      <Animated.View
+        style={[
+          {
+            position: "absolute",
+            width: 44,
+            height: 44,
+            borderRadius: 22,
+            backgroundColor: EV.neonGreen,
+          },
+          glowStyle,
+        ]}
+      />
+      <Animated.View style={iconStyle}>
+        <Feather name="zap" size={28} color={EV.neonGreen} />
+      </Animated.View>
     </View>
   );
 }
@@ -383,7 +435,7 @@ export default function EVModeScreen() {
         <View style={styles.header}>
           <Animated.Text style={styles.headerLabel}>EV MODE</Animated.Text>
           <View style={styles.headerTitleRow}>
-            <Feather name="zap" size={22} color={EV.neonGreen} />
+            <PulsingZapIcon />
             <Animated.Text style={styles.headerTitle}>Electric Hub</Animated.Text>
           </View>
           {evVehicle ? (
@@ -414,19 +466,19 @@ export default function EVModeScreen() {
             </View>
             <View style={styles.batteryStats}>
               <View style={styles.batteryStatItem}>
-                <Feather name="navigation" size={14} color={EV.neonCyan} />
+                <Feather name="navigation" size={16} color={EV.neonCyan} />
                 <Animated.Text style={styles.batteryStatValue}>{rangeEstimate} mi</Animated.Text>
                 <Animated.Text style={styles.batteryStatLabel}>Est. Range</Animated.Text>
               </View>
               <View style={[styles.batteryDivider, { backgroundColor: EV.border }]} />
               <View style={styles.batteryStatItem}>
-                <Feather name="clock" size={14} color={EV.neonPurple} />
+                <Feather name="clock" size={16} color={EV.neonPurple} />
                 <Animated.Text style={styles.batteryStatValue}>1h 12m</Animated.Text>
                 <Animated.Text style={styles.batteryStatLabel}>To Full</Animated.Text>
               </View>
               <View style={[styles.batteryDivider, { backgroundColor: EV.border }]} />
               <View style={styles.batteryStatItem}>
-                <Feather name="trending-up" size={14} color={EV.neonGreen} />
+                <Feather name="trending-up" size={16} color={EV.neonGreen} />
                 <Animated.Text style={styles.batteryStatValue}>3.8</Animated.Text>
                 <Animated.Text style={styles.batteryStatLabel}>mi/kWh</Animated.Text>
               </View>
@@ -559,27 +611,27 @@ const styles = StyleSheet.create({
   },
   headerLabel: {
     color: EV.neonGreen,
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: "800",
-    letterSpacing: 4,
-    marginBottom: 4,
+    letterSpacing: 5,
+    marginBottom: 6,
   },
   headerTitleRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginBottom: 4,
+    gap: 10,
+    marginBottom: 6,
   },
   headerTitle: {
     color: EV.white,
-    fontSize: 28,
+    fontSize: 34,
     fontWeight: "700",
     letterSpacing: -0.5,
   },
   headerCar: {
     color: EV.whiteDim,
-    fontSize: 14,
-    marginTop: 2,
+    fontSize: 16,
+    marginTop: 4,
   },
   glowCard: {
     backgroundColor: EV.bgCard,
@@ -592,16 +644,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   batteryRingContainer: {
-    width: 120,
-    height: 120,
+    width: 140,
+    height: 140,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 20,
+    marginBottom: 22,
   },
   batteryCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 116,
+    height: 116,
+    borderRadius: 58,
     borderWidth: 2,
     borderColor: EV.neonGreen + "60",
     overflow: "hidden",
@@ -613,13 +665,13 @@ const styles = StyleSheet.create({
   },
   batteryPercent: {
     color: EV.neonGreen,
-    fontSize: 32,
+    fontSize: 38,
     fontWeight: "800",
     letterSpacing: -1,
   },
   batteryLabel: {
     color: EV.whiteDim,
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: "700",
     letterSpacing: 3,
     marginTop: -2,
@@ -637,17 +689,17 @@ const styles = StyleSheet.create({
   },
   batteryStatValue: {
     color: EV.white,
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "700",
   },
   batteryStatLabel: {
     color: EV.whiteDim,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: "500",
   },
   batteryDivider: {
     width: 1,
-    height: 36,
+    height: 40,
   },
   statsGrid: {
     flexDirection: "row",
@@ -659,73 +711,73 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: EV.bgCard,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    gap: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    gap: 12,
     width: (SCREEN_WIDTH - 50) / 2,
   },
   statIconWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
   },
   statValue: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: "700",
   },
   statLabel: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: "500",
   },
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 14,
+    marginBottom: 16,
   },
   sectionTitle: {
     color: EV.white,
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "700",
     letterSpacing: 0.2,
   },
   seeAll: {
     color: EV.neonCyan,
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "600",
   },
   quickGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 10,
-    marginBottom: 24,
+    marginBottom: 26,
   },
   quickAction: {
     width: (SCREEN_WIDTH - 60) / 3,
   },
   quickActionGradient: {
     borderRadius: 16,
-    padding: 14,
+    padding: 16,
     alignItems: "center",
     gap: 10,
     borderWidth: 1,
     borderColor: EV.border,
-    minHeight: 100,
+    minHeight: 110,
     justifyContent: "center",
   },
   quickActionIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
+    width: 46,
+    height: 46,
+    borderRadius: 15,
     alignItems: "center",
     justifyContent: "center",
   },
   quickActionLabel: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "600",
     textAlign: "center",
     letterSpacing: 0.2,
@@ -734,7 +786,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 12,
+    paddingVertical: 14,
   },
   stationLeft: {
     flexDirection: "row",
@@ -750,13 +802,13 @@ const styles = StyleSheet.create({
   },
   stationName: {
     color: EV.white,
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "600",
   },
   stationMeta: {
     color: EV.whiteDim,
-    fontSize: 12,
-    marginTop: 1,
+    fontSize: 13,
+    marginTop: 2,
   },
   stationRight: {
     alignItems: "flex-end",
@@ -796,14 +848,14 @@ const styles = StyleSheet.create({
   },
   tipTitle: {
     color: EV.white,
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: "700",
     marginBottom: 4,
   },
   tipBody: {
     color: EV.whiteDim,
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 14,
+    lineHeight: 20,
   },
   gateContainer: {
     flex: 1,
