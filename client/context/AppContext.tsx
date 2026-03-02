@@ -33,6 +33,8 @@ export interface ServiceRequest {
   totalCost?: number;
 }
 
+export type BillingCycle = "monthly" | "yearly";
+
 export interface Driver {
   id: string;
   name: string;
@@ -43,6 +45,7 @@ export interface Driver {
   trialStartDate?: Date;
   trialEndDate?: Date;
   isOnTrial?: boolean;
+  billingCycle?: BillingCycle;
 }
 
 export interface Provider {
@@ -92,6 +95,12 @@ export interface Message {
   requestId: string;
 }
 
+export interface EmergencyContact {
+  name: string;
+  phone: string;
+  relationship: string;
+}
+
 export interface AuthUser {
   id: string;
   name: string;
@@ -118,10 +127,12 @@ interface AppContextType {
   addMessage: (message: Message) => void;
   nearbyProviders: Provider[];
   setNearbyProviders: (providers: Provider[]) => void;
-  upgradeMembership: (tier: MembershipTier) => void;
+  upgradeMembership: (tier: MembershipTier, cycle?: BillingCycle) => void;
   startFreeTrial: () => void;
   cancelTrial: () => void;
   getTrialDaysRemaining: () => number;
+  billingCycle: BillingCycle;
+  setBillingCycle: (cycle: BillingCycle) => void;
   userLocation: UserLocation | null;
   setUserLocation: (location: UserLocation | null) => void;
   getProvidersWithDistance: () => Provider[];
@@ -130,6 +141,10 @@ interface AppContextType {
   setSearchRadius: (radius: number) => void;
   serviceRadius: number;
   setServiceRadius: (radius: number) => void;
+  emergencyContacts: EmergencyContact[];
+  setEmergencyContacts: (contacts: EmergencyContact[]) => void;
+  addEmergencyContact: (contact: EmergencyContact) => void;
+  removeEmergencyContact: (index: number) => void;
   logout: () => void;
 }
 
@@ -287,6 +302,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [searchRadius, setSearchRadius] = useState(10);
   const [serviceRadius, setServiceRadius] = useState(15);
+  const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContact[]>([]);
+  const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
 
   const addToHistory = (request: ServiceRequest) => {
     setRequestHistory((prev) => [request, ...prev]);
@@ -296,9 +313,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setMessages((prev) => [...prev, message]);
   };
 
-  const upgradeMembership = (tier: MembershipTier) => {
+  const upgradeMembership = (tier: MembershipTier, cycle?: BillingCycle) => {
     if (currentDriver) {
-      setCurrentDriver({ ...currentDriver, membership: tier, isOnTrial: false });
+      const selectedCycle = cycle || billingCycle;
+      setCurrentDriver({ ...currentDriver, membership: tier, isOnTrial: false, billingCycle: selectedCycle });
+      if (cycle) setBillingCycle(cycle);
     }
   };
 
@@ -362,6 +381,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  const addEmergencyContact = (contact: EmergencyContact) => {
+    setEmergencyContacts((prev) => [...prev, contact]);
+  };
+
+  const removeEmergencyContact = (index: number) => {
+    setEmergencyContacts((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const logout = () => {
     setIsAuthenticated(false);
     setAuthUser(null);
@@ -396,6 +423,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         startFreeTrial,
         cancelTrial,
         getTrialDaysRemaining,
+        billingCycle,
+        setBillingCycle,
         userLocation,
         setUserLocation,
         getProvidersWithDistance,
@@ -404,6 +433,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setSearchRadius,
         serviceRadius,
         setServiceRadius,
+        emergencyContacts,
+        setEmergencyContacts,
+        addEmergencyContact,
+        removeEmergencyContact,
         logout,
       }}
     >

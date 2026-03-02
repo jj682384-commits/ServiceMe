@@ -232,6 +232,18 @@ export default function DriverProfileScreen() {
 
         <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
           <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
+            MEMBERSHIP
+          </ThemedText>
+          <MenuItem
+            icon="star"
+            label={isPremium ? "Manage Membership" : "Upgrade to Premium"}
+            value={isPremium && !isOnTrial ? "Premium" : isPremium && isOnTrial ? "Trial" : "Free"}
+            onPress={() => navigation.navigate("PremiumUpgrade")}
+          />
+        </View>
+
+        <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
+          <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
             ACCOUNT
           </ThemedText>
           <MenuItem icon="user" label="Edit Profile" onPress={() => navigation.navigate("EditProfile")} />

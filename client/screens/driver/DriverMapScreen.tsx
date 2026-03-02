@@ -357,6 +357,20 @@ export default function DriverMapScreen() {
         </Pressable>
       </View>
 
+      <Pressable
+        onPress={() => navigation.navigate("EmergencyMode")}
+        style={[
+          styles.emergencyButton,
+          {
+            top: insets.top + Spacing.lg,
+            backgroundColor: theme.error,
+            ...Shadows.lg,
+          },
+        ]}
+      >
+        <Feather name="shield" size={18} color="#FFFFFF" />
+      </Pressable>
+
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -715,5 +729,15 @@ const styles = StyleSheet.create({
   fabText: {
     color: "#FFFFFF",
     fontWeight: "600",
+  },
+  emergencyButton: {
+    position: "absolute",
+    right: Spacing.lg,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 20,
   },
 });

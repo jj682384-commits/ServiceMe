@@ -22,6 +22,8 @@ import TowRequestScreen from "@/screens/TowRequestScreen";
 import PremiumUpgradeScreen from "@/screens/PremiumUpgradeScreen";
 import BrowseProvidersScreen from "@/screens/BrowseProvidersScreen";
 import ProviderDetailScreen from "@/screens/ProviderDetailScreen";
+import SmartDiagnosticScreen from "@/screens/SmartDiagnosticScreen";
+import EmergencyModeScreen from "@/screens/EmergencyModeScreen";
 
 export type RootStackParamList = {
   Welcome: undefined;
@@ -31,7 +33,8 @@ export type RootStackParamList = {
   ProviderTypeSelection: undefined;
   DriverTabs: undefined;
   ProviderTabs: undefined;
-  ServiceRequest: { providerId?: string } | undefined;
+  SmartDiagnostic: undefined;
+  ServiceRequest: { providerId?: string; serviceType?: string; notes?: string } | undefined;
   ActiveService: undefined;
   ServiceCompletion: undefined;
   Chat: { conversationId: string; providerName: string };
@@ -44,6 +47,7 @@ export type RootStackParamList = {
   PremiumUpgrade: undefined;
   BrowseProviders: undefined;
   ProviderDetail: { providerId: string };
+  EmergencyMode: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -181,6 +185,23 @@ export default function RootStackNavigator() {
         component={ProviderDetailScreen}
         options={{
           headerTitle: "Provider Details",
+        }}
+      />
+      <Stack.Screen
+        name="SmartDiagnostic"
+        component={SmartDiagnosticScreen}
+        options={{
+          presentation: "modal",
+          headerTitle: "Smart Diagnostic",
+        }}
+      />
+      <Stack.Screen
+        name="EmergencyMode"
+        component={EmergencyModeScreen}
+        options={{
+          presentation: "fullScreenModal",
+          headerShown: false,
+          animation: "fade",
         }}
       />
     </Stack.Navigator>
