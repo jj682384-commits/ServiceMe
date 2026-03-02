@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, Image, Pressable } from "react-native";
+import { View, StyleSheet, Image, Pressable, Dimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -14,6 +14,9 @@ import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+const LOGO_SIZE = SCREEN_WIDTH * 1.1;
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -82,11 +85,22 @@ function ActionButton({ title, subtitle, icon, onPress, variant }: ActionButtonP
 
 export default function WelcomeScreen() {
   const insets = useSafeAreaInsets();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   return (
     <ThemedView style={styles.container}>
+      <View style={styles.backdropContainer}>
+        <Image
+          source={require("../../assets/images/icon.png")}
+          style={[
+            styles.backdropLogo,
+            { opacity: isDark ? 0.06 : 0.05 },
+          ]}
+          resizeMode="contain"
+        />
+      </View>
+
       <View
         style={[
           styles.content,
@@ -97,11 +111,6 @@ export default function WelcomeScreen() {
         ]}
       >
         <View style={styles.header}>
-          <Image
-            source={require("../../assets/images/icon.png")}
-            style={styles.logo}
-            resizeMode="contain"
-          />
           <ThemedText type="h1" style={[styles.title, { color: theme.primary }]}>
             ServiceMe
           </ThemedText>
@@ -184,6 +193,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  backdropContainer: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  backdropLogo: {
+    width: LOGO_SIZE,
+    height: LOGO_SIZE,
+  },
   content: {
     flex: 1,
     paddingHorizontal: Spacing.lg,
@@ -192,11 +211,6 @@ const styles = StyleSheet.create({
   header: {
     alignItems: "center",
     gap: Spacing.sm,
-  },
-  logo: {
-    width: 100,
-    height: 100,
-    marginBottom: Spacing.md,
   },
   title: {
     textAlign: "center",
