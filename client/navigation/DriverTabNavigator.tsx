@@ -36,8 +36,10 @@ export default function DriverTabNavigator() {
           backgroundColor: Platform.select({
             ios: "transparent",
             android: theme.backgroundRoot,
+            web: theme.backgroundRoot,
           }),
           borderTopWidth: 0,
+          borderTopColor: theme.backgroundRoot,
           elevation: 0,
         },
         tabBarBackground: () =>
@@ -85,9 +87,11 @@ export default function DriverTabNavigator() {
         options={{
           title: "EV",
           headerShown: false,
-          tabBarIcon: ({ color, size }) => (
-            <Feather name="zap" size={size} color={color} />
+          tabBarActiveTintColor: "#00FF88",
+          tabBarIcon: ({ focused, size }) => (
+            <Feather name="zap" size={size} color={focused ? "#00FF88" : theme.tabIconDefault} />
           ),
+          tabBarLabel: "EV",
         }}
       />
       <Tab.Screen
