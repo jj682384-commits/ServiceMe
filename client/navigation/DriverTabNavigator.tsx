@@ -88,8 +88,16 @@ export default function DriverTabNavigator() {
           title: "EV",
           headerShown: false,
           tabBarActiveTintColor: "#00FF88",
+          tabBarInactiveTintColor: "#6B7280",
+          tabBarStyle: {
+            position: "absolute",
+            backgroundColor: "#0A0E1A",
+            borderTopWidth: 0,
+            borderTopColor: "#0A0E1A",
+            elevation: 0,
+          },
           tabBarIcon: ({ focused, size }) => (
-            <Feather name="zap" size={size} color={focused ? "#00FF88" : theme.tabIconDefault} />
+            <Feather name="zap" size={size} color={focused ? "#00FF88" : "#6B7280"} />
           ),
           tabBarLabel: "EV",
         }}
