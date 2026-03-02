@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, useMemo, ReactNode } from "react";
+import { mockHistory as initialHistory } from "@/constants/mockHistory";
 
 export type UserRole = "driver" | "provider" | null;
 
@@ -140,6 +141,14 @@ export interface AuthUser {
   phone: string;
 }
 
+export const PREFERRED_THRESHOLD = 3;
+
+export interface PreferredProvider {
+  providerId: string;
+  serviceCount: number;
+  lastServiceDate: Date;
+}
+
 interface AppContextType {
   isAuthenticated: boolean;
   setIsAuthenticated: (value: boolean) => void;
@@ -182,6 +191,10 @@ interface AppContextType {
   removeVehicle: (id: string) => void;
   setDefaultVehicle: (id: string) => void;
   getDefaultVehicle: () => Vehicle | undefined;
+  preferredProviders: PreferredProvider[];
+  isPreferredProvider: (providerId: string) => boolean;
+  getPreferredProviderInfo: (providerId: string) => PreferredProvider | undefined;
+  getProviderServiceCount: (providerId: string) => number;
   logout: () => void;
 }
 
@@ -363,7 +376,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [currentDriver, setCurrentDriver] = useState<Driver | null>(null);
   const [currentProvider, setCurrentProvider] = useState<Provider | null>(null);
   const [activeRequest, setActiveRequest] = useState<ServiceRequest | null>(null);
-  const [requestHistory, setRequestHistory] = useState<ServiceRequest[]>([]);
+  const [requestHistory, setRequestHistory] = useState<ServiceRequest[]>(initialHistory);
   const [messages, setMessages] = useState<Message[]>([]);
   const [nearbyProviders, setNearbyProviders] = useState<Provider[]>(mockProviders);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
@@ -372,6 +385,44 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContact[]>([]);
   const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+
+  const getProviderServiceCount = (providerId: string): number => {
+    return requestHistory.filter(
+      (r) => r.provider?.id === providerId && r.status === "completed"
+    ).length;
+  };
+
+  const preferredProviders: PreferredProvider[] = React.useMemo(() => {
+    const counts: Record<string, { count: number; lastDate: Date }> = {};
+    requestHistory.forEach((r) => {
+      if (r.provider && r.status === "completed") {
+        const pid = r.provider.id;
+        if (!counts[pid]) {
+          counts[pid] = { count: 0, lastDate: r.createdAt };
+        }
+        counts[pid].count++;
+        if (r.createdAt > counts[pid].lastDate) {
+          counts[pid].lastDate = r.createdAt;
+        }
+      }
+    });
+    return Object.entries(counts)
+      .filter(([, data]) => data.count >= PREFERRED_THRESHOLD)
+      .map(([providerId, data]) => ({
+        providerId,
+        serviceCount: data.count,
+        lastServiceDate: data.lastDate,
+      }))
+      .sort((a, b) => b.serviceCount - a.serviceCount);
+  }, [requestHistory]);
+
+  const isPreferredProvider = (providerId: string): boolean => {
+    return preferredProviders.some((p) => p.providerId === providerId);
+  };
+
+  const getPreferredProviderInfo = (providerId: string): PreferredProvider | undefined => {
+    return preferredProviders.find((p) => p.providerId === providerId);
+  };
 
   const addToHistory = (request: ServiceRequest) => {
     setRequestHistory((prev) => [request, ...prev]);
@@ -543,6 +594,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         removeVehicle,
         setDefaultVehicle,
         getDefaultVehicle,
+        preferredProviders,
+        isPreferredProvider,
+        getPreferredProviderInfo,
+        getProviderServiceCount,
         logout,
       }}
     >

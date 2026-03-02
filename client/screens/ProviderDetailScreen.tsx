@@ -11,7 +11,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { VerificationBadge } from "@/components/VerificationBadge";
 import { ProviderTypeBadge } from "@/components/ProviderTypeBadge";
 import { useTheme } from "@/hooks/useTheme";
-import { useApp, BADGE_CONFIG, BadgeType } from "@/context/AppContext";
+import { useApp, BADGE_CONFIG, BadgeType, PREFERRED_THRESHOLD } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
@@ -52,7 +52,7 @@ function StarRating({ rating }: { rating: number }) {
 export default function ProviderDetailScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
-  const { getProvidersWithDistance } = useApp();
+  const { getProvidersWithDistance, isPreferredProvider, getPreferredProviderInfo } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, "ProviderDetail">>();
 
@@ -111,6 +111,19 @@ export default function ProviderDetailScreen() {
           {provider.verificationStatus === "verified" ? (
             <View style={{ marginTop: Spacing.sm }}>
               <VerificationBadge status="verified" size="small" showLabel />
+            </View>
+          ) : null}
+          {isPreferredProvider(provider.id) ? (
+            <View style={detailStyles.preferredSection}>
+              <View style={detailStyles.preferredBadge}>
+                <Feather name="heart" size={14} color="#E91E63" />
+                <ThemedText type="body" style={{ color: "#E91E63", fontWeight: "700", marginLeft: 6 }}>
+                  Your Preferred Provider
+                </ThemedText>
+              </View>
+              <ThemedText type="small" style={{ color: theme.textSecondary, textAlign: "center" }}>
+                {getPreferredProviderInfo(provider.id)?.serviceCount} completed services together
+              </ThemedText>
             </View>
           ) : null}
         </View>
@@ -358,6 +371,19 @@ const detailStyles = StyleSheet.create({
   contactRow: {
     flexDirection: "row",
     alignItems: "center",
+  },
+  preferredSection: {
+    marginTop: Spacing.md,
+    alignItems: "center",
+    gap: 4,
+  },
+  preferredBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#E91E63" + "15",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
   },
   badgesSection: {
     flexDirection: "row",

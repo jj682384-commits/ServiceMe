@@ -10,7 +10,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { VerificationBadge } from "@/components/VerificationBadge";
 import { ProviderTypeBadge } from "@/components/ProviderTypeBadge";
 import { useTheme } from "@/hooks/useTheme";
-import { useApp, Provider, ServiceType, BADGE_CONFIG, BadgeType } from "@/context/AppContext";
+import { useApp, Provider, ServiceType, BADGE_CONFIG, BadgeType, PREFERRED_THRESHOLD } from "@/context/AppContext";
 import { Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
@@ -43,7 +43,7 @@ function formatServiceName(service: string): string {
   return service.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function ProviderCard({ provider, onPress }: { provider: Provider; onPress: () => void }) {
+function ProviderCard({ provider, onPress, isPreferred }: { provider: Provider; onPress: () => void; isPreferred?: boolean }) {
   const { theme } = useTheme();
 
   const vehicleIcon: keyof typeof Feather.glyphMap =
@@ -58,6 +58,8 @@ function ProviderCard({ provider, onPress }: { provider: Provider; onPress: () =
         {
           backgroundColor: theme.backgroundSecondary,
           opacity: pressed ? 0.9 : 1,
+          borderWidth: isPreferred ? 1 : 0,
+          borderColor: isPreferred ? "#E91E63" + "50" : "transparent",
         },
       ]}
     >
@@ -70,6 +72,14 @@ function ProviderCard({ provider, onPress }: { provider: Provider; onPress: () =
             <ThemedText type="body" style={{ fontWeight: "700", flex: 1 }}>
               {provider.name}
             </ThemedText>
+            {isPreferred ? (
+              <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#E91E63" + "20", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12, marginRight: 6 }}>
+                <Feather name="heart" size={11} color="#E91E63" />
+                <ThemedText type="small" style={{ fontSize: 10, color: "#E91E63", fontWeight: "700", marginLeft: 4 }}>
+                  Preferred
+                </ThemedText>
+              </View>
+            ) : null}
             <ProviderTypeBadge type={provider.providerType} size="small" />
           </View>
           <View style={styles.metaRow}>
@@ -148,7 +158,7 @@ function ProviderCard({ provider, onPress }: { provider: Provider; onPress: () =
 export default function BrowseProvidersScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
-  const { getProvidersWithDistance } = useApp();
+  const { getProvidersWithDistance, isPreferredProvider } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const [sortBy, setSortBy] = useState<SortOption>("nearest");
@@ -186,6 +196,7 @@ export default function BrowseProvidersScreen() {
   const renderProvider = ({ item }: { item: Provider }) => (
     <ProviderCard
       provider={item}
+      isPreferred={isPreferredProvider(item.id)}
       onPress={() => navigation.navigate("ProviderDetail", { providerId: item.id })}
     />
   );

@@ -17,7 +17,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { VerificationBadge } from "@/components/VerificationBadge";
 import { ProviderTypeBadge } from "@/components/ProviderTypeBadge";
 import { useTheme } from "@/hooks/useTheme";
-import { useApp, ServiceType, Provider, BADGE_CONFIG, BadgeType } from "@/context/AppContext";
+import { useApp, ServiceType, Provider, BADGE_CONFIG, BadgeType, PREFERRED_THRESHOLD } from "@/context/AppContext";
 import { Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
@@ -73,7 +73,7 @@ function FilterChip({
   );
 }
 
-function MechanicCard({ provider, onPress }: { provider: Provider; onPress: () => void }) {
+function MechanicCard({ provider, onPress, isPreferred }: { provider: Provider; onPress: () => void; isPreferred?: boolean }) {
   const { theme } = useTheme();
   
   const vehicleIcon = provider.vehicleType === "tow_truck" ? "truck" : 
@@ -86,7 +86,7 @@ function MechanicCard({ provider, onPress }: { provider: Provider; onPress: () =
         styles.mechanicCard,
         { 
           backgroundColor: theme.backgroundDefault,
-          borderColor: theme.border,
+          borderColor: isPreferred ? "#E91E63" + "60" : theme.border,
         },
       ]}
     >
@@ -99,6 +99,14 @@ function MechanicCard({ provider, onPress }: { provider: Provider; onPress: () =
             {provider.name}
           </ThemedText>
           <View style={styles.badgesRow}>
+            {isPreferred ? (
+              <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#E91E63" + "20", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 10 }}>
+                <Feather name="heart" size={10} color="#E91E63" />
+                <ThemedText type="small" style={{ fontSize: 9, color: "#E91E63", fontWeight: "700", marginLeft: 3 }}>
+                  Preferred
+                </ThemedText>
+              </View>
+            ) : null}
             <ProviderTypeBadge type={provider.providerType} size="small" />
             {provider.verificationStatus === "verified" ? (
               <VerificationBadge status="verified" size="small" showLabel={false} />
@@ -225,7 +233,7 @@ export default function DriverMapScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { theme } = useTheme();
-  const { activeRequest, setUserLocation, getProvidersWithDistance, userLocation, nearbyProviders } = useApp();
+  const { activeRequest, setUserLocation, getProvidersWithDistance, userLocation, nearbyProviders, isPreferredProvider } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   
   const [permission, requestPermission] = Location.useForegroundPermissions();
@@ -431,6 +439,7 @@ export default function DriverMapScreen() {
               <MechanicCard
                 key={provider.id}
                 provider={provider}
+                isPreferred={isPreferredProvider(provider.id)}
                 onPress={() => navigation.navigate("ProviderDetail", { providerId: provider.id })}
               />
             ))}

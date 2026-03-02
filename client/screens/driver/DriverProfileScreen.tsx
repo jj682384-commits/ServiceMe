@@ -90,7 +90,7 @@ export default function DriverProfileScreen() {
   const headerHeight = useHeaderHeight();
   const tabBarHeight = useBottomTabBarHeight();
   const { theme } = useTheme();
-  const { currentDriver, setUserRole, logout, searchRadius, getTrialDaysRemaining } = useApp();
+  const { currentDriver, setUserRole, logout, searchRadius, getTrialDaysRemaining, preferredProviders } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
   const isPremium = currentDriver?.membership === "premium";
@@ -248,6 +248,12 @@ export default function DriverProfileScreen() {
           </ThemedText>
           <MenuItem icon="user" label="Edit Profile" onPress={() => navigation.navigate("EditProfile")} />
           <MenuItem icon="truck" label="My Vehicles" onPress={() => navigation.navigate("VehicleManagement")} />
+          <MenuItem
+            icon="heart"
+            label="My Preferred Providers"
+            value={preferredProviders.length > 0 ? `${preferredProviders.length}` : undefined}
+            onPress={() => navigation.navigate("PreferredProviders")}
+          />
           <MenuItem icon="phone" label="Phone" value={currentDriver?.phone || "+1 555-1234"} showArrow={false} />
           <MenuItem icon="mail" label="Email" value={currentDriver?.email || "alex@email.com"} showArrow={false} />
         </View>

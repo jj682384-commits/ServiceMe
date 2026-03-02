@@ -28,6 +28,7 @@ import VehicleManagementScreen from "@/screens/VehicleManagementScreen";
 import EVMobileChargeScreen from "@/screens/ev/EVMobileChargeScreen";
 import EVTowScreen from "@/screens/ev/EVTowScreen";
 import EVRangeAlertScreen from "@/screens/ev/EVRangeAlertScreen";
+import PreferredProvidersScreen from "@/screens/PreferredProvidersScreen";
 
 export type RootStackParamList = {
   Welcome: undefined;
@@ -56,6 +57,7 @@ export type RootStackParamList = {
   EVMobileCharge: undefined;
   EVTow: undefined;
   EVRangeAlert: undefined;
+  PreferredProviders: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -244,6 +246,13 @@ export default function RootStackNavigator() {
           headerShown: false,
           presentation: "modal",
           animation: "slide_from_bottom",
+        }}
+      />
+      <Stack.Screen
+        name="PreferredProviders"
+        component={PreferredProvidersScreen}
+        options={{
+          headerTitle: "Preferred Providers",
         }}
       />
     </Stack.Navigator>

@@ -151,6 +151,20 @@ Configured in both `tsconfig.json` and `babel.config.js` for universal resolutio
 - Default vehicle info shown on ServiceRequestScreen during service requests
 - Accessible from "My Vehicles" in DriverProfileScreen ACCOUNT section
 
+### Preferred Providers (`PreferredProvidersScreen`)
+- Providers automatically become "preferred" after 3+ completed services with the same driver
+- Computed from `requestHistory` in AppContext using `useMemo` — no manual management needed
+- `PreferredProvider` interface: providerId, serviceCount, lastServiceDate
+- Helper functions: `isPreferredProvider()`, `getPreferredProviderInfo()`, `getProviderServiceCount()`
+- Pink heart "Preferred" badge shown on provider cards in DriverMapScreen, BrowseProvidersScreen, and ProviderDetailScreen
+- Preferred providers get highlighted border on cards
+- ProviderDetailScreen shows "Your Preferred Provider" section with service count
+- Dedicated screen accessible from "My Preferred Providers" in DriverProfileScreen ACCOUNT section
+- Shows loyalty level (Bronze/Silver/Gold based on service count) with progress bar
+- "Almost There" section shows providers approaching preferred threshold with progress indicators
+- Mock history seeded in `client/constants/mockHistory.ts` — Mike's Towing (4 services) and Road Rescue (3 services) start as preferred
+- `PREFERRED_THRESHOLD` constant exported from AppContext (default: 3)
+
 ### Verified Technician Badges
 - Trust badges on provider profiles: 5-Star for 6 Months, 100+ Successful Calls, Night Shift Specialist, Fast Response, 3+ Years Experience
 - Badge config with colors/icons defined in `BADGE_CONFIG` in AppContext
