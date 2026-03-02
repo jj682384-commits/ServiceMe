@@ -274,6 +274,57 @@ function ChargingStation({
   );
 }
 
+function AnimatedGradientButton({ onPress }: { onPress: () => void }) {
+  const translateX = useSharedValue(-200);
+
+  useEffect(() => {
+    translateX.value = withRepeat(
+      withTiming(200, { duration: 3000, easing: Easing.inOut(Easing.ease) }),
+      -1,
+      true
+    );
+  }, []);
+
+  const gradientSlide = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
+
+  return (
+    <Pressable onPress={onPress} style={styles.gateButton}>
+      <View style={[styles.gateButtonGradient, { overflow: "hidden" }]}>
+        <Animated.View
+          style={[
+            {
+              ...StyleSheet.absoluteFillObject,
+              width: "200%",
+              left: "-50%",
+            },
+            gradientSlide,
+          ]}
+        >
+          <LinearGradient
+            colors={[
+              EV.neonPurple,
+              EV.neonBlue,
+              EV.neonCyan,
+              EV.neonGreen,
+              EV.neonCyan,
+              EV.neonBlue,
+              EV.neonPurple,
+            ]}
+            locations={[0, 0.16, 0.33, 0.5, 0.67, 0.84, 1]}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={{ width: "100%", height: "100%" }}
+          />
+        </Animated.View>
+        <Feather name="plus-circle" size={24} color="#000" style={{ zIndex: 1 }} />
+        <Animated.Text style={[styles.gateButtonText, { zIndex: 1 }]}>Add Electric Vehicle</Animated.Text>
+      </View>
+    </Pressable>
+  );
+}
+
 function PulsingZapIcon() {
   const pulseScale = useSharedValue(1);
   const glowOpacity = useSharedValue(0.2);
@@ -423,29 +474,7 @@ export default function EVModeScreen() {
           <Animated.Text style={styles.gateSub}>
             Add an electric vehicle to your profile to unlock the full EV experience — battery monitoring, mobile charging, EV towing, range alerts, and more.
           </Animated.Text>
-          <Pressable
-            onPress={() => navigation.navigate("VehicleManagement")}
-            style={styles.gateButton}
-          >
-            <LinearGradient
-              colors={[
-                EV.neonGreen,
-                "#33FFAA",
-                EV.neonCyan,
-                "#33BBFF",
-                EV.neonBlue,
-                "#7F66FF",
-                EV.neonPurple,
-              ]}
-              locations={[0, 0.15, 0.33, 0.5, 0.67, 0.83, 1]}
-              start={{ x: 0, y: 0.5 }}
-              end={{ x: 1, y: 0.5 }}
-              style={styles.gateButtonGradient}
-            >
-              <Feather name="plus-circle" size={24} color="#000" />
-              <Animated.Text style={styles.gateButtonText}>Add Electric Vehicle</Animated.Text>
-            </LinearGradient>
-          </Pressable>
+          <AnimatedGradientButton onPress={() => navigation.navigate("VehicleManagement")} />
           <View style={styles.gateFeatures}>
             {[
               { icon: "battery-charging" as const, text: "Battery dashboard" },
