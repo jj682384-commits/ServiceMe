@@ -1,6 +1,6 @@
 import React from "react";
-import { StyleSheet } from "react-native";
-import { NavigationContainer } from "@react-navigation/native";
+import { StyleSheet, useColorScheme } from "react-native";
+import { NavigationContainer, DefaultTheme, DarkTheme } from "@react-navigation/native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -12,8 +12,36 @@ import { queryClient } from "@/lib/query-client";
 import RootStackNavigator from "@/navigation/RootStackNavigator";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AppProvider } from "@/context/AppContext";
+import { Colors } from "@/constants/theme";
+
+const LightNavTheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    background: Colors.light.backgroundRoot,
+    card: Colors.light.backgroundRoot,
+    border: Colors.light.border,
+    text: Colors.light.text,
+    primary: Colors.light.primary,
+  },
+};
+
+const DarkNavTheme = {
+  ...DarkTheme,
+  colors: {
+    ...DarkTheme.colors,
+    background: Colors.dark.backgroundRoot,
+    card: Colors.dark.backgroundRoot,
+    border: Colors.dark.border,
+    text: Colors.dark.text,
+    primary: Colors.dark.primary,
+  },
+};
 
 export default function App() {
+  const colorScheme = useColorScheme();
+  const navTheme = colorScheme === "dark" ? DarkNavTheme : LightNavTheme;
+
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
@@ -21,7 +49,7 @@ export default function App() {
           <SafeAreaProvider>
             <GestureHandlerRootView style={styles.root}>
               <KeyboardProvider>
-                <NavigationContainer>
+                <NavigationContainer theme={navTheme}>
                   <RootStackNavigator />
                 </NavigationContainer>
                 <StatusBar style="auto" />

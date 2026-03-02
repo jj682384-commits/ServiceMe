@@ -101,7 +101,7 @@ function TipButton({
 export default function ServiceCompletionScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
-  const { activeRequest, setActiveRequest } = useApp();
+  const { activeRequest, setActiveRequest, updateHistoryEntry } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const [rating, setRating] = useState(0);
@@ -125,6 +125,13 @@ export default function ServiceCompletionScreen() {
     setIsSubmitting(true);
     
     setTimeout(() => {
+      if (activeRequest?.id) {
+        updateHistoryEntry(activeRequest.id, {
+          tip: tipAmount,
+          totalCost: totalAmount,
+          status: "completed",
+        });
+      }
       setActiveRequest(null);
       setIsSubmitting(false);
       navigation.dispatch(

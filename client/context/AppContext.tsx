@@ -164,6 +164,7 @@ interface AppContextType {
   setActiveRequest: (request: ServiceRequest | null) => void;
   requestHistory: ServiceRequest[];
   addToHistory: (request: ServiceRequest) => void;
+  updateHistoryEntry: (id: string, updates: Partial<ServiceRequest>) => void;
   messages: Message[];
   addMessage: (message: Message) => void;
   nearbyProviders: Provider[];
@@ -428,6 +429,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setRequestHistory((prev) => [request, ...prev]);
   };
 
+  const updateHistoryEntry = (id: string, updates: Partial<ServiceRequest>) => {
+    setRequestHistory((prev) =>
+      prev.map((entry) => (entry.id === id ? { ...entry, ...updates } : entry))
+    );
+  };
+
   const addMessage = (message: Message) => {
     setMessages((prev) => [...prev, message]);
   };
@@ -567,6 +574,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setActiveRequest,
         requestHistory,
         addToHistory,
+        updateHistoryEntry,
         messages,
         addMessage,
         nearbyProviders,
