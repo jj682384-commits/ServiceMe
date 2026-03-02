@@ -109,13 +109,15 @@ export default function ServiceRequestScreen() {
   const route = useRoute<RouteProp<RootStackParamList, "ServiceRequest">>();
 
   const selectedProviderId = route.params?.providerId;
+  const initialServiceType = route.params?.serviceType as ServiceType | undefined;
+  const initialNotes = route.params?.notes || "";
   const allProviders = getProvidersWithDistance();
   const selectedProvider = selectedProviderId
     ? allProviders.find((p) => p.id === selectedProviderId)
     : undefined;
 
-  const [selectedService, setSelectedService] = useState<ServiceType | null>(null);
-  const [notes, setNotes] = useState("");
+  const [selectedService, setSelectedService] = useState<ServiceType | null>(initialServiceType || null);
+  const [notes, setNotes] = useState(initialNotes);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExpress, setIsExpress] = useState(false);
 

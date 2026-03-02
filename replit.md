@@ -80,6 +80,50 @@ The `shared/` directory contains code shared between client and server:
 
 Configured in both `tsconfig.json` and `babel.config.js` for universal resolution.
 
+## Key Features
+
+### Smart Issue Detection (`SmartDiagnosticScreen`)
+- 3-step guided diagnostic flow: symptom selection → follow-up questions → AI-powered diagnosis
+- 6 symptom categories: Won't Start, Clicking Noise, Low Fuel, Tire Pressure, Locked Out, Other
+- Each symptom has 2 contextual follow-up questions with multiple choice answers
+- Results show: likely issue, confidence %, estimated cost range, recommended service type, helpful tips
+- "Request This Service" button passes diagnosed service type + notes directly into ServiceRequestScreen
+- Accessible from "Diagnose My Issue" button on DriverMapScreen
+
+### Emergency Mode (`EmergencyModeScreen`)
+- One-tap SOS activated from red shield button on DriverMapScreen
+- Full-screen dark red interface with pulsing SOS animation
+- Phased activation: activating → active → dispatching → dispatched
+- Auto-acquires GPS location via expo-location if not already available
+- Shows location sharing status, trusted contact notifications, priority dispatch progress
+- 4-digit arrival PIN displayed after dispatch for technician verification
+- Emergency contacts managed in DriverProfileScreen (SAFETY section) via AppContext
+- Haptic vibration feedback on native platforms
+
+### Premium Membership (`PremiumUpgradeScreen`)
+- Monthly ($7.99/mo) vs Yearly ($79/yr, ~17% savings) billing toggle
+- Free vs Premium comparison table with checkmarks/values
+- Benefits: free jump starts, discounted tows, 20% off all services, priority response, extended coverage, 24/7 support
+- 10-day free trial with cancel anytime
+- Direct subscribe option without trial
+- Billing cycle tracked in AppContext (`BillingCycle` type)
+- MEMBERSHIP section added to DriverProfileScreen
+
+### Driver Profile Sections
+- MEMBERSHIP: Upgrade/manage premium membership
+- SAFETY: Emergency Contacts, Emergency Mode quick access
+- ACCOUNT, PAYMENT, PREFERENCES, SUPPORT: Standard profile sections
+
+### Legal Compliance
+- Three legal documents required at sign-up: Privacy Policy, Terms of Service, Liability Disclaimer
+- Each must be individually reviewed and accepted before account creation
+- Full documents accessible from profile settings
+
+### Provider Browsing
+- BrowseProvidersScreen with sort (nearest/rating/reviews) and filter (type/services)
+- ProviderDetailScreen with full profile, services, and direct "Request Service" button
+- 8 mock providers with variety of services, ratings, types, and distances
+
 ## External Dependencies
 
 ### Mobile/Frontend

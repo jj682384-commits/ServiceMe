@@ -274,6 +274,14 @@ export default function DriverProfileScreen() {
 
         <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
           <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
+            SAFETY
+          </ThemedText>
+          <MenuItem icon="users" label="Emergency Contacts" onPress={() => navigation.navigate("EditProfile")} />
+          <MenuItem icon="shield" label="Emergency Mode" onPress={() => navigation.navigate("EmergencyMode")} />
+        </View>
+
+        <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
+          <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
             SUPPORT
           </ThemedText>
           <MenuItem icon="help-circle" label="Help & Support" onPress={() => navigation.navigate("Support")} />

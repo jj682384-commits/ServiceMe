@@ -3,6 +3,7 @@ import { View, StyleSheet, Pressable, Platform, Vibration } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import * as Location from "expo-location";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -22,7 +23,7 @@ type EmergencyPhase = "activating" | "active" | "dispatching" | "dispatched";
 export default function EmergencyModeScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
-  const { emergencyContacts, userLocation } = useApp();
+  const { emergencyContacts, userLocation, setUserLocation } = useApp();
   const navigation = useNavigation();
 
   const [phase, setPhase] = useState<EmergencyPhase>("activating");
@@ -59,6 +60,26 @@ export default function EmergencyModeScreen() {
       -1,
       false
     );
+  }, []);
+
+  useEffect(() => {
+    const acquireLocation = async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === "granted") {
+          const loc = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.High,
+          });
+          setUserLocation({
+            latitude: loc.coords.latitude,
+            longitude: loc.coords.longitude,
+          });
+        }
+      } catch {}
+    };
+    if (!userLocation) {
+      acquireLocation();
+    }
   }, []);
 
   useEffect(() => {

@@ -452,6 +452,24 @@ export default function DriverMapScreen() {
       {!activeRequest ? (
         <View style={[styles.fabContainer, { bottom: tabBarHeight + Spacing.xl }]}>
           <AnimatedPressable
+            onPress={() => navigation.navigate("SmartDiagnostic")}
+            onPressIn={handleFabPressIn}
+            onPressOut={handleFabPressOut}
+            style={[
+              styles.diagnoseFab,
+              {
+                backgroundColor: theme.backgroundDefault,
+                borderColor: theme.secondary,
+                ...Shadows.md,
+              },
+            ]}
+          >
+            <Feather name="cpu" size={20} color={theme.secondary} />
+            <ThemedText type="small" style={[styles.diagnoseFabText, { color: theme.secondary }]}>
+              Diagnose My Issue
+            </ThemedText>
+          </AnimatedPressable>
+          <AnimatedPressable
             onPress={() => navigation.navigate("TowRequest")}
             onPressIn={handleFabPressIn}
             onPressOut={handleFabPressOut}
@@ -705,6 +723,18 @@ const styles = StyleSheet.create({
     left: Spacing.lg,
     right: Spacing.lg,
     gap: Spacing.md,
+  },
+  diagnoseFab: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.full,
+    gap: Spacing.sm,
+    borderWidth: 1.5,
+  },
+  diagnoseFabText: {
+    fontWeight: "600",
   },
   towFab: {
     flexDirection: "row",
