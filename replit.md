@@ -111,15 +111,38 @@ Configured in both `tsconfig.json` and `babel.config.js` for universal resolutio
 
 ### EV Mode Tab (`EVModeScreen`)
 - Dedicated tab for electric vehicle owners with completely unique futuristic visual design
+- **EV-Only Gate**: Tab shows locked state if no electric vehicle is saved; "Add Electric Vehicle" button navigates to VehicleManagement
 - Custom dark neon color palette (neon green #00FF88, cyan #00E5FF, purple #B44DFF, blue #4D7CFF) — visually distinct from rest of app
 - Battery dashboard: animated charge ring (73%), estimated range, time to full, efficiency (mi/kWh)
 - Stat pills: Last Charge type, Nearest Charger distance, Estimated Cost, Battery Temperature
 - Quick Actions grid: Find Charger, Mobile Charge, EV Tow, EV Diagnostic, Trip Planner, Range Alert
-- Mobile Charge and EV Tow actions link to ServiceRequestScreen with pre-filled EV-specific notes
 - Nearby Chargers list with station name, distance, speed type (DC Fast/Level 2), availability indicator
 - EV Tips section with educational cards about preconditioning, optimal charge range, regenerative braking
 - Uses expo-linear-gradient for gradient effects and pulse ring animations
-- Shows default vehicle name from AppContext if set
+- Shows EV vehicle name from AppContext
+
+### EV Mobile Charge (`EVMobileChargeScreen`)
+- Dedicated screen for requesting on-demand mobile EV charging (NOT the regular service request)
+- Dark futuristic theme matching EV Mode palette
+- Three charge levels: Quick Boost (10 kWh, $12), Half Charge (25 kWh, $28), Full Charge (50 kWh, $52)
+- Shows vehicle info, location card, CCS compatibility note
+- Confirmation screen with verification PIN after dispatch
+
+### EV Tow (`EVTowScreen`)
+- Dedicated screen for requesting EV-safe towing (NOT the regular service request)
+- Dark futuristic theme matching EV Mode palette
+- Warning about not towing EVs with drive wheels on ground
+- Tow methods: Flatbed Transport (recommended) and Wheel-Lift Tow with pricing
+- Destination picker: Nearest Charging Station, EV Service Center, Home, Custom
+- Confirmation screen with verification PIN after dispatch
+
+### Range Alert (`EVRangeAlertScreen`)
+- Working range monitoring and alert configuration screen
+- Current range gauge with animated pulse ring and status indicator
+- Range threshold presets (20/30/50/75 mi) plus custom input
+- Four alert types with toggles: Low Battery, Charger Proximity, Destination Range Check, Charge Complete
+- Smart Range Tips section with winter/highway/charger distance advice
+- Save Alert Settings with confirmation feedback
 
 ### Vehicle Profiles (`VehicleManagementScreen`)
 - Save multiple vehicles with make, model, year, tire type (run-flat/spare/none), fuel type (regular/premium/diesel/electric)

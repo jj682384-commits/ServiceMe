@@ -25,6 +25,9 @@ import ProviderDetailScreen from "@/screens/ProviderDetailScreen";
 import SmartDiagnosticScreen from "@/screens/SmartDiagnosticScreen";
 import EmergencyModeScreen from "@/screens/EmergencyModeScreen";
 import VehicleManagementScreen from "@/screens/VehicleManagementScreen";
+import EVMobileChargeScreen from "@/screens/ev/EVMobileChargeScreen";
+import EVTowScreen from "@/screens/ev/EVTowScreen";
+import EVRangeAlertScreen from "@/screens/ev/EVRangeAlertScreen";
 
 export type RootStackParamList = {
   Welcome: undefined;
@@ -50,6 +53,9 @@ export type RootStackParamList = {
   ProviderDetail: { providerId: string };
   EmergencyMode: undefined;
   VehicleManagement: undefined;
+  EVMobileCharge: undefined;
+  EVTow: undefined;
+  EVRangeAlert: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -211,6 +217,33 @@ export default function RootStackNavigator() {
         component={VehicleManagementScreen}
         options={{
           headerTitle: "My Vehicles",
+        }}
+      />
+      <Stack.Screen
+        name="EVMobileCharge"
+        component={EVMobileChargeScreen}
+        options={{
+          headerShown: false,
+          presentation: "modal",
+          animation: "slide_from_bottom",
+        }}
+      />
+      <Stack.Screen
+        name="EVTow"
+        component={EVTowScreen}
+        options={{
+          headerShown: false,
+          presentation: "modal",
+          animation: "slide_from_bottom",
+        }}
+      />
+      <Stack.Screen
+        name="EVRangeAlert"
+        component={EVRangeAlertScreen}
+        options={{
+          headerShown: false,
+          presentation: "modal",
+          animation: "slide_from_bottom",
         }}
       />
     </Stack.Navigator>

@@ -279,8 +279,11 @@ export default function EVModeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { vehicles, getDefaultVehicle } = useApp();
 
+  const hasEV = vehicles.some((v) => v.fuelType === "electric");
   const defaultVehicle = getDefaultVehicle();
-  const isEV = defaultVehicle?.fuelType === "electric";
+  const evVehicle = defaultVehicle?.fuelType === "electric"
+    ? defaultVehicle
+    : vehicles.find((v) => v.fuelType === "electric");
 
   const batteryLevel = 73;
   const rangeEstimate = 218;
@@ -301,6 +304,60 @@ export default function EVModeScreen() {
   const scanStyle = useAnimatedStyle(() => ({
     opacity: interpolate(scanPulse.value, [0, 1], [0.4, 1]),
   }));
+
+  if (!hasEV) {
+    return (
+      <View style={[styles.container, { backgroundColor: EV.bg }]}>
+        <LinearGradient
+          colors={["#00FF8808", "#00E5FF05", "transparent"]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 0.4 }}
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={[styles.gateContainer, { paddingTop: insets.top + 60, paddingBottom: insets.bottom + tabBarHeight + 20 }]}>
+          <View style={styles.gateIconWrap}>
+            <LinearGradient
+              colors={[EV.neonGreen + "20", EV.bgCard]}
+              style={styles.gateIconBg}
+            >
+              <Feather name="zap" size={52} color={EV.neonGreen} />
+            </LinearGradient>
+          </View>
+          <Animated.Text style={styles.gateTitle}>EV Mode</Animated.Text>
+          <Animated.Text style={styles.gateSub}>
+            Add an electric vehicle to your profile to unlock the full EV experience — battery monitoring, mobile charging, EV towing, range alerts, and more.
+          </Animated.Text>
+          <Pressable
+            onPress={() => navigation.navigate("VehicleManagement")}
+            style={styles.gateButton}
+          >
+            <LinearGradient
+              colors={[EV.neonGreen, EV.neonCyan]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.gateButtonGradient}
+            >
+              <Feather name="plus-circle" size={20} color="#000" />
+              <Animated.Text style={styles.gateButtonText}>Add Electric Vehicle</Animated.Text>
+            </LinearGradient>
+          </Pressable>
+          <View style={styles.gateFeatures}>
+            {[
+              { icon: "battery-charging" as const, text: "Battery dashboard" },
+              { icon: "zap" as const, text: "Mobile charging" },
+              { icon: "truck" as const, text: "EV-safe towing" },
+              { icon: "shield" as const, text: "Range alerts" },
+            ].map((f, i) => (
+              <View key={i} style={styles.gateFeatureRow}>
+                <Feather name={f.icon} size={14} color={EV.neonGreen} />
+                <Animated.Text style={styles.gateFeatureText}>{f.text}</Animated.Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: EV.bg }]}>
@@ -326,15 +383,11 @@ export default function EVModeScreen() {
             <Feather name="zap" size={22} color={EV.neonGreen} />
             <Animated.Text style={styles.headerTitle}>Electric Hub</Animated.Text>
           </View>
-          {defaultVehicle ? (
+          {evVehicle ? (
             <Animated.Text style={styles.headerCar}>
-              {defaultVehicle.year} {defaultVehicle.make} {defaultVehicle.model}
+              {evVehicle.year} {evVehicle.make} {evVehicle.model}
             </Animated.Text>
-          ) : (
-            <Animated.Text style={styles.headerCar}>
-              No EV selected
-            </Animated.Text>
-          )}
+          ) : null}
         </View>
 
         <GlowCard glowColor={EV.neonGreen}>
@@ -399,13 +452,13 @@ export default function EVModeScreen() {
             icon="zap"
             label="Mobile Charge"
             color={EV.neonCyan}
-            onPress={() => navigation.navigate("ServiceRequest", { serviceType: "jump_start", notes: "EV Mobile Charging Requested" })}
+            onPress={() => navigation.navigate("EVMobileCharge")}
           />
           <QuickAction
             icon="truck"
             label="EV Tow"
             color={EV.neonPurple}
-            onPress={() => navigation.navigate("ServiceRequest", { serviceType: "tow", notes: "Electric vehicle - flatbed required" })}
+            onPress={() => navigation.navigate("EVTow")}
           />
           <QuickAction
             icon="tool"
@@ -422,6 +475,7 @@ export default function EVModeScreen() {
             icon="shield"
             label="Range Alert"
             color={EV.neonGreenDim}
+            onPress={() => navigation.navigate("EVRangeAlert")}
           />
         </View>
 
@@ -747,5 +801,67 @@ const styles = StyleSheet.create({
     color: EV.whiteDim,
     fontSize: 13,
     lineHeight: 18,
+  },
+  gateContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 32,
+  },
+  gateIconWrap: {
+    marginBottom: 24,
+  },
+  gateIconBg: {
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  gateTitle: {
+    color: EV.white,
+    fontSize: 28,
+    fontWeight: "800",
+    marginBottom: 12,
+    letterSpacing: -0.5,
+  },
+  gateSub: {
+    color: EV.whiteDim,
+    fontSize: 15,
+    textAlign: "center",
+    lineHeight: 22,
+    marginBottom: 28,
+  },
+  gateButton: {
+    borderRadius: 16,
+    overflow: "hidden",
+    marginBottom: 32,
+    width: "100%",
+  },
+  gateButtonGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    paddingVertical: 18,
+    borderRadius: 16,
+  },
+  gateButtonText: {
+    color: "#000",
+    fontSize: 17,
+    fontWeight: "800",
+    letterSpacing: 0.3,
+  },
+  gateFeatures: {
+    gap: 14,
+  },
+  gateFeatureRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  gateFeatureText: {
+    color: EV.whiteDim,
+    fontSize: 15,
   },
 });
