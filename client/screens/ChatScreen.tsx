@@ -1,6 +1,7 @@
-import React, { useState, useRef } from "react";
-import { View, StyleSheet, FlatList, TextInput, Pressable, KeyboardAvoidingView, Platform } from "react-native";
+import React, { useState, useRef, useEffect } from "react";
+import { View, StyleSheet, FlatList, TextInput, Pressable, KeyboardAvoidingView, Platform, Keyboard } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useHeaderHeight } from "@react-navigation/elements";
 import { Feather } from "@expo/vector-icons";
 import { RouteProp, useRoute } from "@react-navigation/native";
 
@@ -89,6 +90,7 @@ function MessageBubble({ message, isOwn }: { message: Message; isOwn: boolean })
 
 export default function ChatScreen() {
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const { theme } = useTheme();
   const route = useRoute<ChatRouteProp>();
   const { userRole, addMessage } = useApp();
@@ -96,6 +98,16 @@ export default function ChatScreen() {
 
   const [inputText, setInputText] = useState("");
   const [messages, setMessages] = useState<Message[]>(mockMessages);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const sub = Keyboard.addListener(showEvent, () => {
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 50);
+    });
+    return () => sub.remove();
+  }, []);
 
   const handleSend = () => {
     if (!inputText.trim()) return;
@@ -122,8 +134,8 @@ export default function ChatScreen() {
     <ThemedView style={styles.container}>
       <KeyboardAvoidingView
         style={styles.keyboardView}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={100}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={headerHeight}
       >
         <FlatList
           ref={flatListRef}
