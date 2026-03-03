@@ -106,7 +106,7 @@ export default function DriverTabNavigator() {
         name="HistoryTab"
         component={DriverHistoryScreen}
         options={{
-          headerTitle: () => <HeaderTitle title="ServiceMe" />,
+          headerTitle: () => <HeaderTitle iconOnly />,
           title: "History",
           tabBarIcon: ({ color, size }) => (
             <Feather name="clock" size={size} color={color} />

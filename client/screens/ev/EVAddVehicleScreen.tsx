@@ -31,7 +31,7 @@ import Animated, {
   cancelAnimation,
   runOnJS,
 } from "react-native-reanimated";
-import { useApp, TireType, FuelType } from "@/context/AppContext";
+import { useApp, TireType, FuelType, DrivetrainType } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { VEHICLE_MAKES, VEHICLE_MAKES_MODELS } from "@/constants/vehicleData";
 import EVAnimatedBackground from "@/components/EVAnimatedBackground";
@@ -57,6 +57,13 @@ const TIRE_TYPES: { value: TireType; label: string }[] = [
   { value: "spare", label: "Full-Size Spare" },
   { value: "run_flat", label: "Run-Flat Tires" },
   { value: "none", label: "No Spare" },
+];
+
+const DRIVETRAIN_TYPES: { value: DrivetrainType; label: string }[] = [
+  { value: "fwd", label: "FWD" },
+  { value: "rwd", label: "RWD" },
+  { value: "awd", label: "AWD" },
+  { value: "4wd", label: "4WD" },
 ];
 
 const currentYear = new Date().getFullYear();
@@ -388,6 +395,7 @@ export default function EVAddVehicleScreen() {
   const [model, setModel] = useState("");
   const [year, setYear] = useState(currentYear);
   const [tireType, setTireType] = useState<TireType>("run_flat");
+  const [drivetrain, setDrivetrain] = useState<DrivetrainType>("awd");
 
   const [showMakePicker, setShowMakePicker] = useState(false);
   const [showModelPicker, setShowModelPicker] = useState(false);
@@ -413,6 +421,7 @@ export default function EVAddVehicleScreen() {
       year,
       tireType,
       fuelType: "electric",
+      drivetrain,
       isDefault: vehicles.length === 0,
     });
     navigation.goBack();
@@ -554,14 +563,49 @@ export default function EVAddVehicleScreen() {
             </View>
           </Animated.View>
 
-          <Animated.View entering={FadeInUp.duration(500).delay(500)} style={styles.evNote}>
+          <Animated.View entering={FadeInUp.duration(500).delay(450)} style={styles.formCard}>
+            <View style={styles.sectionHeader}>
+              <Feather name="settings" size={16} color={EV.neonCyan} />
+              <Animated.Text style={styles.sectionTitle}>DRIVETRAIN</Animated.Text>
+            </View>
+
+            <View style={styles.optionRow}>
+              {DRIVETRAIN_TYPES.map((d) => (
+                <Pressable
+                  key={d.value}
+                  onPress={() => setDrivetrain(d.value)}
+                  style={[
+                    styles.optionChip,
+                    {
+                      backgroundColor: drivetrain === d.value ? EV.neonCyan + "20" : EV.bgCardLight,
+                      borderColor: drivetrain === d.value ? EV.neonCyan : EV.border,
+                      flex: 1,
+                    },
+                  ]}
+                >
+                  <Animated.Text
+                    style={{
+                      color: drivetrain === d.value ? EV.neonCyan : EV.whiteDim,
+                      fontWeight: drivetrain === d.value ? "600" : "400",
+                      fontSize: 13,
+                      textAlign: "center",
+                    }}
+                  >
+                    {d.label}
+                  </Animated.Text>
+                </Pressable>
+              ))}
+            </View>
+          </Animated.View>
+
+          <Animated.View entering={FadeInUp.duration(500).delay(550)} style={styles.evNote}>
             <Feather name="zap" size={16} color={EV.neonGreen} />
             <Animated.Text style={styles.evNoteText}>
               Fuel type is automatically set to Electric for EV Mode vehicles
             </Animated.Text>
           </Animated.View>
 
-          <Animated.View entering={FadeInUp.duration(500).delay(600)} style={styles.formActions}>
+          <Animated.View entering={FadeInUp.duration(500).delay(650)} style={styles.formActions}>
             <Pressable
               onPress={() => navigation.goBack()}
               style={styles.cancelButton}

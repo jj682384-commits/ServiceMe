@@ -15,6 +15,7 @@ export type ProviderType = "shop" | "independent";
 
 export type TireType = "run_flat" | "spare" | "none";
 export type FuelType = "regular" | "premium" | "diesel" | "electric";
+export type DrivetrainType = "fwd" | "rwd" | "awd" | "4wd";
 
 export interface Vehicle {
   id: string;
@@ -23,6 +24,7 @@ export interface Vehicle {
   year: number;
   tireType: TireType;
   fuelType: FuelType;
+  drivetrain: DrivetrainType;
   isDefault: boolean;
 }
 

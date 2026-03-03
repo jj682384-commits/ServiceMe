@@ -14,7 +14,7 @@ import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { useTheme } from "@/hooks/useTheme";
-import { useApp, Vehicle, TireType, FuelType } from "@/context/AppContext";
+import { useApp, Vehicle, TireType, FuelType, DrivetrainType } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { VEHICLE_MAKES, VEHICLE_MAKES_MODELS } from "@/constants/vehicleData";
 
@@ -31,6 +31,13 @@ const FUEL_TYPES: { value: FuelType; label: string; icon: keyof typeof Feather.g
   { value: "premium", label: "Premium", icon: "droplet" },
   { value: "diesel", label: "Diesel", icon: "droplet" },
   { value: "electric", label: "Electric", icon: "battery-charging" },
+];
+
+const DRIVETRAIN_TYPES: { value: DrivetrainType; label: string }[] = [
+  { value: "fwd", label: "FWD" },
+  { value: "rwd", label: "RWD" },
+  { value: "awd", label: "AWD" },
+  { value: "4wd", label: "4WD" },
 ];
 
 const currentYear = new Date().getFullYear();
@@ -234,6 +241,14 @@ function VehicleCard({
             <ThemedText type="small" style={{ color: theme.textSecondary }}>
               {vehicle.tireType === "run_flat" ? "Run-Flat" : vehicle.tireType === "spare" ? "Has Spare" : "No Spare"}
             </ThemedText>
+            {vehicle.drivetrain ? (
+              <>
+                <View style={[styles.metaDot, { backgroundColor: theme.textSecondary }]} />
+                <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                  {vehicle.drivetrain.toUpperCase()}
+                </ThemedText>
+              </>
+            ) : null}
           </View>
         </View>
         {vehicle.isDefault ? (
@@ -285,6 +300,7 @@ export default function VehicleManagementScreen() {
   const [year, setYear] = useState(currentYear);
   const [tireType, setTireType] = useState<TireType>("spare");
   const [fuelType, setFuelType] = useState<FuelType>("regular");
+  const [drivetrain, setDrivetrain] = useState<DrivetrainType>("fwd");
 
   const [showMakePicker, setShowMakePicker] = useState(false);
   const [showModelPicker, setShowModelPicker] = useState(false);
@@ -300,6 +316,7 @@ export default function VehicleManagementScreen() {
     setYear(currentYear);
     setTireType("spare");
     setFuelType("regular");
+    setDrivetrain("fwd");
     setShowAddForm(false);
   };
 
@@ -325,6 +342,7 @@ export default function VehicleManagementScreen() {
       year,
       tireType,
       fuelType,
+      drivetrain,
       isDefault: vehicles.length === 0,
     });
     resetForm();
@@ -476,6 +494,37 @@ export default function VehicleManagementScreen() {
                     }}
                   >
                     {f.label}
+                  </ThemedText>
+                </Pressable>
+              ))}
+            </View>
+
+            <ThemedText type="small" style={[styles.fieldLabel, { color: theme.textSecondary }]}>
+              Drivetrain
+            </ThemedText>
+            <View style={styles.optionRow}>
+              {DRIVETRAIN_TYPES.map((d) => (
+                <Pressable
+                  key={d.value}
+                  onPress={() => setDrivetrain(d.value)}
+                  style={[
+                    styles.optionChip,
+                    {
+                      backgroundColor: drivetrain === d.value ? theme.primary + "15" : theme.backgroundDefault,
+                      borderColor: drivetrain === d.value ? theme.primary : theme.border,
+                      flex: 1,
+                    },
+                  ]}
+                >
+                  <ThemedText
+                    type="small"
+                    style={{
+                      color: drivetrain === d.value ? theme.primary : theme.text,
+                      fontWeight: drivetrain === d.value ? "600" : "400",
+                      textAlign: "center",
+                    }}
+                  >
+                    {d.label}
                   </ThemedText>
                 </Pressable>
               ))}

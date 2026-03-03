@@ -1,14 +1,31 @@
 import React from "react";
-import { View, StyleSheet, Image } from "react-native";
+import { View, StyleSheet, Image, Platform } from "react-native";
 
 import { ThemedText } from "@/components/ThemedText";
+import { useTheme } from "@/hooks/useTheme";
 import { Spacing } from "@/constants/theme";
 
 interface HeaderTitleProps {
-  title: string;
+  title?: string;
+  iconOnly?: boolean;
 }
 
-export function HeaderTitle({ title }: HeaderTitleProps) {
+export function HeaderTitle({ title, iconOnly }: HeaderTitleProps) {
+  const { theme } = useTheme();
+
+  if (iconOnly) {
+    return (
+      <View style={styles.iconOnlyContainer}>
+        <View style={[styles.iconGlow, { backgroundColor: theme.primary + "25" }]} />
+        <Image
+          source={require("../../assets/images/icon.png")}
+          style={styles.iconLarge}
+          resizeMode="contain"
+        />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <Image
@@ -16,7 +33,7 @@ export function HeaderTitle({ title }: HeaderTitleProps) {
         style={styles.icon}
         resizeMode="contain"
       />
-      <ThemedText style={styles.title}>{title}</ThemedText>
+      {title ? <ThemedText style={styles.title}>{title}</ThemedText> : null}
     </View>
   );
 }
@@ -35,5 +52,21 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 17,
     fontWeight: "600",
+  },
+  iconOnlyContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    width: 36,
+    height: 36,
+  },
+  iconGlow: {
+    position: "absolute",
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+  },
+  iconLarge: {
+    width: 32,
+    height: 32,
   },
 });
