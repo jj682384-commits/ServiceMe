@@ -275,11 +275,11 @@ function ChargingStation({
 }
 
 function AnimatedGradientButton({ onPress }: { onPress: () => void }) {
-  const translateX = useSharedValue(0);
+  const phase = useSharedValue(0);
 
   useEffect(() => {
-    translateX.value = withRepeat(
-      withTiming(1, { duration: 3000, easing: Easing.linear }),
+    phase.value = withRepeat(
+      withTiming(1, { duration: 2500, easing: Easing.linear }),
       -1,
       false
     );
@@ -287,9 +287,8 @@ function AnimatedGradientButton({ onPress }: { onPress: () => void }) {
 
   const gradientSlide = useAnimatedStyle(() => {
     'worklet';
-    const shift = translateX.value * 400 - 200;
     return {
-      transform: [{ translateX: shift }],
+      transform: [{ translateX: -phase.value * 402 }],
     };
   });
 
@@ -302,29 +301,38 @@ function AnimatedGradientButton({ onPress }: { onPress: () => void }) {
               position: "absolute",
               top: 0,
               bottom: 0,
-              width: 800,
-              left: -200,
+              left: 0,
+              width: 804,
+              flexDirection: "row",
             },
             gradientSlide,
           ]}
         >
           <LinearGradient
             colors={[
-              EV.neonPurple,
-              EV.neonBlue,
-              EV.neonCyan,
               EV.neonGreen,
               EV.neonCyan,
               EV.neonBlue,
               EV.neonPurple,
-              EV.neonBlue,
-              EV.neonCyan,
               EV.neonGreen,
             ]}
-            locations={[0, 0.1, 0.2, 0.35, 0.5, 0.6, 0.7, 0.8, 0.9, 1]}
+            locations={[0, 0.25, 0.5, 0.75, 1]}
             start={{ x: 0, y: 0.5 }}
             end={{ x: 1, y: 0.5 }}
-            style={{ width: "100%", height: "100%" }}
+            style={{ width: 402, height: "100%" }}
+          />
+          <LinearGradient
+            colors={[
+              EV.neonGreen,
+              EV.neonCyan,
+              EV.neonBlue,
+              EV.neonPurple,
+              EV.neonGreen,
+            ]}
+            locations={[0, 0.25, 0.5, 0.75, 1]}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={{ width: 402, height: "100%" }}
           />
         </Animated.View>
         <Feather name="plus-circle" size={24} color="#000" style={{ zIndex: 1 }} />
