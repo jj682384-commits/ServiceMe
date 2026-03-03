@@ -36,9 +36,9 @@ const EV = {
 };
 
 const CHARGE_LEVELS = [
-  { label: "Quick Boost", kwh: "10 kWh", time: "~15 min", price: "$12", desc: "Get enough charge to reach the nearest station" },
-  { label: "Half Charge", kwh: "25 kWh", time: "~35 min", price: "$28", desc: "Enough for about 80 miles of range" },
-  { label: "Full Charge", kwh: "50 kWh", time: "~60 min", price: "$52", desc: "Top off your battery to near full capacity" },
+  { label: "Quick Boost", kwh: "10 kWh", time: "~15 min", price: "$10", desc: "Get enough charge to reach the nearest station" },
+  { label: "Half Charge", kwh: "25 kWh", time: "~35 min", price: "$24", desc: "Enough for about 80 miles of range" },
+  { label: "Full Charge", kwh: "50 kWh", time: "~60 min", price: "$44", desc: "Top off your battery to near full capacity" },
 ];
 
 export default function EVMobileChargeScreen() {

@@ -27,11 +27,11 @@ const EXPRESS_FEE = 19.95;
 type VehicleSize = "compact" | "sedan" | "suv" | "truck" | "commercial";
 
 const vehicleSizes: { type: VehicleSize; label: string; icon: keyof typeof Feather.glyphMap; basePrice: number }[] = [
-  { type: "compact", label: "Compact Car", icon: "circle", basePrice: 75 },
-  { type: "sedan", label: "Sedan / Coupe", icon: "minus", basePrice: 85 },
-  { type: "suv", label: "SUV / Crossover", icon: "square", basePrice: 95 },
-  { type: "truck", label: "Pickup Truck", icon: "truck", basePrice: 110 },
-  { type: "commercial", label: "Commercial Van", icon: "box", basePrice: 150 },
+  { type: "compact", label: "Compact Car", icon: "circle", basePrice: 64 },
+  { type: "sedan", label: "Sedan / Coupe", icon: "minus", basePrice: 72 },
+  { type: "suv", label: "SUV / Crossover", icon: "square", basePrice: 81 },
+  { type: "truck", label: "Pickup Truck", icon: "truck", basePrice: 94 },
+  { type: "commercial", label: "Commercial Van", icon: "box", basePrice: 128 },
 ];
 
 interface SizeCardProps {
@@ -112,7 +112,7 @@ export default function TowRequestScreen() {
 
   const selectedSizeData = vehicleSizes.find((s) => s.type === selectedSize);
   const basePrice = selectedSizeData?.basePrice || 0;
-  const winchFee = needsWinch ? 35 : 0;
+  const winchFee = needsWinch ? 30 : 0;
   const expressFee = isExpress ? EXPRESS_FEE : 0;
   const totalCost = basePrice + winchFee + SERVICE_FEE + expressFee;
 
