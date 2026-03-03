@@ -491,7 +491,7 @@ export default function EVModeScreen() {
           <Animated.Text style={styles.gateSub}>
             Add an electric vehicle to your profile to unlock the full EV experience — battery monitoring, mobile charging, EV towing, range alerts, and more.
           </Animated.Text>
-          <AnimatedGradientButton onPress={() => navigation.navigate("VehicleManagement")} />
+          <AnimatedGradientButton onPress={() => navigation.navigate("EVAddVehicle")} />
           <View style={styles.gateFeatures}>
             {[
               { icon: "battery-charging" as const, text: "Battery dashboard" },

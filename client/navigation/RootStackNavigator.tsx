@@ -28,6 +28,7 @@ import VehicleManagementScreen from "@/screens/VehicleManagementScreen";
 import EVMobileChargeScreen from "@/screens/ev/EVMobileChargeScreen";
 import EVTowScreen from "@/screens/ev/EVTowScreen";
 import EVRangeAlertScreen from "@/screens/ev/EVRangeAlertScreen";
+import EVAddVehicleScreen from "@/screens/ev/EVAddVehicleScreen";
 import PreferredProvidersScreen from "@/screens/PreferredProvidersScreen";
 import PaymentMethodsScreen from "@/screens/PaymentMethodsScreen";
 import BillingHistoryScreen from "@/screens/BillingHistoryScreen";
@@ -60,6 +61,7 @@ export type RootStackParamList = {
   EVMobileCharge: undefined;
   EVTow: undefined;
   EVRangeAlert: undefined;
+  EVAddVehicle: undefined;
   PreferredProviders: undefined;
   PaymentMethods: undefined;
   BillingHistory: undefined;
@@ -252,6 +254,15 @@ export default function RootStackNavigator() {
           headerShown: false,
           presentation: "modal",
           animation: "slide_from_bottom",
+        }}
+      />
+      <Stack.Screen
+        name="EVAddVehicle"
+        component={EVAddVehicleScreen}
+        options={{
+          headerShown: false,
+          presentation: "fullScreenModal",
+          animation: "fade",
         }}
       />
       <Stack.Screen

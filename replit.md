@@ -62,6 +62,14 @@ A `shared/` directory contains code common to both client and server, such as sc
 - **Drizzle Kit**: Database migration
 - **ESBuild**: Production bundling
 
+### EV Add Vehicle Screen
+- Dedicated dark-themed EV vehicle add screen at `client/screens/ev/EVAddVehicleScreen.tsx`
+- Techno intro animation: expanding ring, scan line, hex grid, then fades to form
+- Background matches EV homepage with `EVAnimatedBackground`
+- Form: Make, Model, Year, Tire Type — fuel type locked to Electric
+- Registered as `EVAddVehicle` in RootStackNavigator (fullScreenModal + fade)
+- EV gate button navigates to `EVAddVehicle` instead of `VehicleManagement`
+
 ### Environment Variables
 - `DATABASE_URL`
 - `EXPO_PUBLIC_DOMAIN`
