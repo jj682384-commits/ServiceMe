@@ -7,10 +7,10 @@ import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
-import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
+import AnimatedBackground, { DARK_BG } from "@/components/AnimatedBackground";
 import { useTheme } from "@/hooks/useTheme";
-import { useApp, ServiceRequest, ServiceType } from "@/context/AppContext";
+import { useApp, ServiceRequest, ServiceType, BACKGROUND_SCHEMES } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
@@ -40,16 +40,18 @@ function StatCard({
   value,
   label,
   color,
+  cardBg,
 }: {
   icon: keyof typeof Feather.glyphMap;
   value: string;
   label: string;
   color: string;
+  cardBg: string;
 }) {
   const { theme } = useTheme();
 
   return (
-    <View style={[styles.statCard, { backgroundColor: theme.backgroundSecondary }]}>
+    <View style={[styles.statCard, { backgroundColor: cardBg }]}>
       <Feather name={icon} size={20} color={color} />
       <ThemedText type="h4" style={{ marginTop: Spacing.xs }}>
         {value}
@@ -61,7 +63,7 @@ function StatCard({
   );
 }
 
-function HistoryItem({ item, onPress }: { item: ServiceRequest; onPress: () => void }) {
+function HistoryItem({ item, onPress, cardBg }: { item: ServiceRequest; onPress: () => void; cardBg: string }) {
   const { theme } = useTheme();
 
   const formatDate = (date: Date) => {
@@ -86,7 +88,7 @@ function HistoryItem({ item, onPress }: { item: ServiceRequest; onPress: () => v
       onPress={onPress}
       style={({ pressed }) => [
         styles.historyItem,
-        { backgroundColor: theme.backgroundDefault, opacity: pressed ? 0.8 : 1 },
+        { backgroundColor: cardBg, opacity: pressed ? 0.8 : 1 },
       ]}
     >
       <View style={[styles.serviceIcon, { backgroundColor: theme.secondary + "15" }]}>
@@ -148,14 +150,18 @@ export default function DriverHistoryScreen() {
   const headerHeight = useHeaderHeight();
   const tabBarHeight = useBottomTabBarHeight();
   const { theme } = useTheme();
-  const { requestHistory } = useApp();
+  const { requestHistory, backgroundPreferences } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const isAnimated = backgroundPreferences.mode === "animated";
+  const schemeColors = BACKGROUND_SCHEMES[backgroundPreferences.colorScheme].colors;
 
   const displayHistory = requestHistory;
 
   const totalServices = displayHistory.length;
   const totalSpent = displayHistory.reduce((sum, r) => sum + (r.estimatedCost || 0), 0);
   const totalTimeSaved = displayHistory.reduce((sum, r) => sum + (r.timeSaved || 0), 0);
+
+  const cardBg = isAnimated ? "rgba(20, 25, 45, 0.75)" : theme.backgroundSecondary;
 
   const renderHeader = () => (
     <View style={styles.headerSection}>
@@ -165,25 +171,29 @@ export default function DriverHistoryScreen() {
           value={`${totalServices}`}
           label="Total Services"
           color={theme.primary}
+          cardBg={cardBg}
         />
         <StatCard
           icon="dollar-sign"
           value={`$${totalSpent}`}
           label="Total Spent"
           color={theme.secondary}
+          cardBg={cardBg}
         />
         <StatCard
           icon="clock"
           value={`${totalTimeSaved}m`}
           label="Time Saved"
           color={theme.success}
+          cardBg={cardBg}
         />
       </View>
     </View>
   );
 
   return (
-    <ThemedView style={styles.container}>
+    <View style={[styles.container, { backgroundColor: isAnimated ? DARK_BG : theme.backgroundRoot }]}>
+      {isAnimated ? <AnimatedBackground customColors={schemeColors} /> : null}
       <FlatList
         data={displayHistory}
         keyExtractor={(item) => item.id}
@@ -191,6 +201,7 @@ export default function DriverHistoryScreen() {
           <HistoryItem
             item={item}
             onPress={() => navigation.navigate("ServiceDetail", { requestId: item.id })}
+            cardBg={isAnimated ? "rgba(20, 25, 45, 0.75)" : theme.backgroundDefault}
           />
         )}
         ListHeaderComponent={renderHeader}
@@ -216,7 +227,7 @@ export default function DriverHistoryScreen() {
           </View>
         }
       />
-    </ThemedView>
+    </View>
   );
 }
 

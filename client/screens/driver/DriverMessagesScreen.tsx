@@ -7,9 +7,10 @@ import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
-import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
+import AnimatedBackground, { DARK_BG } from "@/components/AnimatedBackground";
 import { useTheme } from "@/hooks/useTheme";
+import { useApp, BACKGROUND_SCHEMES } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
@@ -49,7 +50,7 @@ const mockConversations: Conversation[] = [
   },
 ];
 
-function ConversationItem({ item }: { item: Conversation }) {
+function ConversationItem({ item, cardBg }: { item: Conversation; cardBg: string }) {
   const { theme } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
@@ -73,7 +74,7 @@ function ConversationItem({ item }: { item: Conversation }) {
       onPress={() => navigation.navigate("Chat", { conversationId: item.id, providerName: item.providerName })}
       style={({ pressed }) => [
         styles.conversationItem,
-        { backgroundColor: theme.backgroundDefault, opacity: pressed ? 0.8 : 1 },
+        { backgroundColor: cardBg, opacity: pressed ? 0.8 : 1 },
       ]}
     >
       <View style={[styles.avatar, { backgroundColor: theme.secondary + "20" }]}>
@@ -117,13 +118,18 @@ export default function DriverMessagesScreen() {
   const headerHeight = useHeaderHeight();
   const tabBarHeight = useBottomTabBarHeight();
   const { theme } = useTheme();
+  const { backgroundPreferences } = useApp();
+  const isAnimated = backgroundPreferences.mode === "animated";
+  const schemeColors = BACKGROUND_SCHEMES[backgroundPreferences.colorScheme].colors;
+  const cardBg = isAnimated ? "rgba(20, 25, 45, 0.75)" : theme.backgroundDefault;
 
   return (
-    <ThemedView style={styles.container}>
+    <View style={[styles.container, { backgroundColor: isAnimated ? DARK_BG : theme.backgroundRoot }]}>
+      {isAnimated ? <AnimatedBackground customColors={schemeColors} /> : null}
       <FlatList
         data={mockConversations}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <ConversationItem item={item} />}
+        renderItem={({ item }) => <ConversationItem item={item} cardBg={cardBg} />}
         contentContainerStyle={{
           paddingTop: headerHeight + Spacing.lg,
           paddingBottom: tabBarHeight + Spacing.xl,
@@ -146,7 +152,7 @@ export default function DriverMessagesScreen() {
           </View>
         }
       />
-    </ThemedView>
+    </View>
   );
 }
 

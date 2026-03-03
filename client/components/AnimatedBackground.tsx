@@ -99,11 +99,22 @@ function FloatingOrb({ config }: { config: OrbConfig }) {
 
 export const DARK_BG = "#060918";
 
-export default function AnimatedBackground() {
+interface AnimatedBackgroundProps {
+  customColors?: string[][];
+}
+
+export default function AnimatedBackground({ customColors }: AnimatedBackgroundProps) {
+  const configs = customColors
+    ? ORB_CONFIGS.map((config, i) => ({
+        ...config,
+        colors: customColors[i % customColors.length],
+      }))
+    : ORB_CONFIGS;
+
   return (
     <View style={[styles.container, { pointerEvents: "none" }]}>
-      {ORB_CONFIGS.map((config, index) => (
-        <FloatingOrb key={index} config={config} />
+      {configs.map((config, index) => (
+        <FloatingOrb key={`${index}-${config.colors.join()}`} config={config} />
       ))}
     </View>
   );

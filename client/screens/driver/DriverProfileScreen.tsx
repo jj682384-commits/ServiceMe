@@ -7,10 +7,10 @@ import { Feather } from "@expo/vector-icons";
 import { useNavigation, CommonActions } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
-import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
+import AnimatedBackground, { DARK_BG } from "@/components/AnimatedBackground";
 import { useTheme } from "@/hooks/useTheme";
-import { useApp } from "@/context/AppContext";
+import { useApp, BACKGROUND_SCHEMES } from "@/context/AppContext";
 import { Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
@@ -90,7 +90,10 @@ export default function DriverProfileScreen() {
   const headerHeight = useHeaderHeight();
   const tabBarHeight = useBottomTabBarHeight();
   const { theme } = useTheme();
-  const { currentDriver, setUserRole, logout, searchRadius, getTrialDaysRemaining, preferredProviders } = useApp();
+  const { currentDriver, setUserRole, logout, searchRadius, getTrialDaysRemaining, preferredProviders, backgroundPreferences } = useApp();
+  const isAnimated = backgroundPreferences.mode === "animated";
+  const schemeColors = BACKGROUND_SCHEMES[backgroundPreferences.colorScheme].colors;
+  const sectionBg = isAnimated ? "rgba(20, 25, 45, 0.75)" : theme.backgroundDefault;
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
   const isPremium = currentDriver?.membership === "premium";
@@ -145,7 +148,8 @@ export default function DriverProfileScreen() {
   };
 
   return (
-    <ThemedView style={styles.container}>
+    <View style={[styles.container, { backgroundColor: isAnimated ? DARK_BG : theme.backgroundRoot }]}>
+      {isAnimated ? <AnimatedBackground customColors={schemeColors} /> : null}
       <ScrollView
         contentContainerStyle={{
           paddingTop: headerHeight + Spacing.lg,
@@ -230,7 +234,7 @@ export default function DriverProfileScreen() {
           </View>
         )}
 
-        <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
+        <View style={[styles.section, { backgroundColor: sectionBg }]}>
           <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
             MEMBERSHIP
           </ThemedText>
@@ -242,7 +246,7 @@ export default function DriverProfileScreen() {
           />
         </View>
 
-        <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
+        <View style={[styles.section, { backgroundColor: sectionBg }]}>
           <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
             ACCOUNT
           </ThemedText>
@@ -258,7 +262,7 @@ export default function DriverProfileScreen() {
           <MenuItem icon="mail" label="Email" value={currentDriver?.email || "alex@email.com"} showArrow={false} />
         </View>
 
-        <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
+        <View style={[styles.section, { backgroundColor: sectionBg }]}>
           <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
             PAYMENT
           </ThemedText>
@@ -266,7 +270,7 @@ export default function DriverProfileScreen() {
           <MenuItem icon="file-text" label="Billing History" onPress={() => navigation.navigate("BillingHistory")} />
         </View>
 
-        <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
+        <View style={[styles.section, { backgroundColor: sectionBg }]}>
           <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
             PREFERENCES
           </ThemedText>
@@ -277,9 +281,10 @@ export default function DriverProfileScreen() {
             onValueChange={setNotificationsEnabled}
           />
           <MenuItem icon="map-pin" label="Search Radius" value={`${searchRadius} miles`} onPress={() => navigation.navigate("SearchRadius")} />
+          <MenuItem icon="layers" label="Background Style" value={backgroundPreferences.mode === "animated" ? "Motion" : "Solid"} onPress={() => navigation.navigate("BackgroundSettings")} />
         </View>
 
-        <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
+        <View style={[styles.section, { backgroundColor: sectionBg }]}>
           <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
             SAFETY
           </ThemedText>
@@ -287,7 +292,7 @@ export default function DriverProfileScreen() {
           <MenuItem icon="shield" label="Emergency Mode" onPress={() => navigation.navigate("EmergencyMode")} />
         </View>
 
-        <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
+        <View style={[styles.section, { backgroundColor: sectionBg }]}>
           <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
             SUPPORT
           </ThemedText>
@@ -309,12 +314,12 @@ export default function DriverProfileScreen() {
           />
         </View>
 
-        <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
+        <View style={[styles.section, { backgroundColor: sectionBg }]}>
           <MenuItem icon="refresh-cw" label="Switch to Provider Mode" onPress={handleSwitchRole} />
           <MenuItem icon="log-out" label="Sign Out" isDestructive onPress={handleSignOut} />
         </View>
       </ScrollView>
-    </ThemedView>
+    </View>
   );
 }
 
