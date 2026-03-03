@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, StyleSheet, Pressable, TextInput } from "react-native";
+import { View, StyleSheet, Pressable, TextInput, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Feather } from "@expo/vector-icons";
@@ -27,10 +27,22 @@ const PREMIUM_DISCOUNT = 0.20;
 const serviceTypes: { type: ServiceType; label: string; icon: keyof typeof Feather.glyphMap; price: number }[] = [
   { type: "flat_tire", label: "Flat Tire", icon: "disc", price: 51 },
   { type: "jump_start", label: "Jump Start", icon: "battery-charging", price: 38 },
-  { type: "fuel", label: "Fuel Delivery", icon: "droplet", price: 30 },
+  { type: "fuel", label: "Fuel Delivery", icon: "droplet", price: 0 },
   { type: "lockout", label: "Lockout", icon: "key", price: 47 },
   { type: "obd_diagnostic", label: "OBD Diagnostic", icon: "cpu", price: 21 },
   { type: "other", label: "Other", icon: "more-horizontal", price: 55 },
+];
+
+const FUEL_AMOUNTS: { label: string; desc: string; price: number }[] = [
+  { label: "$10", desc: "Just enough to reach a station", price: 10 },
+  { label: "$15", desc: "Short trip covered", price: 15 },
+  { label: "$20", desc: "About 60-90 miles of range", price: 20 },
+  { label: "$25", desc: "A solid fill for most cars", price: 25 },
+  { label: "$30", desc: "Comfortable fill for most cars", price: 30 },
+  { label: "$35", desc: "More than enough for the day", price: 35 },
+  { label: "$40", desc: "Half tank for most vehicles", price: 40 },
+  { label: "$45", desc: "Nearly a full tank", price: 45 },
+  { label: "$50", desc: "Get back on the road worry-free", price: 50 },
 ];
 
 interface ServiceTypeCardProps {
@@ -44,9 +56,10 @@ interface ServiceTypeCardProps {
   onPress: () => void;
 }
 
-function ServiceTypeCard({ label, icon, price, discountedPrice, isPremium, isSelected, onPress }: ServiceTypeCardProps) {
+function ServiceTypeCard({ type, label, icon, price, discountedPrice, isPremium, isSelected, onPress }: ServiceTypeCardProps) {
   const { theme } = useTheme();
   const scale = useSharedValue(1);
+  const isFuel = type === "fuel";
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -82,7 +95,11 @@ function ServiceTypeCard({ label, icon, price, discountedPrice, isPremium, isSel
       >
         {label}
       </ThemedText>
-      {isPremium && discountedPrice ? (
+      {isFuel ? (
+        <ThemedText type="small" style={{ color: theme.textSecondary }}>
+          From $10
+        </ThemedText>
+      ) : isPremium && discountedPrice ? (
         <View style={styles.priceContainer}>
           <ThemedText type="small" style={[styles.originalPrice, { color: theme.textSecondary }]}>
             ${price}
@@ -121,17 +138,26 @@ export default function ServiceRequestScreen() {
   const [notes, setNotes] = useState(initialNotes);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExpress, setIsExpress] = useState(false);
+  const [selectedFuelIndex, setSelectedFuelIndex] = useState(2);
+  const [useCustomFuel, setUseCustomFuel] = useState(false);
+  const [customFuelAmount, setCustomFuelAmount] = useState("");
 
   const isPremium = currentDriver?.membership === "premium";
   const selectedServiceData = serviceTypes.find((s) => s.type === selectedService);
-  const basePrice = selectedServiceData?.price || 0;
+  const isFuelSelected = selectedService === "fuel";
+  const parsedCustom = parseFloat(customFuelAmount);
+  const customFuelValid = useCustomFuel && !isNaN(parsedCustom) && parsedCustom > 0;
+  const fuelPrice = useCustomFuel ? (customFuelValid ? parsedCustom : 0) : (FUEL_AMOUNTS[selectedFuelIndex]?.price || 0);
+  const basePrice = isFuelSelected ? fuelPrice : (selectedServiceData?.price || 0);
   const discountAmount = isPremium ? basePrice * PREMIUM_DISCOUNT : 0;
   const discountedBasePrice = basePrice - discountAmount;
   const expressFee = isExpress ? EXPRESS_FEE : 0;
   const totalCost = discountedBasePrice + SERVICE_FEE + expressFee;
 
+  const canSubmit = selectedService && !(isFuelSelected && useCustomFuel && !customFuelValid);
+
   const handleSubmit = () => {
-    if (!selectedService) return;
+    if (!canSubmit) return;
 
     setIsSubmitting(true);
 
@@ -216,6 +242,135 @@ export default function ServiceRequestScreen() {
             />
           ))}
         </View>
+
+        {isFuelSelected ? (
+          <>
+            <ThemedText type="h4" style={styles.sectionTitle}>
+              How much fuel do you need?
+            </ThemedText>
+            <View style={styles.fuelToggleRow}>
+              <Pressable
+                onPress={() => setUseCustomFuel(false)}
+                style={[
+                  styles.fuelToggleTab,
+                  {
+                    backgroundColor: !useCustomFuel ? theme.primary + "15" : theme.backgroundSecondary,
+                    borderColor: !useCustomFuel ? theme.primary : "transparent",
+                  },
+                ]}
+              >
+                <Feather name="list" size={16} color={!useCustomFuel ? theme.primary : theme.textSecondary} />
+                <ThemedText type="small" style={{ fontWeight: "600", color: !useCustomFuel ? theme.primary : theme.textSecondary }}>
+                  Choose Amount
+                </ThemedText>
+              </Pressable>
+              <Pressable
+                onPress={() => setUseCustomFuel(true)}
+                style={[
+                  styles.fuelToggleTab,
+                  {
+                    backgroundColor: useCustomFuel ? theme.primary + "15" : theme.backgroundSecondary,
+                    borderColor: useCustomFuel ? theme.primary : "transparent",
+                  },
+                ]}
+              >
+                <Feather name="edit-3" size={16} color={useCustomFuel ? theme.primary : theme.textSecondary} />
+                <ThemedText type="small" style={{ fontWeight: "600", color: useCustomFuel ? theme.primary : theme.textSecondary }}>
+                  Enter Custom
+                </ThemedText>
+              </Pressable>
+            </View>
+            {useCustomFuel ? (
+              <View style={[styles.customFuelCard, { backgroundColor: theme.backgroundSecondary }]}>
+                <View style={[styles.fuelIconWrap, { backgroundColor: theme.primary + "20" }]}>
+                  <Feather name="dollar-sign" size={20} color={theme.primary} />
+                </View>
+                <ThemedText type="body" style={{ fontWeight: "600", marginBottom: Spacing.xs }}>
+                  Enter your fuel amount
+                </ThemedText>
+                <ThemedText type="small" style={{ color: theme.textSecondary, marginBottom: Spacing.md }}>
+                  Type any dollar amount for your fuel delivery
+                </ThemedText>
+                <View style={styles.customFuelInputRow}>
+                  <ThemedText type="h3" style={{ color: theme.primary }}>$</ThemedText>
+                  <TextInput
+                    style={[
+                      styles.customFuelInput,
+                      {
+                        backgroundColor: theme.backgroundDefault,
+                        color: theme.text,
+                        borderColor: customFuelValid ? theme.primary : theme.border,
+                      },
+                    ]}
+                    value={customFuelAmount}
+                    onChangeText={setCustomFuelAmount}
+                    placeholder="0.00"
+                    placeholderTextColor={theme.textSecondary}
+                    keyboardType="decimal-pad"
+                    maxLength={6}
+                  />
+                </View>
+                {customFuelValid && isPremium ? (
+                  <View style={[styles.priceContainer, { marginTop: Spacing.sm }]}>
+                    <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                      Premium price:
+                    </ThemedText>
+                    <ThemedText type="small" style={[styles.originalPrice, { color: theme.textSecondary }]}>
+                      ${parsedCustom.toFixed(2)}
+                    </ThemedText>
+                    <ThemedText type="body" style={{ color: theme.success, fontWeight: "700" }}>
+                      ${(parsedCustom * (1 - PREMIUM_DISCOUNT)).toFixed(2)}
+                    </ThemedText>
+                  </View>
+                ) : null}
+              </View>
+            ) : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.fuelScrollContent}
+              >
+                {FUEL_AMOUNTS.map((fuel, index) => {
+                  const isActive = selectedFuelIndex === index;
+                  const fuelDiscounted = isPremium ? fuel.price * (1 - PREMIUM_DISCOUNT) : fuel.price;
+                  return (
+                    <Pressable
+                      key={fuel.price}
+                      onPress={() => setSelectedFuelIndex(index)}
+                      style={[
+                        styles.fuelCard,
+                        {
+                          backgroundColor: isActive ? theme.primary + "15" : theme.backgroundSecondary,
+                          borderColor: isActive ? theme.primary : "transparent",
+                        },
+                      ]}
+                    >
+                      <View style={[styles.fuelIconWrap, { backgroundColor: isActive ? theme.primary + "20" : theme.backgroundDefault }]}>
+                        <Feather name="droplet" size={20} color={isActive ? theme.primary : theme.textSecondary} />
+                      </View>
+                      <ThemedText type="body" style={{ fontWeight: "700", color: isActive ? theme.primary : theme.text, fontSize: 17 }}>
+                        {fuel.label}
+                      </ThemedText>
+                      <ThemedText type="small" style={{ color: theme.textSecondary, textAlign: "center", lineHeight: 16, marginTop: 2 }} numberOfLines={2}>
+                        {fuel.desc}
+                      </ThemedText>
+                      {isPremium ? (
+                        <View style={[styles.priceContainer, { marginTop: 4 }]}>
+                          <ThemedText type="small" style={[styles.originalPrice, { color: theme.textSecondary }]}>
+                            ${fuel.price}
+                          </ThemedText>
+                          <ThemedText type="body" style={{ color: theme.success, fontWeight: "700" }}>
+                            ${fuelDiscounted.toFixed(0)}
+                          </ThemedText>
+                        </View>
+                      ) : null}
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            )}
+          </>
+        ) : null}
 
         {selectedService && (() => {
           const comp = COMPETITOR_PRICES[selectedService];
@@ -366,7 +521,7 @@ export default function ServiceRequestScreen() {
             <View style={styles.costBreakdown}>
               <View style={styles.costRow}>
                 <ThemedText type="body" style={{ color: theme.text }}>
-                  {selectedServiceData?.label || "Service"}
+                  {isFuelSelected ? (useCustomFuel ? `Fuel Delivery (Custom)` : `Fuel Delivery (${FUEL_AMOUNTS[selectedFuelIndex]?.label})`) : (selectedServiceData?.label || "Service")}
                 </ThemedText>
                 {isPremium ? (
                   <View style={styles.priceWithDiscount}>
@@ -449,13 +604,13 @@ export default function ServiceRequestScreen() {
       >
         <Pressable
           onPress={handleSubmit}
-          disabled={!selectedService || isSubmitting}
+          disabled={!canSubmit || isSubmitting}
           style={({ pressed }) => [
             styles.submitButton,
             {
               backgroundColor: theme.primary,
-              opacity: !selectedService || isSubmitting ? 0.5 : pressed ? 0.9 : 1,
-              ...(!(!selectedService || isSubmitting) && { elevation: 4 }),
+              opacity: !canSubmit || isSubmitting ? 0.5 : pressed ? 0.9 : 1,
+              ...(!(!canSubmit || isSubmitting) && { elevation: 4 }),
             },
           ]}
         >
@@ -678,5 +833,60 @@ const styles = StyleSheet.create({
   submitButtonText: {
     color: "#FFFFFF",
     fontWeight: "600",
+  },
+  fuelScrollContent: {
+    gap: Spacing.md,
+    paddingRight: Spacing.lg,
+  },
+  fuelCard: {
+    width: 140,
+    borderRadius: BorderRadius.md,
+    borderWidth: 2,
+    padding: Spacing.md,
+    alignItems: "center",
+    gap: 4,
+  },
+  fuelIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
+  },
+  fuelToggleRow: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  fuelToggleTab: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.xs,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.sm,
+    borderWidth: 2,
+  },
+  customFuelCard: {
+    borderRadius: BorderRadius.md,
+    padding: Spacing.lg,
+    alignItems: "center",
+  },
+  customFuelInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  customFuelInput: {
+    height: 52,
+    width: 140,
+    borderRadius: BorderRadius.sm,
+    paddingHorizontal: Spacing.md,
+    fontSize: 22,
+    fontWeight: "700",
+    borderWidth: 2,
+    textAlign: "center",
   },
 });
