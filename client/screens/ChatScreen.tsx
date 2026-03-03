@@ -163,7 +163,6 @@ export default function ChatScreen() {
             styles.inputContainer,
             {
               backgroundColor: theme.backgroundDefault,
-              borderTopColor: theme.border,
               paddingBottom: insets.bottom + Spacing.sm,
             },
           ]}
@@ -238,7 +237,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-end",
     padding: Spacing.md,
-    borderTopWidth: 1,
+    borderTopWidth: 0,
     gap: Spacing.sm,
   },
   textInput: {
