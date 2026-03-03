@@ -72,11 +72,14 @@ function HistoryItem({ item, onPress }: { item: ServiceRequest; onPress: () => v
     });
   };
 
+  const isScheduled = !!item.scheduledDate;
   const statusColor = item.status === "completed" ? theme.success :
-    item.status === "cancelled" ? theme.error : theme.warning;
+    item.status === "cancelled" ? theme.error :
+    (item.status === "pending" && isScheduled) ? theme.primary : theme.warning;
 
   const statusLabel = item.status === "completed" ? "Completed" :
-    item.status === "cancelled" ? "Cancelled" : "In Progress";
+    item.status === "cancelled" ? "Cancelled" :
+    (item.status === "pending" && isScheduled) ? "Scheduled" : "In Progress";
 
   return (
     <Pressable
@@ -107,7 +110,15 @@ function HistoryItem({ item, onPress }: { item: ServiceRequest; onPress: () => v
           <ThemedText type="small" style={{ color: theme.textSecondary }}>
             {formatDate(item.createdAt)}
           </ThemedText>
-          {item.timeSaved ? (
+          {isScheduled ? (
+            <>
+              <View style={[styles.metaDot, { backgroundColor: theme.textSecondary }]} />
+              <Feather name="calendar" size={10} color={theme.primary} />
+              <ThemedText type="small" style={{ color: theme.primary, marginLeft: 2 }}>
+                {formatDate(item.scheduledDate!)}
+              </ThemedText>
+            </>
+          ) : item.timeSaved ? (
             <>
               <View style={[styles.metaDot, { backgroundColor: theme.textSecondary }]} />
               <Feather name="clock" size={10} color={theme.success} />

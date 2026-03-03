@@ -70,6 +70,19 @@ A `shared/` directory contains code common to both client and server, such as sc
 - Registered as `EVAddVehicle` in RootStackNavigator (fullScreenModal + fade)
 - EV gate button navigates to `EVAddVehicle` instead of `VehicleManagement`
 
+### Service Scheduling
+- Users can choose "Now" (immediate) or "Schedule" (future date/time) when requesting any service
+- Schedule mode shows scrollable date cards (next 14 days) and a time slot grid (7:00 AM - 9:00 PM, 30-min intervals)
+- Express Service is hidden when scheduling (only available for immediate requests)
+- Scheduled requests are saved with status "pending" and `scheduledDate` field on `ServiceRequest`
+- History screen and detail screen both display scheduled date with "Scheduled" badge
+- Submit button text adapts: "Connect Nearby Provider" (now) vs "Schedule Service" (later)
+
+### Fuel Delivery Pricing
+- Fuel Delivery uses a dual-mode pricing picker: "Choose Amount" (preset $10-$50 in $5 steps) and "Enter Custom" (free-form text input)
+- Custom fuel amount validates before allowing submission (must be > 0)
+- Premium members see discounted pricing on both preset and custom amounts
+
 ### Environment Variables
 - `DATABASE_URL`
 - `EXPO_PUBLIC_DOMAIN`

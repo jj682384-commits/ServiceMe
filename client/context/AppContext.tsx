@@ -65,6 +65,7 @@ export interface ServiceRequest {
   tip?: number;
   receiptNumber?: string;
   timeSaved?: number;
+  scheduledDate?: Date;
 }
 
 export type BillingCycle = "monthly" | "yearly";

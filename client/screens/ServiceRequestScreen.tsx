@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { View, StyleSheet, Pressable, TextInput, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -44,6 +44,31 @@ const FUEL_AMOUNTS: { label: string; desc: string; price: number }[] = [
   { label: "$45", desc: "Nearly a full tank", price: 45 },
   { label: "$50", desc: "Get back on the road worry-free", price: 50 },
 ];
+
+const TIME_SLOTS = [
+  "7:00 AM", "7:30 AM", "8:00 AM", "8:30 AM",
+  "9:00 AM", "9:30 AM", "10:00 AM", "10:30 AM",
+  "11:00 AM", "11:30 AM", "12:00 PM", "12:30 PM",
+  "1:00 PM", "1:30 PM", "2:00 PM", "2:30 PM",
+  "3:00 PM", "3:30 PM", "4:00 PM", "4:30 PM",
+  "5:00 PM", "5:30 PM", "6:00 PM", "6:30 PM",
+  "7:00 PM", "7:30 PM", "8:00 PM", "8:30 PM",
+  "9:00 PM",
+];
+
+function generateDateOptions(): { date: Date; label: string; dayLabel: string }[] {
+  const options: { date: Date; label: string; dayLabel: string }[] = [];
+  const today = new Date();
+  for (let i = 1; i <= 14; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    d.setHours(0, 0, 0, 0);
+    const dayLabel = i === 1 ? "Tomorrow" : d.toLocaleDateString("en-US", { weekday: "short" });
+    const label = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    options.push({ date: d, label, dayLabel });
+  }
+  return options;
+}
 
 interface ServiceTypeCardProps {
   type: ServiceType;
@@ -141,6 +166,10 @@ export default function ServiceRequestScreen() {
   const [selectedFuelIndex, setSelectedFuelIndex] = useState(2);
   const [useCustomFuel, setUseCustomFuel] = useState(false);
   const [customFuelAmount, setCustomFuelAmount] = useState("");
+  const [scheduleMode, setScheduleMode] = useState<"now" | "later">("now");
+  const [selectedDateIndex, setSelectedDateIndex] = useState(0);
+  const [selectedTimeIndex, setSelectedTimeIndex] = useState<number | null>(null);
+  const dateOptions = useMemo(() => generateDateOptions(), []);
 
   const isPremium = currentDriver?.membership === "premium";
   const selectedServiceData = serviceTypes.find((s) => s.type === selectedService);
@@ -154,7 +183,24 @@ export default function ServiceRequestScreen() {
   const expressFee = isExpress ? EXPRESS_FEE : 0;
   const totalCost = discountedBasePrice + SERVICE_FEE + expressFee;
 
-  const canSubmit = selectedService && !(isFuelSelected && useCustomFuel && !customFuelValid);
+  const isScheduled = scheduleMode === "later";
+  const scheduleValid = !isScheduled || selectedTimeIndex !== null;
+  const canSubmit = selectedService && !(isFuelSelected && useCustomFuel && !customFuelValid) && scheduleValid;
+
+  const getScheduledDate = (): Date | undefined => {
+    if (!isScheduled || selectedTimeIndex === null) return undefined;
+    const selectedDate = dateOptions[selectedDateIndex].date;
+    const timeStr = TIME_SLOTS[selectedTimeIndex];
+    const [time, period] = timeStr.split(" ");
+    const [hourStr, minStr] = time.split(":");
+    let hour = parseInt(hourStr, 10);
+    const min = parseInt(minStr, 10);
+    if (period === "PM" && hour !== 12) hour += 12;
+    if (period === "AM" && hour === 12) hour = 0;
+    const scheduled = new Date(selectedDate);
+    scheduled.setHours(hour, min, 0, 0);
+    return scheduled;
+  };
 
   const handleSubmit = () => {
     if (!canSubmit) return;
@@ -162,6 +208,7 @@ export default function ServiceRequestScreen() {
     setIsSubmitting(true);
 
     const provider = selectedProvider || nearbyProviders[0];
+    const scheduledDate = getScheduledDate();
     const newRequest: ServiceRequest = {
       id: `req-${Date.now()}`,
       serviceType: selectedService,
@@ -171,25 +218,32 @@ export default function ServiceRequestScreen() {
         longitude: -122.4094,
       },
       notes,
-      status: "accepted",
+      status: isScheduled ? "pending" : "accepted",
       estimatedCost: discountedBasePrice,
       createdAt: new Date(),
       provider,
-      eta: isExpress ? 4 : 8,
-      isExpress,
-      expressFee: isExpress ? EXPRESS_FEE : 0,
+      eta: isScheduled ? undefined : (isExpress ? 4 : 8),
+      isExpress: isScheduled ? false : isExpress,
+      expressFee: isExpress && !isScheduled ? EXPRESS_FEE : 0,
       serviceFee: SERVICE_FEE,
-      totalCost,
+      totalCost: isScheduled ? (discountedBasePrice + SERVICE_FEE) : totalCost,
       receiptNumber: `SM-${Date.now().toString(36).toUpperCase()}`,
-      timeSaved: Math.floor(Math.random() * 30) + 15,
+      timeSaved: isScheduled ? undefined : Math.floor(Math.random() * 30) + 15,
+      scheduledDate,
     };
 
     setTimeout(() => {
-      setActiveRequest(newRequest);
-      addToHistory(newRequest);
-      setIsSubmitting(false);
-      navigation.goBack();
-      navigation.navigate("ActiveService");
+      if (isScheduled) {
+        addToHistory(newRequest);
+        setIsSubmitting(false);
+        navigation.goBack();
+      } else {
+        setActiveRequest(newRequest);
+        addToHistory(newRequest);
+        setIsSubmitting(false);
+        navigation.goBack();
+        navigation.navigate("ActiveService");
+      }
     }, 1000);
   };
 
@@ -453,8 +507,124 @@ export default function ServiceRequestScreen() {
         </View>
 
         <ThemedText type="h4" style={styles.sectionTitle}>
-          Priority Service
+          When do you need service?
         </ThemedText>
+        <View style={styles.scheduleToggleRow}>
+          <Pressable
+            onPress={() => setScheduleMode("now")}
+            style={[
+              styles.scheduleToggleTab,
+              {
+                backgroundColor: scheduleMode === "now" ? theme.primary + "15" : theme.backgroundSecondary,
+                borderColor: scheduleMode === "now" ? theme.primary : "transparent",
+              },
+            ]}
+          >
+            <Feather name="zap" size={18} color={scheduleMode === "now" ? theme.primary : theme.textSecondary} />
+            <ThemedText type="body" style={{ fontWeight: "600", color: scheduleMode === "now" ? theme.primary : theme.text }}>
+              Now
+            </ThemedText>
+            <ThemedText type="small" style={{ color: theme.textSecondary }}>
+              Get help ASAP
+            </ThemedText>
+          </Pressable>
+          <Pressable
+            onPress={() => setScheduleMode("later")}
+            style={[
+              styles.scheduleToggleTab,
+              {
+                backgroundColor: scheduleMode === "later" ? theme.primary + "15" : theme.backgroundSecondary,
+                borderColor: scheduleMode === "later" ? theme.primary : "transparent",
+              },
+            ]}
+          >
+            <Feather name="calendar" size={18} color={scheduleMode === "later" ? theme.primary : theme.textSecondary} />
+            <ThemedText type="body" style={{ fontWeight: "600", color: scheduleMode === "later" ? theme.primary : theme.text }}>
+              Schedule
+            </ThemedText>
+            <ThemedText type="small" style={{ color: theme.textSecondary }}>
+              Pick a date & time
+            </ThemedText>
+          </Pressable>
+        </View>
+
+        {isScheduled ? (
+          <>
+            <ThemedText type="h4" style={styles.sectionTitle}>
+              Pick a Date
+            </ThemedText>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.dateScrollContent}
+            >
+              {dateOptions.map((opt, index) => {
+                const isActive = selectedDateIndex === index;
+                return (
+                  <Pressable
+                    key={index}
+                    onPress={() => setSelectedDateIndex(index)}
+                    style={[
+                      styles.dateCard,
+                      {
+                        backgroundColor: isActive ? theme.primary + "15" : theme.backgroundSecondary,
+                        borderColor: isActive ? theme.primary : "transparent",
+                      },
+                    ]}
+                  >
+                    <ThemedText type="small" style={{ color: isActive ? theme.primary : theme.textSecondary, fontWeight: "600" }}>
+                      {opt.dayLabel}
+                    </ThemedText>
+                    <ThemedText type="body" style={{ fontWeight: "700", color: isActive ? theme.primary : theme.text, fontSize: 16 }}>
+                      {opt.label}
+                    </ThemedText>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+
+            <ThemedText type="h4" style={styles.sectionTitle}>
+              Pick a Time
+            </ThemedText>
+            <View style={styles.timeGrid}>
+              {TIME_SLOTS.map((slot, index) => {
+                const isActive = selectedTimeIndex === index;
+                return (
+                  <Pressable
+                    key={slot}
+                    onPress={() => setSelectedTimeIndex(index)}
+                    style={[
+                      styles.timeChip,
+                      {
+                        backgroundColor: isActive ? theme.primary + "15" : theme.backgroundSecondary,
+                        borderColor: isActive ? theme.primary : "transparent",
+                      },
+                    ]}
+                  >
+                    <ThemedText type="small" style={{ fontWeight: "600", color: isActive ? theme.primary : theme.text }}>
+                      {slot}
+                    </ThemedText>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            {selectedTimeIndex !== null ? (
+              <View style={[styles.scheduleSummary, { backgroundColor: theme.success + "10", borderColor: theme.success + "30" }]}>
+                <Feather name="check-circle" size={16} color={theme.success} />
+                <ThemedText type="body" style={{ color: theme.success, fontWeight: "600", marginLeft: Spacing.sm, flex: 1 }}>
+                  Scheduled for {dateOptions[selectedDateIndex].dayLabel}, {dateOptions[selectedDateIndex].label} at {TIME_SLOTS[selectedTimeIndex]}
+                </ThemedText>
+              </View>
+            ) : null}
+          </>
+        ) : null}
+
+        {!isScheduled ? (
+          <>
+            <ThemedText type="h4" style={styles.sectionTitle}>
+              Priority Service
+            </ThemedText>
         <Pressable
           onPress={() => setIsExpress(!isExpress)}
           style={[
@@ -494,6 +664,8 @@ export default function ServiceRequestScreen() {
             {isExpress ? <Feather name="check" size={14} color="#FFFFFF" /> : null}
           </View>
         </Pressable>
+          </>
+        ) : null}
 
         <ThemedText type="h4" style={styles.sectionTitle}>
           Additional Notes
@@ -616,13 +788,13 @@ export default function ServiceRequestScreen() {
         >
           {isSubmitting ? (
             <ThemedText type="body" style={styles.submitButtonText}>
-              Finding Provider...
+              {isScheduled ? "Scheduling..." : "Finding Provider..."}
             </ThemedText>
           ) : (
             <>
-              <Feather name="zap" size={20} color="#FFFFFF" />
+              <Feather name={isScheduled ? "calendar" : "zap"} size={20} color="#FFFFFF" />
               <ThemedText type="body" style={styles.submitButtonText}>
-                Connect Nearby Provider
+                {isScheduled ? "Schedule Service" : "Connect Nearby Provider"}
               </ThemedText>
             </>
           )}
@@ -888,5 +1060,48 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     borderWidth: 2,
     textAlign: "center",
+  },
+  scheduleToggleRow: {
+    flexDirection: "row",
+    gap: Spacing.md,
+  },
+  scheduleToggleTab: {
+    flex: 1,
+    alignItems: "center",
+    gap: Spacing.xs,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 2,
+  },
+  dateScrollContent: {
+    gap: Spacing.sm,
+    paddingRight: Spacing.lg,
+  },
+  dateCard: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 2,
+    alignItems: "center",
+    gap: 2,
+  },
+  timeGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.sm,
+  },
+  timeChip: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.sm,
+    borderWidth: 2,
+  },
+  scheduleSummary: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    marginTop: Spacing.md,
   },
 });

@@ -59,10 +59,13 @@ export default function ServiceDetailScreen() {
     );
   }
 
+  const isScheduled = !!request.scheduledDate;
   const statusColor = request.status === "completed" ? theme.success :
-    request.status === "cancelled" ? theme.error : theme.warning;
+    request.status === "cancelled" ? theme.error :
+    (request.status === "pending" && isScheduled) ? theme.primary : theme.warning;
   const statusLabel = request.status === "completed" ? "Completed" :
-    request.status === "cancelled" ? "Cancelled" : "In Progress";
+    request.status === "cancelled" ? "Cancelled" :
+    (request.status === "pending" && isScheduled) ? "Scheduled" : "In Progress";
 
   const receiptNumber = "SM-" + request.id.slice(0, 8).toUpperCase();
 
@@ -155,6 +158,26 @@ export default function ServiceDetailScreen() {
               </ThemedText>
             </View>
           </View>
+
+          {isScheduled ? (
+            <>
+              <View style={[styles.divider, { backgroundColor: theme.border }]} />
+              <View style={styles.detailRow}>
+                <View style={styles.detailIcon}>
+                  <Feather name="calendar" size={16} color={theme.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <ThemedText type="small" style={{ color: theme.textSecondary }}>Scheduled For</ThemedText>
+                  <ThemedText type="body" style={{ fontWeight: "500", color: theme.primary }}>
+                    {formatDate(request.scheduledDate!)}
+                  </ThemedText>
+                  <ThemedText type="small" style={{ color: theme.primary }}>
+                    {formatTime(request.scheduledDate!)}
+                  </ThemedText>
+                </View>
+              </View>
+            </>
+          ) : null}
 
           <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
