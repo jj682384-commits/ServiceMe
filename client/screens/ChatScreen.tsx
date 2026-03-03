@@ -200,6 +200,7 @@ const styles = StyleSheet.create({
   messagesList: {
     padding: Spacing.lg,
     flexGrow: 1,
+    justifyContent: "flex-end",
   },
   messageBubbleContainer: {
     marginBottom: Spacing.md,

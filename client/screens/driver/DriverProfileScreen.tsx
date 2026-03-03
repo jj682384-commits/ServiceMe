@@ -151,7 +151,7 @@ export default function DriverProfileScreen() {
       {isAnimated ? <AnimatedBackground customColors={scheme.colors} opacityBoost={scheme.opacityBoost} flashColor={scheme.flashColor} /> : null}
       <ScrollView
         contentContainerStyle={{
-          paddingTop: insets.top + Spacing.lg,
+          paddingTop: Math.max(insets.top, Spacing["2xl"]) + Spacing.lg,
           paddingBottom: tabBarHeight + Spacing.xl,
           paddingHorizontal: Spacing.lg,
         }}

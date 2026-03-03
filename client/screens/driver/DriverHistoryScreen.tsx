@@ -206,7 +206,7 @@ export default function DriverHistoryScreen() {
         )}
         ListHeaderComponent={renderHeader}
         contentContainerStyle={{
-          paddingTop: insets.top + Spacing.lg,
+          paddingTop: Math.max(insets.top, Spacing["2xl"]) + Spacing.lg,
           paddingBottom: tabBarHeight + Spacing.xl,
           paddingHorizontal: Spacing.lg,
           gap: Spacing.md,

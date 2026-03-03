@@ -130,7 +130,7 @@ export default function DriverMessagesScreen() {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <ConversationItem item={item} cardBg={cardBg} />}
         contentContainerStyle={{
-          paddingTop: insets.top + Spacing.lg,
+          paddingTop: Math.max(insets.top, Spacing["2xl"]) + Spacing.lg,
           paddingBottom: tabBarHeight + Spacing.xl,
           paddingHorizontal: Spacing.lg,
           gap: Spacing.md,

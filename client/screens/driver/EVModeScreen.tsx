@@ -275,11 +275,11 @@ function ChargingStation({
 }
 
 function AnimatedGradientButton({ onPress }: { onPress: () => void }) {
-  const phase = useSharedValue(0);
+  const translateX = useSharedValue(0);
 
   useEffect(() => {
-    phase.value = withRepeat(
-      withTiming(1, { duration: 2500, easing: Easing.linear }),
+    translateX.value = withRepeat(
+      withTiming(-402, { duration: 2500, easing: Easing.linear }),
       -1,
       false
     );
@@ -288,7 +288,7 @@ function AnimatedGradientButton({ onPress }: { onPress: () => void }) {
   const gradientSlide = useAnimatedStyle(() => {
     'worklet';
     return {
-      transform: [{ translateX: -phase.value * 402 }],
+      transform: [{ translateX: translateX.value }],
     };
   });
 

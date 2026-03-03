@@ -1,11 +1,11 @@
 {
-  "id": "ed75d978-84c0-4c87-bffb-5f1bf43a43ea",
-  "createdAt": "2026-03-03T09:31:33.857Z",
+  "id": "33360948-df4d-42ec-8dce-bdbc7f625172",
+  "createdAt": "2026-03-03T09:42:49.225Z",
   "runtimeVersion": "exposdk:54.0.0",
   "launchAsset": {
-    "key": "bundle-1772530293857-22195",
+    "key": "bundle-1772530969225-24394",
     "contentType": "application/javascript",
-    "url": "https://486c76a4-cd45-4131-b166-4c2c82757aea-00-sor1akb194mn.riker.replit.dev/1772530293857-22195/_expo/static/js/ios/bundle.js"
+    "url": "https://486c76a4-cd45-4131-b166-4c2c82757aea-00-sor1akb194mn.riker.replit.dev/1772530969225-24394/_expo/static/js/ios/bundle.js"
   },
   "assets": [],
   "metadata": {},
@@ -31,7 +31,7 @@
         "adaptiveIcon": {
           "backgroundColor": "#DC2626",
           "foregroundImage": "./assets/images/icon.png",
-          "foregroundImageUrl": "https://486c76a4-cd45-4131-b166-4c2c82757aea-00-sor1akb194mn.riker.replit.dev/assets/./assets/images/icon.png"
+          "foregroundImageUrl": "http://127.0.0.1:8081/assets/./assets/images/icon.png"
         },
         "edgeToEdgeEnabled": true,
         "predictiveBackGestureEnabled": false,
@@ -101,7 +101,7 @@
       "androidStatusBar": {
         "backgroundColor": "#DC2626"
       },
-      "iconUrl": "https://486c76a4-cd45-4131-b166-4c2c82757aea-00-sor1akb194mn.riker.replit.dev/assets/./assets/images/icon.png",
+      "iconUrl": "http://127.0.0.1:8081/assets/./assets/images/icon.png",
       "hostUri": "486c76a4-cd45-4131-b166-4c2c82757aea-00-sor1akb194mn.riker.replit.dev/ios"
     },
     "expoGo": {
