@@ -31,26 +31,32 @@ function withTabAnimation(ScreenComponent: React.ComponentType<any>) {
   return function WrappedScreen(props: any) {
     const opacity = useSharedValue(1);
     const scale = useSharedValue(1);
-    const wasTabSwitch = useRef(false);
+    const prevTabIndex = useRef<number | null>(null);
 
     React.useEffect(() => {
-      const unsubTabPress = props.navigation.getParent()?.addListener("tabPress", () => {
-        wasTabSwitch.current = true;
-      });
-      const unsubBlur = props.navigation.addListener("blur", (e: any) => {
-        if (wasTabSwitch.current) {
-          opacity.value = withTiming(0, { duration: 150 });
-          scale.value = 0.96;
-        }
-      });
       const unsubFocus = props.navigation.addListener("focus", () => {
-        if (wasTabSwitch.current) {
+        const parent = props.navigation.getParent();
+        const tabState = parent?.getState();
+        const currentIndex = tabState?.index ?? -1;
+
+        if (prevTabIndex.current !== null && prevTabIndex.current !== currentIndex) {
           opacity.value = withTiming(1, { duration: 280, easing: Easing.out(Easing.cubic) });
           scale.value = withSpring(1, { damping: 20, stiffness: 300, mass: 0.8 });
         }
-        wasTabSwitch.current = false;
+        prevTabIndex.current = currentIndex;
       });
-      return () => { unsubTabPress?.(); unsubBlur(); unsubFocus(); };
+      const unsubBlur = props.navigation.addListener("blur", () => {
+        const parent = props.navigation.getParent();
+        const tabState = parent?.getState();
+        const currentIndex = tabState?.index ?? -1;
+
+        if (prevTabIndex.current !== null && prevTabIndex.current !== currentIndex) {
+          opacity.value = withTiming(0, { duration: 150 });
+          scale.value = 0.96;
+          prevTabIndex.current = currentIndex;
+        }
+      });
+      return () => { unsubFocus(); unsubBlur(); };
     }, [props.navigation]);
 
     const animatedStyle = useAnimatedStyle(() => ({
