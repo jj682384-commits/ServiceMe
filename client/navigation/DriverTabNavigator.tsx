@@ -106,7 +106,7 @@ export default function DriverTabNavigator() {
         name="HistoryTab"
         component={DriverHistoryScreen}
         options={{
-          headerTitle: () => <HeaderTitle iconOnly />,
+          headerShown: false,
           title: "History",
           tabBarIcon: ({ color, size }) => (
             <Feather name="clock" size={size} color={color} />
@@ -117,7 +117,7 @@ export default function DriverTabNavigator() {
         name="MessagesTab"
         component={DriverMessagesScreen}
         options={{
-          headerTitle: "Messages",
+          headerShown: false,
           title: "Messages",
           tabBarIcon: ({ color, size }) => (
             <Feather name="message-circle" size={size} color={color} />
@@ -128,7 +128,7 @@ export default function DriverTabNavigator() {
         name="ProfileTab"
         component={DriverProfileScreen}
         options={{
-          headerTitle: "Profile",
+          headerShown: false,
           title: "Profile",
           tabBarIcon: ({ color, size }) => (
             <Feather name="user" size={size} color={color} />

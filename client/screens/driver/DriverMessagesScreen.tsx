@@ -1,14 +1,14 @@
 import React from "react";
 import { View, StyleSheet, FlatList, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useHeaderHeight } from "@react-navigation/elements";
+
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { ThemedText } from "@/components/ThemedText";
-import AnimatedBackground, { DARK_BG } from "@/components/AnimatedBackground";
+import AnimatedBackground from "@/components/AnimatedBackground";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, BACKGROUND_SCHEMES } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
@@ -115,28 +115,30 @@ function ConversationItem({ item, cardBg }: { item: Conversation; cardBg: string
 
 export default function DriverMessagesScreen() {
   const insets = useSafeAreaInsets();
-  const headerHeight = useHeaderHeight();
   const tabBarHeight = useBottomTabBarHeight();
   const { theme } = useTheme();
   const { backgroundPreferences } = useApp();
   const isAnimated = backgroundPreferences.mode === "animated";
-  const schemeColors = BACKGROUND_SCHEMES[backgroundPreferences.colorScheme].colors;
+  const scheme = BACKGROUND_SCHEMES[backgroundPreferences.colorScheme];
   const cardBg = isAnimated ? "rgba(20, 25, 45, 0.75)" : theme.backgroundDefault;
 
   return (
-    <View style={[styles.container, { backgroundColor: isAnimated ? DARK_BG : theme.backgroundRoot }]}>
-      {isAnimated ? <AnimatedBackground customColors={schemeColors} /> : null}
+    <View style={[styles.container, { backgroundColor: isAnimated ? scheme.bgColor : theme.backgroundRoot }]}>
+      {isAnimated ? <AnimatedBackground customColors={scheme.colors} opacityBoost={scheme.opacityBoost} flashColor={scheme.flashColor} /> : null}
       <FlatList
         data={mockConversations}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <ConversationItem item={item} cardBg={cardBg} />}
         contentContainerStyle={{
-          paddingTop: headerHeight + Spacing.lg,
+          paddingTop: insets.top + Spacing.lg,
           paddingBottom: tabBarHeight + Spacing.xl,
           paddingHorizontal: Spacing.lg,
           gap: Spacing.md,
         }}
         scrollIndicatorInsets={{ bottom: insets.bottom }}
+        ListHeaderComponent={
+          <ThemedText type="h2" style={{ marginBottom: Spacing.sm }}>Messages</ThemedText>
+        }
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Feather name="message-circle" size={48} color={theme.textSecondary} />

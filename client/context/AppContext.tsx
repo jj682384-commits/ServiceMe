@@ -162,34 +162,63 @@ export interface BackgroundPreferences {
   colorScheme: BackgroundColorScheme;
 }
 
-export const BACKGROUND_SCHEMES: Record<BackgroundColorScheme, { label: string; colors: string[][] }> = {
+export interface SchemeConfig {
+  label: string;
+  bgColor: string;
+  flashColor: string;
+  colors: string[][];
+  opacityBoost: number;
+}
+
+export const BACKGROUND_SCHEMES: Record<BackgroundColorScheme, SchemeConfig> = {
   default: {
     label: "Default",
+    bgColor: "#060918",
+    flashColor: "#00D9FF",
     colors: [["#00D9FF", "#0088CC"], ["#FF6B35", "#FF3D00"], ["#7B2FFF", "#4800FF"], ["#FF6B35", "#FF8C5A"], ["#00D9FF", "#00FFD4"], ["#7B2FFF", "#00D9FF"]],
+    opacityBoost: 1,
   },
   ocean: {
     label: "Ocean",
-    colors: [["#0077B6", "#023E8A"], ["#00B4D8", "#0096C7"], ["#48CAE4", "#00B4D8"], ["#90E0EF", "#48CAE4"], ["#0077B6", "#00B4D8"], ["#023E8A", "#0096C7"]],
+    bgColor: "#020E1F",
+    flashColor: "#00B4D8",
+    colors: [["#00B4D8", "#0077B6"], ["#48CAE4", "#023E8A"], ["#90E0EF", "#0096C7"], ["#0077B6", "#48CAE4"], ["#00B4D8", "#90E0EF"], ["#023E8A", "#00B4D8"]],
+    opacityBoost: 1.4,
   },
   sunset: {
     label: "Sunset",
-    colors: [["#FF6B6B", "#EE5A24"], ["#FFC947", "#FF9F43"], ["#FF6348", "#C44569"], ["#FFA502", "#FF6348"], ["#FF4757", "#FF6B6B"], ["#FFC947", "#EE5A24"]],
+    bgColor: "#1A0A05",
+    flashColor: "#FF6B6B",
+    colors: [["#FF4757", "#C44569"], ["#FFC947", "#FF9F43"], ["#FF6348", "#EE5A24"], ["#FFA502", "#FF4757"], ["#FF6B6B", "#FFC947"], ["#EE5A24", "#C44569"]],
+    opacityBoost: 1.5,
   },
   aurora: {
     label: "Aurora",
-    colors: [["#00FF88", "#00CC6A"], ["#00E5FF", "#00B8D4"], ["#76FF03", "#64DD17"], ["#00E676", "#00C853"], ["#18FFFF", "#00E5FF"], ["#69F0AE", "#00E676"]],
+    bgColor: "#020F08",
+    flashColor: "#00FF88",
+    colors: [["#00FF88", "#00E676"], ["#76FF03", "#64DD17"], ["#18FFFF", "#00E5FF"], ["#00E676", "#00CC6A"], ["#69F0AE", "#76FF03"], ["#00E5FF", "#00FF88"]],
+    opacityBoost: 1.3,
   },
   midnight: {
     label: "Midnight",
-    colors: [["#6C5CE7", "#5F27CD"], ["#a29bfe", "#6C5CE7"], ["#341f97", "#5F27CD"], ["#6C5CE7", "#a29bfe"], ["#5F27CD", "#341f97"], ["#a29bfe", "#341f97"]],
+    bgColor: "#0A0520",
+    flashColor: "#a29bfe",
+    colors: [["#a29bfe", "#6C5CE7"], ["#6C5CE7", "#5F27CD"], ["#E0B3FF", "#a29bfe"], ["#5F27CD", "#341f97"], ["#8B7FE8", "#6C5CE7"], ["#341f97", "#E0B3FF"]],
+    opacityBoost: 1.6,
   },
   ember: {
     label: "Ember",
-    colors: [["#FF4500", "#CC3700"], ["#FF6347", "#FF4500"], ["#B22222", "#8B0000"], ["#FF7F50", "#FF6347"], ["#DC143C", "#B22222"], ["#FF4500", "#DC143C"]],
+    bgColor: "#150500",
+    flashColor: "#FF4500",
+    colors: [["#FF4500", "#FF6347"], ["#FF7F50", "#DC143C"], ["#FF0000", "#B22222"], ["#FF6347", "#CC3700"], ["#DC143C", "#FF4500"], ["#B22222", "#FF0000"]],
+    opacityBoost: 1.5,
   },
   noir: {
     label: "Noir",
-    colors: [["#4A4A4A", "#2C2C2C"], ["#6B6B6B", "#3D3D3D"], ["#585858", "#1A1A1A"], ["#777777", "#4A4A4A"], ["#3D3D3D", "#1A1A1A"], ["#6B6B6B", "#2C2C2C"]],
+    bgColor: "#050505",
+    flashColor: "#AAAAAA",
+    colors: [["#C0C0C0", "#808080"], ["#A0A0A0", "#505050"], ["#D4D4D4", "#696969"], ["#888888", "#3A3A3A"], ["#B0B0B0", "#606060"], ["#999999", "#404040"]],
+    opacityBoost: 1.8,
   },
 };
 

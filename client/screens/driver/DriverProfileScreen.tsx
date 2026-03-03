@@ -1,14 +1,14 @@
 import React from "react";
 import { View, StyleSheet, ScrollView, Pressable, Switch, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useHeaderHeight } from "@react-navigation/elements";
+
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation, CommonActions } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { ThemedText } from "@/components/ThemedText";
-import AnimatedBackground, { DARK_BG } from "@/components/AnimatedBackground";
+import AnimatedBackground from "@/components/AnimatedBackground";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, BACKGROUND_SCHEMES } from "@/context/AppContext";
 import { Spacing, BorderRadius, Shadows } from "@/constants/theme";
@@ -87,12 +87,11 @@ function ToggleItem({ icon, label, value, onValueChange }: ToggleItemProps) {
 
 export default function DriverProfileScreen() {
   const insets = useSafeAreaInsets();
-  const headerHeight = useHeaderHeight();
   const tabBarHeight = useBottomTabBarHeight();
   const { theme } = useTheme();
   const { currentDriver, setUserRole, logout, searchRadius, getTrialDaysRemaining, preferredProviders, backgroundPreferences } = useApp();
   const isAnimated = backgroundPreferences.mode === "animated";
-  const schemeColors = BACKGROUND_SCHEMES[backgroundPreferences.colorScheme].colors;
+  const scheme = BACKGROUND_SCHEMES[backgroundPreferences.colorScheme];
   const sectionBg = isAnimated ? "rgba(20, 25, 45, 0.75)" : theme.backgroundDefault;
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
@@ -148,11 +147,11 @@ export default function DriverProfileScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: isAnimated ? DARK_BG : theme.backgroundRoot }]}>
-      {isAnimated ? <AnimatedBackground customColors={schemeColors} /> : null}
+    <View style={[styles.container, { backgroundColor: isAnimated ? scheme.bgColor : theme.backgroundRoot }]}>
+      {isAnimated ? <AnimatedBackground customColors={scheme.colors} opacityBoost={scheme.opacityBoost} flashColor={scheme.flashColor} /> : null}
       <ScrollView
         contentContainerStyle={{
-          paddingTop: headerHeight + Spacing.lg,
+          paddingTop: insets.top + Spacing.lg,
           paddingBottom: tabBarHeight + Spacing.xl,
           paddingHorizontal: Spacing.lg,
         }}

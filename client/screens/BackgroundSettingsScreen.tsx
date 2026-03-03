@@ -31,25 +31,32 @@ function SchemePreview({ schemeKey, isSelected, onPress }: {
       style={({ pressed }) => [
         styles.schemeCard,
         {
-          backgroundColor: CARD_BG,
           borderColor: isSelected ? theme.primary : "rgba(255,255,255,0.1)",
           borderWidth: isSelected ? 2 : 1,
           opacity: pressed ? 0.8 : 1,
+          overflow: "hidden",
         },
       ]}
     >
-      <View style={styles.schemePreviewRow}>
+      <View style={[styles.schemePreviewBg, { backgroundColor: scheme.bgColor }]}>
         {scheme.colors.slice(0, 4).map((colorPair, i) => (
           <LinearGradient
             key={i}
             colors={colorPair}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={styles.schemeOrb}
+            style={[
+              styles.schemeOrbLarge,
+              {
+                left: [4, 42, 16, 52][i],
+                top: [6, 20, 40, 8][i],
+                opacity: 0.5 * scheme.opacityBoost,
+              },
+            ]}
           />
         ))}
       </View>
-      <ThemedText type="body" style={{ marginTop: Spacing.sm, fontWeight: "500" }}>
+      <ThemedText type="body" style={{ marginTop: Spacing.sm, fontWeight: "600" }}>
         {scheme.label}
       </ThemedText>
       {isSelected ? (
@@ -72,11 +79,11 @@ export default function BackgroundSettingsScreen() {
   } = useApp();
 
   const isAnimated = backgroundPreferences.mode === "animated";
-  const currentColors = BACKGROUND_SCHEMES[backgroundPreferences.colorScheme].colors;
+  const scheme = BACKGROUND_SCHEMES[backgroundPreferences.colorScheme];
 
   return (
-    <View style={[styles.container, { backgroundColor: DARK_BG }]}>
-      {isAnimated ? <AnimatedBackground customColors={currentColors} /> : null}
+    <View style={[styles.container, { backgroundColor: isAnimated ? scheme.bgColor : DARK_BG }]}>
+      {isAnimated ? <AnimatedBackground customColors={scheme.colors} opacityBoost={scheme.opacityBoost} flashColor={scheme.flashColor} /> : null}
       <ScrollView
         contentContainerStyle={{
           paddingTop: headerHeight + Spacing.lg,
@@ -202,14 +209,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     position: "relative",
   },
-  schemePreviewRow: {
-    flexDirection: "row",
-    gap: 6,
+  schemePreviewBg: {
+    width: "100%",
+    height: 70,
+    borderRadius: BorderRadius.md,
+    position: "relative",
+    overflow: "hidden",
   },
-  schemeOrb: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+  schemeOrbLarge: {
+    position: "absolute",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
   checkBadge: {
     position: "absolute",

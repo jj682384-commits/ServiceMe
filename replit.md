@@ -83,6 +83,17 @@ A `shared/` directory contains code common to both client and server, such as sc
 - Custom fuel amount validates before allowing submission (must be > 0)
 - Premium members see discounted pricing on both preset and custom amounts
 
+### Animated Background System
+- History, Messages, and Profile tabs use AnimatedBackground with floating orbs and a slowly rotating ghosted logo
+- Headers are hidden on these tabs — screen titles are rendered inline within scrollable content
+- Background preferences stored in AppContext: `BackgroundPreferences` with `mode` ("animated"|"solid") and `colorScheme`
+- 7 color schemes: Default, Ocean, Sunset, Aurora, Midnight, Ember, Noir — each has unique `bgColor`, `flashColor`, `colors[][]`, and `opacityBoost`
+- AnimatedBackground component at `client/components/AnimatedBackground.tsx` accepts `customColors`, `opacityBoost`, and `flashColor` props
+- Dramatic flash/burst transition animation plays when switching schemes (scale + ring + fade)
+- BackgroundSettingsScreen at `client/screens/BackgroundSettingsScreen.tsx` — accessible from Profile > Preferences > Background Style
+- Scheme preview cards show miniature dark backgrounds with colored orbs representing each scheme
+- Solid mode disables all motion and uses `theme.backgroundRoot`; animated mode uses scheme's `bgColor`
+
 ### Environment Variables
 - `DATABASE_URL`
 - `EXPO_PUBLIC_DOMAIN`
