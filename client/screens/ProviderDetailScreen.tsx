@@ -1,6 +1,7 @@
 import React from "react";
 import { View, StyleSheet, Pressable, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useHeaderHeight } from "@react-navigation/elements";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -52,6 +53,7 @@ function StarRating({ rating }: { rating: number }) {
 export default function ProviderDetailScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
+  const headerHeight = useHeaderHeight();
   const { getProvidersWithDistance, isPreferredProvider, getPreferredProviderInfo } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, "ProviderDetail">>();
@@ -85,7 +87,7 @@ export default function ProviderDetailScreen() {
       <ScrollView
         contentContainerStyle={[
           detailStyles.scrollContent,
-          { paddingBottom: insets.bottom + Spacing.xl + 80 },
+          { paddingTop: headerHeight + Spacing.lg, paddingBottom: insets.bottom + Spacing.xl + 80 },
         ]}
         showsVerticalScrollIndicator={false}
       >

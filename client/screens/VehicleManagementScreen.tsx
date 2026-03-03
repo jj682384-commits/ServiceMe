@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { View, StyleSheet, Pressable, ScrollView, TextInput, Alert, FlatList, Modal, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useHeaderHeight } from "@react-navigation/elements";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import Animated, {
@@ -273,6 +274,7 @@ function VehicleCard({
 
 export default function VehicleManagementScreen() {
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const { theme } = useTheme();
   const { vehicles, addVehicle, removeVehicle, setDefaultVehicle } = useApp();
   const navigation = useNavigation();
@@ -333,7 +335,7 @@ export default function VehicleManagementScreen() {
       <KeyboardAwareScrollViewCompat
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: insets.bottom + Spacing.xl },
+          { paddingTop: headerHeight + Spacing.lg, paddingBottom: insets.bottom + Spacing.xl },
         ]}
       >
         <ThemedText type="body" style={{ color: theme.textSecondary, marginBottom: Spacing.lg }}>
@@ -538,7 +540,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.lg,
   },
   vehicleCard: {
     borderRadius: BorderRadius.md,

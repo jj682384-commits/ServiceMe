@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, StyleSheet, Pressable, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useHeaderHeight } from "@react-navigation/elements";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -95,6 +96,7 @@ function StatusTimeline({ currentStatus }: { currentStatus: ServiceStatus }) {
 
 export default function ActiveServiceScreen() {
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const { theme } = useTheme();
   const { activeRequest, setActiveRequest, userRole } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { View, StyleSheet, Pressable, TextInput } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useHeaderHeight } from "@react-navigation/elements";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -101,6 +102,7 @@ function ServiceTypeCard({ label, icon, price, discountedPrice, isPremium, isSel
 
 export default function ServiceRequestScreen() {
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const { theme } = useTheme();
   const { nearbyProviders, getProvidersWithDistance, setActiveRequest, addToHistory, currentDriver, getDefaultVehicle } = useApp();
   const defaultVehicle = getDefaultVehicle();
@@ -170,7 +172,7 @@ export default function ServiceRequestScreen() {
       <KeyboardAwareScrollViewCompat
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: insets.bottom + Spacing.xl + 80 },
+          { paddingTop: headerHeight + Spacing.lg, paddingBottom: insets.bottom + Spacing.xl + 80 },
         ]}
       >
         {selectedProvider ? (

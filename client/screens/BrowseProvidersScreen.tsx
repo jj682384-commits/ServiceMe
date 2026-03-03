@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { View, StyleSheet, Pressable, ScrollView, FlatList } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useHeaderHeight } from "@react-navigation/elements";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -157,6 +158,7 @@ function ProviderCard({ provider, onPress, isPreferred }: { provider: Provider; 
 
 export default function BrowseProvidersScreen() {
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const { theme } = useTheme();
   const { getProvidersWithDistance, isPreferredProvider } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -203,7 +205,7 @@ export default function BrowseProvidersScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <View style={styles.filtersContainer}>
+      <View style={[styles.filtersContainer, { paddingTop: headerHeight + Spacing.sm }]}>
         <View style={styles.sortRow}>
           <ThemedText type="small" style={{ color: theme.textSecondary, marginRight: Spacing.sm }}>
             Sort:
@@ -341,7 +343,7 @@ const styles = StyleSheet.create({
   },
   filtersContainer: {
     paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
+    paddingBottom: Spacing.md,
     gap: Spacing.md,
   },
   sortRow: {

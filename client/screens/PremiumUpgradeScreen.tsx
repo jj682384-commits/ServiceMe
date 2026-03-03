@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { View, StyleSheet, Pressable, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useHeaderHeight } from "@react-navigation/elements";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
@@ -154,6 +155,8 @@ export default function PremiumUpgradeScreen() {
     );
   };
 
+  const headerHeight = useHeaderHeight();
+
   const handleCycleChange = (cycle: BillingCycle) => {
     setSelectedCycle(cycle);
     setBillingCycle(cycle);
@@ -163,7 +166,7 @@ export default function PremiumUpgradeScreen() {
     <ThemedView style={styles.container}>
       <KeyboardAwareScrollViewCompat
         contentContainerStyle={{
-          paddingTop: insets.top + Spacing["2xl"],
+          paddingTop: headerHeight + Spacing.lg,
           paddingBottom: insets.bottom + Spacing["2xl"],
           paddingHorizontal: Spacing.lg,
         }}

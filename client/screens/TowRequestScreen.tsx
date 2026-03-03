@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { View, StyleSheet, Pressable, TextInput } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useHeaderHeight } from "@react-navigation/elements";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -96,6 +97,7 @@ function SizeCard({ label, icon, basePrice, isSelected, onPress }: SizeCardProps
 
 export default function TowRequestScreen() {
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const { theme } = useTheme();
   const { getTowProviders, setActiveRequest, addToHistory } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -155,7 +157,7 @@ export default function TowRequestScreen() {
       <KeyboardAwareScrollViewCompat
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: insets.bottom + 100 },
+          { paddingTop: headerHeight + Spacing.lg, paddingBottom: insets.bottom + 100 },
         ]}
       >
         <View style={[styles.heroSection, { backgroundColor: theme.secondary }]}>
@@ -403,7 +405,6 @@ const styles = StyleSheet.create({
   heroSection: {
     marginHorizontal: -Spacing.lg,
     paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.xl,
     paddingBottom: Spacing["2xl"],
     alignItems: "center",
     marginBottom: Spacing.lg,
