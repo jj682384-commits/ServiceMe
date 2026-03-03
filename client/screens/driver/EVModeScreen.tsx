@@ -275,19 +275,23 @@ function ChargingStation({
 }
 
 function AnimatedGradientButton({ onPress }: { onPress: () => void }) {
-  const translateX = useSharedValue(-200);
+  const translateX = useSharedValue(0);
 
   useEffect(() => {
     translateX.value = withRepeat(
-      withTiming(200, { duration: 3000, easing: Easing.inOut(Easing.ease) }),
+      withTiming(1, { duration: 3000, easing: Easing.linear }),
       -1,
-      true
+      false
     );
   }, []);
 
-  const gradientSlide = useAnimatedStyle(() => ({
-    transform: [{ translateX: translateX.value }],
-  }));
+  const gradientSlide = useAnimatedStyle(() => {
+    'worklet';
+    const shift = translateX.value * 400 - 200;
+    return {
+      transform: [{ translateX: shift }],
+    };
+  });
 
   return (
     <Pressable onPress={onPress} style={styles.gateButton}>
@@ -295,9 +299,11 @@ function AnimatedGradientButton({ onPress }: { onPress: () => void }) {
         <Animated.View
           style={[
             {
-              ...StyleSheet.absoluteFillObject,
-              width: "200%",
-              left: "-50%",
+              position: "absolute",
+              top: 0,
+              bottom: 0,
+              width: 800,
+              left: -200,
             },
             gradientSlide,
           ]}
@@ -311,8 +317,11 @@ function AnimatedGradientButton({ onPress }: { onPress: () => void }) {
               EV.neonCyan,
               EV.neonBlue,
               EV.neonPurple,
+              EV.neonBlue,
+              EV.neonCyan,
+              EV.neonGreen,
             ]}
-            locations={[0, 0.16, 0.33, 0.5, 0.67, 0.84, 1]}
+            locations={[0, 0.1, 0.2, 0.35, 0.5, 0.6, 0.7, 0.8, 0.9, 1]}
             start={{ x: 0, y: 0.5 }}
             end={{ x: 1, y: 0.5 }}
             style={{ width: "100%", height: "100%" }}

@@ -141,6 +141,16 @@ export interface AuthUser {
   phone: string;
 }
 
+export interface PaymentMethod {
+  id: string;
+  type: "visa" | "mastercard" | "amex" | "discover";
+  last4: string;
+  isDefault: boolean;
+  expiryMonth: number;
+  expiryYear: number;
+  cardholderName: string;
+}
+
 export const PREFERRED_THRESHOLD = 3;
 
 export interface PreferredProvider {
@@ -196,6 +206,10 @@ interface AppContextType {
   isPreferredProvider: (providerId: string) => boolean;
   getPreferredProviderInfo: (providerId: string) => PreferredProvider | undefined;
   getProviderServiceCount: (providerId: string) => number;
+  paymentMethods: PaymentMethod[];
+  addPaymentMethod: (method: Omit<PaymentMethod, "id">) => void;
+  removePaymentMethod: (id: string) => void;
+  setDefaultPaymentMethod: (id: string) => void;
   logout: () => void;
 }
 
@@ -386,6 +400,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContact[]>([]);
   const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([
+    {
+      id: "pm-1",
+      type: "visa",
+      last4: "4242",
+      isDefault: true,
+      expiryMonth: 12,
+      expiryYear: 2027,
+      cardholderName: "Alex Johnson",
+    },
+    {
+      id: "pm-2",
+      type: "mastercard",
+      last4: "8888",
+      isDefault: false,
+      expiryMonth: 6,
+      expiryYear: 2026,
+      cardholderName: "Alex Johnson",
+    },
+  ]);
 
   const getProviderServiceCount = (providerId: string): number => {
     return requestHistory.filter(
@@ -548,6 +582,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return vehicles.find((v) => v.isDefault) || vehicles[0];
   };
 
+  const addPaymentMethod = (method: Omit<PaymentMethod, "id">) => {
+    const newMethod: PaymentMethod = { ...method, id: `pm-${Date.now()}` };
+    setPaymentMethods((prev) => {
+      if (newMethod.isDefault) {
+        return [...prev.map((m) => ({ ...m, isDefault: false })), newMethod];
+      }
+      if (prev.length === 0) {
+        return [{ ...newMethod, isDefault: true }];
+      }
+      return [...prev, newMethod];
+    });
+  };
+
+  const removePaymentMethod = (id: string) => {
+    setPaymentMethods((prev) => {
+      const filtered = prev.filter((m) => m.id !== id);
+      if (filtered.length > 0 && !filtered.some((m) => m.isDefault)) {
+        filtered[0].isDefault = true;
+      }
+      return filtered;
+    });
+  };
+
+  const setDefaultPaymentMethod = (id: string) => {
+    setPaymentMethods((prev) =>
+      prev.map((m) => ({ ...m, isDefault: m.id === id }))
+    );
+  };
+
   const logout = () => {
     setIsAuthenticated(false);
     setAuthUser(null);
@@ -606,6 +669,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         isPreferredProvider,
         getPreferredProviderInfo,
         getProviderServiceCount,
+        paymentMethods,
+        addPaymentMethod,
+        removePaymentMethod,
+        setDefaultPaymentMethod,
         logout,
       }}
     >

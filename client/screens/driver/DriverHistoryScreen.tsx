@@ -4,12 +4,15 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceRequest, ServiceType } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
+import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 const serviceTypeLabels: Record<ServiceType, string> = {
   flat_tire: "Flat Tire",
@@ -58,7 +61,7 @@ function StatCard({
   );
 }
 
-function HistoryItem({ item }: { item: ServiceRequest }) {
+function HistoryItem({ item, onPress }: { item: ServiceRequest; onPress: () => void }) {
   const { theme } = useTheme();
 
   const formatDate = (date: Date) => {
@@ -77,6 +80,7 @@ function HistoryItem({ item }: { item: ServiceRequest }) {
 
   return (
     <Pressable
+      onPress={onPress}
       style={({ pressed }) => [
         styles.historyItem,
         { backgroundColor: theme.backgroundDefault, opacity: pressed ? 0.8 : 1 },
@@ -134,6 +138,7 @@ export default function DriverHistoryScreen() {
   const tabBarHeight = useBottomTabBarHeight();
   const { theme } = useTheme();
   const { requestHistory } = useApp();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const displayHistory = requestHistory;
 
@@ -171,7 +176,12 @@ export default function DriverHistoryScreen() {
       <FlatList
         data={displayHistory}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <HistoryItem item={item} />}
+        renderItem={({ item }) => (
+          <HistoryItem
+            item={item}
+            onPress={() => navigation.navigate("ServiceDetail", { requestId: item.id })}
+          />
+        )}
         ListHeaderComponent={renderHeader}
         contentContainerStyle={{
           paddingTop: headerHeight + Spacing.lg,

@@ -29,6 +29,9 @@ import EVMobileChargeScreen from "@/screens/ev/EVMobileChargeScreen";
 import EVTowScreen from "@/screens/ev/EVTowScreen";
 import EVRangeAlertScreen from "@/screens/ev/EVRangeAlertScreen";
 import PreferredProvidersScreen from "@/screens/PreferredProvidersScreen";
+import PaymentMethodsScreen from "@/screens/PaymentMethodsScreen";
+import BillingHistoryScreen from "@/screens/BillingHistoryScreen";
+import ServiceDetailScreen from "@/screens/ServiceDetailScreen";
 
 export type RootStackParamList = {
   Welcome: undefined;
@@ -58,6 +61,9 @@ export type RootStackParamList = {
   EVTow: undefined;
   EVRangeAlert: undefined;
   PreferredProviders: undefined;
+  PaymentMethods: undefined;
+  BillingHistory: undefined;
+  ServiceDetail: { requestId: string };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -253,6 +259,27 @@ export default function RootStackNavigator() {
         component={PreferredProvidersScreen}
         options={{
           headerTitle: "Preferred Providers",
+        }}
+      />
+      <Stack.Screen
+        name="ServiceDetail"
+        component={ServiceDetailScreen}
+        options={{
+          headerTitle: "Service Details",
+        }}
+      />
+      <Stack.Screen
+        name="PaymentMethods"
+        component={PaymentMethodsScreen}
+        options={{
+          headerTitle: "Payment Methods",
+        }}
+      />
+      <Stack.Screen
+        name="BillingHistory"
+        component={BillingHistoryScreen}
+        options={{
+          headerTitle: "Billing History",
         }}
       />
     </Stack.Navigator>

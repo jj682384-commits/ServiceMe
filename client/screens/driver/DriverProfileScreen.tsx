@@ -262,8 +262,8 @@ export default function DriverProfileScreen() {
           <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
             PAYMENT
           </ThemedText>
-          <MenuItem icon="credit-card" label="Payment Methods" />
-          <MenuItem icon="file-text" label="Billing History" />
+          <MenuItem icon="credit-card" label="Payment Methods" onPress={() => navigation.navigate("PaymentMethods")} />
+          <MenuItem icon="file-text" label="Billing History" onPress={() => navigation.navigate("BillingHistory")} />
         </View>
 
         <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
