@@ -2,7 +2,7 @@ import React from "react";
 import { View, StyleSheet, Pressable, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import { useNavigation, CommonActions } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import Animated, {
   useAnimatedStyle,
@@ -15,7 +15,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { ThemedText } from "@/components/ThemedText";
 import AnimatedBackground, { DARK_BG } from "@/components/AnimatedBackground";
 import { useTheme } from "@/hooks/useTheme";
-import { useApp, ProviderType } from "@/context/AppContext";
+import { ProviderType } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
@@ -88,27 +88,8 @@ export default function ProviderTypeSelectionScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { setUserRole, setCurrentProvider } = useApp();
-
   const handleSelectType = (providerType: ProviderType) => {
-    setUserRole("provider");
-    setCurrentProvider({
-      id: "p4",
-      name: providerType === "shop" ? "Your Business Name" : "Your Name",
-      phone: "+1 555-9999",
-      email: "you@service.com",
-      rating: 5.0,
-      reviewCount: 0,
-      vehicleType: providerType === "shop" ? "tow_truck" : "pickup",
-      vehicleMake: "Ford",
-      vehicleModel: providerType === "shop" ? "F-550" : "F-150",
-      licensePlate: "SVC-001",
-      servicesOffered: ["flat_tire", "jump_start", "fuel", "lockout"],
-      isAvailable: true,
-      providerType: providerType,
-      verificationStatus: "verified",
-    });
-    navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "ProviderTabs" }] }));
+    navigation.navigate("ProviderSignUp", { providerType });
   };
 
   return (

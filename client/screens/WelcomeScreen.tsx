@@ -144,7 +144,7 @@ export default function WelcomeScreen() {
         </Animated.View>
 
         <Animated.View entering={FadeInUp.delay(700).duration(500).springify()}>
-          <Pressable style={styles.providerLink} onPress={() => navigation.navigate("SignUp", { becomeProvider: true })}>
+          <Pressable style={styles.providerLink} onPress={() => navigation.navigate("ProviderTypeSelection")}>
             <LinearGradient colors={["rgba(0,217,255,0.1)", "rgba(0,217,255,0.03)"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[StyleSheet.absoluteFill, { borderRadius: 16 }]} />
             <View style={styles.providerLinkIcon}>
               <Feather name="heart" size={16} color={theme.secondary} />

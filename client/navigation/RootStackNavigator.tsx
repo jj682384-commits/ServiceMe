@@ -33,11 +33,12 @@ import PreferredProvidersScreen from "@/screens/PreferredProvidersScreen";
 import PaymentMethodsScreen from "@/screens/PaymentMethodsScreen";
 import BillingHistoryScreen from "@/screens/BillingHistoryScreen";
 import ServiceDetailScreen from "@/screens/ServiceDetailScreen";
+import ProviderSignUpScreen from "@/screens/ProviderSignUpScreen";
 import BackgroundSettingsScreen from "@/screens/BackgroundSettingsScreen";
 
 export type RootStackParamList = {
   Welcome: undefined;
-  SignUp: { becomeProvider?: boolean } | undefined;
+  SignUp: undefined;
   SignIn: undefined;
   RoleSelection: undefined;
   ProviderTypeSelection: undefined;
@@ -63,6 +64,7 @@ export type RootStackParamList = {
   EVTow: undefined;
   EVRangeAlert: undefined;
   EVAddVehicle: undefined;
+  ProviderSignUp: { providerType: "independent" | "shop" };
   PreferredProviders: undefined;
   PaymentMethods: undefined;
   BillingHistory: undefined;
@@ -265,6 +267,14 @@ export default function RootStackNavigator() {
           headerShown: false,
           presentation: "fullScreenModal",
           animation: "fade",
+        }}
+      />
+      <Stack.Screen
+        name="ProviderSignUp"
+        component={ProviderSignUpScreen}
+        options={{
+          headerShown: false,
+          animation: "slide_from_right",
         }}
       />
       <Stack.Screen

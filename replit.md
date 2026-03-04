@@ -83,6 +83,23 @@ A `shared/` directory contains code common to both client and server, such as sc
 - Custom fuel amount validates before allowing submission (must be > 0)
 - Premium members see discounted pricing on both preset and custom amounts
 
+### Provider Sign-Up Flow
+- Welcome screen "Become a provider" link goes to ProviderTypeSelectionScreen (not SignUp)
+- Two provider types: Independent Helper and Roadside Shop (business)
+- Each type navigates to ProviderSignUpScreen at `client/screens/ProviderSignUpScreen.tsx` with `providerType` param
+- Multi-step form (4 steps): Personal Info → Provider Details → ID Verification → Legal Agreements
+- **Independent path**: Vehicle type/make/model, years of experience, services offered, brief bio; uploads: photo ID + selfie
+- **Business path**: Company name, business address, license number, vehicle/employee count, services; uploads: business license + owner ID + proof of insurance
+- ID verification is simulated (tap to "upload", shows checkmark); verification status set to "pending"
+- Step indicator at top with progress dots; back button goes to previous step
+- On completion: creates provider with `verificationStatus: "pending"`, navigates to ProviderTabs
+- SignUp screen (`client/screens/SignUpScreen.tsx`) is now driver-only (no `becomeProvider` param)
+
+### Tab Transition Animations
+- Both DriverTabNavigator and ProviderTabNavigator wrap screens with `withTabAnimation` HOC
+- Fade-in (280ms) + spring scale (0.96→1) animation plays only on actual tab switches
+- No animation on returning from stack navigation (detects tab index change via parent navigator state)
+
 ### Animated Background System
 - History, Messages, and Profile tabs use AnimatedBackground with floating orbs and a slowly rotating ghosted logo
 - Headers are hidden on these tabs — screen titles are rendered inline within scrollable content

@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from "react";
 import { View, StyleSheet, TextInput, Pressable, Alert, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useNavigation, useRoute, CommonActions, RouteProp } from "@react-navigation/native";
+import { useNavigation, CommonActions } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import Animated, {
   useAnimatedStyle,
@@ -151,8 +151,6 @@ export default function SignUpScreen() {
   const { theme } = useTheme();
   const { setIsAuthenticated, setAuthUser, setUserRole, setCurrentDriver } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const route = useRoute<RouteProp<RootStackParamList, "SignUp">>();
-  const becomeProvider = route.params?.becomeProvider ?? false;
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -200,13 +198,9 @@ export default function SignUpScreen() {
       setAuthUser({ id: userId, name: fullName.trim(), email: email.trim(), phone: phone.trim() });
       setIsAuthenticated(true);
 
-      if (becomeProvider) {
-        navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "ProviderTypeSelection" }] }));
-      } else {
-        setUserRole("driver");
-        setCurrentDriver({ id: userId, name: fullName.trim(), email: email.trim(), phone: phone.trim(), avatarPreset: Math.floor(Math.random() * 5) + 1, membership: "free" });
-        navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "DriverTabs" }] }));
-      }
+      setUserRole("driver");
+      setCurrentDriver({ id: userId, name: fullName.trim(), email: email.trim(), phone: phone.trim(), avatarPreset: Math.floor(Math.random() * 5) + 1, membership: "free" });
+      navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "DriverTabs" }] }));
     }, 1000);
   };
 
@@ -222,12 +216,8 @@ export default function SignUpScreen() {
               <Feather name="arrow-left" size={20} color="#FFF" />
             </View>
           </Pressable>
-          <ThemedText type="h2" style={styles.title}>
-            {becomeProvider ? "Become a Provider" : "Create Account"}
-          </ThemedText>
-          <ThemedText type="body" style={styles.subtitle}>
-            {becomeProvider ? "Sign up to start earning by helping others" : "Sign up to get started with roadside assistance"}
-          </ThemedText>
+          <ThemedText type="h2" style={styles.title}>Create Account</ThemedText>
+          <ThemedText type="body" style={styles.subtitle}>Sign up to get started with roadside assistance</ThemedText>
         </View>
 
         <View style={styles.form}>
