@@ -24,7 +24,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useNavigation } from "@react-navigation/native";
 import { useApp } from "@/context/AppContext";
-import { useTheme } from "@/context/ThemeContext";
+import { useTheme } from "@/hooks/useTheme";
 import { getEVColors } from "@/constants/evColors";
 
 const RANGE_PRESETS = [20, 30, 50, 75];

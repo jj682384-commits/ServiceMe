@@ -32,26 +32,14 @@ import Animated, {
   runOnJS,
 } from "react-native-reanimated";
 import { useApp, TireType, FuelType, DrivetrainType } from "@/context/AppContext";
+import { useTheme } from "@/hooks/useTheme";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { VEHICLE_MAKES, VEHICLE_MAKES_MODELS } from "@/constants/vehicleData";
+import { getEVColors, type EVColors } from "@/constants/evColors";
 import EVAnimatedBackground from "@/components/EVAnimatedBackground";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 
 const { width: SW } = Dimensions.get("window");
-
-const EV = {
-  bg: "#050510",
-  bgCard: "#0C0C1E",
-  bgCardLight: "#12122A",
-  neonGreen: "#00FF88",
-  neonCyan: "#00E5FF",
-  neonBlue: "#4D7CFF",
-  neonPurple: "#B44DFF",
-  white: "#F0F4FF",
-  whiteDim: "#8892A8",
-  whiteGhost: "#4A5068",
-  border: "#1A1A3A",
-};
 
 const TIRE_TYPES: { value: TireType; label: string }[] = [
   { value: "spare", label: "Full-Size Spare" },
@@ -69,7 +57,7 @@ const DRIVETRAIN_TYPES: { value: DrivetrainType; label: string }[] = [
 const currentYear = new Date().getFullYear();
 const YEARS = Array.from({ length: 30 }, (_, i) => currentYear - i);
 
-function ScanLine() {
+function ScanLine({ ev }: { ev: EVColors }) {
   const translateY = useSharedValue(0);
 
   useEffect(() => {
@@ -100,7 +88,7 @@ function ScanLine() {
       ]}
     >
       <LinearGradient
-        colors={["transparent", EV.neonCyan, EV.neonGreen, EV.neonCyan, "transparent"]}
+        colors={["transparent", ev.neonCyan, ev.neonGreen, ev.neonCyan, "transparent"]}
         start={{ x: 0, y: 0.5 }}
         end={{ x: 1, y: 0.5 }}
         style={{ flex: 1 }}
@@ -109,7 +97,7 @@ function ScanLine() {
   );
 }
 
-function HexGrid() {
+function HexGrid({ ev }: { ev: EVColors }) {
   const opacity = useSharedValue(0);
   useEffect(() => {
     opacity.value = withDelay(300, withTiming(1, { duration: 800 }));
@@ -128,7 +116,7 @@ function HexGrid() {
           right: 0,
           top: i * 80,
           height: StyleSheet.hairlineWidth,
-          backgroundColor: EV.neonCyan,
+          backgroundColor: ev.neonCyan,
         }}
       />
     );
@@ -143,7 +131,7 @@ function HexGrid() {
           bottom: 0,
           left: i * (SW / 5),
           width: StyleSheet.hairlineWidth,
-          backgroundColor: EV.neonCyan,
+          backgroundColor: ev.neonCyan,
         }}
       />
     );
@@ -156,7 +144,7 @@ function HexGrid() {
   );
 }
 
-function IntroAnimation({ onComplete }: { onComplete: () => void }) {
+function IntroAnimation({ onComplete, ev, isDark }: { onComplete: () => void; ev: EVColors; isDark: boolean }) {
   const ringScale = useSharedValue(0);
   const ringOpacity = useSharedValue(1);
   const iconScale = useSharedValue(0);
@@ -199,8 +187,8 @@ function IntroAnimation({ onComplete }: { onComplete: () => void }) {
   }));
 
   return (
-    <View style={[StyleSheet.absoluteFill, { backgroundColor: EV.bg, zIndex: 100 }]}>
-      <EVAnimatedBackground />
+    <View style={[StyleSheet.absoluteFill, { backgroundColor: ev.bg, zIndex: 100 }]}>
+      <EVAnimatedBackground isDark={isDark} />
       <View style={styles.introCenter}>
         <View style={{ width: 120, height: 120, alignItems: "center", justifyContent: "center" }}>
           <Animated.View
@@ -211,14 +199,14 @@ function IntroAnimation({ onComplete }: { onComplete: () => void }) {
                 height: 120,
                 borderRadius: 60,
                 borderWidth: 2,
-                borderColor: EV.neonGreen,
+                borderColor: ev.neonGreen,
               },
               ringStyle,
             ]}
           />
           <Animated.View style={iconStyle}>
             <LinearGradient
-              colors={[EV.neonGreen + "25", EV.bgCard]}
+              colors={[ev.neonGreen + "25", ev.bgCard]}
               style={{
                 width: 90,
                 height: 90,
@@ -227,20 +215,20 @@ function IntroAnimation({ onComplete }: { onComplete: () => void }) {
                 justifyContent: "center",
               }}
             >
-              <Feather name="battery-charging" size={44} color={EV.neonGreen} />
+              <Feather name="battery-charging" size={44} color={ev.neonGreen} />
             </LinearGradient>
           </Animated.View>
         </View>
-        <Animated.Text style={[styles.introTitle, textStyle]}>
+        <Animated.Text style={[styles.introTitle, { color: ev.neonGreen }, textStyle]}>
           INITIALIZING
         </Animated.Text>
-        <Animated.Text style={[styles.introSub, textStyle]}>
+        <Animated.Text style={[styles.introSub, { color: ev.white }, textStyle]}>
           EV Profile Setup
         </Animated.Text>
       </View>
       <Animated.View style={[StyleSheet.absoluteFill, wipeStyle]}>
-        <HexGrid />
-        <ScanLine />
+        <HexGrid ev={ev} />
+        <ScanLine ev={ev} />
       </Animated.View>
     </View>
   );
@@ -253,6 +241,7 @@ function SearchablePicker({
   items,
   title,
   searchPlaceholder,
+  ev,
 }: {
   visible: boolean;
   onClose: () => void;
@@ -260,6 +249,7 @@ function SearchablePicker({
   items: string[];
   title: string;
   searchPlaceholder: string;
+  ev: EVColors;
 }) {
   const insets = useSafeAreaInsets();
   const [search, setSearch] = useState("");
@@ -277,26 +267,26 @@ function SearchablePicker({
           style={[
             styles.modalContent,
             {
-              backgroundColor: EV.bgCard,
+              backgroundColor: ev.bgCard,
               paddingTop: insets.top + Spacing.md,
               paddingBottom: insets.bottom + Spacing.md,
             },
           ]}
         >
           <View style={styles.modalHeader}>
-            <Animated.Text style={{ color: EV.white, fontSize: 20, fontWeight: "700" }}>
+            <Animated.Text style={{ color: ev.white, fontSize: 20, fontWeight: "700" }}>
               {title}
             </Animated.Text>
             <Pressable onPress={() => { setSearch(""); onClose(); }} hitSlop={12}>
-              <Feather name="x" size={24} color={EV.white} />
+              <Feather name="x" size={24} color={ev.white} />
             </Pressable>
           </View>
-          <View style={[styles.searchBar, { backgroundColor: EV.bg, borderColor: EV.border }]}>
-            <Feather name="search" size={18} color={EV.whiteDim} />
+          <View style={[styles.searchBar, { backgroundColor: ev.bg, borderColor: ev.border }]}>
+            <Feather name="search" size={18} color={ev.whiteDim} />
             <TextInput
-              style={[styles.searchInput, { color: EV.white }]}
+              style={[styles.searchInput, { color: ev.white }]}
               placeholder={searchPlaceholder}
-              placeholderTextColor={EV.whiteGhost}
+              placeholderTextColor={ev.whiteGhost}
               value={search}
               onChangeText={setSearch}
               autoFocus
@@ -304,7 +294,7 @@ function SearchablePicker({
             />
             {search.length > 0 ? (
               <Pressable onPress={() => setSearch("")} hitSlop={8}>
-                <Feather name="x-circle" size={16} color={EV.whiteDim} />
+                <Feather name="x-circle" size={16} color={ev.whiteDim} />
               </Pressable>
             ) : null}
           </View>
@@ -317,22 +307,22 @@ function SearchablePicker({
                 onPress={() => { setSearch(""); onSelect(item); }}
                 style={({ pressed }) => [
                   styles.pickerItem,
-                  { backgroundColor: pressed ? EV.bgCardLight : "transparent" },
+                  { backgroundColor: pressed ? ev.bgCardLight : "transparent" },
                 ]}
               >
-                <Animated.Text style={{ color: EV.white, fontSize: 16 }}>{item}</Animated.Text>
-                <Feather name="chevron-right" size={16} color={EV.whiteDim} />
+                <Animated.Text style={{ color: ev.white, fontSize: 16 }}>{item}</Animated.Text>
+                <Feather name="chevron-right" size={16} color={ev.whiteDim} />
               </Pressable>
             )}
             ListEmptyComponent={
               <View style={styles.emptySearch}>
-                <Animated.Text style={{ color: EV.whiteDim, fontSize: 16 }}>
+                <Animated.Text style={{ color: ev.whiteDim, fontSize: 16 }}>
                   No results for "{search}"
                 </Animated.Text>
               </View>
             }
             ItemSeparatorComponent={() => (
-              <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: EV.border, marginHorizontal: Spacing.md }} />
+              <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: ev.border, marginHorizontal: Spacing.md }} />
             )}
           />
         </View>
@@ -347,37 +337,40 @@ function PickerButton({
   placeholder,
   onPress,
   disabled,
+  ev,
 }: {
   label: string;
   value: string;
   placeholder: string;
   onPress: () => void;
   disabled?: boolean;
+  ev: EVColors;
 }) {
   return (
     <>
-      <Animated.Text style={styles.fieldLabel}>{label}</Animated.Text>
+      <Animated.Text style={[styles.fieldLabel, { color: ev.whiteDim }]}>{label}</Animated.Text>
       <Pressable
         onPress={onPress}
         disabled={disabled}
         style={[
           styles.pickerButton,
           {
-            borderColor: value ? EV.neonGreen + "60" : EV.border,
+            borderColor: value ? ev.neonGreen + "60" : ev.border,
+            backgroundColor: ev.bgCardLight,
             opacity: disabled ? 0.4 : 1,
           },
         ]}
       >
         <Animated.Text
           style={{
-            color: value ? EV.white : EV.whiteGhost,
+            color: value ? ev.white : ev.whiteGhost,
             fontSize: 16,
             flex: 1,
           }}
         >
           {value || placeholder}
         </Animated.Text>
-        <Feather name="chevron-down" size={18} color={EV.whiteDim} />
+        <Feather name="chevron-down" size={18} color={ev.whiteDim} />
       </Pressable>
     </>
   );
@@ -387,6 +380,8 @@ export default function EVAddVehicleScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const { vehicles, addVehicle } = useApp();
+  const { isDark } = useTheme();
+  const ev = getEVColors(isDark);
 
   const [showIntro, setShowIntro] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -428,16 +423,16 @@ export default function EVAddVehicleScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: EV.bg }]}>
-      <EVAnimatedBackground />
+    <View style={[styles.container, { backgroundColor: ev.bg }]}>
+      <EVAnimatedBackground isDark={isDark} />
       <LinearGradient
-        colors={["#00FF8808", "#00E5FF05", "transparent"]}
+        colors={[...ev.topGradient]}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 0.4 }}
         style={StyleSheet.absoluteFill}
       />
 
-      {showIntro ? <IntroAnimation onComplete={handleIntroComplete} /> : null}
+      {showIntro ? <IntroAnimation onComplete={handleIntroComplete} ev={ev} isDark={isDark} /> : null}
 
       {showForm ? (
         <KeyboardAwareScrollViewCompat
@@ -455,30 +450,30 @@ export default function EVAddVehicleScreen() {
               hitSlop={12}
               style={styles.backButton}
             >
-              <Feather name="arrow-left" size={22} color={EV.white} />
-              <Animated.Text style={styles.backText}>Back</Animated.Text>
+              <Feather name="arrow-left" size={22} color={ev.white} />
+              <Animated.Text style={[styles.backText, { color: ev.white }]}>Back</Animated.Text>
             </Pressable>
           </Animated.View>
 
           <Animated.View entering={FadeInUp.duration(500).delay(100)} style={styles.headerSection}>
             <View style={styles.headerIconRow}>
               <LinearGradient
-                colors={[EV.neonGreen + "25", EV.bgCard]}
+                colors={[ev.neonGreen + "25", ev.bgCard]}
                 style={styles.headerIcon}
               >
-                <Feather name="battery-charging" size={28} color={EV.neonGreen} />
+                <Feather name="battery-charging" size={28} color={ev.neonGreen} />
               </LinearGradient>
             </View>
-            <Animated.Text style={styles.formTitle}>Add Your EV</Animated.Text>
-            <Animated.Text style={styles.formSubtitle}>
+            <Animated.Text style={[styles.formTitle, { color: ev.white }]}>Add Your EV</Animated.Text>
+            <Animated.Text style={[styles.formSubtitle, { color: ev.whiteDim }]}>
               Set up your electric vehicle profile to unlock the full EV experience
             </Animated.Text>
           </Animated.View>
 
-          <Animated.View entering={FadeInUp.duration(500).delay(200)} style={styles.formCard}>
+          <Animated.View entering={FadeInUp.duration(500).delay(200)} style={[styles.formCard, { backgroundColor: ev.bgCard + "CC", borderColor: ev.border }]}>
             <View style={styles.sectionHeader}>
-              <Feather name="truck" size={16} color={EV.neonCyan} />
-              <Animated.Text style={styles.sectionTitle}>VEHICLE INFO</Animated.Text>
+              <Feather name="truck" size={16} color={ev.neonCyan} />
+              <Animated.Text style={[styles.sectionTitle, { color: ev.whiteDim }]}>VEHICLE INFO</Animated.Text>
             </View>
 
             <PickerButton
@@ -486,6 +481,7 @@ export default function EVAddVehicleScreen() {
               value={make}
               placeholder="Select make..."
               onPress={() => setShowMakePicker(true)}
+              ev={ev}
             />
 
             <PickerButton
@@ -494,9 +490,10 @@ export default function EVAddVehicleScreen() {
               placeholder={make ? "Select model..." : "Select a make first"}
               onPress={() => setShowModelPicker(true)}
               disabled={!make}
+              ev={ev}
             />
 
-            <Animated.Text style={styles.fieldLabel}>Year</Animated.Text>
+            <Animated.Text style={[styles.fieldLabel, { color: ev.whiteDim }]}>Year</Animated.Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -509,14 +506,14 @@ export default function EVAddVehicleScreen() {
                   style={[
                     styles.yearChip,
                     {
-                      backgroundColor: year === y ? EV.neonGreen : EV.bgCardLight,
-                      borderColor: year === y ? EV.neonGreen : EV.border,
+                      backgroundColor: year === y ? ev.neonGreen : ev.bgCardLight,
+                      borderColor: year === y ? ev.neonGreen : ev.border,
                     },
                   ]}
                 >
                   <Animated.Text
                     style={{
-                      color: year === y ? "#000" : EV.white,
+                      color: year === y ? "#000" : ev.white,
                       fontWeight: year === y ? "700" : "400",
                       fontSize: 14,
                     }}
@@ -528,10 +525,10 @@ export default function EVAddVehicleScreen() {
             </ScrollView>
           </Animated.View>
 
-          <Animated.View entering={FadeInUp.duration(500).delay(350)} style={styles.formCard}>
+          <Animated.View entering={FadeInUp.duration(500).delay(350)} style={[styles.formCard, { backgroundColor: ev.bgCard + "CC", borderColor: ev.border }]}>
             <View style={styles.sectionHeader}>
-              <Feather name="disc" size={16} color={EV.neonPurple} />
-              <Animated.Text style={styles.sectionTitle}>TIRE TYPE</Animated.Text>
+              <Feather name="disc" size={16} color={ev.neonPurple} />
+              <Animated.Text style={[styles.sectionTitle, { color: ev.whiteDim }]}>TIRE TYPE</Animated.Text>
             </View>
 
             <View style={styles.optionRow}>
@@ -542,15 +539,15 @@ export default function EVAddVehicleScreen() {
                   style={[
                     styles.optionChip,
                     {
-                      backgroundColor: tireType === t.value ? EV.neonPurple + "20" : EV.bgCardLight,
-                      borderColor: tireType === t.value ? EV.neonPurple : EV.border,
+                      backgroundColor: tireType === t.value ? ev.neonPurple + "20" : ev.bgCardLight,
+                      borderColor: tireType === t.value ? ev.neonPurple : ev.border,
                       flex: 1,
                     },
                   ]}
                 >
                   <Animated.Text
                     style={{
-                      color: tireType === t.value ? EV.neonPurple : EV.whiteDim,
+                      color: tireType === t.value ? ev.neonPurple : ev.whiteDim,
                       fontWeight: tireType === t.value ? "600" : "400",
                       fontSize: 13,
                       textAlign: "center",
@@ -563,10 +560,10 @@ export default function EVAddVehicleScreen() {
             </View>
           </Animated.View>
 
-          <Animated.View entering={FadeInUp.duration(500).delay(450)} style={styles.formCard}>
+          <Animated.View entering={FadeInUp.duration(500).delay(450)} style={[styles.formCard, { backgroundColor: ev.bgCard + "CC", borderColor: ev.border }]}>
             <View style={styles.sectionHeader}>
-              <Feather name="settings" size={16} color={EV.neonCyan} />
-              <Animated.Text style={styles.sectionTitle}>DRIVETRAIN</Animated.Text>
+              <Feather name="settings" size={16} color={ev.neonCyan} />
+              <Animated.Text style={[styles.sectionTitle, { color: ev.whiteDim }]}>DRIVETRAIN</Animated.Text>
             </View>
 
             <View style={styles.optionRow}>
@@ -577,15 +574,15 @@ export default function EVAddVehicleScreen() {
                   style={[
                     styles.optionChip,
                     {
-                      backgroundColor: drivetrain === d.value ? EV.neonCyan + "20" : EV.bgCardLight,
-                      borderColor: drivetrain === d.value ? EV.neonCyan : EV.border,
+                      backgroundColor: drivetrain === d.value ? ev.neonCyan + "20" : ev.bgCardLight,
+                      borderColor: drivetrain === d.value ? ev.neonCyan : ev.border,
                       flex: 1,
                     },
                   ]}
                 >
                   <Animated.Text
                     style={{
-                      color: drivetrain === d.value ? EV.neonCyan : EV.whiteDim,
+                      color: drivetrain === d.value ? ev.neonCyan : ev.whiteDim,
                       fontWeight: drivetrain === d.value ? "600" : "400",
                       fontSize: 13,
                       textAlign: "center",
@@ -598,9 +595,9 @@ export default function EVAddVehicleScreen() {
             </View>
           </Animated.View>
 
-          <Animated.View entering={FadeInUp.duration(500).delay(550)} style={styles.evNote}>
-            <Feather name="zap" size={16} color={EV.neonGreen} />
-            <Animated.Text style={styles.evNoteText}>
+          <Animated.View entering={FadeInUp.duration(500).delay(550)} style={[styles.evNote, { backgroundColor: ev.neonGreen + "10", borderColor: ev.neonGreen + "20" }]}>
+            <Feather name="zap" size={16} color={ev.neonGreen} />
+            <Animated.Text style={[styles.evNoteText, { color: ev.neonGreen }]}>
               Fuel type is automatically set to Electric for EV Mode vehicles
             </Animated.Text>
           </Animated.View>
@@ -608,15 +605,15 @@ export default function EVAddVehicleScreen() {
           <Animated.View entering={FadeInUp.duration(500).delay(650)} style={styles.formActions}>
             <Pressable
               onPress={() => navigation.goBack()}
-              style={styles.cancelButton}
+              style={[styles.cancelButton, { borderColor: ev.border }]}
             >
-              <Animated.Text style={{ color: EV.whiteDim, fontSize: 16, fontWeight: "500" }}>
+              <Animated.Text style={{ color: ev.whiteDim, fontSize: 16, fontWeight: "500" }}>
                 Cancel
               </Animated.Text>
             </Pressable>
             <Pressable onPress={handleAdd} style={styles.saveButtonWrap}>
               <LinearGradient
-                colors={[EV.neonGreen, EV.neonCyan]}
+                colors={[ev.neonGreen, ev.neonCyan]}
                 start={{ x: 0, y: 0.5 }}
                 end={{ x: 1, y: 0.5 }}
                 style={styles.saveButton}
@@ -640,6 +637,7 @@ export default function EVAddVehicleScreen() {
         items={VEHICLE_MAKES}
         title="Select Make"
         searchPlaceholder="Search makes..."
+        ev={ev}
       />
 
       <SearchablePicker
@@ -652,6 +650,7 @@ export default function EVAddVehicleScreen() {
         items={availableModels}
         title={`${make} Models`}
         searchPlaceholder="Search models..."
+        ev={ev}
       />
     </View>
   );
@@ -667,14 +666,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   introTitle: {
-    color: EV.neonGreen,
     fontSize: 14,
     fontWeight: "700",
     letterSpacing: 6,
     marginTop: 24,
   },
   introSub: {
-    color: EV.white,
     fontSize: 22,
     fontWeight: "600",
     marginTop: 8,
@@ -690,7 +687,6 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
   },
   backText: {
-    color: EV.white,
     fontSize: 16,
     fontWeight: "500",
   },
@@ -709,12 +705,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   formTitle: {
-    color: EV.white,
     fontSize: 28,
     fontWeight: "800",
   },
   formSubtitle: {
-    color: EV.whiteDim,
     fontSize: 15,
     textAlign: "center",
     marginTop: 8,
@@ -722,10 +716,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
   },
   formCard: {
-    backgroundColor: EV.bgCard + "CC",
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
-    borderColor: EV.border,
     padding: Spacing.lg,
     marginBottom: Spacing.md,
   },
@@ -736,13 +728,11 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   sectionTitle: {
-    color: EV.whiteDim,
     fontSize: 12,
     fontWeight: "700",
     letterSpacing: 2,
   },
   fieldLabel: {
-    color: EV.whiteDim,
     fontSize: 13,
     fontWeight: "600",
     marginBottom: Spacing.sm,
@@ -754,7 +744,6 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     borderRadius: BorderRadius.md,
     borderWidth: 1,
-    backgroundColor: EV.bgCardLight,
   },
   yearChip: {
     paddingHorizontal: Spacing.md,
@@ -777,15 +766,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    backgroundColor: EV.neonGreen + "10",
     borderRadius: BorderRadius.md,
     borderWidth: 1,
-    borderColor: EV.neonGreen + "20",
     padding: Spacing.md,
     marginBottom: Spacing.xl,
   },
   evNoteText: {
-    color: EV.neonGreen,
     fontSize: 13,
     flex: 1,
     lineHeight: 18,
@@ -802,7 +788,6 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.md,
     borderWidth: 1,
-    borderColor: EV.border,
   },
   saveButtonWrap: {
     flex: 2,

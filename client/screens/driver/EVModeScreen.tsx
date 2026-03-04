@@ -877,12 +877,10 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   stationName: {
-    color: EV.white,
     fontSize: 16,
     fontWeight: "600",
   },
   stationMeta: {
-    color: EV.whiteDim,
     fontSize: 13,
     marginTop: 2,
   },
@@ -904,7 +902,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   availText: {
-    color: EV.whiteDim,
     fontSize: 11,
   },
   stationSep: {
@@ -923,13 +920,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   tipTitle: {
-    color: EV.white,
     fontSize: 17,
     fontWeight: "700",
     marginBottom: 4,
   },
   tipBody: {
-    color: EV.whiteDim,
     fontSize: 14,
     lineHeight: 20,
   },
@@ -943,14 +938,12 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   gateTitle: {
-    color: EV.white,
     fontSize: 36,
     fontWeight: "800",
     marginBottom: 16,
     letterSpacing: -0.5,
   },
   gateSub: {
-    color: EV.whiteDim,
     fontSize: 17,
     textAlign: "center",
     lineHeight: 26,
@@ -985,7 +978,6 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   gateFeatureText: {
-    color: EV.whiteDim,
     fontSize: 17,
   },
 });

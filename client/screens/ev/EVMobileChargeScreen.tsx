@@ -20,7 +20,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useNavigation } from "@react-navigation/native";
 import { useApp } from "@/context/AppContext";
-import { useTheme } from "@/context/ThemeContext";
+import { useTheme } from "@/hooks/useTheme";
 import { getEVColors } from "@/constants/evColors";
 
 const CHARGE_LEVELS = [

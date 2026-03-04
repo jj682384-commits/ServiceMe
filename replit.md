@@ -105,11 +105,26 @@ A `shared/` directory contains code common to both client and server, such as sc
 - Headers are hidden on these tabs — screen titles are rendered inline within scrollable content
 - Background preferences stored in AppContext: `BackgroundPreferences` with `mode` ("animated"|"solid") and `colorScheme`
 - 7 color schemes: Default, Ocean, Sunset, Aurora, Midnight, Ember, Noir — each has unique `bgColor`, `flashColor`, `colors[][]`, and `opacityBoost`
-- AnimatedBackground component at `client/components/AnimatedBackground.tsx` accepts `customColors`, `opacityBoost`, and `flashColor` props
+- AnimatedBackground component at `client/components/AnimatedBackground.tsx` accepts `customColors`, `opacityBoost`, `flashColor`, and `isDark` props
+- Light mode support: each scheme has `bgColorLight`, `colorsLight`, `flashColorLight`, `opacityBoostLight` variants
+- Provider screens (Dashboard, Messages, Profile) also use AnimatedBackground with scheme system (matching driver side)
 - Dramatic flash/burst transition animation plays when switching schemes (scale + ring + fade)
 - BackgroundSettingsScreen at `client/screens/BackgroundSettingsScreen.tsx` — accessible from Profile > Preferences > Background Style
 - Scheme preview cards show miniature dark backgrounds with colored orbs representing each scheme
 - Solid mode disables all motion and uses `theme.backgroundRoot`; animated mode uses scheme's `bgColor`
+- `theme.cardAnimatedBg`: `rgba(255,255,255,0.82)` in light, `rgba(20,25,45,0.75)` in dark — for cards over animated backgrounds
+
+### EV Mode Light Theme
+- Shared EV color constants in `client/constants/evColors.ts` — `EV_DARK`, `EV_LIGHT`, `getEVColors(isDark)`
+- `EVAnimatedBackground` at `client/components/EVAnimatedBackground.tsx` accepts `isDark` prop — uses pastel shapes/scan lines in light mode
+- All EV screens are theme-aware: EVModeScreen, EVTowScreen, EVMobileChargeScreen, EVRangeAlertScreen, EVAddVehicleScreen
+- EV tab bar colors in DriverTabNavigator adapt to light/dark mode
+- Light EV palette uses eco-greens (#059669), soft cyans (#0891B2), clean whites on light backgrounds
+
+### Keyboard Dismiss Button
+- `KeyboardDismissButton` component at `client/components/KeyboardDismissButton.tsx`
+- Floating "Done" button with chevron-down icon, animated slide-up/down with keyboard visibility
+- Integrated globally in `App.tsx` inside NavigationContainer — works on all screens with text input
 
 ### Environment Variables
 - `DATABASE_URL`
