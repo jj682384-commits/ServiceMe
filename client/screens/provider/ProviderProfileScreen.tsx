@@ -1,17 +1,16 @@
 import React from "react";
 import { View, StyleSheet, ScrollView, Pressable, Switch, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useHeaderHeight } from "@react-navigation/elements";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation, CommonActions } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
-import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
+import AnimatedBackground from "@/components/AnimatedBackground";
 import { VerificationBadge } from "@/components/VerificationBadge";
 import { useTheme } from "@/hooks/useTheme";
-import { useApp, ServiceType } from "@/context/AppContext";
+import { useApp, ServiceType, BACKGROUND_SCHEMES } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
@@ -70,12 +69,14 @@ function MenuItem({ icon, label, value, onPress, showArrow = true, isDestructive
 
 export default function ProviderProfileScreen() {
   const insets = useSafeAreaInsets();
-  const headerHeight = useHeaderHeight();
   const tabBarHeight = useBottomTabBarHeight();
-  const { theme } = useTheme();
-  const { currentProvider, setUserRole, logout, serviceRadius } = useApp();
+  const { theme, isDark } = useTheme();
+  const { currentProvider, setUserRole, logout, serviceRadius, backgroundPreferences } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
+  const isAnimated = backgroundPreferences.mode === "animated";
+  const scheme = BACKGROUND_SCHEMES[backgroundPreferences.colorScheme];
+  const sectionBg = isAnimated ? theme.cardAnimatedBg : theme.backgroundDefault;
 
   const handleSwitchRole = () => {
     Alert.alert(
@@ -123,15 +124,18 @@ export default function ProviderProfileScreen() {
   };
 
   return (
-    <ThemedView style={styles.container}>
+    <View style={[styles.container, { backgroundColor: isAnimated ? (isDark ? scheme.bgColor : scheme.bgColorLight) : theme.backgroundRoot }]}>
+      {isAnimated ? <AnimatedBackground customColors={isDark ? scheme.colors : scheme.colorsLight} opacityBoost={isDark ? scheme.opacityBoost : scheme.opacityBoostLight} flashColor={isDark ? scheme.flashColor : scheme.flashColorLight} isDark={isDark} /> : null}
       <ScrollView
         contentContainerStyle={{
-          paddingTop: headerHeight + Spacing.lg,
+          paddingTop: Math.max(insets.top, Spacing["2xl"]) + Spacing.lg,
           paddingBottom: tabBarHeight + Spacing.xl,
           paddingHorizontal: Spacing.lg,
         }}
         scrollIndicatorInsets={{ bottom: insets.bottom }}
       >
+        <ThemedText type="h2" style={{ marginBottom: Spacing.lg }}>Profile</ThemedText>
+
         <View style={styles.profileHeader}>
           <View style={[styles.avatar, { backgroundColor: theme.secondary }]}>
             <Feather name="heart" size={32} color="#FFFFFF" />
@@ -156,7 +160,7 @@ export default function ProviderProfileScreen() {
           </ThemedText>
         </View>
 
-        <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
+        <View style={[styles.section, { backgroundColor: sectionBg }]}>
           <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
             VEHICLE INFO
           </ThemedText>
@@ -174,7 +178,7 @@ export default function ProviderProfileScreen() {
           />
         </View>
 
-        <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
+        <View style={[styles.section, { backgroundColor: sectionBg }]}>
           <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
             SERVICES OFFERED
           </ThemedText>
@@ -196,7 +200,7 @@ export default function ProviderProfileScreen() {
           </View>
         </View>
 
-        <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
+        <View style={[styles.section, { backgroundColor: sectionBg }]}>
           <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
             ACCOUNT
           </ThemedText>
@@ -205,7 +209,7 @@ export default function ProviderProfileScreen() {
           <MenuItem icon="mail" label="Email" value={currentProvider?.email || "you@service.com"} showArrow={false} />
         </View>
 
-        <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
+        <View style={[styles.section, { backgroundColor: sectionBg }]}>
           <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
             EARNINGS
           </ThemedText>
@@ -214,7 +218,7 @@ export default function ProviderProfileScreen() {
           <MenuItem icon="download" label="Tax Documents" />
         </View>
 
-        <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
+        <View style={[styles.section, { backgroundColor: sectionBg }]}>
           <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
             PREFERENCES
           </ThemedText>
@@ -233,7 +237,7 @@ export default function ProviderProfileScreen() {
           <MenuItem icon="map-pin" label="Service Radius" value={`${serviceRadius} miles`} onPress={() => navigation.navigate("SearchRadius")} />
         </View>
 
-        <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
+        <View style={[styles.section, { backgroundColor: sectionBg }]}>
           <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
             SUPPORT
           </ThemedText>
@@ -255,12 +259,12 @@ export default function ProviderProfileScreen() {
           />
         </View>
 
-        <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
+        <View style={[styles.section, { backgroundColor: sectionBg }]}>
           <MenuItem icon="refresh-cw" label="Switch to Driver Mode" onPress={handleSwitchRole} />
           <MenuItem icon="log-out" label="Sign Out" isDestructive onPress={handleSignOut} />
         </View>
       </ScrollView>
-    </ThemedView>
+    </View>
   );
 }
 

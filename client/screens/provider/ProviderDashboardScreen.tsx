@@ -1,14 +1,13 @@
 import React from "react";
 import { View, StyleSheet, ScrollView, Pressable, Switch } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useHeaderHeight } from "@react-navigation/elements";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
 
-import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
+import AnimatedBackground from "@/components/AnimatedBackground";
 import { useTheme } from "@/hooks/useTheme";
-import { useApp } from "@/context/AppContext";
+import { useApp, BACKGROUND_SCHEMES } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 
 function StatCard({
@@ -16,16 +15,18 @@ function StatCard({
   label,
   value,
   color,
+  cardBg,
 }: {
   icon: keyof typeof Feather.glyphMap;
   label: string;
   value: string;
   color: string;
+  cardBg: string;
 }) {
   const { theme } = useTheme();
 
   return (
-    <View style={[styles.statCard, { backgroundColor: theme.backgroundDefault, borderLeftWidth: 4, borderLeftColor: color }]}>
+    <View style={[styles.statCard, { backgroundColor: cardBg, borderLeftWidth: 4, borderLeftColor: color }]}>
       <View style={[styles.statIcon, { backgroundColor: color + "20" }]}>
         <Feather name={icon} size={20} color={color} />
       </View>
@@ -41,11 +42,13 @@ function StatCard({
 
 export default function ProviderDashboardScreen() {
   const insets = useSafeAreaInsets();
-  const headerHeight = useHeaderHeight();
   const tabBarHeight = useBottomTabBarHeight();
-  const { theme } = useTheme();
-  const { currentProvider, setCurrentProvider } = useApp();
+  const { theme, isDark } = useTheme();
+  const { currentProvider, setCurrentProvider, backgroundPreferences } = useApp();
   const [isAvailable, setIsAvailable] = React.useState(currentProvider?.isAvailable ?? true);
+  const isAnimated = backgroundPreferences.mode === "animated";
+  const scheme = BACKGROUND_SCHEMES[backgroundPreferences.colorScheme];
+  const cardBg = isAnimated ? theme.cardAnimatedBg : theme.backgroundDefault;
 
   const handleAvailabilityChange = (value: boolean) => {
     setIsAvailable(value);
@@ -55,16 +58,19 @@ export default function ProviderDashboardScreen() {
   };
 
   return (
-    <ThemedView style={styles.container}>
+    <View style={[styles.container, { backgroundColor: isAnimated ? (isDark ? scheme.bgColor : scheme.bgColorLight) : theme.backgroundRoot }]}>
+      {isAnimated ? <AnimatedBackground customColors={isDark ? scheme.colors : scheme.colorsLight} opacityBoost={isDark ? scheme.opacityBoost : scheme.opacityBoostLight} flashColor={isDark ? scheme.flashColor : scheme.flashColorLight} isDark={isDark} /> : null}
       <ScrollView
         contentContainerStyle={{
-          paddingTop: headerHeight + Spacing.lg,
+          paddingTop: Math.max(insets.top, Spacing["2xl"]) + Spacing.lg,
           paddingBottom: tabBarHeight + Spacing.xl,
           paddingHorizontal: Spacing.lg,
         }}
         scrollIndicatorInsets={{ bottom: insets.bottom }}
       >
-        <View style={[styles.welcomeBanner, { backgroundColor: theme.secondary + "15" }]}>
+        <ThemedText type="h2" style={{ marginBottom: Spacing.lg }}>Dashboard</ThemedText>
+
+        <View style={[styles.welcomeBanner, { backgroundColor: (theme.secondary + "15") }]}>
           <Feather name="heart" size={20} color={theme.secondary} />
           <ThemedText type="body" style={{ color: theme.secondary, marginLeft: Spacing.sm, flex: 1 }}>
             You're making a difference. Help someone get back on the road today!
@@ -83,7 +89,7 @@ export default function ProviderDashboardScreen() {
           </View>
         </View>
 
-        <View style={[styles.availabilityCard, { backgroundColor: theme.backgroundDefault }]}>
+        <View style={[styles.availabilityCard, { backgroundColor: cardBg }]}>
           <View style={styles.availabilityRow}>
             <View>
               <ThemedText type="h4">Ready to Earn?</ThemedText>
@@ -110,10 +116,10 @@ export default function ProviderDashboardScreen() {
           Today's Stats
         </ThemedText>
         <View style={styles.statsGrid}>
-          <StatCard icon="dollar-sign" label="Earnings" value="$245" color={theme.success} />
-          <StatCard icon="check-circle" label="Jobs Done" value="5" color={theme.secondary} />
-          <StatCard icon="clock" label="Hours" value="6.5" color={theme.warning} />
-          <StatCard icon="star" label="Rating" value="4.9" color="#F59E0B" />
+          <StatCard icon="dollar-sign" label="Earnings" value="$245" color={theme.success} cardBg={cardBg} />
+          <StatCard icon="check-circle" label="Jobs Done" value="5" color={theme.secondary} cardBg={cardBg} />
+          <StatCard icon="clock" label="Hours" value="6.5" color={theme.warning} cardBg={cardBg} />
+          <StatCard icon="star" label="Rating" value="4.9" color="#F59E0B" cardBg={cardBg} />
         </View>
 
         <ThemedText type="h4" style={styles.sectionTitle}>
@@ -122,7 +128,7 @@ export default function ProviderDashboardScreen() {
         <Pressable
           style={({ pressed }) => [
             styles.activeJobCard,
-            { backgroundColor: theme.backgroundDefault, opacity: pressed ? 0.8 : 1 },
+            { backgroundColor: cardBg, opacity: pressed ? 0.8 : 1 },
           ]}
         >
           <View style={styles.noActiveJob}>
@@ -139,7 +145,7 @@ export default function ProviderDashboardScreen() {
         <ThemedText type="h4" style={styles.sectionTitle}>
           Weekly Summary
         </ThemedText>
-        <View style={[styles.weeklyCard, { backgroundColor: theme.backgroundDefault }]}>
+        <View style={[styles.weeklyCard, { backgroundColor: cardBg }]}>
           <View style={styles.weeklyRow}>
             <ThemedText type="body">Total Earnings</ThemedText>
             <ThemedText type="h4">$1,245.00</ThemedText>
@@ -166,7 +172,7 @@ export default function ProviderDashboardScreen() {
           </View>
         </View>
       </ScrollView>
-    </ThemedView>
+    </View>
   );
 }
 

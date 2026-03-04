@@ -9,7 +9,6 @@ import Animated, {
   withSpring,
   Easing,
   interpolate,
-  runOnJS,
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -101,8 +100,9 @@ function FloatingOrb({ config }: { config: OrbConfig }) {
 }
 
 export const DARK_BG = "#060918";
+export const LIGHT_BG = "#EFF6FF";
 
-function RotatingLogo() {
+function RotatingLogo({ isDark = true }: { isDark?: boolean }) {
   const rotation = useSharedValue(0);
 
   useEffect(() => {
@@ -122,7 +122,7 @@ function RotatingLogo() {
       <Animated.View style={animStyle}>
         <Image
           source={require("../../assets/images/icon.png")}
-          style={styles.logo}
+          style={[styles.logo, { opacity: isDark ? 0.04 : 0.06 }]}
           resizeMode="contain"
         />
       </Animated.View>
@@ -185,9 +185,10 @@ interface AnimatedBackgroundProps {
   customColors?: string[][];
   opacityBoost?: number;
   flashColor?: string;
+  isDark?: boolean;
 }
 
-export default function AnimatedBackground({ customColors, opacityBoost = 1, flashColor = "#FFFFFF" }: AnimatedBackgroundProps) {
+export default function AnimatedBackground({ customColors, opacityBoost = 1, flashColor = "#FFFFFF", isDark = true }: AnimatedBackgroundProps) {
   const [flashTrigger, setFlashTrigger] = useState(0);
   const prevColorsRef = useRef<string | undefined>(undefined);
 
@@ -213,7 +214,7 @@ export default function AnimatedBackground({ customColors, opacityBoost = 1, fla
 
   return (
     <View style={[styles.container, { pointerEvents: "none" }]}>
-      <RotatingLogo />
+      <RotatingLogo isDark={isDark} />
       {configs.map((config, index) => (
         <FloatingOrb key={`${index}-${config.colors.join()}`} config={config} />
       ))}
@@ -235,7 +236,6 @@ const styles = StyleSheet.create({
   logo: {
     width: LOGO_SIZE,
     height: LOGO_SIZE,
-    opacity: 0.04,
   },
   flashOverlay: {
     position: "absolute",

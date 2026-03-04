@@ -88,11 +88,11 @@ function ToggleItem({ icon, label, value, onValueChange }: ToggleItemProps) {
 export default function DriverProfileScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const { currentDriver, setUserRole, logout, searchRadius, getTrialDaysRemaining, preferredProviders, backgroundPreferences } = useApp();
   const isAnimated = backgroundPreferences.mode === "animated";
   const scheme = BACKGROUND_SCHEMES[backgroundPreferences.colorScheme];
-  const sectionBg = isAnimated ? "rgba(20, 25, 45, 0.75)" : theme.backgroundDefault;
+  const sectionBg = isAnimated ? theme.cardAnimatedBg : theme.backgroundDefault;
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
   const isPremium = currentDriver?.membership === "premium";
@@ -147,8 +147,8 @@ export default function DriverProfileScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: isAnimated ? scheme.bgColor : theme.backgroundRoot }]}>
-      {isAnimated ? <AnimatedBackground customColors={scheme.colors} opacityBoost={scheme.opacityBoost} flashColor={scheme.flashColor} /> : null}
+    <View style={[styles.container, { backgroundColor: isAnimated ? (isDark ? scheme.bgColor : scheme.bgColorLight) : theme.backgroundRoot }]}>
+      {isAnimated ? <AnimatedBackground customColors={isDark ? scheme.colors : scheme.colorsLight} opacityBoost={isDark ? scheme.opacityBoost : scheme.opacityBoostLight} flashColor={isDark ? scheme.flashColor : scheme.flashColorLight} isDark={isDark} /> : null}
       <ScrollView
         contentContainerStyle={{
           paddingTop: Math.max(insets.top, Spacing["2xl"]) + Spacing.lg,

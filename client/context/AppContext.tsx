@@ -165,60 +165,92 @@ export interface BackgroundPreferences {
 export interface SchemeConfig {
   label: string;
   bgColor: string;
+  bgColorLight: string;
   flashColor: string;
+  flashColorLight: string;
   colors: string[][];
+  colorsLight: string[][];
   opacityBoost: number;
+  opacityBoostLight: number;
 }
 
 export const BACKGROUND_SCHEMES: Record<BackgroundColorScheme, SchemeConfig> = {
   default: {
     label: "Default",
     bgColor: "#060918",
+    bgColorLight: "#EFF6FF",
     flashColor: "#00D9FF",
+    flashColorLight: "#0891B2",
     colors: [["#00D9FF", "#0088CC"], ["#FF6B35", "#FF3D00"], ["#7B2FFF", "#4800FF"], ["#FF6B35", "#FF8C5A"], ["#00D9FF", "#00FFD4"], ["#7B2FFF", "#00D9FF"]],
+    colorsLight: [["#67E8F9", "#22D3EE"], ["#FCA5A5", "#F87171"], ["#C4B5FD", "#A78BFA"], ["#FDBA74", "#FB923C"], ["#A5F3FC", "#67E8F9"], ["#C4B5FD", "#67E8F9"]],
     opacityBoost: 1,
+    opacityBoostLight: 0.6,
   },
   ocean: {
     label: "Ocean",
     bgColor: "#020E1F",
+    bgColorLight: "#EFF6FF",
     flashColor: "#00B4D8",
+    flashColorLight: "#0284C7",
     colors: [["#00B4D8", "#0077B6"], ["#48CAE4", "#023E8A"], ["#90E0EF", "#0096C7"], ["#0077B6", "#48CAE4"], ["#00B4D8", "#90E0EF"], ["#023E8A", "#00B4D8"]],
+    colorsLight: [["#7DD3FC", "#38BDF8"], ["#BAE6FD", "#7DD3FC"], ["#E0F2FE", "#BAE6FD"], ["#38BDF8", "#7DD3FC"], ["#7DD3FC", "#E0F2FE"], ["#38BDF8", "#BAE6FD"]],
     opacityBoost: 1.4,
+    opacityBoostLight: 0.7,
   },
   sunset: {
     label: "Sunset",
     bgColor: "#1A0A05",
+    bgColorLight: "#FFF7ED",
     flashColor: "#FF6B6B",
+    flashColorLight: "#F97316",
     colors: [["#FF4757", "#C44569"], ["#FFC947", "#FF9F43"], ["#FF6348", "#EE5A24"], ["#FFA502", "#FF4757"], ["#FF6B6B", "#FFC947"], ["#EE5A24", "#C44569"]],
+    colorsLight: [["#FCA5A5", "#FDA4AF"], ["#FDE68A", "#FCD34D"], ["#FDBA74", "#FB923C"], ["#FDE68A", "#FCA5A5"], ["#FECACA", "#FDE68A"], ["#FB923C", "#FDA4AF"]],
     opacityBoost: 1.5,
+    opacityBoostLight: 0.6,
   },
   aurora: {
     label: "Aurora",
     bgColor: "#020F08",
+    bgColorLight: "#ECFDF5",
     flashColor: "#00FF88",
+    flashColorLight: "#059669",
     colors: [["#00FF88", "#00E676"], ["#76FF03", "#64DD17"], ["#18FFFF", "#00E5FF"], ["#00E676", "#00CC6A"], ["#69F0AE", "#76FF03"], ["#00E5FF", "#00FF88"]],
+    colorsLight: [["#6EE7B7", "#34D399"], ["#BEF264", "#A3E635"], ["#A5F3FC", "#67E8F9"], ["#6EE7B7", "#A7F3D0"], ["#A7F3D0", "#BEF264"], ["#67E8F9", "#6EE7B7"]],
     opacityBoost: 1.3,
+    opacityBoostLight: 0.6,
   },
   midnight: {
     label: "Midnight",
     bgColor: "#0A0520",
+    bgColorLight: "#F5F3FF",
     flashColor: "#a29bfe",
+    flashColorLight: "#7C3AED",
     colors: [["#a29bfe", "#6C5CE7"], ["#6C5CE7", "#5F27CD"], ["#E0B3FF", "#a29bfe"], ["#5F27CD", "#341f97"], ["#8B7FE8", "#6C5CE7"], ["#341f97", "#E0B3FF"]],
+    colorsLight: [["#DDD6FE", "#C4B5FD"], ["#C4B5FD", "#A78BFA"], ["#EDE9FE", "#DDD6FE"], ["#A78BFA", "#C4B5FD"], ["#DDD6FE", "#A78BFA"], ["#C4B5FD", "#EDE9FE"]],
     opacityBoost: 1.6,
+    opacityBoostLight: 0.7,
   },
   ember: {
     label: "Ember",
     bgColor: "#150500",
+    bgColorLight: "#FEF2F2",
     flashColor: "#FF4500",
+    flashColorLight: "#DC2626",
     colors: [["#FF4500", "#FF6347"], ["#FF7F50", "#DC143C"], ["#FF0000", "#B22222"], ["#FF6347", "#CC3700"], ["#DC143C", "#FF4500"], ["#B22222", "#FF0000"]],
+    colorsLight: [["#FCA5A5", "#F87171"], ["#FECACA", "#FCA5A5"], ["#FECDD3", "#FDA4AF"], ["#FCA5A5", "#FDBA74"], ["#FDA4AF", "#FCA5A5"], ["#FECACA", "#FECDD3"]],
     opacityBoost: 1.5,
+    opacityBoostLight: 0.6,
   },
   noir: {
     label: "Noir",
     bgColor: "#050505",
+    bgColorLight: "#F9FAFB",
     flashColor: "#AAAAAA",
+    flashColorLight: "#6B7280",
     colors: [["#C0C0C0", "#808080"], ["#A0A0A0", "#505050"], ["#D4D4D4", "#696969"], ["#888888", "#3A3A3A"], ["#B0B0B0", "#606060"], ["#999999", "#404040"]],
+    colorsLight: [["#D1D5DB", "#9CA3AF"], ["#E5E7EB", "#D1D5DB"], ["#F3F4F6", "#E5E7EB"], ["#D1D5DB", "#F3F4F6"], ["#E5E7EB", "#9CA3AF"], ["#D1D5DB", "#E5E7EB"]],
     opacityBoost: 1.8,
+    opacityBoostLight: 0.8,
   },
 };
 

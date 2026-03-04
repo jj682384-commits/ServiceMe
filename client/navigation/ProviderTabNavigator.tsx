@@ -129,7 +129,7 @@ export default function ProviderTabNavigator() {
         name="DashboardTab"
         component={AnimatedProviderDashboardScreen}
         options={{
-          headerTitle: () => <HeaderTitle title="ServiceMe" />,
+          headerShown: false,
           title: "Dashboard",
           tabBarIcon: ({ color, size }) => (
             <Feather name="home" size={size} color={color} />
@@ -151,7 +151,7 @@ export default function ProviderTabNavigator() {
         name="MessagesTab"
         component={AnimatedProviderMessagesScreen}
         options={{
-          headerTitle: "Messages",
+          headerShown: false,
           title: "Messages",
           tabBarIcon: ({ color, size }) => (
             <Feather name="message-circle" size={size} color={color} />
@@ -162,7 +162,7 @@ export default function ProviderTabNavigator() {
         name="ProfileTab"
         component={AnimatedProviderProfileScreen}
         options={{
-          headerTitle: "Profile",
+          headerShown: false,
           title: "Profile",
           tabBarIcon: ({ color, size }) => (
             <Feather name="user" size={size} color={color} />

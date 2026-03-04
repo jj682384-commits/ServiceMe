@@ -116,15 +116,15 @@ function ConversationItem({ item, cardBg }: { item: Conversation; cardBg: string
 export default function DriverMessagesScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const { backgroundPreferences } = useApp();
   const isAnimated = backgroundPreferences.mode === "animated";
   const scheme = BACKGROUND_SCHEMES[backgroundPreferences.colorScheme];
-  const cardBg = isAnimated ? "rgba(20, 25, 45, 0.75)" : theme.backgroundDefault;
+  const cardBg = isAnimated ? theme.cardAnimatedBg : theme.backgroundDefault;
 
   return (
-    <View style={[styles.container, { backgroundColor: isAnimated ? scheme.bgColor : theme.backgroundRoot }]}>
-      {isAnimated ? <AnimatedBackground customColors={scheme.colors} opacityBoost={scheme.opacityBoost} flashColor={scheme.flashColor} /> : null}
+    <View style={[styles.container, { backgroundColor: isAnimated ? (isDark ? scheme.bgColor : scheme.bgColorLight) : theme.backgroundRoot }]}>
+      {isAnimated ? <AnimatedBackground customColors={isDark ? scheme.colors : scheme.colorsLight} opacityBoost={isDark ? scheme.opacityBoost : scheme.opacityBoostLight} flashColor={isDark ? scheme.flashColor : scheme.flashColorLight} isDark={isDark} /> : null}
       <FlatList
         data={mockConversations}
         keyExtractor={(item) => item.id}

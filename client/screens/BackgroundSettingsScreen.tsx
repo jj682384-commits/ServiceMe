@@ -71,7 +71,7 @@ function SchemePreview({ schemeKey, isSelected, onPress }: {
 export default function BackgroundSettingsScreen() {
   const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const {
     backgroundPreferences,
     setBackgroundMode,
@@ -80,10 +80,12 @@ export default function BackgroundSettingsScreen() {
 
   const isAnimated = backgroundPreferences.mode === "animated";
   const scheme = BACKGROUND_SCHEMES[backgroundPreferences.colorScheme];
+  const cardBg = isDark ? "rgba(20, 25, 45, 0.75)" : "rgba(255, 255, 255, 0.82)";
+  const borderColor = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)";
 
   return (
-    <View style={[styles.container, { backgroundColor: isAnimated ? scheme.bgColor : DARK_BG }]}>
-      {isAnimated ? <AnimatedBackground customColors={scheme.colors} opacityBoost={scheme.opacityBoost} flashColor={scheme.flashColor} /> : null}
+    <View style={[styles.container, { backgroundColor: isAnimated ? (isDark ? scheme.bgColor : scheme.bgColorLight) : (isDark ? DARK_BG : theme.backgroundRoot) }]}>
+      {isAnimated ? <AnimatedBackground customColors={isDark ? scheme.colors : scheme.colorsLight} opacityBoost={isDark ? scheme.opacityBoost : scheme.opacityBoostLight} flashColor={isDark ? scheme.flashColor : scheme.flashColorLight} isDark={isDark} /> : null}
       <ScrollView
         contentContainerStyle={{
           paddingTop: headerHeight + Spacing.lg,
@@ -101,8 +103,8 @@ export default function BackgroundSettingsScreen() {
             style={({ pressed }) => [
               styles.modeOption,
               {
-                backgroundColor: isAnimated ? theme.primary + "20" : CARD_BG,
-                borderColor: isAnimated ? theme.primary : "rgba(255,255,255,0.1)",
+                backgroundColor: isAnimated ? theme.primary + "20" : cardBg,
+                borderColor: isAnimated ? theme.primary : borderColor,
                 borderWidth: isAnimated ? 2 : 1,
                 opacity: pressed ? 0.8 : 1,
               },
@@ -124,8 +126,8 @@ export default function BackgroundSettingsScreen() {
             style={({ pressed }) => [
               styles.modeOption,
               {
-                backgroundColor: !isAnimated ? theme.primary + "20" : CARD_BG,
-                borderColor: !isAnimated ? theme.primary : "rgba(255,255,255,0.1)",
+                backgroundColor: !isAnimated ? theme.primary + "20" : cardBg,
+                borderColor: !isAnimated ? theme.primary : borderColor,
                 borderWidth: !isAnimated ? 2 : 1,
                 opacity: pressed ? 0.8 : 1,
               },

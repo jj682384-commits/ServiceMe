@@ -148,7 +148,7 @@ function HistoryItem({ item, onPress, cardBg }: { item: ServiceRequest; onPress:
 export default function DriverHistoryScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const { requestHistory, backgroundPreferences } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const isAnimated = backgroundPreferences.mode === "animated";
@@ -160,7 +160,7 @@ export default function DriverHistoryScreen() {
   const totalSpent = displayHistory.reduce((sum, r) => sum + (r.estimatedCost || 0), 0);
   const totalTimeSaved = displayHistory.reduce((sum, r) => sum + (r.timeSaved || 0), 0);
 
-  const cardBg = isAnimated ? "rgba(20, 25, 45, 0.75)" : theme.backgroundSecondary;
+  const cardBg = isAnimated ? theme.cardAnimatedBg : theme.backgroundSecondary;
 
   const renderHeader = () => (
     <View style={styles.headerSection}>
@@ -192,8 +192,8 @@ export default function DriverHistoryScreen() {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: isAnimated ? scheme.bgColor : theme.backgroundRoot }]}>
-      {isAnimated ? <AnimatedBackground customColors={scheme.colors} opacityBoost={scheme.opacityBoost} flashColor={scheme.flashColor} /> : null}
+    <View style={[styles.container, { backgroundColor: isAnimated ? (isDark ? scheme.bgColor : scheme.bgColorLight) : theme.backgroundRoot }]}>
+      {isAnimated ? <AnimatedBackground customColors={isDark ? scheme.colors : scheme.colorsLight} opacityBoost={isDark ? scheme.opacityBoost : scheme.opacityBoostLight} flashColor={isDark ? scheme.flashColor : scheme.flashColorLight} isDark={isDark} /> : null}
       <FlatList
         data={displayHistory}
         keyExtractor={(item) => item.id}
@@ -201,7 +201,7 @@ export default function DriverHistoryScreen() {
           <HistoryItem
             item={item}
             onPress={() => navigation.navigate("ServiceDetail", { requestId: item.id })}
-            cardBg={isAnimated ? "rgba(20, 25, 45, 0.75)" : theme.backgroundDefault}
+            cardBg={isAnimated ? theme.cardAnimatedBg : theme.backgroundDefault}
           />
         )}
         ListHeaderComponent={renderHeader}

@@ -11,6 +11,7 @@ import { queryClient } from "@/lib/query-client";
 
 import RootStackNavigator from "@/navigation/RootStackNavigator";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { KeyboardDismissButton } from "@/components/KeyboardDismissButton";
 import { AppProvider } from "@/context/AppContext";
 import { Colors } from "@/constants/theme";
 
@@ -51,6 +52,7 @@ export default function App() {
               <KeyboardProvider>
                 <NavigationContainer theme={navTheme}>
                   <RootStackNavigator />
+                  <KeyboardDismissButton />
                 </NavigationContainer>
                 <StatusBar style="auto" />
               </KeyboardProvider>
