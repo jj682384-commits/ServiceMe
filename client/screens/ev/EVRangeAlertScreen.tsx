@@ -24,36 +24,25 @@ import Animated, {
 } from "react-native-reanimated";
 import { useNavigation } from "@react-navigation/native";
 import { useApp } from "@/context/AppContext";
-
-const EV = {
-  bg: "#050510",
-  bgCard: "#0C0C1E",
-  neonGreen: "#00FF88",
-  neonCyan: "#00E5FF",
-  neonBlue: "#4D7CFF",
-  neonPurple: "#B44DFF",
-  neonPink: "#FF4DA6",
-  neonYellow: "#FFD600",
-  white: "#F0F4FF",
-  whiteDim: "#8892A8",
-  whiteGhost: "#4A5068",
-  border: "#1A1A3A",
-};
+import { useTheme } from "@/context/ThemeContext";
+import { getEVColors } from "@/constants/evColors";
 
 const RANGE_PRESETS = [20, 30, 50, 75];
-
-const ALERT_TYPES = [
-  { id: "low_battery", label: "Low Battery Alert", desc: "Notify when battery drops below threshold", icon: "battery" as const, color: EV.neonPink },
-  { id: "charger_nearby", label: "Charger Proximity", desc: "Alert when passing near a compatible charger", icon: "map-pin" as const, color: EV.neonCyan },
-  { id: "range_destination", label: "Destination Range Check", desc: "Warn if range may not reach your destination", icon: "navigation" as const, color: EV.neonPurple },
-  { id: "charge_complete", label: "Charge Complete", desc: "Notify when vehicle finishes charging", icon: "check-circle" as const, color: EV.neonGreen },
-];
 
 export default function EVRangeAlertScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const { getDefaultVehicle } = useApp();
+  const { isDark } = useTheme();
+  const EV = getEVColors(isDark);
   const defaultVehicle = getDefaultVehicle();
+
+  const ALERT_TYPES = [
+    { id: "low_battery", label: "Low Battery Alert", desc: "Notify when battery drops below threshold", icon: "battery" as const, color: EV.neonPink },
+    { id: "charger_nearby", label: "Charger Proximity", desc: "Alert when passing near a compatible charger", icon: "map-pin" as const, color: EV.neonCyan },
+    { id: "range_destination", label: "Destination Range Check", desc: "Warn if range may not reach your destination", icon: "navigation" as const, color: EV.neonPurple },
+    { id: "charge_complete", label: "Charge Complete", desc: "Notify when vehicle finishes charging", icon: "check-circle" as const, color: EV.neonGreen },
+  ];
 
   const [rangeThreshold, setRangeThreshold] = useState(30);
   const [customRange, setCustomRange] = useState("");
@@ -93,7 +82,7 @@ export default function EVRangeAlertScreen() {
   return (
     <View style={[styles.container, { backgroundColor: EV.bg }]}>
       <LinearGradient
-        colors={["#FFD60008", "#FF4DA605", "transparent"]}
+        colors={[EV.neonYellow + "08", EV.neonPink + "05", "transparent"]}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 0.4 }}
         style={StyleSheet.absoluteFill}
@@ -111,39 +100,39 @@ export default function EVRangeAlertScreen() {
         </Pressable>
 
         <View style={styles.header}>
-          <Animated.Text style={styles.headerLabel}>RANGE ALERT</Animated.Text>
+          <Animated.Text style={[styles.headerLabel, { color: EV.neonYellow }]}>RANGE ALERT</Animated.Text>
           <View style={styles.headerTitleRow}>
             <Feather name="shield" size={22} color={EV.neonYellow} />
-            <Animated.Text style={styles.headerTitle}>Range Monitor</Animated.Text>
+            <Animated.Text style={[styles.headerTitle, { color: EV.white }]}>Range Monitor</Animated.Text>
           </View>
-          <Animated.Text style={styles.headerSub}>
+          <Animated.Text style={[styles.headerSub, { color: EV.whiteDim }]}>
             Stay informed about your battery range at all times
           </Animated.Text>
         </View>
 
-        <View style={[styles.gaugeCard, { borderColor: isAboveThreshold ? EV.neonGreen + "25" : EV.neonPink + "25" }]}>
+        <View style={[styles.gaugeCard, { borderColor: isAboveThreshold ? EV.neonGreen + "25" : EV.neonPink + "25", backgroundColor: EV.bgCard }]}>
           <View style={styles.gaugeCenter}>
             <Animated.View style={[styles.gaugeRing, ringStyle, { borderColor: isAboveThreshold ? EV.neonGreen + "40" : EV.neonPink + "40" }]} />
             <View style={styles.gaugeInner}>
               <Animated.Text style={[styles.gaugeValue, { color: isAboveThreshold ? EV.neonGreen : EV.neonPink }]}>
                 {currentRange}
               </Animated.Text>
-              <Animated.Text style={styles.gaugeUnit}>miles</Animated.Text>
+              <Animated.Text style={[styles.gaugeUnit, { color: EV.whiteDim }]}>miles</Animated.Text>
             </View>
           </View>
           <View style={styles.gaugeStats}>
             <View style={styles.gaugeStat}>
-              <Animated.Text style={styles.gaugeStatLabel}>Current Range</Animated.Text>
+              <Animated.Text style={[styles.gaugeStatLabel, { color: EV.whiteDim }]}>Current Range</Animated.Text>
               <Animated.Text style={[styles.gaugeStatValue, { color: EV.neonGreen }]}>{currentRange} mi</Animated.Text>
             </View>
             <View style={[styles.gaugeDivider, { backgroundColor: EV.border }]} />
             <View style={styles.gaugeStat}>
-              <Animated.Text style={styles.gaugeStatLabel}>Alert Threshold</Animated.Text>
+              <Animated.Text style={[styles.gaugeStatLabel, { color: EV.whiteDim }]}>Alert Threshold</Animated.Text>
               <Animated.Text style={[styles.gaugeStatValue, { color: EV.neonYellow }]}>{rangeThreshold} mi</Animated.Text>
             </View>
             <View style={[styles.gaugeDivider, { backgroundColor: EV.border }]} />
             <View style={styles.gaugeStat}>
-              <Animated.Text style={styles.gaugeStatLabel}>Battery</Animated.Text>
+              <Animated.Text style={[styles.gaugeStatLabel, { color: EV.whiteDim }]}>Battery</Animated.Text>
               <Animated.Text style={[styles.gaugeStatValue, { color: EV.neonCyan }]}>{batteryPercent}%</Animated.Text>
             </View>
           </View>
@@ -155,8 +144,8 @@ export default function EVRangeAlertScreen() {
           </View>
         </View>
 
-        <Animated.Text style={styles.sectionTitle}>Set Range Threshold</Animated.Text>
-        <Animated.Text style={styles.sectionSub}>
+        <Animated.Text style={[styles.sectionTitle, { color: EV.white }]}>Set Range Threshold</Animated.Text>
+        <Animated.Text style={[styles.sectionSub, { color: EV.whiteDim }]}>
           Get notified when your estimated range drops below this limit
         </Animated.Text>
 
@@ -183,10 +172,10 @@ export default function EVRangeAlertScreen() {
           })}
         </View>
 
-        <View style={[styles.customRow, { borderColor: EV.border }]}>
-          <Animated.Text style={styles.customLabel}>Custom</Animated.Text>
+        <View style={[styles.customRow, { borderColor: EV.border, backgroundColor: EV.bgCard }]}>
+          <Animated.Text style={[styles.customLabel, { color: EV.whiteDim }]}>Custom</Animated.Text>
           <TextInput
-            style={[styles.customInput, { borderColor: EV.border, color: EV.white }]}
+            style={[styles.customInput, { borderColor: EV.border, color: EV.white, backgroundColor: EV.bgCardLight }]}
             placeholder="e.g. 40"
             placeholderTextColor={EV.whiteGhost}
             keyboardType="number-pad"
@@ -197,10 +186,10 @@ export default function EVRangeAlertScreen() {
               if (num > 0 && num < 500) setRangeThreshold(num);
             }}
           />
-          <Animated.Text style={styles.customUnit}>miles</Animated.Text>
+          <Animated.Text style={[styles.customUnit, { color: EV.whiteDim }]}>miles</Animated.Text>
         </View>
 
-        <Animated.Text style={[styles.sectionTitle, { marginTop: 28 }]}>Alert Types</Animated.Text>
+        <Animated.Text style={[styles.sectionTitle, { marginTop: 28, color: EV.white }]}>Alert Types</Animated.Text>
 
         {ALERT_TYPES.map((alertType) => {
           const isOn = alertsEnabled[alertType.id] ?? false;
@@ -216,8 +205,8 @@ export default function EVRangeAlertScreen() {
                 <Feather name={alertType.icon} size={18} color={alertType.color} />
               </View>
               <View style={{ flex: 1 }}>
-                <Animated.Text style={styles.alertLabel}>{alertType.label}</Animated.Text>
-                <Animated.Text style={styles.alertDesc}>{alertType.desc}</Animated.Text>
+                <Animated.Text style={[styles.alertLabel, { color: EV.white }]}>{alertType.label}</Animated.Text>
+                <Animated.Text style={[styles.alertDesc, { color: EV.whiteDim }]}>{alertType.desc}</Animated.Text>
               </View>
               <Switch
                 value={isOn}
@@ -230,22 +219,22 @@ export default function EVRangeAlertScreen() {
           );
         })}
 
-        <View style={[styles.tipsCard, { borderColor: EV.neonCyan + "15" }]}>
+        <View style={[styles.tipsCard, { borderColor: EV.neonCyan + "15", backgroundColor: EV.bgCard }]}>
           <View style={styles.tipsHeader}>
             <Feather name="info" size={16} color={EV.neonCyan} />
-            <Animated.Text style={styles.tipsTitle}>Smart Range Tips</Animated.Text>
+            <Animated.Text style={[styles.tipsTitle, { color: EV.neonCyan }]}>Smart Range Tips</Animated.Text>
           </View>
           <View style={styles.tipItem}>
-            <Animated.Text style={styles.tipBullet}>1</Animated.Text>
-            <Animated.Text style={styles.tipText}>Set your threshold above the distance to the nearest charger for safety</Animated.Text>
+            <Animated.Text style={[styles.tipBullet, { color: EV.neonCyan, backgroundColor: EV.neonCyan + "15" }]}>1</Animated.Text>
+            <Animated.Text style={[styles.tipText, { color: EV.whiteDim }]}>Set your threshold above the distance to the nearest charger for safety</Animated.Text>
           </View>
           <View style={styles.tipItem}>
-            <Animated.Text style={styles.tipBullet}>2</Animated.Text>
-            <Animated.Text style={styles.tipText}>Cold weather can reduce range by 20-40% — set a higher threshold in winter</Animated.Text>
+            <Animated.Text style={[styles.tipBullet, { color: EV.neonCyan, backgroundColor: EV.neonCyan + "15" }]}>2</Animated.Text>
+            <Animated.Text style={[styles.tipText, { color: EV.whiteDim }]}>Cold weather can reduce range by 20-40% — set a higher threshold in winter</Animated.Text>
           </View>
           <View style={styles.tipItem}>
-            <Animated.Text style={styles.tipBullet}>3</Animated.Text>
-            <Animated.Text style={styles.tipText}>Highway driving uses more energy than city — account for your route type</Animated.Text>
+            <Animated.Text style={[styles.tipBullet, { color: EV.neonCyan, backgroundColor: EV.neonCyan + "15" }]}>3</Animated.Text>
+            <Animated.Text style={[styles.tipText, { color: EV.whiteDim }]}>Highway driving uses more energy than city — account for your route type</Animated.Text>
           </View>
         </View>
 
@@ -278,12 +267,12 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   backButton: { marginBottom: 12 },
   header: { marginBottom: 24 },
-  headerLabel: { color: "#FFD600", fontSize: 11, fontWeight: "800", letterSpacing: 4, marginBottom: 4 },
+  headerLabel: { fontSize: 11, fontWeight: "800", letterSpacing: 4, marginBottom: 4 },
   headerTitleRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 },
-  headerTitle: { color: "#F0F4FF", fontSize: 26, fontWeight: "700", letterSpacing: -0.5 },
-  headerSub: { color: "#8892A8", fontSize: 14, marginTop: 4 },
+  headerTitle: { fontSize: 26, fontWeight: "700", letterSpacing: -0.5 },
+  headerSub: { fontSize: 14, marginTop: 4 },
   gaugeCard: {
-    backgroundColor: "#0C0C1E", borderRadius: 20, borderWidth: 1, padding: 20, marginBottom: 28, alignItems: "center",
+    borderRadius: 20, borderWidth: 1, padding: 20, marginBottom: 28, alignItems: "center",
   },
   gaugeCenter: { alignItems: "center", justifyContent: "center", marginBottom: 20, width: 120, height: 120 },
   gaugeRing: {
@@ -291,17 +280,17 @@ const styles = StyleSheet.create({
   },
   gaugeInner: { alignItems: "center", justifyContent: "center" },
   gaugeValue: { fontSize: 36, fontWeight: "800", letterSpacing: -1 },
-  gaugeUnit: { color: "#8892A8", fontSize: 12, fontWeight: "600", letterSpacing: 2, marginTop: -2 },
+  gaugeUnit: { fontSize: 12, fontWeight: "600", letterSpacing: 2, marginTop: -2 },
   gaugeStats: { flexDirection: "row", width: "100%", justifyContent: "space-around", marginBottom: 14 },
   gaugeStat: { alignItems: "center", flex: 1 },
-  gaugeStatLabel: { color: "#8892A8", fontSize: 11, marginBottom: 4 },
+  gaugeStatLabel: { fontSize: 11, marginBottom: 4 },
   gaugeStatValue: { fontSize: 15, fontWeight: "700" },
   gaugeDivider: { width: 1, height: 30 },
   statusRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   statusDot: { width: 8, height: 8, borderRadius: 4 },
   statusText: { fontSize: 13, fontWeight: "600" },
-  sectionTitle: { color: "#F0F4FF", fontSize: 17, fontWeight: "700", marginBottom: 6, letterSpacing: 0.2 },
-  sectionSub: { color: "#8892A8", fontSize: 13, marginBottom: 16 },
+  sectionTitle: { fontSize: 17, fontWeight: "700", marginBottom: 6, letterSpacing: 0.2 },
+  sectionSub: { fontSize: 13, marginBottom: 16 },
   presetsRow: { flexDirection: "row", gap: 10, marginBottom: 14 },
   presetChip: {
     flex: 1, alignItems: "center", paddingVertical: 14, borderRadius: 14, borderWidth: 1,
@@ -309,32 +298,32 @@ const styles = StyleSheet.create({
   presetText: { fontSize: 14, fontWeight: "700" },
   customRow: {
     flexDirection: "row", alignItems: "center", gap: 10,
-    backgroundColor: "#0C0C1E", borderRadius: 14, borderWidth: 1, padding: 14,
+    borderRadius: 14, borderWidth: 1, padding: 14,
   },
-  customLabel: { color: "#8892A8", fontSize: 14, fontWeight: "600" },
+  customLabel: { fontSize: 14, fontWeight: "600" },
   customInput: {
-    flex: 1, backgroundColor: "#12122A", borderRadius: 10, borderWidth: 1,
+    flex: 1, borderRadius: 10, borderWidth: 1,
     paddingHorizontal: 12, paddingVertical: 10, fontSize: 16, textAlign: "center",
   },
-  customUnit: { color: "#8892A8", fontSize: 14 },
+  customUnit: { fontSize: 14 },
   alertCard: {
     flexDirection: "row", alignItems: "center", gap: 12,
     borderRadius: 16, borderWidth: 1, padding: 16, marginBottom: 10,
   },
   alertIcon: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  alertLabel: { color: "#F0F4FF", fontSize: 14, fontWeight: "700", marginBottom: 2 },
-  alertDesc: { color: "#8892A8", fontSize: 12, lineHeight: 16 },
+  alertLabel: { fontSize: 14, fontWeight: "700", marginBottom: 2 },
+  alertDesc: { fontSize: 12, lineHeight: 16 },
   tipsCard: {
-    backgroundColor: "#0C0C1E", borderRadius: 16, borderWidth: 1, padding: 18, marginTop: 20, marginBottom: 24,
+    borderRadius: 16, borderWidth: 1, padding: 18, marginTop: 20, marginBottom: 24,
   },
   tipsHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 14 },
-  tipsTitle: { color: "#00E5FF", fontSize: 15, fontWeight: "700" },
+  tipsTitle: { fontSize: 15, fontWeight: "700" },
   tipItem: { flexDirection: "row", alignItems: "flex-start", gap: 10, marginBottom: 10 },
   tipBullet: {
-    color: "#00E5FF", fontSize: 11, fontWeight: "800", width: 20, height: 20,
-    textAlign: "center", lineHeight: 20, backgroundColor: "#00E5FF15", borderRadius: 10, overflow: "hidden",
+    fontSize: 11, fontWeight: "800", width: 20, height: 20,
+    textAlign: "center", lineHeight: 20, borderRadius: 10, overflow: "hidden",
   },
-  tipText: { color: "#8892A8", fontSize: 13, flex: 1, lineHeight: 18 },
+  tipText: { fontSize: 13, flex: 1, lineHeight: 18 },
   saveButton: { borderRadius: 16, overflow: "hidden", marginBottom: 16 },
   saveButtonGradient: {
     flexDirection: "row", alignItems: "center", justifyContent: "center",

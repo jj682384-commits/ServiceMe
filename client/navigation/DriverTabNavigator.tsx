@@ -147,17 +147,17 @@ export default function DriverTabNavigator() {
         options={{
           title: "EV",
           headerShown: false,
-          tabBarActiveTintColor: "#00FF88",
-          tabBarInactiveTintColor: "#6B7280",
+          tabBarActiveTintColor: isDark ? "#00FF88" : "#059669",
+          tabBarInactiveTintColor: isDark ? "#6B7280" : "#9CA3AF",
           tabBarStyle: {
             position: "absolute",
-            backgroundColor: "#0A0E1A",
+            backgroundColor: isDark ? "#0A0E1A" : "#F0F9F4",
             borderTopWidth: 0,
-            borderTopColor: "#0A0E1A",
+            borderTopColor: isDark ? "#0A0E1A" : "#F0F9F4",
             elevation: 0,
           },
           tabBarIcon: ({ focused, size }) => (
-            <Feather name="zap" size={size} color={focused ? "#00FF88" : "#6B7280"} />
+            <Feather name="zap" size={size} color={focused ? (isDark ? "#00FF88" : "#059669") : (isDark ? "#6B7280" : "#9CA3AF")} />
           ),
           tabBarLabel: "EV",
         }}

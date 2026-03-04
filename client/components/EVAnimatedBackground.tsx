@@ -31,7 +31,7 @@ interface EVShapeConfig {
   rotation?: number;
 }
 
-const EV_SHAPE_CONFIGS: EVShapeConfig[] = [
+const EV_SHAPE_CONFIGS_DARK: EVShapeConfig[] = [
   { width: 220, height: 220, shape: "diamond", colors: ["#00FF88", "#00CC6A"], startX: -20, startY: SH * 0.08, driftX: 160, driftY: -40, duration: 3800, delay: 0, opacityRange: [0.04, 0.13], rotation: 45 },
   { width: 280, height: 40, shape: "streak", colors: ["#00E5FF", "#0088CC"], startX: SW + 50, startY: SH * 0.28, driftX: -SW - 100, driftY: 30, duration: 3200, delay: 300, opacityRange: [0.03, 0.10] },
   { width: 180, height: 200, shape: "hexagon", colors: ["#B44DFF", "#7C3AED"], startX: SW * 0.25, startY: SH * 0.65, driftX: 100, driftY: -110, duration: 4200, delay: 700, opacityRange: [0.03, 0.10] },
@@ -41,6 +41,18 @@ const EV_SHAPE_CONFIGS: EVShapeConfig[] = [
   { width: 200, height: 60, shape: "pill", colors: ["#00FF88", "#4D7CFF"], startX: SW * 0.8, startY: SH * 0.42, driftX: -130, driftY: -50, duration: 3000, delay: 200, opacityRange: [0.03, 0.09] },
   { width: 150, height: 170, shape: "hexagon", colors: ["#00E5FF", "#B44DFF"], startX: SW * 0.05, startY: SH * 0.35, driftX: 110, driftY: 70, duration: 4000, delay: 900, opacityRange: [0.02, 0.07] },
   { width: 240, height: 35, shape: "streak", colors: ["#B44DFF", "#00E5FF"], startX: SW * 0.3, startY: SH * 0.9, driftX: -SW * 0.6, driftY: -15, duration: 2600, delay: 1600, opacityRange: [0.02, 0.07] },
+];
+
+const EV_SHAPE_CONFIGS_LIGHT: EVShapeConfig[] = [
+  { width: 220, height: 220, shape: "diamond", colors: ["#6EE7B7", "#34D399"], startX: -20, startY: SH * 0.08, driftX: 160, driftY: -40, duration: 3800, delay: 0, opacityRange: [0.08, 0.20], rotation: 45 },
+  { width: 280, height: 40, shape: "streak", colors: ["#67E8F9", "#22D3EE"], startX: SW + 50, startY: SH * 0.28, driftX: -SW - 100, driftY: 30, duration: 3200, delay: 300, opacityRange: [0.06, 0.16] },
+  { width: 180, height: 200, shape: "hexagon", colors: ["#C4B5FD", "#A78BFA"], startX: SW * 0.25, startY: SH * 0.65, driftX: 100, driftY: -110, duration: 4200, delay: 700, opacityRange: [0.06, 0.15] },
+  { width: 160, height: 160, shape: "triangle", colors: ["#93C5FD", "#60A5FA"], startX: SW * 0.75, startY: SH * 0.1, driftX: -90, driftY: 100, duration: 3600, delay: 400, opacityRange: [0.06, 0.14] },
+  { width: 320, height: 50, shape: "streak", colors: ["#6EE7B7", "#67E8F9"], startX: -100, startY: SH * 0.5, driftX: SW + 200, driftY: 20, duration: 2800, delay: 1200, opacityRange: [0.05, 0.12] },
+  { width: 140, height: 140, shape: "diamond", colors: ["#C4B5FD", "#F9A8D4"], startX: SW * 0.6, startY: SH * 0.82, driftX: -80, driftY: -90, duration: 3500, delay: 500, opacityRange: [0.06, 0.14], rotation: 30 },
+  { width: 200, height: 60, shape: "pill", colors: ["#6EE7B7", "#93C5FD"], startX: SW * 0.8, startY: SH * 0.42, driftX: -130, driftY: -50, duration: 3000, delay: 200, opacityRange: [0.06, 0.14] },
+  { width: 150, height: 170, shape: "hexagon", colors: ["#67E8F9", "#C4B5FD"], startX: SW * 0.05, startY: SH * 0.35, driftX: 110, driftY: 70, duration: 4000, delay: 900, opacityRange: [0.05, 0.12] },
+  { width: 240, height: 35, shape: "streak", colors: ["#C4B5FD", "#67E8F9"], startX: SW * 0.3, startY: SH * 0.9, driftX: -SW * 0.6, driftY: -15, duration: 2600, delay: 1600, opacityRange: [0.05, 0.12] },
 ];
 
 interface ScanLineConfig {
@@ -157,7 +169,7 @@ function EVShape({ config }: { config: EVShapeConfig }) {
   );
 }
 
-function ScanLine({ config }: { config: ScanLineConfig }) {
+function ScanLine({ config, isDark = true }: { config: ScanLineConfig; isDark?: boolean }) {
   const sweep = useSharedValue(0);
 
   useEffect(() => {
@@ -176,13 +188,18 @@ function ScanLine({ config }: { config: ScanLineConfig }) {
 
   const animatedStyle = useAnimatedStyle(() => {
     const translateX = interpolate(sweep.value, [0, 1], [-config.width, SW + config.width]);
-    const opacity = interpolate(sweep.value, [0, 0.2, 0.8, 1], [0, 0.08, 0.08, 0]);
+    const maxOpacity = isDark ? 0.08 : 0.12;
+    const opacity = interpolate(sweep.value, [0, 0.2, 0.8, 1], [0, maxOpacity, maxOpacity, 0]);
 
     return {
       transform: [{ translateX }],
       opacity,
     };
   });
+
+  const scanColors = isDark
+    ? ["transparent", "#00FF8850", "#00E5FF70", "#B44DFF50", "transparent"]
+    : ["transparent", "#05966940", "#0891B250", "#8B5CF640", "transparent"];
 
   return (
     <Animated.View
@@ -198,7 +215,7 @@ function ScanLine({ config }: { config: ScanLineConfig }) {
       ]}
     >
       <LinearGradient
-        colors={["transparent", "#00FF8850", "#00E5FF70", "#B44DFF50", "transparent"]}
+        colors={scanColors}
         start={{ x: 0, y: 0.5 }}
         end={{ x: 1, y: 0.5 }}
         style={{ width: config.width, height: 2 }}
@@ -207,7 +224,7 @@ function ScanLine({ config }: { config: ScanLineConfig }) {
   );
 }
 
-function GridPulse() {
+function GridPulse({ isDark = true }: { isDark?: boolean }) {
   const gridOpacity = useSharedValue(0);
 
   useEffect(() => {
@@ -221,9 +238,13 @@ function GridPulse() {
     );
   }, []);
 
+  const maxOpacity = isDark ? 0.05 : 0.06;
   const animStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(gridOpacity.value, [0, 1], [0.01, 0.05]),
+    opacity: interpolate(gridOpacity.value, [0, 1], [isDark ? 0.01 : 0.02, maxOpacity]),
   }));
+
+  const vColor = isDark ? "#00FF88" : "#059669";
+  const hColor = isDark ? "#00E5FF" : "#0891B2";
 
   const lines = [];
   const spacing = 50;
@@ -237,7 +258,7 @@ function GridPulse() {
           top: 0,
           width: 1,
           height: SH,
-          backgroundColor: "#00FF88",
+          backgroundColor: vColor,
         }}
       />
     );
@@ -252,7 +273,7 @@ function GridPulse() {
           top: i * spacing,
           width: SW,
           height: 1,
-          backgroundColor: "#00E5FF",
+          backgroundColor: hColor,
         }}
       />
     );
@@ -265,15 +286,17 @@ function GridPulse() {
   );
 }
 
-export default function EVAnimatedBackground() {
+export default function EVAnimatedBackground({ isDark = true }: { isDark?: boolean }) {
+  const configs = isDark ? EV_SHAPE_CONFIGS_DARK : EV_SHAPE_CONFIGS_LIGHT;
+
   return (
     <View style={[StyleSheet.absoluteFill, { overflow: "hidden", pointerEvents: "none" }]}>
-      <GridPulse />
-      {EV_SHAPE_CONFIGS.map((config, index) => (
-        <EVShape key={index} config={config} />
+      <GridPulse isDark={isDark} />
+      {configs.map((config, index) => (
+        <EVShape key={`${isDark ? "d" : "l"}-${index}`} config={config} />
       ))}
       {SCAN_LINES.map((config, index) => (
-        <ScanLine key={`scan-${index}`} config={config} />
+        <ScanLine key={`scan-${index}`} config={config} isDark={isDark} />
       ))}
     </View>
   );

@@ -18,20 +18,8 @@ import Animated, {
 } from "react-native-reanimated";
 import { useNavigation } from "@react-navigation/native";
 import { useApp } from "@/context/AppContext";
-
-const EV = {
-  bg: "#050510",
-  bgCard: "#0C0C1E",
-  neonGreen: "#00FF88",
-  neonCyan: "#00E5FF",
-  neonBlue: "#4D7CFF",
-  neonPurple: "#B44DFF",
-  neonPink: "#FF4DA6",
-  white: "#F0F4FF",
-  whiteDim: "#8892A8",
-  whiteGhost: "#4A5068",
-  border: "#1A1A3A",
-};
+import { useTheme } from "@/context/ThemeContext";
+import { getEVColors } from "@/constants/evColors";
 
 const TOW_OPTIONS = [
   {
@@ -63,6 +51,8 @@ export default function EVTowScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const { getDefaultVehicle, userLocation } = useApp();
+  const { isDark } = useTheme();
+  const EV = getEVColors(isDark);
   const defaultVehicle = getDefaultVehicle();
 
   const [selectedTow, setSelectedTow] = useState(0);
@@ -96,7 +86,7 @@ export default function EVTowScreen() {
     return (
       <View style={[styles.container, { backgroundColor: EV.bg }]}>
         <LinearGradient
-          colors={["#B44DFF10", "#4D7CFF08", "transparent"]}
+          colors={[EV.neonPurple + "10", EV.neonBlue + "08", "transparent"]}
           start={{ x: 0.5, y: 0 }}
           end={{ x: 0.5, y: 0.5 }}
           style={StyleSheet.absoluteFill}
@@ -110,36 +100,36 @@ export default function EVTowScreen() {
               <Feather name="truck" size={48} color={EV.neonPurple} />
             </LinearGradient>
           </View>
-          <Animated.Text style={styles.confirmedTitle}>Flatbed Dispatched</Animated.Text>
-          <Animated.Text style={styles.confirmedSub}>
+          <Animated.Text style={[styles.confirmedTitle, { color: EV.white }]}>Flatbed Dispatched</Animated.Text>
+          <Animated.Text style={[styles.confirmedSub, { color: EV.whiteDim }]}>
             An EV-certified flatbed tow truck is on the way. Your vehicle will be safely transported.
           </Animated.Text>
-          <View style={[styles.confirmedCard, { borderColor: EV.neonPurple + "20" }]}>
+          <View style={[styles.confirmedCard, { borderColor: EV.neonPurple + "20", backgroundColor: EV.bgCard }]}>
             <View style={styles.confirmedRow}>
-              <Animated.Text style={styles.confirmedLabel}>Tow Type</Animated.Text>
-              <Animated.Text style={styles.confirmedValue}>{TOW_OPTIONS[selectedTow].label}</Animated.Text>
+              <Animated.Text style={[styles.confirmedLabel, { color: EV.whiteDim }]}>Tow Type</Animated.Text>
+              <Animated.Text style={[styles.confirmedValue, { color: EV.white }]}>{TOW_OPTIONS[selectedTow].label}</Animated.Text>
             </View>
             <View style={[styles.confirmedDivider, { backgroundColor: EV.border }]} />
             <View style={styles.confirmedRow}>
-              <Animated.Text style={styles.confirmedLabel}>Destination</Animated.Text>
-              <Animated.Text style={styles.confirmedValue}>{DESTINATIONS[selectedDest].label}</Animated.Text>
+              <Animated.Text style={[styles.confirmedLabel, { color: EV.whiteDim }]}>Destination</Animated.Text>
+              <Animated.Text style={[styles.confirmedValue, { color: EV.white }]}>{DESTINATIONS[selectedDest].label}</Animated.Text>
             </View>
             <View style={[styles.confirmedDivider, { backgroundColor: EV.border }]} />
             <View style={styles.confirmedRow}>
-              <Animated.Text style={styles.confirmedLabel}>Est. Arrival</Animated.Text>
-              <Animated.Text style={styles.confirmedValue}>{TOW_OPTIONS[selectedTow].eta}</Animated.Text>
+              <Animated.Text style={[styles.confirmedLabel, { color: EV.whiteDim }]}>Est. Arrival</Animated.Text>
+              <Animated.Text style={[styles.confirmedValue, { color: EV.white }]}>{TOW_OPTIONS[selectedTow].eta}</Animated.Text>
             </View>
             <View style={[styles.confirmedDivider, { backgroundColor: EV.border }]} />
             <View style={styles.confirmedRow}>
-              <Animated.Text style={styles.confirmedLabel}>Cost</Animated.Text>
+              <Animated.Text style={[styles.confirmedLabel, { color: EV.whiteDim }]}>Cost</Animated.Text>
               <Animated.Text style={[styles.confirmedValue, { color: EV.neonPurple }]}>{TOW_OPTIONS[selectedTow].price}</Animated.Text>
             </View>
           </View>
-          <Animated.Text style={styles.confirmedPin}>
+          <Animated.Text style={[styles.confirmedPin, { color: EV.neonPurple }]}>
             Verification PIN: 6391
           </Animated.Text>
-          <Pressable onPress={() => navigation.goBack()} style={styles.backButton2}>
-            <Animated.Text style={styles.backButton2Text}>Back to EV Hub</Animated.Text>
+          <Pressable onPress={() => navigation.goBack()} style={[styles.backButton2, { borderColor: EV.neonPurple + "40" }]}>
+            <Animated.Text style={[styles.backButton2Text, { color: EV.neonPurple }]}>Back to EV Hub</Animated.Text>
           </Pressable>
         </View>
       </View>
@@ -149,7 +139,7 @@ export default function EVTowScreen() {
   return (
     <View style={[styles.container, { backgroundColor: EV.bg }]}>
       <LinearGradient
-        colors={["#B44DFF08", "#4D7CFF05", "transparent"]}
+        colors={[EV.neonPurple + "08", EV.neonBlue + "05", "transparent"]}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 0.4 }}
         style={StyleSheet.absoluteFill}
@@ -167,26 +157,26 @@ export default function EVTowScreen() {
         </Pressable>
 
         <View style={styles.header}>
-          <Animated.Text style={styles.headerLabel}>EV TOW SERVICE</Animated.Text>
+          <Animated.Text style={[styles.headerLabel, { color: EV.neonPurple }]}>EV TOW SERVICE</Animated.Text>
           <View style={styles.headerTitleRow}>
             <Animated.View style={pulseStyle}>
               <Feather name="truck" size={22} color={EV.neonPurple} />
             </Animated.View>
-            <Animated.Text style={styles.headerTitle}>Safe EV Transport</Animated.Text>
+            <Animated.Text style={[styles.headerTitle, { color: EV.white }]}>Safe EV Transport</Animated.Text>
           </View>
-          <Animated.Text style={styles.headerSub}>
+          <Animated.Text style={[styles.headerSub, { color: EV.whiteDim }]}>
             EV-certified tow operators protect your battery and drivetrain
           </Animated.Text>
         </View>
 
         {defaultVehicle ? (
-          <View style={[styles.vehicleCard, { borderColor: EV.neonPurple + "25" }]}>
+          <View style={[styles.vehicleCard, { borderColor: EV.neonPurple + "25", backgroundColor: EV.bgCard }]}>
             <Feather name="battery-charging" size={18} color={EV.neonPurple} />
             <View style={{ flex: 1, marginLeft: 12 }}>
-              <Animated.Text style={styles.vehicleName}>
+              <Animated.Text style={[styles.vehicleName, { color: EV.white }]}>
                 {defaultVehicle.year} {defaultVehicle.make} {defaultVehicle.model}
               </Animated.Text>
-              <Animated.Text style={styles.vehicleMeta}>Electric Vehicle</Animated.Text>
+              <Animated.Text style={[styles.vehicleMeta, { color: EV.whiteDim }]}>Electric Vehicle</Animated.Text>
             </View>
           </View>
         ) : null}
@@ -198,7 +188,7 @@ export default function EVTowScreen() {
           </Animated.Text>
         </View>
 
-        <Animated.Text style={styles.sectionTitle}>Tow Method</Animated.Text>
+        <Animated.Text style={[styles.sectionTitle, { color: EV.white }]}>Tow Method</Animated.Text>
 
         {TOW_OPTIONS.map((option, index) => {
           const isSelected = selectedTow === index;
@@ -223,15 +213,15 @@ export default function EVTowScreen() {
                 </Animated.Text>
                 {option.recommended ? (
                   <View style={[styles.recoBadge, { backgroundColor: EV.neonGreen + "20" }]}>
-                    <Animated.Text style={styles.recoText}>RECOMMENDED</Animated.Text>
+                    <Animated.Text style={[styles.recoText, { color: EV.neonGreen }]}>RECOMMENDED</Animated.Text>
                   </View>
                 ) : null}
               </View>
-              <Animated.Text style={styles.optionDesc}>{option.desc}</Animated.Text>
+              <Animated.Text style={[styles.optionDesc, { color: EV.whiteDim }]}>{option.desc}</Animated.Text>
               <View style={styles.optionMeta}>
                 <View style={styles.optionMetaItem}>
                   <Feather name="clock" size={12} color={EV.whiteDim} />
-                  <Animated.Text style={styles.optionMetaText}>{option.eta}</Animated.Text>
+                  <Animated.Text style={[styles.optionMetaText, { color: EV.whiteDim }]}>{option.eta}</Animated.Text>
                 </View>
                 <Animated.Text style={[styles.optionPrice, { color }]}>{option.price}</Animated.Text>
               </View>
@@ -239,7 +229,7 @@ export default function EVTowScreen() {
           );
         })}
 
-        <Animated.Text style={styles.sectionTitle}>Destination</Animated.Text>
+        <Animated.Text style={[styles.sectionTitle, { color: EV.white }]}>Destination</Animated.Text>
 
         {DESTINATIONS.map((dest, index) => {
           const isSelected = selectedDest === index;
@@ -261,7 +251,7 @@ export default function EVTowScreen() {
                 {dest.label}
               </Animated.Text>
               {dest.distance ? (
-                <Animated.Text style={styles.destDist}>{dest.distance}</Animated.Text>
+                <Animated.Text style={[styles.destDist, { color: EV.whiteDim }]}>{dest.distance}</Animated.Text>
               ) : null}
             </Pressable>
           );
@@ -296,33 +286,33 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   backButton: { marginBottom: 12 },
   header: { marginBottom: 24 },
-  headerLabel: { color: "#B44DFF", fontSize: 11, fontWeight: "800", letterSpacing: 4, marginBottom: 4 },
+  headerLabel: { fontSize: 11, fontWeight: "800", letterSpacing: 4, marginBottom: 4 },
   headerTitleRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 },
-  headerTitle: { color: "#F0F4FF", fontSize: 26, fontWeight: "700", letterSpacing: -0.5 },
-  headerSub: { color: "#8892A8", fontSize: 14, marginTop: 4 },
+  headerTitle: { fontSize: 26, fontWeight: "700", letterSpacing: -0.5 },
+  headerSub: { fontSize: 14, marginTop: 4 },
   vehicleCard: {
-    flexDirection: "row", alignItems: "center", backgroundColor: "#0C0C1E",
+    flexDirection: "row", alignItems: "center",
     borderRadius: 16, borderWidth: 1, padding: 16, marginBottom: 16,
   },
-  vehicleName: { color: "#F0F4FF", fontSize: 15, fontWeight: "600" },
-  vehicleMeta: { color: "#8892A8", fontSize: 12, marginTop: 2 },
+  vehicleName: { fontSize: 15, fontWeight: "600" },
+  vehicleMeta: { fontSize: 12, marginTop: 2 },
   warningCard: {
     flexDirection: "row", alignItems: "flex-start", gap: 10,
     backgroundColor: "#FFB30010", borderRadius: 12, padding: 14, marginBottom: 20,
     borderWidth: 1, borderColor: "#FFB30020",
   },
   warningText: { color: "#FFB300", fontSize: 13, flex: 1, lineHeight: 18 },
-  sectionTitle: { color: "#F0F4FF", fontSize: 17, fontWeight: "700", marginBottom: 14, letterSpacing: 0.2 },
+  sectionTitle: { fontSize: 17, fontWeight: "700", marginBottom: 14, letterSpacing: 0.2 },
   optionCard: { borderRadius: 16, borderWidth: 1, padding: 16, marginBottom: 12 },
   optionHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 6 },
   optionDot: { width: 10, height: 10, borderRadius: 5 },
   optionName: { fontSize: 16, fontWeight: "700", flex: 1 },
   recoBadge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 },
-  recoText: { color: "#00FF88", fontSize: 9, fontWeight: "800", letterSpacing: 1 },
-  optionDesc: { color: "#8892A8", fontSize: 13, lineHeight: 18, marginBottom: 10 },
+  recoText: { fontSize: 9, fontWeight: "800", letterSpacing: 1 },
+  optionDesc: { fontSize: 13, lineHeight: 18, marginBottom: 10 },
   optionMeta: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   optionMetaItem: { flexDirection: "row", alignItems: "center", gap: 5 },
-  optionMetaText: { color: "#8892A8", fontSize: 12 },
+  optionMetaText: { fontSize: 12 },
   optionPrice: { fontSize: 18, fontWeight: "800" },
   destCard: {
     flexDirection: "row", alignItems: "center", gap: 10,
@@ -330,7 +320,7 @@ const styles = StyleSheet.create({
   },
   destDot: { width: 8, height: 8, borderRadius: 4 },
   destName: { fontSize: 14, fontWeight: "600", flex: 1 },
-  destDist: { color: "#8892A8", fontSize: 12 },
+  destDist: { fontSize: 12 },
   requestButton: { borderRadius: 16, overflow: "hidden", marginTop: 12, marginBottom: 16 },
   requestButtonGradient: {
     flexDirection: "row", alignItems: "center", justifyContent: "center",
@@ -340,16 +330,16 @@ const styles = StyleSheet.create({
   confirmedContainer: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 24 },
   confirmedIconWrap: { marginBottom: 24 },
   confirmedIconBg: { width: 100, height: 100, borderRadius: 50, alignItems: "center", justifyContent: "center" },
-  confirmedTitle: { color: "#F0F4FF", fontSize: 24, fontWeight: "800", marginBottom: 8 },
-  confirmedSub: { color: "#8892A8", fontSize: 14, textAlign: "center", lineHeight: 20, marginBottom: 28 },
+  confirmedTitle: { fontSize: 24, fontWeight: "800", marginBottom: 8 },
+  confirmedSub: { fontSize: 14, textAlign: "center", lineHeight: 20, marginBottom: 28 },
   confirmedCard: {
-    backgroundColor: "#0C0C1E", borderRadius: 16, borderWidth: 1, padding: 18, width: "100%", marginBottom: 20,
+    borderRadius: 16, borderWidth: 1, padding: 18, width: "100%", marginBottom: 20,
   },
   confirmedRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 10 },
-  confirmedLabel: { color: "#8892A8", fontSize: 14 },
-  confirmedValue: { color: "#F0F4FF", fontSize: 14, fontWeight: "600" },
+  confirmedLabel: { fontSize: 14 },
+  confirmedValue: { fontSize: 14, fontWeight: "600" },
   confirmedDivider: { height: StyleSheet.hairlineWidth },
-  confirmedPin: { color: "#B44DFF", fontSize: 16, fontWeight: "700", letterSpacing: 2, marginBottom: 28 },
-  backButton2: { borderWidth: 1, borderColor: "#B44DFF40", borderRadius: 14, paddingVertical: 14, paddingHorizontal: 40 },
-  backButton2Text: { color: "#B44DFF", fontSize: 15, fontWeight: "700" },
+  confirmedPin: { fontSize: 16, fontWeight: "700", letterSpacing: 2, marginBottom: 28 },
+  backButton2: { borderWidth: 1, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 40 },
+  backButton2Text: { fontSize: 15, fontWeight: "700" },
 });
