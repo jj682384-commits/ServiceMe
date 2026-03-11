@@ -43,11 +43,11 @@ args = "Start dev servers"
 name = "Start dev servers"
 author = "agent"
 
+[workflows.workflow.metadata]
+outputType = "webview"
+
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npm run all:dev"
 waitForPort = 5000
-
-[workflows.workflow.metadata]
-outputType = "webview"
 
