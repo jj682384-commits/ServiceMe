@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { View, StyleSheet, Dimensions, Image } from "react-native";
 import Animated, {
   useAnimatedStyle,
@@ -6,7 +6,6 @@ import Animated, {
   withRepeat,
   withSequence,
   withTiming,
-  withSpring,
   Easing,
   interpolate,
 } from "react-native-reanimated";
@@ -130,54 +129,17 @@ function RotatingLogo({ isDark = true }: { isDark?: boolean }) {
   );
 }
 
-function TransitionFlash({ flashColor, trigger }: { flashColor: string; trigger: number }) {
-  const flashOpacity = useSharedValue(0);
-  const flashScale = useSharedValue(0.3);
-  const ringScale = useSharedValue(0);
-  const ringOpacity = useSharedValue(0);
-
-  useEffect(() => {
-    if (trigger > 0) {
-      flashOpacity.value = 0.6;
-      flashScale.value = 0.3;
-      ringScale.value = 0;
-      ringOpacity.value = 0.8;
-
-      flashOpacity.value = withTiming(0, { duration: 800, easing: Easing.out(Easing.cubic) });
-      flashScale.value = withSpring(2.5, { damping: 12, stiffness: 80 });
-
-      ringScale.value = withTiming(3, { duration: 600, easing: Easing.out(Easing.cubic) });
-      ringOpacity.value = withTiming(0, { duration: 600, easing: Easing.out(Easing.cubic) });
-    }
-  }, [trigger]);
-
-  const flashStyle = useAnimatedStyle(() => ({
-    opacity: flashOpacity.value,
-    transform: [{ scale: flashScale.value }],
-  }));
-
-  const ringStyle = useAnimatedStyle(() => ({
-    opacity: ringOpacity.value,
-    transform: [{ scale: ringScale.value }],
+function OrbLayer({ configs, layerOpacity }: { configs: OrbConfig[]; layerOpacity: Animated.SharedValue<number> }) {
+  const animStyle = useAnimatedStyle(() => ({
+    opacity: layerOpacity.value,
   }));
 
   return (
-    <>
-      <Animated.View
-        style={[
-          styles.flashOverlay,
-          { backgroundColor: flashColor },
-          flashStyle,
-        ]}
-      />
-      <Animated.View
-        style={[
-          styles.flashRing,
-          { borderColor: flashColor },
-          ringStyle,
-        ]}
-      />
-    </>
+    <Animated.View style={[StyleSheet.absoluteFillObject, animStyle]}>
+      {configs.map((config, index) => (
+        <FloatingOrb key={`${index}-${config.colors.join()}`} config={config} />
+      ))}
+    </Animated.View>
   );
 }
 
@@ -189,36 +151,73 @@ interface AnimatedBackgroundProps {
 }
 
 export default function AnimatedBackground({ customColors, opacityBoost = 1, flashColor = "#FFFFFF", isDark = true }: AnimatedBackgroundProps) {
-  const [flashTrigger, setFlashTrigger] = useState(0);
-  const prevColorsRef = useRef<string | undefined>(undefined);
-
   const colorsKey = customColors ? customColors.map(c => c.join()).join("|") : "default";
+  const [activeLayer, setActiveLayer] = useState<"a" | "b">("a");
+  const [layerAColors, setLayerAColors] = useState(customColors);
+  const [layerABoost, setLayerABoost] = useState(opacityBoost);
+  const [layerBColors, setLayerBColors] = useState(customColors);
+  const [layerBBoost, setLayerBBoost] = useState(opacityBoost);
+  const layerAOpacity = useSharedValue(1);
+  const layerBOpacity = useSharedValue(0);
+  const prevColorsRef = useRef(colorsKey);
+  const isFirstRender = useRef(true);
 
   useEffect(() => {
-    if (prevColorsRef.current !== undefined && prevColorsRef.current !== colorsKey) {
-      setFlashTrigger(prev => prev + 1);
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
     }
+    if (prevColorsRef.current === colorsKey) return;
     prevColorsRef.current = colorsKey;
+
+    if (activeLayer === "a") {
+      setLayerBColors(customColors);
+      setLayerBBoost(opacityBoost);
+      layerBOpacity.value = 0;
+      layerBOpacity.value = withTiming(1, { duration: 800, easing: Easing.inOut(Easing.quad) });
+      layerAOpacity.value = withTiming(0, { duration: 800, easing: Easing.inOut(Easing.quad) });
+      setTimeout(() => setActiveLayer("b"), 850);
+    } else {
+      setLayerAColors(customColors);
+      setLayerABoost(opacityBoost);
+      layerAOpacity.value = 0;
+      layerAOpacity.value = withTiming(1, { duration: 800, easing: Easing.inOut(Easing.quad) });
+      layerBOpacity.value = withTiming(0, { duration: 800, easing: Easing.inOut(Easing.quad) });
+      setTimeout(() => setActiveLayer("a"), 850);
+    }
   }, [colorsKey]);
 
-  const configs = customColors
-    ? BASE_ORB_CONFIGS.map((config, i) => ({
-        ...config,
-        colors: customColors[i % customColors.length],
-        opacityRange: [
-          Math.min(config.opacityRange[0] * opacityBoost, 0.5),
-          Math.min(config.opacityRange[1] * opacityBoost, 0.7),
-        ] as [number, number],
-      }))
-    : BASE_ORB_CONFIGS;
+  const configsA = useMemo(() => {
+    return layerAColors
+      ? BASE_ORB_CONFIGS.map((config, i) => ({
+          ...config,
+          colors: layerAColors[i % layerAColors.length],
+          opacityRange: [
+            Math.min(config.opacityRange[0] * layerABoost, 0.5),
+            Math.min(config.opacityRange[1] * layerABoost, 0.7),
+          ] as [number, number],
+        }))
+      : BASE_ORB_CONFIGS;
+  }, [layerAColors, layerABoost]);
+
+  const configsB = useMemo(() => {
+    return layerBColors
+      ? BASE_ORB_CONFIGS.map((config, i) => ({
+          ...config,
+          colors: layerBColors[i % layerBColors.length],
+          opacityRange: [
+            Math.min(config.opacityRange[0] * layerBBoost, 0.5),
+            Math.min(config.opacityRange[1] * layerBBoost, 0.7),
+          ] as [number, number],
+        }))
+      : BASE_ORB_CONFIGS;
+  }, [layerBColors, layerBBoost]);
 
   return (
     <View style={[styles.container, { pointerEvents: "none" }]}>
       <RotatingLogo isDark={isDark} />
-      {configs.map((config, index) => (
-        <FloatingOrb key={`${index}-${config.colors.join()}`} config={config} />
-      ))}
-      <TransitionFlash flashColor={flashColor} trigger={flashTrigger} />
+      <OrbLayer configs={configsA} layerOpacity={layerAOpacity} />
+      <OrbLayer configs={configsB} layerOpacity={layerBOpacity} />
     </View>
   );
 }
@@ -236,23 +235,5 @@ const styles = StyleSheet.create({
   logo: {
     width: LOGO_SIZE,
     height: LOGO_SIZE,
-  },
-  flashOverlay: {
-    position: "absolute",
-    width: SCREEN_WIDTH * 2,
-    height: SCREEN_WIDTH * 2,
-    borderRadius: SCREEN_WIDTH,
-    left: -SCREEN_WIDTH * 0.5,
-    top: SCREEN_HEIGHT * 0.5 - SCREEN_WIDTH,
-  },
-  flashRing: {
-    position: "absolute",
-    width: SCREEN_WIDTH * 0.8,
-    height: SCREEN_WIDTH * 0.8,
-    borderRadius: SCREEN_WIDTH * 0.4,
-    borderWidth: 3,
-    left: SCREEN_WIDTH * 0.1,
-    top: SCREEN_HEIGHT * 0.5 - SCREEN_WIDTH * 0.4,
-    backgroundColor: "transparent",
   },
 });

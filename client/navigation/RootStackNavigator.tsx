@@ -30,6 +30,7 @@ import EVTowScreen from "@/screens/ev/EVTowScreen";
 import EVRangeAlertScreen from "@/screens/ev/EVRangeAlertScreen";
 import EVAddVehicleScreen from "@/screens/ev/EVAddVehicleScreen";
 import EVDiagnosticScreen from "@/screens/ev/EVDiagnosticScreen";
+import EVChargerMapScreen from "@/screens/ev/EVChargerMapScreen";
 import PreferredProvidersScreen from "@/screens/PreferredProvidersScreen";
 import PaymentMethodsScreen from "@/screens/PaymentMethodsScreen";
 import BillingHistoryScreen from "@/screens/BillingHistoryScreen";
@@ -283,7 +284,7 @@ export default function RootStackNavigator() {
       />
       <Stack.Screen
         name="EVChargerMap"
-        component={EVDiagnosticScreen}
+        component={EVChargerMapScreen}
         options={{
           headerShown: false,
           presentation: "modal",
