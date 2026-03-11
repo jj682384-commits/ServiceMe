@@ -9,7 +9,7 @@ Preferred communication style: Simple, everyday language.
 ## System Architecture
 
 ### Frontend Architecture (React Native + Expo)
-The frontend is built with React Native and Expo SDK 54, targeting iOS, Android, and web. Navigation is managed by React Navigation, utilizing a hybrid structure with `RootStackNavigator` and role-specific tab navigators. Global state is handled via `AppContext`, while `@tanstack/react-query` manages server state. The UI/UX features a dark-first design with electric cyan and coral accents, incorporating glassmorphic effects using `expo-blur` (iOS) and spring-based animations via `react-native-reanimated`. Key UI components include theme-aware elements, `Card` for elevated surfaces, and `KeyboardAwareScrollViewCompat` for keyboard handling. Location services and mapping are integrated using `expo-location` and `react-native-maps`.
+The frontend is built with React Native and Expo SDK 54, targeting iOS, Android, and web. Navigation is managed by React Navigation, utilizing a hybrid structure with `RootStackNavigator` and role-specific tab navigators. Global state is handled via `AppContext`, while `@tanstack/react-query` manages server state. The UI/UX features a dark-first design with electric cyan and coral accents, incorporating glassmorphic effects using `expo-blur` (iOS) and spring-based animations via `react-native-reanimated`. Key UI components include theme-aware elements, `Card` for elevated surfaces, and `KeyboardAwareScrollViewCompat` for keyboard handling. Location services are integrated using `expo-location`. EV Charger Map uses a list-based UI (no `react-native-maps` dependency — it was removed due to version incompatibility with Expo Go SDK 54).
 
 ### Backend Architecture (Express + Node.js)
 The backend is an Express.js server developed with TypeScript, providing a RESTful API with a `/api` prefix. It features dynamic CORS configuration to support Replit environments.
@@ -45,7 +45,6 @@ A `shared/` directory contains code common to both client and server, such as sc
 ### Mobile/Frontend
 - **Expo**: App framework
 - **React Navigation**: Navigation
-- **React Native Maps**: Mapping
 - **Expo Location**: Location services
 - **React Native Reanimated**: Animations
 - **Expo Blur**: UI effects
@@ -108,7 +107,7 @@ A `shared/` directory contains code common to both client and server, such as sc
 - AnimatedBackground component at `client/components/AnimatedBackground.tsx` accepts `customColors`, `opacityBoost`, `flashColor`, and `isDark` props
 - Light mode support: each scheme has `bgColorLight`, `colorsLight`, `flashColorLight`, `opacityBoostLight` variants
 - Provider screens (Dashboard, Messages, Profile) also use AnimatedBackground with scheme system (matching driver side)
-- Dramatic flash/burst transition animation plays when switching schemes (scale + ring + fade)
+- Smooth crossfade transition between schemes using dual-layer opacity animation (~800ms)
 - BackgroundSettingsScreen at `client/screens/BackgroundSettingsScreen.tsx` — accessible from Profile > Preferences > Background Style
 - Scheme preview cards show miniature dark backgrounds with colored orbs representing each scheme
 - Solid mode disables all motion and uses `theme.backgroundRoot`; animated mode uses scheme's `bgColor`
@@ -124,7 +123,8 @@ A `shared/` directory contains code common to both client and server, such as sc
 ### Keyboard Dismiss Button
 - `KeyboardDismissButton` component at `client/components/KeyboardDismissButton.tsx`
 - Floating "Done" button with chevron-down icon, animated slide-up/down with keyboard visibility
-- Integrated globally in `App.tsx` inside NavigationContainer — works on all screens with text input
+- Currently NOT integrated in App.tsx (KeyboardProvider from react-native-keyboard-controller causes crash in static bundles)
+- Can be re-enabled once the keyboard controller compatibility issue is resolved
 
 ### Environment Variables
 - `DATABASE_URL`

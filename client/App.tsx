@@ -2,7 +2,6 @@ import React from "react";
 import { StyleSheet, useColorScheme } from "react-native";
 import { NavigationContainer, DefaultTheme, DarkTheme } from "@react-navigation/native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 
@@ -11,7 +10,6 @@ import { queryClient } from "@/lib/query-client";
 
 import RootStackNavigator from "@/navigation/RootStackNavigator";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { KeyboardDismissButton } from "@/components/KeyboardDismissButton";
 import { AppProvider } from "@/context/AppContext";
 import { Colors } from "@/constants/theme";
 
@@ -49,13 +47,10 @@ export default function App() {
         <AppProvider>
           <SafeAreaProvider>
             <GestureHandlerRootView style={styles.root}>
-              <KeyboardProvider>
-                <NavigationContainer theme={navTheme}>
-                  <RootStackNavigator />
-                  <KeyboardDismissButton />
-                </NavigationContainer>
-                <StatusBar style="auto" />
-              </KeyboardProvider>
+              <NavigationContainer theme={navTheme}>
+                <RootStackNavigator />
+              </NavigationContainer>
+              <StatusBar style="auto" />
             </GestureHandlerRootView>
           </SafeAreaProvider>
         </AppProvider>
