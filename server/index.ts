@@ -139,7 +139,8 @@ function serveLandingPage({
   const forwardedProto = req.header("x-forwarded-proto");
   const protocol = forwardedProto || req.protocol || "https";
   const forwardedHost = req.header("x-forwarded-host");
-  const host = forwardedHost || req.get("host");
+  const replitDomain = process.env.REPLIT_DEV_DOMAIN;
+  const host = forwardedHost || replitDomain || req.get("host");
   const baseUrl = `${protocol}://${host}`;
   const expsUrl = `${host}`;
 
