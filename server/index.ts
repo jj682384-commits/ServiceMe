@@ -173,12 +173,15 @@ function configureExpoAndLanding(app: express.Application) {
       return next();
     }
 
+    log(`[REQ] ${req.method} ${req.path} expo-platform=${req.header("expo-platform") || "none"} ua=${(req.header("user-agent") || "").substring(0, 60)}`);
+
     if (req.path !== "/" && req.path !== "/manifest") {
       return next();
     }
 
     const platform = req.header("expo-platform");
     if (platform && (platform === "ios" || platform === "android")) {
+      log(`[MANIFEST] Serving ${platform} manifest`);
       return serveExpoManifest(platform, res);
     }
 

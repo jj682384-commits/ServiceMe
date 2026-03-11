@@ -120,7 +120,7 @@
       <div class="qr-code" id="qr-code"></div>
 
       <div class="platform-links">
-        <a href="exps://EXPS_URL_PLACEHOLDER" class="platform-link">Open APP_NAME_PLACEHOLDER in Expo Go</a>
+        <a href="exp://EXPS_URL_PLACEHOLDER" class="platform-link">Open APP_NAME_PLACEHOLDER in Expo Go</a>
       </div>
 
       <div class="download-links">
@@ -163,7 +163,7 @@
           /iPhone|iPad|iPod/i.test(ua) ||
           (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
-        const deepLink = "exps://EXPS_URL_PLACEHOLDER";
+        const deepLink = "exp://EXPS_URL_PLACEHOLDER";
 
         const qrCode = new QRCodeStyling({
           width: 500,
