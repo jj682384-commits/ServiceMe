@@ -450,10 +450,14 @@ export default function EVDiagnosticScreen() {
     if (!result) return;
     const notes = `EV Diagnostic: ${result.likelyIssue} (${result.confidence}% confidence, ${result.severity} severity). ${result.description}`;
     navigation.goBack();
-    navigation.navigate("ServiceRequest", {
-      serviceType: result.serviceType,
-      notes,
-    });
+    if (result.serviceType === "tow") {
+      navigation.navigate("EVTow" as any, { notes });
+    } else {
+      navigation.navigate("ServiceRequest", {
+        serviceType: result.serviceType,
+        notes,
+      });
+    }
   };
 
   const canProceed = () => {

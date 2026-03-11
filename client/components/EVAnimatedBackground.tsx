@@ -9,6 +9,7 @@ import Animated, {
   withDelay,
   Easing,
   interpolate,
+  cancelAnimation,
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 

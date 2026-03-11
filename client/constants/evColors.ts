@@ -44,7 +44,7 @@ export const EV_LIGHT = {
   topGradient: ["#05966908", "#0891B205", "transparent"] as const,
 };
 
-export type EVColors = typeof EV_DARK;
+export type EVColors = typeof EV_DARK & typeof EV_LIGHT;
 
 export function getEVColors(isDark: boolean): EVColors {
   return isDark ? EV_DARK : EV_LIGHT;
