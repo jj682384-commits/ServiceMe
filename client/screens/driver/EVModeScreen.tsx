@@ -585,6 +585,7 @@ export default function EVModeScreen() {
             icon="map-pin"
             label="Find Charger"
             color={ev.neonGreen}
+            onPress={() => navigation.navigate("EVChargerMap")}
             ev={ev}
           />
           <QuickAction
@@ -605,7 +606,7 @@ export default function EVModeScreen() {
             icon="tool"
             label="EV Diagnostic"
             color={ev.neonBlue}
-            onPress={() => navigation.navigate("SmartDiagnostic")}
+            onPress={() => navigation.navigate("EVDiagnostic")}
             ev={ev}
           />
           <QuickAction
@@ -625,7 +626,7 @@ export default function EVModeScreen() {
 
         <View style={styles.sectionHeader}>
           <Animated.Text style={[styles.sectionTitle, { color: ev.white }]}>Nearby Chargers</Animated.Text>
-          <Pressable>
+          <Pressable onPress={() => navigation.navigate("EVChargerMap")}>
             <Animated.Text style={[styles.seeAll, { color: ev.neonCyan }]}>View Map</Animated.Text>
           </Pressable>
         </View>

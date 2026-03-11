@@ -29,6 +29,8 @@ import EVMobileChargeScreen from "@/screens/ev/EVMobileChargeScreen";
 import EVTowScreen from "@/screens/ev/EVTowScreen";
 import EVRangeAlertScreen from "@/screens/ev/EVRangeAlertScreen";
 import EVAddVehicleScreen from "@/screens/ev/EVAddVehicleScreen";
+import EVDiagnosticScreen from "@/screens/ev/EVDiagnosticScreen";
+import EVChargerMapScreen from "@/screens/ev/EVChargerMapScreen";
 import PreferredProvidersScreen from "@/screens/PreferredProvidersScreen";
 import PaymentMethodsScreen from "@/screens/PaymentMethodsScreen";
 import BillingHistoryScreen from "@/screens/BillingHistoryScreen";
@@ -64,6 +66,8 @@ export type RootStackParamList = {
   EVTow: undefined;
   EVRangeAlert: undefined;
   EVAddVehicle: undefined;
+  EVDiagnostic: undefined;
+  EVChargerMap: undefined;
   ProviderSignUp: { providerType: "independent" | "shop" };
   PreferredProviders: undefined;
   PaymentMethods: undefined;
@@ -267,6 +271,24 @@ export default function RootStackNavigator() {
           headerShown: false,
           presentation: "fullScreenModal",
           animation: "fade",
+        }}
+      />
+      <Stack.Screen
+        name="EVDiagnostic"
+        component={EVDiagnosticScreen}
+        options={{
+          headerShown: false,
+          presentation: "modal",
+          animation: "slide_from_bottom",
+        }}
+      />
+      <Stack.Screen
+        name="EVChargerMap"
+        component={EVChargerMapScreen}
+        options={{
+          headerShown: false,
+          presentation: "modal",
+          animation: "slide_from_bottom",
         }}
       />
       <Stack.Screen

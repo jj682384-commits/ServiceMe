@@ -131,7 +131,11 @@ function EVShape({ config }: { config: EVShapeConfig }) {
         false
       );
     }, config.delay);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      cancelAnimation(progress);
+      cancelAnimation(pulse);
+    };
   }, []);
 
   const animatedStyle = useAnimatedStyle(() => {
@@ -183,7 +187,10 @@ function ScanLine({ config, isDark = true }: { config: ScanLineConfig; isDark?: 
         false
       );
     }, config.delay);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      cancelAnimation(sweep);
+    };
   }, []);
 
   const animatedStyle = useAnimatedStyle(() => {
@@ -236,6 +243,7 @@ function GridPulse({ isDark = true }: { isDark?: boolean }) {
       -1,
       false
     );
+    return () => cancelAnimation(gridOpacity);
   }, []);
 
   const maxOpacity = isDark ? 0.05 : 0.06;
