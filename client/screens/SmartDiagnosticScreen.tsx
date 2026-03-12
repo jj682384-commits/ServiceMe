@@ -12,6 +12,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import type { ServiceType } from "@/context/AppContext";
+import { apiRequest } from "@/lib/query-client";
 
 type SymptomKey = "wont_start" | "clicking" | "low_fuel" | "tire_pressure" | "locked_out" | "other";
 
@@ -251,24 +252,17 @@ export default function SmartDiagnosticScreen() {
     const questions = FOLLOW_UP_QUESTIONS[symptom];
 
     try {
-      const domain = process.env.EXPO_PUBLIC_DOMAIN || "";
-      const baseUrl = domain ? `https://${domain}` : "";
-      const response = await fetch(`${baseUrl}/api/diagnose`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          symptom,
-          symptomLabel: symptomObj?.label,
-          followUpQuestions: questions,
-          followUpAnswers: answers,
-        }),
+      const response = await apiRequest("POST", "/api/diagnose", {
+        symptom,
+        symptomLabel: symptomObj?.label,
+        followUpQuestions: questions,
+        followUpAnswers: answers,
       });
-
-      if (!response.ok) throw new Error("Diagnosis failed");
 
       const data = await response.json();
       setResult(data);
     } catch (err) {
+      console.error("Diagnosis error:", err);
       setDiagnosisError("Couldn't reach the AI right now. Please try again.");
     } finally {
       setIsLoading(false);
