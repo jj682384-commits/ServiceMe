@@ -1,5 +1,15 @@
 import React, { useState, useRef, useEffect } from "react";
-import { View, StyleSheet, FlatList, TextInput, Pressable, KeyboardAvoidingView, Platform, Keyboard } from "react-native";
+import {
+  View,
+  StyleSheet,
+  FlatList,
+  TextInput,
+  Pressable,
+  KeyboardAvoidingView,
+  Platform,
+  Keyboard,
+  ActivityIndicator,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Feather } from "@expo/vector-icons";
@@ -8,56 +18,14 @@ import { RouteProp, useRoute } from "@react-navigation/native";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
-import { useApp, Message } from "@/context/AppContext";
+import { useApp } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
+import { useChat, ChatMessage } from "@/hooks/useChat";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 type ChatRouteProp = RouteProp<RootStackParamList, "Chat">;
 
-const mockMessages: Message[] = [
-  {
-    id: "m1",
-    senderId: "p1",
-    senderRole: "provider",
-    content: "Hello! I'm on my way to your location.",
-    timestamp: new Date(Date.now() - 600000),
-    requestId: "c1",
-  },
-  {
-    id: "m2",
-    senderId: "d1",
-    senderRole: "driver",
-    content: "Great, thank you! I'm parked on the street.",
-    timestamp: new Date(Date.now() - 540000),
-    requestId: "c1",
-  },
-  {
-    id: "m3",
-    senderId: "p1",
-    senderRole: "provider",
-    content: "I'll be there in about 10 minutes. Can you describe your car?",
-    timestamp: new Date(Date.now() - 480000),
-    requestId: "c1",
-  },
-  {
-    id: "m4",
-    senderId: "d1",
-    senderRole: "driver",
-    content: "It's a silver Honda Civic, parked in front of the coffee shop.",
-    timestamp: new Date(Date.now() - 420000),
-    requestId: "c1",
-  },
-  {
-    id: "m5",
-    senderId: "p1",
-    senderRole: "provider",
-    content: "Perfect, I see you. I'll be there in 2 minutes!",
-    timestamp: new Date(Date.now() - 300000),
-    requestId: "c1",
-  },
-];
-
-function MessageBubble({ message, isOwn }: { message: Message; isOwn: boolean }) {
+function MessageBubble({ message, isOwn }: { message: ChatMessage; isOwn: boolean }) {
   const { theme } = useTheme();
 
   const formatTime = (date: Date) => {
@@ -69,15 +37,10 @@ function MessageBubble({ message, isOwn }: { message: Message; isOwn: boolean })
       <View
         style={[
           styles.messageBubble,
-          {
-            backgroundColor: isOwn ? theme.primary : theme.backgroundSecondary,
-          },
+          { backgroundColor: isOwn ? theme.primary : theme.backgroundSecondary },
         ]}
       >
-        <ThemedText
-          type="body"
-          style={{ color: isOwn ? "#FFFFFF" : theme.text }}
-        >
+        <ThemedText type="body" style={{ color: isOwn ? "#FFFFFF" : theme.text }}>
           {message.content}
         </ThemedText>
       </View>
@@ -88,46 +51,67 @@ function MessageBubble({ message, isOwn }: { message: Message; isOwn: boolean })
   );
 }
 
+function StatusBadge({ status }: { status: string }) {
+  const { theme } = useTheme();
+  const isConnected = status === "connected";
+  const isConnecting = status === "connecting";
+
+  return (
+    <View style={[styles.statusBadge, { backgroundColor: theme.backgroundSecondary }]}>
+      {isConnecting ? (
+        <ActivityIndicator size="small" color={theme.primary} style={{ marginRight: 4 }} />
+      ) : (
+        <View
+          style={[
+            styles.statusDot,
+            {
+              backgroundColor: isConnected ? "#22C55E" : "#EF4444",
+            },
+          ]}
+        />
+      )}
+      <ThemedText type="small" style={{ color: theme.textSecondary }}>
+        {isConnecting ? "Connecting..." : isConnected ? "Connected" : "Reconnecting..."}
+      </ThemedText>
+    </View>
+  );
+}
+
 export default function ChatScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const { theme } = useTheme();
   const route = useRoute<ChatRouteProp>();
-  const { userRole, addMessage } = useApp();
+  const { userRole } = useApp();
   const flatListRef = useRef<FlatList>(null);
-
   const [inputText, setInputText] = useState("");
-  const [messages, setMessages] = useState<Message[]>(mockMessages);
+
+  const senderId = userRole === "driver" ? "d1" : "p1";
+
+  const { messages, status, sendMessage } = useChat({
+    conversationId: route.params.conversationId,
+    senderId,
+    senderRole: userRole,
+  });
 
   useEffect(() => {
     const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
     const sub = Keyboard.addListener(showEvent, () => {
-      setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
-      }, 50);
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 50);
     });
     return () => sub.remove();
   }, []);
 
+  useEffect(() => {
+    if (messages.length > 0) {
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 80);
+    }
+  }, [messages.length]);
+
   const handleSend = () => {
     if (!inputText.trim()) return;
-
-    const newMessage: Message = {
-      id: `m-${Date.now()}`,
-      senderId: userRole === "driver" ? "d1" : "p1",
-      senderRole: userRole,
-      content: inputText.trim(),
-      timestamp: new Date(),
-      requestId: route.params.conversationId,
-    };
-
-    setMessages((prev) => [...prev, newMessage]);
-    addMessage(newMessage);
+    sendMessage(inputText.trim());
     setInputText("");
-
-    setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    }, 100);
   };
 
   return (
@@ -137,26 +121,37 @@ export default function ChatScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={headerHeight}
       >
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <MessageBubble
-              message={item}
-              isOwn={
-                (userRole === "driver" && item.senderRole === "driver") ||
-                (userRole === "provider" && item.senderRole === "provider")
-              }
-            />
-          )}
-          contentContainerStyle={[
-            styles.messagesList,
-            { paddingBottom: Spacing.lg },
-          ]}
-          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
-          showsVerticalScrollIndicator={false}
-        />
+        <StatusBadge status={status} />
+
+        {messages.length === 0 && status === "connected" ? (
+          <View style={styles.emptyState}>
+            <Feather name="message-circle" size={48} color={theme.textSecondary} />
+            <ThemedText type="body" style={{ color: theme.textSecondary, marginTop: Spacing.md, textAlign: "center" }}>
+              No messages yet.{"\n"}Send a message to start the conversation.
+            </ThemedText>
+          </View>
+        ) : (
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <MessageBubble
+                message={item}
+                isOwn={
+                  (userRole === "driver" && item.senderRole === "driver") ||
+                  (userRole === "provider" && item.senderRole === "provider")
+                }
+              />
+            )}
+            contentContainerStyle={[
+              styles.messagesList,
+              { paddingBottom: Spacing.lg },
+            ]}
+            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
 
         <View
           style={[
@@ -181,15 +176,16 @@ export default function ChatScreen() {
             onChangeText={setInputText}
             multiline
             maxLength={500}
+            onSubmitEditing={handleSend}
           />
           <Pressable
             onPress={handleSend}
-            disabled={!inputText.trim()}
+            disabled={!inputText.trim() || status !== "connected"}
             style={({ pressed }) => [
               styles.sendButton,
               {
                 backgroundColor: theme.primary,
-                opacity: !inputText.trim() ? 0.5 : pressed ? 0.8 : 1,
+                opacity: !inputText.trim() || status !== "connected" ? 0.4 : pressed ? 0.8 : 1,
               },
             ]}
           >
@@ -207,6 +203,28 @@ const styles = StyleSheet.create({
   },
   keyboardView: {
     flex: 1,
+  },
+  statusBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "center",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.full,
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.xs,
+    gap: 4,
+  },
+  statusDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: Spacing.xl,
   },
   messagesList: {
     padding: Spacing.lg,
@@ -237,7 +255,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-end",
     padding: Spacing.md,
-    borderTopWidth: 0,
     gap: Spacing.sm,
   },
   textInput: {

@@ -1,11 +1,69 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "node:http";
+import { WebSocketServer, WebSocket } from "ws";
 import OpenAI from "openai";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
+
+interface ChatMessage {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  senderRole: "driver" | "provider" | null;
+  content: string;
+  timestamp: string;
+}
+
+interface WsClient {
+  ws: WebSocket;
+  conversationId: string;
+  senderId: string;
+  senderRole: "driver" | "provider" | null;
+}
+
+const messageHistory = new Map<string, ChatMessage[]>();
+const clients = new Set<WsClient>();
+
+const PROVIDER_REPLIES = [
+  "I'm on my way, shouldn't be too long!",
+  "Got it, I'll be there shortly.",
+  "No problem, I'm heading your way now.",
+  "Understood. Can you turn on your hazard lights so I can spot you easier?",
+  "I can see your location. ETA is about 5 minutes.",
+  "Thanks for the update. I'm pulling up now.",
+  "Please stay with your vehicle — I'm almost there.",
+  "Do you need anything else while I'm en route?",
+];
+
+const DRIVER_REPLIES = [
+  "Thanks, I really appreciate the quick response!",
+  "I'm parked on the right side of the road with hazards on.",
+  "Got it. I'll be waiting here.",
+  "Sounds good, thank you!",
+  "I'm in a silver sedan, right next to the fire hydrant.",
+  "Perfect, see you soon!",
+];
+
+function getAutoReply(senderRole: string): string {
+  if (senderRole === "driver") {
+    return PROVIDER_REPLIES[Math.floor(Math.random() * PROVIDER_REPLIES.length)];
+  }
+  return DRIVER_REPLIES[Math.floor(Math.random() * DRIVER_REPLIES.length)];
+}
+
+function broadcastToConversation(conversationId: string, payload: object, excludeClient?: WsClient) {
+  const data = JSON.stringify(payload);
+  for (const client of clients) {
+    if (client.conversationId === conversationId && client !== excludeClient) {
+      if (client.ws.readyState === WebSocket.OPEN) {
+        client.ws.send(data);
+      }
+    }
+  }
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/diagnose", async (req: Request, res: Response) => {
@@ -61,6 +119,87 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
     }
   });
 
+  app.get("/api/chat/:conversationId/messages", (req: Request, res: Response) => {
+    const { conversationId } = req.params;
+    const history = messageHistory.get(conversationId) || [];
+    res.json({ messages: history });
+  });
+
   const httpServer = createServer(app);
+
+  const wss = new WebSocketServer({ server: httpServer, path: "/ws" });
+
+  wss.on("connection", (ws: WebSocket) => {
+    let clientRecord: WsClient | null = null;
+
+    ws.on("message", (raw) => {
+      try {
+        const data = JSON.parse(raw.toString());
+
+        if (data.type === "join") {
+          const { conversationId, senderId, senderRole } = data;
+          clientRecord = { ws, conversationId, senderId, senderRole };
+          clients.add(clientRecord);
+
+          const history = messageHistory.get(conversationId) || [];
+          ws.send(JSON.stringify({ type: "history", messages: history }));
+          return;
+        }
+
+        if (data.type === "message" && clientRecord) {
+          const { conversationId, senderId, senderRole, content } = data;
+          const message: ChatMessage = {
+            id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            conversationId,
+            senderId,
+            senderRole,
+            content,
+            timestamp: new Date().toISOString(),
+          };
+
+          const history = messageHistory.get(conversationId) || [];
+          history.push(message);
+          if (history.length > 200) history.splice(0, history.length - 200);
+          messageHistory.set(conversationId, history);
+
+          const payload = JSON.stringify({ type: "message", message });
+          ws.send(payload);
+          broadcastToConversation(conversationId, { type: "message", message }, clientRecord);
+
+          const peersInRoom = [...clients].filter(
+            (c) => c.conversationId === conversationId && c !== clientRecord
+          );
+          if (peersInRoom.length === 0) {
+            const replyDelay = 2000 + Math.random() * 2000;
+            setTimeout(() => {
+              const autoReply: ChatMessage = {
+                id: `msg-${Date.now()}-auto`,
+                conversationId,
+                senderId: senderRole === "driver" ? "auto-provider" : "auto-driver",
+                senderRole: senderRole === "driver" ? "provider" : "driver",
+                content: getAutoReply(senderRole || "driver"),
+                timestamp: new Date().toISOString(),
+              };
+              const autoHistory = messageHistory.get(conversationId) || [];
+              autoHistory.push(autoReply);
+              messageHistory.set(conversationId, autoHistory);
+
+              const autoPayload = JSON.stringify({ type: "message", message: autoReply });
+              if (ws.readyState === WebSocket.OPEN) {
+                ws.send(autoPayload);
+              }
+            }, replyDelay);
+          }
+        }
+      } catch (err) {
+        console.error("WS message parse error:", err);
+      }
+    });
+
+    ws.on("close", () => {
+      if (clientRecord) clients.delete(clientRecord);
+    });
+  });
+
   return httpServer;
 }
