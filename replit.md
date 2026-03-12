@@ -61,6 +61,17 @@ A `shared/` directory contains code common to both client and server, such as sc
 - **Drizzle Kit**: Database migration
 - **ESBuild**: Production bundling
 
+### Google Maps Integration
+- `react-native-maps@1.18.0` installed (compatible with Expo Go SDK 54 — do NOT upgrade)
+- `GoogleMapView` component at `client/components/GoogleMapView.tsx` — platform-safe wrapper around `react-native-maps` with web fallback support
+- Renders `PROVIDER_GOOGLE` maps on iOS/Android only; returns `fallback` prop content on web
+- Dark map style (dark navy theme) available via `mapStyle="dark"` prop
+- Used in 3 places:
+  - `DriverMapScreen`: Shows real provider markers on map; preferred providers in pink, others default
+  - `ActiveServiceScreen`: Shows user + provider locations with a dashed polyline route when en route
+  - `EVChargerMapScreen`: Dark-themed map with charger markers (red=unavailable, green=selected)
+- API key stored as `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` — baked into bundle at build time
+
 ### EV Add Vehicle Screen
 - Dedicated dark-themed EV vehicle add screen at `client/screens/ev/EVAddVehicleScreen.tsx`
 - Techno intro animation: expanding ring, scan line, hex grid, then fades to form

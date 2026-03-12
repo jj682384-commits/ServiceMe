@@ -17,8 +17,12 @@ import { LinearGradient } from "expo-linear-gradient";
 
 import { useTheme } from "@/hooks/useTheme";
 import { getEVColors } from "@/constants/evColors";
+import { GoogleMapView } from "@/components/GoogleMapView";
+
+const { height: SH } = Dimensions.get("window");
 
 const { width: SW } = Dimensions.get("window");
+const MAP_HEIGHT = Math.min(SH * 0.35, 280);
 
 interface ChargerStation {
   id: string;
@@ -256,6 +260,25 @@ export default function EVChargerMapScreen() {
           ))}
         </ScrollView>
       </View>
+
+      {Platform.OS !== "web" ? (
+        <View style={{ height: MAP_HEIGHT }}>
+          <GoogleMapView
+            latitude={37.7799}
+            longitude={-122.4144}
+            markers={filteredChargers.map((c) => ({
+              id: c.id,
+              latitude: c.latitude,
+              longitude: c.longitude,
+              title: c.name,
+              description: `${c.available} available • ${c.speed}`,
+              color: c.available === 0 ? "#FF3D00" : c.id === selectedCharger ? "#00E676" : undefined,
+            }))}
+            onMarkerPress={(m) => setSelectedCharger(m.id === selectedCharger ? null : m.id)}
+            mapStyle="dark"
+          />
+        </View>
+      ) : null}
 
       <ScrollView
         style={styles.list}

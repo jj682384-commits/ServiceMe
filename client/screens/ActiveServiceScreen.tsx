@@ -8,6 +8,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
+import { GoogleMapView } from "@/components/GoogleMapView";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceStatus, ServiceType } from "@/context/AppContext";
 import { Spacing, BorderRadius, Shadows } from "@/constants/theme";
@@ -190,27 +191,65 @@ export default function ActiveServiceScreen() {
     });
   };
 
+  const userLat = activeRequest.location.latitude ?? 37.7849;
+  const userLng = activeRequest.location.longitude ?? -122.4094;
+  const providerLat = activeRequest.provider?.location?.latitude ?? userLat + 0.01;
+  const providerLng = activeRequest.provider?.location?.longitude ?? userLng + 0.01;
+
+  const routeCoords = [
+    { latitude: userLat, longitude: userLng },
+    { latitude: (userLat + providerLat) / 2 + 0.003, longitude: (userLng + providerLng) / 2 },
+    { latitude: providerLat, longitude: providerLng },
+  ];
+
+  const mapMarkers = [
+    {
+      id: "user",
+      latitude: userLat,
+      longitude: userLng,
+      title: "Your location",
+      color: theme.primary,
+    },
+    {
+      id: "provider",
+      latitude: providerLat,
+      longitude: providerLng,
+      title: activeRequest.provider?.name ?? "Provider",
+      description: activeRequest.provider?.vehicleMake,
+      color: theme.secondary,
+    },
+  ];
+
+  const MapFallback = (
+    <View style={[styles.mapBackground, { backgroundColor: theme.backgroundSecondary }]}>
+      <View style={styles.mapContent}>
+        <View style={[styles.userMarker, { backgroundColor: theme.primary }]}>
+          <Feather name="navigation" size={20} color="#FFFFFF" />
+        </View>
+        <View style={styles.routeLine}>
+          {[...Array(8)].map((_, i) => (
+            <View key={i} style={[styles.routeDot, { backgroundColor: theme.secondary }]} />
+          ))}
+        </View>
+        <View style={[styles.providerMarker, { backgroundColor: theme.secondary }]}>
+          <Feather name="truck" size={20} color="#FFFFFF" />
+        </View>
+      </View>
+    </View>
+  );
+
   return (
     <ThemedView style={styles.container}>
       <View style={styles.mapPlaceholder}>
-        <View style={[styles.mapBackground, { backgroundColor: theme.backgroundSecondary }]}>
-          <View style={styles.mapContent}>
-            <View style={[styles.userMarker, { backgroundColor: theme.primary }]}>
-              <Feather name="navigation" size={20} color="#FFFFFF" />
-            </View>
-            <View style={styles.routeLine}>
-              {[...Array(8)].map((_, i) => (
-                <View
-                  key={i}
-                  style={[styles.routeDot, { backgroundColor: theme.secondary }]}
-                />
-              ))}
-            </View>
-            <View style={[styles.providerMarker, { backgroundColor: theme.secondary }]}>
-              <Feather name="truck" size={20} color="#FFFFFF" />
-            </View>
-          </View>
-        </View>
+        <GoogleMapView
+          latitude={(userLat + providerLat) / 2}
+          longitude={(userLng + providerLng) / 2}
+          markers={mapMarkers}
+          showRoute={activeRequest.status === "en_route" || activeRequest.status === "accepted"}
+          routeCoordinates={routeCoords}
+          routeColor={theme.primary}
+          fallback={MapFallback}
+        />
       </View>
 
       <View

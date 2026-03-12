@@ -16,6 +16,7 @@ import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { VerificationBadge } from "@/components/VerificationBadge";
 import { ProviderTypeBadge } from "@/components/ProviderTypeBadge";
+import { GoogleMapView } from "@/components/GoogleMapView";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceType, Provider, BADGE_CONFIG, BadgeType, PREFERRED_THRESHOLD } from "@/context/AppContext";
 import { Spacing, BorderRadius, Shadows } from "@/constants/theme";
@@ -350,10 +351,28 @@ export default function DriverMapScreen() {
   const isWeb = Platform.OS === "web";
   const hasPermission = isWeb || permission?.granted;
 
+  const providerMarkers = filteredProviders.map((p) => ({
+    id: p.id,
+    latitude: p.location.latitude,
+    longitude: p.location.longitude,
+    title: p.name,
+    description: `${p.rating.toFixed(1)}★ • ${p.distance ?? "?"} mi`,
+    color: isPreferredProvider(p.id) ? "#E91E63" : undefined,
+  }));
+
+  const mapCenter = userLocation ?? { latitude: 37.7849, longitude: -122.4094 };
+
   return (
     <ThemedView style={styles.container}>
       {hasPermission ? (
-        <WebMapPlaceholder providers={filteredProviders} />
+        <GoogleMapView
+          latitude={mapCenter.latitude}
+          longitude={mapCenter.longitude}
+          markers={providerMarkers}
+          onMarkerPress={(m) => navigation.navigate("ProviderDetail", { providerId: m.id })}
+          showsUserLocation={!isWeb && !!permission?.granted}
+          fallback={<WebMapPlaceholder providers={filteredProviders} />}
+        />
       ) : (
         renderPermissionRequest()
       )}
