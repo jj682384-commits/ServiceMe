@@ -15,7 +15,7 @@ import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollV
 import AnimatedBackground, { DARK_BG } from "@/components/AnimatedBackground";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/context/AppContext";
-import { useGoogleAuth } from "@/hooks/useGoogleAuth";
+import { GoogleSignInButton } from "@/components/GoogleSignInButton";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
@@ -166,21 +166,20 @@ export default function SignUpScreen() {
   const scale = useSharedValue(1);
   const animatedButtonStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
-  const { signInWithGoogle, isConfigured: googleConfigured } = useGoogleAuth({
-    onSuccess: (googleUser) => {
-      const userId = `google_${googleUser.id}`;
-      setAuthUser({ id: userId, name: googleUser.name, email: googleUser.email, phone: "" });
-      setIsAuthenticated(true);
-      setUserRole("driver");
-      setCurrentDriver({ id: userId, name: googleUser.name, email: googleUser.email, phone: "", avatarPreset: Math.floor(Math.random() * 5) + 1, membership: "free" });
-      navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "DriverTabs" }] }));
-    },
-    onError: (error) => {
-      if (error && !error.toLowerCase().includes("cancel")) {
-        Alert.alert("Google Sign-In Failed", error);
-      }
-    },
-  });
+  const handleGoogleSuccess = (googleUser: { id: string; name: string; email: string }) => {
+    const userId = `google_${googleUser.id}`;
+    setAuthUser({ id: userId, name: googleUser.name, email: googleUser.email, phone: "" });
+    setIsAuthenticated(true);
+    setUserRole("driver");
+    setCurrentDriver({ id: userId, name: googleUser.name, email: googleUser.email, phone: "", avatarPreset: Math.floor(Math.random() * 5) + 1, membership: "free" });
+    navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "DriverTabs" }] }));
+  };
+
+  const handleGoogleError = (error: string) => {
+    if (error && !error.toLowerCase().includes("cancel")) {
+      Alert.alert("Google Sign-In Failed", error);
+    }
+  };
 
   const toggleAccept = useCallback((key: string) => {
     setAcceptedDocs((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -237,25 +236,13 @@ export default function SignUpScreen() {
           <ThemedText type="body" style={styles.subtitle}>Sign up to get started with roadside assistance</ThemedText>
         </View>
 
-        {googleConfigured ? (
-          <View style={styles.googleSection}>
-            <Pressable
-              style={({ pressed }) => [styles.googleButton, { opacity: pressed ? 0.85 : 1 }]}
-              onPress={signInWithGoogle}
-            >
-              <View style={styles.googleIconContainer}>
-                <ThemedText style={styles.googleIconText}>G</ThemedText>
-              </View>
-              <ThemedText type="body" style={styles.googleButtonText}>Continue with Google</ThemedText>
-            </Pressable>
-
-            <View style={styles.dividerRow}>
-              <View style={styles.dividerLine} />
-              <ThemedText type="small" style={styles.dividerText}>or create account manually</ThemedText>
-              <View style={styles.dividerLine} />
-            </View>
-          </View>
-        ) : null}
+        <View style={styles.googleSection}>
+          <GoogleSignInButton
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            showDivider={false}
+          />
+        </View>
 
         <View style={styles.form}>
           <InputField label="Full Name" value={fullName} onChangeText={setFullName} placeholder="Enter your full name" icon="user" autoCapitalize="words" />
@@ -355,11 +342,4 @@ const styles = StyleSheet.create({
   acceptHintText: { color: "rgba(255,255,255,0.4)", marginLeft: Spacing.xs },
   signInRow: { flexDirection: "row", justifyContent: "center" },
   googleSection: { marginBottom: Spacing.lg, gap: Spacing.lg },
-  googleButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12, paddingVertical: 14, borderRadius: 16, backgroundColor: "#FFF" },
-  googleButtonText: { color: "#1A1A1A", fontWeight: "600", fontSize: 16 },
-  googleIconContainer: { width: 24, height: 24, borderRadius: 12, backgroundColor: "#4285F4", alignItems: "center", justifyContent: "center" },
-  googleIconText: { color: "#FFF", fontWeight: "700", fontSize: 14 },
-  dividerRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: "rgba(255,255,255,0.12)" },
-  dividerText: { color: "rgba(255,255,255,0.35)", fontSize: 12 },
 });
