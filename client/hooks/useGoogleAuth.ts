@@ -28,9 +28,12 @@ function getRedirectUri(): string {
 
 export function useGoogleAuth({ onSuccess, onError }: UseGoogleAuthOptions) {
   const redirectUri = getRedirectUri();
+  const clientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
 
   const [request, response, promptAsync] = Google.useAuthRequest({
-    webClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
+    webClientId: clientId,
+    iosClientId: clientId,
+    androidClientId: clientId,
     redirectUri,
   });
 
@@ -47,7 +50,7 @@ export function useGoogleAuth({ onSuccess, onError }: UseGoogleAuthOptions) {
   return {
     request,
     signInWithGoogle: () => promptAsync(),
-    isConfigured: !!process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
+    isConfigured: !!clientId,
     redirectUri,
   };
 }
