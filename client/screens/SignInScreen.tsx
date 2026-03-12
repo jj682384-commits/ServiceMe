@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, StyleSheet, TextInput, Pressable, Alert, Platform } from "react-native";
+import { View, StyleSheet, TextInput, Pressable, Alert, Platform, Image } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, CommonActions } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -15,6 +15,7 @@ import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollV
 import AnimatedBackground, { DARK_BG } from "@/components/AnimatedBackground";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/context/AppContext";
+import { useGoogleAuth } from "@/hooks/useGoogleAuth";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
@@ -78,6 +79,24 @@ export default function SignInScreen() {
   const scale = useSharedValue(1);
   const animatedButtonStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
+  const { signInWithGoogle, isConfigured: googleConfigured } = useGoogleAuth({
+    onSuccess: (googleUser) => {
+      setAuthUser({
+        id: `google_${googleUser.id}`,
+        name: googleUser.name,
+        email: googleUser.email,
+        phone: "",
+      });
+      setIsAuthenticated(true);
+      navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "RoleSelection" }] }));
+    },
+    onError: (error) => {
+      if (error && !error.toLowerCase().includes("cancel")) {
+        Alert.alert("Google Sign-In Failed", error);
+      }
+    },
+  });
+
   const handleSignIn = async () => {
     if (!email.trim() || !password.trim()) {
       Alert.alert("Missing Information", "Please enter your email and password.");
@@ -131,6 +150,24 @@ export default function SignInScreen() {
             </ThemedText>
           </AnimatedPressable>
 
+          {googleConfigured ? (
+            <>
+              <View style={styles.dividerRow}>
+                <View style={styles.dividerLine} />
+                <ThemedText type="small" style={styles.dividerText}>or</ThemedText>
+                <View style={styles.dividerLine} />
+              </View>
+
+              <Pressable
+                style={({ pressed }) => [styles.googleButton, { opacity: pressed ? 0.85 : 1 }]}
+                onPress={signInWithGoogle}
+              >
+                <GoogleIcon />
+                <ThemedText type="body" style={styles.googleButtonText}>Continue with Google</ThemedText>
+              </Pressable>
+            </>
+          ) : null}
+
           <View style={styles.signUpRow}>
             <ThemedText type="body" style={{ color: "rgba(255,255,255,0.5)" }}>Don't have an account?</ThemedText>
             <Pressable onPress={() => navigation.navigate("SignUp")}>
@@ -139,6 +176,14 @@ export default function SignInScreen() {
           </View>
         </View>
       </KeyboardAwareScrollViewCompat>
+    </View>
+  );
+}
+
+function GoogleIcon() {
+  return (
+    <View style={styles.googleIconContainer}>
+      <ThemedText style={styles.googleIconText}>G</ThemedText>
     </View>
   );
 }
@@ -162,4 +207,27 @@ const styles = StyleSheet.create({
   signInButton: { paddingVertical: 16, borderRadius: 16, alignItems: "center", overflow: "hidden" },
   signInButtonText: { color: "#FFF", fontWeight: "700", fontSize: 16 },
   signUpRow: { flexDirection: "row", justifyContent: "center" },
+  dividerRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: "rgba(255,255,255,0.12)" },
+  dividerText: { color: "rgba(255,255,255,0.35)", fontSize: 13 },
+  googleButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    paddingVertical: 14,
+    borderRadius: 16,
+    backgroundColor: "#FFF",
+    borderWidth: 0,
+  },
+  googleButtonText: { color: "#1A1A1A", fontWeight: "600", fontSize: 16 },
+  googleIconContainer: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#4285F4",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  googleIconText: { color: "#FFF", fontWeight: "700", fontSize: 14 },
 });
