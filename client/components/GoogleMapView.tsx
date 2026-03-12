@@ -1,20 +1,6 @@
 import React from "react";
-import { Platform, View, StyleSheet } from "react-native";
-
-let MapView: any = null;
-let Marker: any = null;
-let Polyline: any = null;
-let PROVIDER_GOOGLE: any = null;
-
-if (Platform.OS !== "web") {
-  try {
-    const maps = require("react-native-maps");
-    MapView = maps.default;
-    Marker = maps.Marker;
-    Polyline = maps.Polyline;
-    PROVIDER_GOOGLE = maps.PROVIDER_GOOGLE;
-  } catch (_) {}
-}
+import { View, StyleSheet } from "react-native";
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from "react-native-maps";
 
 export interface MapMarker {
   id: string;
@@ -66,10 +52,6 @@ export function GoogleMapView({
   fallback,
   mapStyle = "standard",
 }: GoogleMapViewProps) {
-  if (Platform.OS === "web" || !MapView) {
-    return fallback ? <>{fallback}</> : null;
-  }
-
   return (
     <MapView
       provider={PROVIDER_GOOGLE}

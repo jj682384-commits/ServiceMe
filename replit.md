@@ -62,8 +62,8 @@ A `shared/` directory contains code common to both client and server, such as sc
 - **ESBuild**: Production bundling
 
 ### Google Maps Integration
-- `react-native-maps@1.18.0` installed (compatible with Expo Go SDK 54 — do NOT upgrade)
-- `GoogleMapView` component at `client/components/GoogleMapView.tsx` — platform-safe wrapper around `react-native-maps` with web fallback support
+- `react-native-maps@1.20.1` installed (compatible with Expo Go SDK 54)
+- `GoogleMapView` uses platform-specific files: `GoogleMapView.tsx` (native — full map) and `GoogleMapView.web.tsx` (web — returns fallback only). Metro resolves the correct file per platform, avoiding native-only import crashes on web.
 - Renders `PROVIDER_GOOGLE` maps on iOS/Android only; returns `fallback` prop content on web
 - Dark map style (dark navy theme) available via `mapStyle="dark"` prop
 - Used in 3 places:
