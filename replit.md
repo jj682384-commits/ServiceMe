@@ -137,6 +137,21 @@ A `shared/` directory contains code common to both client and server, such as sc
 - Currently NOT integrated in App.tsx (KeyboardProvider from react-native-keyboard-controller causes crash in static bundles)
 - Can be re-enabled once the keyboard controller compatibility issue is resolved
 
+### In-App Subscriptions (RevenueCat)
+- `react-native-purchases@9.7.2` and `replit-revenuecat-v2@2.0.2` installed
+- RevenueCat integration connected via Replit connector
+- `scripts/revenueCatClient.ts` — authenticated server-side client (uses Replit connector)
+- `scripts/seedRevenueCat.ts` — one-time seed script (run manually)
+- `client/lib/revenuecat.tsx` — client SDK wrapper with `initializeRevenueCat()`, `SubscriptionProvider`, `useSubscription()` hook
+- RevenueCat called in `App.tsx`: `initializeRevenueCat()` at top level, `<SubscriptionProvider>` wraps app
+- Entitlement identifier: `"premium"`
+- Two packages: `$rc_monthly` (monthly) and `$rc_annual` (yearly)
+- `PremiumUpgradeScreen` uses real RevenueCat packages — prices pulled live from RevenueCat offerings
+- Custom modal for purchase confirmation (no Alert.alert — uses Modal component)
+- Test Store works in Expo Go / dev mode automatically
+- Env vars: `EXPO_PUBLIC_REVENUECAT_TEST_API_KEY`, `EXPO_PUBLIC_REVENUECAT_IOS_API_KEY`, `EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY`
+- RevenueCat project ID: `proj56c00538`
+
 ### Environment Variables
 - `DATABASE_URL`
 - `EXPO_PUBLIC_DOMAIN`

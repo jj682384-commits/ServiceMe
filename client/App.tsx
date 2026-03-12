@@ -12,6 +12,9 @@ import RootStackNavigator from "@/navigation/RootStackNavigator";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AppProvider } from "@/context/AppContext";
 import { Colors } from "@/constants/theme";
+import { initializeRevenueCat, SubscriptionProvider } from "@/lib/revenuecat";
+
+initializeRevenueCat();
 
 const LightNavTheme = {
   ...DefaultTheme,
@@ -44,16 +47,18 @@ export default function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <AppProvider>
-          <SafeAreaProvider>
-            <GestureHandlerRootView style={styles.root}>
-              <NavigationContainer theme={navTheme}>
-                <RootStackNavigator />
-              </NavigationContainer>
-              <StatusBar style="auto" />
-            </GestureHandlerRootView>
-          </SafeAreaProvider>
-        </AppProvider>
+        <SubscriptionProvider>
+          <AppProvider>
+            <SafeAreaProvider>
+              <GestureHandlerRootView style={styles.root}>
+                <NavigationContainer theme={navTheme}>
+                  <RootStackNavigator />
+                </NavigationContainer>
+                <StatusBar style="auto" />
+              </GestureHandlerRootView>
+            </SafeAreaProvider>
+          </AppProvider>
+        </SubscriptionProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );
