@@ -1,22 +1,15 @@
 import React, { useState, useRef } from "react";
-import { View, StyleSheet, Pressable, ScrollView, Animated as RNAnimated } from "react-native";
+import { View, StyleSheet, Pressable, ScrollView, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  FadeIn,
-  SlideInRight,
-} from "react-native-reanimated";
 
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
-import { Spacing, BorderRadius, Shadows } from "@/constants/theme";
+import { Spacing, BorderRadius } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import type { ServiceType } from "@/context/AppContext";
 
@@ -81,96 +74,6 @@ const FOLLOW_UP_QUESTIONS: Record<SymptomKey, FollowUpQuestion[]> = {
   ],
 };
 
-function getDiagnosticResult(symptom: SymptomKey, answers: Record<string, string>): DiagnosticResult {
-  switch (symptom) {
-    case "wont_start": {
-      if (answers["dashboard"] === "No, everything is dead" || answers["dashboard"] === "Lights are dim") {
-        return {
-          likelyIssue: "Dead Battery",
-          description: "Your battery has likely lost its charge. This is one of the most common roadside issues and is usually a quick fix with a jump start.",
-          costRange: "$35 - $55",
-          serviceType: "jump_start",
-          serviceLabel: "Jump Start",
-          confidence: 92,
-          tips: ["Turn off all accessories before jump starting", "Let the engine run for at least 15 minutes after", "Consider replacing the battery if it's over 3 years old"],
-        };
-      }
-      return {
-        likelyIssue: "Starter Motor Issue",
-        description: "The starter motor may be failing. If dashboard lights work but the engine won't crank, the starter solenoid or motor itself could need attention.",
-        costRange: "$50 - $80",
-        serviceType: "other",
-        serviceLabel: "Diagnostic & Repair",
-        confidence: 75,
-        tips: ["Try tapping the starter gently if accessible", "Check if the car is in Park/Neutral", "A mechanic can test the starter on-site"],
-      };
-    }
-    case "clicking":
-      return {
-        likelyIssue: "Weak Battery",
-        description: "Rapid clicking typically indicates a battery that doesn't have enough charge to engage the starter. A jump start should get you going.",
-        costRange: "$35 - $55",
-        serviceType: "jump_start",
-        serviceLabel: "Jump Start",
-        confidence: 95,
-        tips: ["This is almost always a battery issue", "Check battery terminals for corrosion", "If this happens often, your battery may need replacing"],
-      };
-    case "low_fuel":
-      return {
-        likelyIssue: "Out of Fuel",
-        description: "Your vehicle has run out of fuel or is critically low. A fuel delivery service will bring enough gas to get you to the nearest station.",
-        costRange: "$25 - $45",
-        serviceType: "fuel",
-        serviceLabel: "Fuel Delivery",
-        confidence: 98,
-        tips: ["We'll deliver enough fuel to reach the nearest gas station", "Running on empty can damage your fuel pump over time", "Consider keeping your tank above 1/4 to prevent this"],
-      };
-    case "tire_pressure": {
-      if (answers["visible"] === "Yes, completely flat") {
-        return {
-          likelyIssue: "Flat Tire",
-          description: "You have a completely flat tire that needs to be changed or repaired. A mobile technician can swap it with your spare or patch the tire on-site.",
-          costRange: "$45 - $75",
-          serviceType: "flat_tire",
-          serviceLabel: "Flat Tire Service",
-          confidence: 99,
-          tips: ["Move to a safe location away from traffic", "Turn on your hazard lights", "If on a highway, stay in your vehicle until help arrives"],
-        };
-      }
-      return {
-        likelyIssue: "Low Tire Pressure",
-        description: "Your tire pressure is below the recommended level. This could be a slow leak or temperature-related. A technician can inspect and inflate or repair the tire.",
-        costRange: "$40 - $65",
-        serviceType: "flat_tire",
-        serviceLabel: "Tire Service",
-        confidence: 85,
-        tips: ["Check the tire for visible nails or damage", "Low pressure can affect fuel economy and handling", "Temperature changes can cause pressure fluctuations"],
-      };
-    }
-    case "locked_out":
-      return {
-        likelyIssue: "Vehicle Lockout",
-        description: "You're locked out of your vehicle. A professional locksmith can safely gain entry without damaging your car.",
-        costRange: "$45 - $65",
-        serviceType: "lockout",
-        serviceLabel: "Lockout Service",
-        confidence: 99,
-        tips: ["Never try to force entry - it can cause damage", "Check all doors and the trunk", "Some insurance plans cover lockout service"],
-      };
-    case "other":
-    default:
-      return {
-        likelyIssue: "General Diagnostic Needed",
-        description: "Based on your description, we recommend an on-site diagnostic to determine the exact issue. A certified technician will assess your vehicle.",
-        costRange: "$25 - $80",
-        serviceType: "obd_diagnostic",
-        serviceLabel: "OBD Diagnostic",
-        confidence: 60,
-        tips: ["Note any warning lights on your dashboard", "Describe any unusual sounds or smells", "Mention when the issue first started"],
-      };
-  }
-}
-
 function ProgressBar({ step, totalSteps }: { step: number; totalSteps: number }) {
   const { theme } = useTheme();
   return (
@@ -225,12 +128,7 @@ function SymptomCard({
           {symptom.description}
         </ThemedText>
       </View>
-      <View
-        style={[
-          styles.radioOuter,
-          { borderColor: isSelected ? theme.primary : theme.border },
-        ]}
-      >
+      <View style={[styles.radioOuter, { borderColor: isSelected ? theme.primary : theme.border }]}>
         {isSelected ? <View style={[styles.radioInner, { backgroundColor: theme.primary }]} /> : null}
       </View>
     </Pressable>
@@ -268,12 +166,7 @@ function FollowUpCard({
               },
             ]}
           >
-            <View
-              style={[
-                styles.radioOuter,
-                { borderColor: isSelected ? theme.primary : theme.border },
-              ]}
-            >
+            <View style={[styles.radioOuter, { borderColor: isSelected ? theme.primary : theme.border }]}>
               {isSelected ? <View style={[styles.radioInner, { backgroundColor: theme.primary }]} /> : null}
             </View>
             <ThemedText type="body" style={{ flex: 1, color: isSelected ? theme.primary : theme.text, fontWeight: isSelected ? "600" : "400" }}>
@@ -294,7 +187,7 @@ function ConfidenceMeter({ confidence }: { confidence: number }) {
     <View style={styles.confidenceContainer}>
       <View style={styles.confidenceHeader}>
         <ThemedText type="small" style={{ color: theme.textSecondary }}>
-          Diagnostic Confidence
+          AI Diagnostic Confidence
         </ThemedText>
         <ThemedText type="body" style={{ color, fontWeight: "700" }}>
           {confidence}%
@@ -303,6 +196,23 @@ function ConfidenceMeter({ confidence }: { confidence: number }) {
       <View style={[styles.confidenceTrack, { backgroundColor: theme.backgroundTertiary }]}>
         <View style={[styles.confidenceFill, { width: `${confidence}%`, backgroundColor: color }]} />
       </View>
+    </View>
+  );
+}
+
+function LoadingDiagnosis() {
+  const { theme } = useTheme();
+  return (
+    <View style={styles.loadingContainer}>
+      <View style={[styles.loadingIcon, { backgroundColor: theme.primary + "15" }]}>
+        <ActivityIndicator size="large" color={theme.primary} />
+      </View>
+      <ThemedText type="h4" style={{ marginTop: Spacing.xl, textAlign: "center" }}>
+        Analyzing Your Symptoms
+      </ThemedText>
+      <ThemedText type="body" style={{ color: theme.textSecondary, textAlign: "center", marginTop: Spacing.sm, lineHeight: 22 }}>
+        Our AI is reviewing your answers to find the most likely issue...
+      </ThemedText>
     </View>
   );
 }
@@ -317,6 +227,9 @@ export default function SmartDiagnosticScreen() {
   const [selectedSymptom, setSelectedSymptom] = useState<SymptomKey | null>(null);
   const [followUpAnswers, setFollowUpAnswers] = useState<Record<string, string>>({});
   const [currentFollowUpIndex, setCurrentFollowUpIndex] = useState(0);
+  const [result, setResult] = useState<DiagnosticResult | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [diagnosisError, setDiagnosisError] = useState<string | null>(null);
 
   const followUpQuestions = selectedSymptom ? FOLLOW_UP_QUESTIONS[selectedSymptom] : [];
   const totalSteps = 3;
@@ -325,6 +238,41 @@ export default function SmartDiagnosticScreen() {
     setSelectedSymptom(symptomKey);
     setFollowUpAnswers({});
     setCurrentFollowUpIndex(0);
+    setResult(null);
+    setDiagnosisError(null);
+  };
+
+  const fetchDiagnosis = async (symptom: SymptomKey, answers: Record<string, string>) => {
+    setIsLoading(true);
+    setDiagnosisError(null);
+    setStep(2);
+
+    const symptomObj = SYMPTOMS.find((s) => s.key === symptom);
+    const questions = FOLLOW_UP_QUESTIONS[symptom];
+
+    try {
+      const domain = process.env.EXPO_PUBLIC_DOMAIN || "";
+      const baseUrl = domain ? `https://${domain}` : "";
+      const response = await fetch(`${baseUrl}/api/diagnose`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          symptom,
+          symptomLabel: symptomObj?.label,
+          followUpQuestions: questions,
+          followUpAnswers: answers,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Diagnosis failed");
+
+      const data = await response.json();
+      setResult(data);
+    } catch (err) {
+      setDiagnosisError("Couldn't reach the AI right now. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleNext = () => {
@@ -335,7 +283,7 @@ export default function SmartDiagnosticScreen() {
       if (currentFollowUpIndex < followUpQuestions.length - 1) {
         setCurrentFollowUpIndex(currentFollowUpIndex + 1);
       } else {
-        setStep(2);
+        fetchDiagnosis(selectedSymptom!, followUpAnswers);
       }
     }
   };
@@ -344,6 +292,8 @@ export default function SmartDiagnosticScreen() {
     if (step === 2) {
       setStep(1);
       setCurrentFollowUpIndex(followUpQuestions.length - 1);
+      setResult(null);
+      setDiagnosisError(null);
     } else if (step === 1) {
       if (currentFollowUpIndex > 0) {
         setCurrentFollowUpIndex(currentFollowUpIndex - 1);
@@ -357,11 +307,9 @@ export default function SmartDiagnosticScreen() {
     setFollowUpAnswers((prev) => ({ ...prev, [questionId]: answer }));
   };
 
-  const result = selectedSymptom ? getDiagnosticResult(selectedSymptom, followUpAnswers) : null;
-
   const handleRequestService = () => {
     if (!result) return;
-    const notes = `Smart Diagnostic: ${result.likelyIssue} (${result.confidence}% confidence). ${result.description}`;
+    const notes = `AI Diagnostic: ${result.likelyIssue} (${result.confidence}% confidence). ${result.description}`;
     navigation.goBack();
     navigation.navigate("ServiceRequest", {
       serviceType: result.serviceType,
@@ -417,68 +365,104 @@ export default function SmartDiagnosticScreen() {
       );
     }
 
-    if (step === 2 && result) {
-      return (
-        <View>
-          <View style={[styles.resultHeader, { backgroundColor: theme.primary + "10" }]}>
-            <View style={[styles.resultIconContainer, { backgroundColor: theme.primary }]}>
-              <Feather name="cpu" size={28} color="#FFFFFF" />
-            </View>
-            <ThemedText type="h3" style={{ marginTop: Spacing.lg }}>
-              {result.likelyIssue}
-            </ThemedText>
-            <ConfidenceMeter confidence={result.confidence} />
-          </View>
+    if (step === 2) {
+      if (isLoading) {
+        return <LoadingDiagnosis />;
+      }
 
-          <View style={[styles.resultCard, { backgroundColor: theme.backgroundSecondary }]}>
-            <ThemedText type="body" style={{ color: theme.textSecondary, lineHeight: 24 }}>
-              {result.description}
+      if (diagnosisError) {
+        return (
+          <View style={styles.errorContainer}>
+            <Feather name="wifi-off" size={48} color={theme.textTertiary} />
+            <ThemedText type="h4" style={{ marginTop: Spacing.lg, textAlign: "center" }}>
+              Connection Issue
             </ThemedText>
+            <ThemedText type="body" style={{ color: theme.textSecondary, textAlign: "center", marginTop: Spacing.sm }}>
+              {diagnosisError}
+            </ThemedText>
+            <Pressable
+              onPress={() => fetchDiagnosis(selectedSymptom!, followUpAnswers)}
+              style={[styles.retryButton, { backgroundColor: theme.primary }]}
+            >
+              <Feather name="refresh-cw" size={16} color="#FFF" />
+              <ThemedText type="body" style={{ color: "#FFF", fontWeight: "600", marginLeft: Spacing.sm }}>
+                Try Again
+              </ThemedText>
+            </Pressable>
           </View>
+        );
+      }
 
-          <View style={[styles.costCard, { backgroundColor: theme.backgroundSecondary }]}>
-            <View style={styles.costRow}>
-              <View style={styles.costLabel}>
-                <Feather name="dollar-sign" size={18} color={theme.success} />
-                <ThemedText type="body" style={{ fontWeight: "600", marginLeft: Spacing.sm }}>
-                  Estimated Cost
-                </ThemedText>
+      if (result) {
+        return (
+          <View>
+            <View style={[styles.resultHeader, { backgroundColor: theme.primary + "10" }]}>
+              <View style={[styles.resultIconContainer, { backgroundColor: theme.primary }]}>
+                <Feather name="cpu" size={28} color="#FFFFFF" />
               </View>
-              <ThemedText type="h4" style={{ color: theme.success }}>
-                {result.costRange}
+              <ThemedText type="h3" style={{ marginTop: Spacing.lg }}>
+                {result.likelyIssue}
+              </ThemedText>
+              <ConfidenceMeter confidence={result.confidence} />
+            </View>
+
+            <View style={[styles.resultCard, { backgroundColor: theme.backgroundSecondary }]}>
+              <ThemedText type="body" style={{ color: theme.textSecondary, lineHeight: 24 }}>
+                {result.description}
               </ThemedText>
             </View>
-            <View style={[styles.divider, { backgroundColor: theme.border }]} />
-            <View style={styles.costRow}>
-              <View style={styles.costLabel}>
-                <Feather name="tool" size={18} color={theme.secondary} />
-                <ThemedText type="body" style={{ fontWeight: "600", marginLeft: Spacing.sm }}>
-                  Recommended Service
+
+            <View style={[styles.costCard, { backgroundColor: theme.backgroundSecondary }]}>
+              <View style={styles.costRow}>
+                <View style={styles.costLabel}>
+                  <Feather name="dollar-sign" size={18} color={theme.success} />
+                  <ThemedText type="body" style={{ fontWeight: "600", marginLeft: Spacing.sm }}>
+                    Estimated Cost
+                  </ThemedText>
+                </View>
+                <ThemedText type="h4" style={{ color: theme.success }}>
+                  {result.costRange}
                 </ThemedText>
               </View>
-              <View style={[styles.serviceBadge, { backgroundColor: theme.secondary + "20" }]}>
-                <ThemedText type="small" style={{ color: theme.secondary, fontWeight: "600" }}>
-                  {result.serviceLabel}
-                </ThemedText>
+              <View style={[styles.divider, { backgroundColor: theme.border }]} />
+              <View style={styles.costRow}>
+                <View style={styles.costLabel}>
+                  <Feather name="tool" size={18} color={theme.secondary} />
+                  <ThemedText type="body" style={{ fontWeight: "600", marginLeft: Spacing.sm }}>
+                    Recommended Service
+                  </ThemedText>
+                </View>
+                <View style={[styles.serviceBadge, { backgroundColor: theme.secondary + "20" }]}>
+                  <ThemedText type="small" style={{ color: theme.secondary, fontWeight: "600" }}>
+                    {result.serviceLabel}
+                  </ThemedText>
+                </View>
               </View>
             </View>
-          </View>
 
-          <View style={[styles.tipsCard, { backgroundColor: theme.backgroundSecondary }]}>
-            <ThemedText type="body" style={{ fontWeight: "600", marginBottom: Spacing.md }}>
-              Helpful Tips
-            </ThemedText>
-            {result.tips.map((tip, index) => (
-              <View key={index} style={styles.tipRow}>
-                <Feather name="check-circle" size={16} color={theme.success} />
-                <ThemedText type="small" style={{ color: theme.textSecondary, flex: 1, marginLeft: Spacing.sm }}>
-                  {tip}
-                </ThemedText>
-              </View>
-            ))}
+            <View style={[styles.tipsCard, { backgroundColor: theme.backgroundSecondary }]}>
+              <ThemedText type="body" style={{ fontWeight: "600", marginBottom: Spacing.md }}>
+                Helpful Tips
+              </ThemedText>
+              {result.tips.map((tip, index) => (
+                <View key={index} style={styles.tipRow}>
+                  <Feather name="check-circle" size={16} color={theme.success} />
+                  <ThemedText type="small" style={{ color: theme.textSecondary, flex: 1, marginLeft: Spacing.sm }}>
+                    {tip}
+                  </ThemedText>
+                </View>
+              ))}
+            </View>
+
+            <View style={[styles.aiBadge, { backgroundColor: theme.backgroundSecondary }]}>
+              <Feather name="zap" size={14} color={theme.primary} />
+              <ThemedText type="small" style={{ color: theme.textSecondary, marginLeft: Spacing.xs }}>
+                Powered by AI — results are advisory, not a mechanical guarantee
+              </ThemedText>
+            </View>
           </View>
-        </View>
-      );
+        );
+      }
     }
 
     return null;
@@ -499,44 +483,20 @@ export default function SmartDiagnosticScreen() {
         {renderStepContent()}
       </ScrollView>
 
-      <View
-        style={[
-          styles.bottomBar,
-          {
-            paddingBottom: insets.bottom + Spacing.lg,
-            backgroundColor: theme.backgroundRoot,
-            borderTopColor: theme.border,
-          },
-        ]}
-      >
-        {step === 2 ? (
-          <View style={styles.resultButtons}>
-            <Pressable
-              onPress={() => { setStep(0); setSelectedSymptom(null); setFollowUpAnswers({}); }}
-              style={[styles.secondaryButton, { borderColor: theme.border }]}
-            >
-              <Feather name="refresh-cw" size={18} color={theme.textSecondary} />
-              <ThemedText type="body" style={{ color: theme.textSecondary, fontWeight: "600", marginLeft: Spacing.sm }}>
-                Start Over
-              </ThemedText>
-            </Pressable>
-            <Pressable
-              onPress={handleRequestService}
-              style={[styles.primaryButton, { backgroundColor: theme.primary, flex: 1 }]}
-            >
-              <Feather name="zap" size={18} color="#FFFFFF" />
-              <ThemedText type="body" style={{ color: "#FFFFFF", fontWeight: "600", marginLeft: Spacing.sm }}>
-                Request This Service
-              </ThemedText>
-            </Pressable>
-          </View>
-        ) : (
+      {step !== 2 || (!isLoading && !diagnosisError && !result) ? (
+        <View
+          style={[
+            styles.bottomBar,
+            {
+              paddingBottom: insets.bottom + Spacing.lg,
+              backgroundColor: theme.backgroundRoot,
+              borderTopColor: theme.border,
+            },
+          ]}
+        >
           <View style={styles.navButtons}>
             {step > 0 ? (
-              <Pressable
-                onPress={handleBack}
-                style={[styles.backButton, { borderColor: theme.border }]}
-              >
+              <Pressable onPress={handleBack} style={[styles.backButton, { borderColor: theme.border }]}>
                 <Feather name="arrow-left" size={18} color={theme.textSecondary} />
                 <ThemedText type="body" style={{ color: theme.textSecondary, fontWeight: "600", marginLeft: Spacing.sm }}>
                   Back
@@ -556,13 +516,51 @@ export default function SmartDiagnosticScreen() {
               ]}
             >
               <ThemedText type="body" style={{ color: "#FFFFFF", fontWeight: "600" }}>
-                {step === 1 && currentFollowUpIndex < followUpQuestions.length - 1 ? "Next Question" : step === 1 ? "See Results" : "Continue"}
+                {step === 1 && currentFollowUpIndex < followUpQuestions.length - 1
+                  ? "Next Question"
+                  : step === 1
+                  ? "Analyze with AI"
+                  : "Continue"}
               </ThemedText>
               <Feather name="arrow-right" size={18} color="#FFFFFF" style={{ marginLeft: Spacing.sm }} />
             </Pressable>
           </View>
-        )}
-      </View>
+        </View>
+      ) : null}
+
+      {step === 2 && !isLoading && result ? (
+        <View
+          style={[
+            styles.bottomBar,
+            {
+              paddingBottom: insets.bottom + Spacing.lg,
+              backgroundColor: theme.backgroundRoot,
+              borderTopColor: theme.border,
+            },
+          ]}
+        >
+          <View style={styles.resultButtons}>
+            <Pressable
+              onPress={() => { setStep(0); setSelectedSymptom(null); setFollowUpAnswers({}); setResult(null); }}
+              style={[styles.secondaryButton, { borderColor: theme.border }]}
+            >
+              <Feather name="refresh-cw" size={18} color={theme.textSecondary} />
+              <ThemedText type="body" style={{ color: theme.textSecondary, fontWeight: "600", marginLeft: Spacing.sm }}>
+                Start Over
+              </ThemedText>
+            </Pressable>
+            <Pressable
+              onPress={handleRequestService}
+              style={[styles.primaryButton, { backgroundColor: theme.primary, flex: 1 }]}
+            >
+              <Feather name="zap" size={18} color="#FFFFFF" />
+              <ThemedText type="body" style={{ color: "#FFFFFF", fontWeight: "600", marginLeft: Spacing.sm }}>
+                Request This Service
+              </ThemedText>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
     </ThemedView>
   );
 }
@@ -598,7 +596,7 @@ const styles = StyleSheet.create({
   symptomIcon: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: BorderRadius.md,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -606,20 +604,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   radioOuter: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     borderWidth: 2,
     alignItems: "center",
     justifyContent: "center",
   },
   radioInner: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   followUpContainer: {
-    marginTop: Spacing.sm,
+    flex: 1,
   },
   followUpOption: {
     flexDirection: "row",
@@ -629,11 +627,56 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
     gap: Spacing.md,
   },
+  bottomBar: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
+    borderTopWidth: 1,
+  },
+  navButtons: {
+    flexDirection: "row",
+    gap: Spacing.md,
+  },
+  backButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+  },
+  nextButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xl,
+    borderRadius: BorderRadius.md,
+  },
+  resultButtons: {
+    flexDirection: "row",
+    gap: Spacing.md,
+  },
+  secondaryButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+  },
+  primaryButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.md,
+  },
   resultHeader: {
     alignItems: "center",
     padding: Spacing.xl,
     borderRadius: BorderRadius.lg,
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md,
   },
   resultIconContainer: {
     width: 64,
@@ -641,25 +684,6 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     alignItems: "center",
     justifyContent: "center",
-  },
-  confidenceContainer: {
-    width: "100%",
-    marginTop: Spacing.lg,
-  },
-  confidenceHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: Spacing.sm,
-  },
-  confidenceTrack: {
-    height: 8,
-    borderRadius: 4,
-    overflow: "hidden",
-  },
-  confidenceFill: {
-    height: "100%",
-    borderRadius: 4,
   },
   resultCard: {
     padding: Spacing.lg,
@@ -673,8 +697,8 @@ const styles = StyleSheet.create({
   },
   costRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    justifyContent: "space-between",
   },
   costLabel: {
     flexDirection: "row",
@@ -699,54 +723,52 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     marginBottom: Spacing.sm,
   },
-  bottomBar: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: Spacing.lg,
-    borderTopWidth: 1,
+  confidenceContainer: {
+    width: "100%",
+    marginTop: Spacing.md,
   },
-  navButtons: {
+  confidenceHeader: {
     flexDirection: "row",
-    gap: Spacing.md,
+    justifyContent: "space-between",
+    marginBottom: Spacing.xs,
   },
-  resultButtons: {
-    flexDirection: "row",
-    gap: Spacing.md,
+  confidenceTrack: {
+    height: 6,
+    borderRadius: 3,
+    overflow: "hidden",
   },
-  backButton: {
-    flexDirection: "row",
+  confidenceFill: {
+    height: "100%",
+    borderRadius: 3,
+  },
+  loadingContainer: {
+    alignItems: "center",
+    paddingVertical: Spacing.xl * 2,
+  },
+  loadingIcon: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: Spacing.lg,
+  },
+  errorContainer: {
+    alignItems: "center",
+    paddingVertical: Spacing.xl * 2,
+  },
+  retryButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: Spacing.xl,
+    paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.xl,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
+    borderRadius: BorderRadius.md,
   },
-  nextButton: {
+  aiBadge: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: Spacing.lg,
-    paddingHorizontal: Spacing["2xl"],
-    borderRadius: BorderRadius.full,
-  },
-  secondaryButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: Spacing.lg,
-    paddingHorizontal: Spacing.lg,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-  },
-  primaryButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: Spacing.lg,
-    paddingHorizontal: Spacing.xl,
-    borderRadius: BorderRadius.full,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing.md,
   },
 });

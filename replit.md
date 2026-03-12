@@ -152,8 +152,19 @@ A `shared/` directory contains code common to both client and server, such as sc
 - Env vars: `EXPO_PUBLIC_REVENUECAT_TEST_API_KEY`, `EXPO_PUBLIC_REVENUECAT_IOS_API_KEY`, `EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY`
 - RevenueCat project ID: `proj56c00538`
 
+### OpenAI (Smart Diagnostics)
+- Integrated via Replit AI Integrations (no personal API key required)
+- Env vars: `AI_INTEGRATIONS_OPENAI_API_KEY`, `AI_INTEGRATIONS_OPENAI_BASE_URL`
+- API endpoint: `POST /api/diagnose` — accepts `symptom`, `symptomLabel`, `followUpQuestions`, `followUpAnswers`
+- Returns: `likelyIssue`, `description`, `costRange`, `serviceType`, `serviceLabel`, `confidence`, `tips`
+- Uses `gpt-4o` with `json_object` response format for reliable structured output
+- `SmartDiagnosticScreen.tsx` calls `/api/diagnose` after the follow-up questions; shows loading spinner while AI processes, error state with retry on failure
+- Server-side implementation: `server/routes.ts`
+
 ### Environment Variables
 - `DATABASE_URL`
 - `EXPO_PUBLIC_DOMAIN`
 - `REPLIT_DEV_DOMAIN`
 - `REPLIT_DOMAINS`
+- `AI_INTEGRATIONS_OPENAI_API_KEY` (managed by Replit integration)
+- `AI_INTEGRATIONS_OPENAI_BASE_URL` (managed by Replit integration)
