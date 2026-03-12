@@ -17,6 +17,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
+import { notifySOSActivated } from "@/lib/notifications";
 
 type EmergencyPhase = "activating" | "active" | "dispatching" | "dispatched";
 
@@ -89,7 +90,10 @@ export default function EmergencyModeScreen() {
 
     const phaseTimer1 = setTimeout(() => setPhase("active"), 1500);
     const phaseTimer2 = setTimeout(() => setPhase("dispatching"), 4000);
-    const phaseTimer3 = setTimeout(() => setPhase("dispatched"), 7000);
+    const phaseTimer3 = setTimeout(() => {
+      setPhase("dispatched");
+      notifySOSActivated();
+    }, 7000);
 
     return () => {
       clearTimeout(phaseTimer1);

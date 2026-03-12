@@ -26,6 +26,7 @@ import { useNavigation } from "@react-navigation/native";
 import { useApp } from "@/context/AppContext";
 import { useTheme } from "@/hooks/useTheme";
 import { getEVColors } from "@/constants/evColors";
+import { notifyRangeAlert } from "@/lib/notifications";
 
 const RANGE_PRESETS = [20, 30, 50, 75];
 
@@ -72,6 +73,9 @@ export default function EVRangeAlertScreen() {
   const handleSave = () => {
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
+    if (alertsEnabled.low_battery) {
+      notifyRangeAlert(currentRange, rangeThreshold);
+    }
   };
 
   const currentRange = 218;

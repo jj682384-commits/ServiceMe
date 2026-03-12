@@ -9,6 +9,7 @@ import AnimatedBackground from "@/components/AnimatedBackground";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, BACKGROUND_SCHEMES } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
+import { notifyNewJobRequest } from "@/lib/notifications";
 
 function StatCard({
   icon,
@@ -50,12 +51,28 @@ export default function ProviderDashboardScreen() {
   const scheme = BACKGROUND_SCHEMES[backgroundPreferences.colorScheme];
   const cardBg = isAnimated ? theme.cardAnimatedBg : theme.backgroundDefault;
 
+  const jobRequestTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const handleAvailabilityChange = (value: boolean) => {
     setIsAvailable(value);
     if (currentProvider) {
       setCurrentProvider({ ...currentProvider, isAvailable: value });
     }
+    if (value) {
+      if (jobRequestTimeout.current) clearTimeout(jobRequestTimeout.current);
+      jobRequestTimeout.current = setTimeout(() => {
+        notifyNewJobRequest("Jump Start", "0.4 miles");
+      }, 8000);
+    } else {
+      if (jobRequestTimeout.current) clearTimeout(jobRequestTimeout.current);
+    }
   };
+
+  React.useEffect(() => {
+    return () => {
+      if (jobRequestTimeout.current) clearTimeout(jobRequestTimeout.current);
+    };
+  }, []);
 
   return (
     <View style={[styles.container, { backgroundColor: isAnimated ? (isDark ? scheme.bgColor : scheme.bgColorLight) : theme.backgroundRoot }]}>

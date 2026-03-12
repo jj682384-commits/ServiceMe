@@ -13,6 +13,11 @@ import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceStatus, ServiceType } from "@/context/AppContext";
 import { Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
+import {
+  notifyProviderEnRoute,
+  notifyProviderArrived,
+  notifyServiceComplete,
+} from "@/lib/notifications";
 
 const statusLabels: Record<ServiceStatus, string> = {
   pending: "Finding Provider",
@@ -131,6 +136,20 @@ export default function ActiveServiceScreen() {
         setActiveRequest({ ...activeRequest, status: "en_route" });
       }, 3000);
       return () => clearTimeout(timer);
+    }
+  }, [activeRequest?.status]);
+
+  useEffect(() => {
+    if (!activeRequest) return;
+    const providerName = activeRequest.provider?.name ?? "Your provider";
+    const serviceLabel = serviceTypeLabels[activeRequest.serviceType] ?? "service";
+
+    if (activeRequest.status === "en_route") {
+      notifyProviderEnRoute(providerName, activeRequest.eta ?? 8);
+    } else if (activeRequest.status === "arrived") {
+      notifyProviderArrived(providerName);
+    } else if (activeRequest.status === "completed") {
+      notifyServiceComplete(serviceLabel);
     }
   }, [activeRequest?.status]);
 

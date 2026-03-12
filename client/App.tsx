@@ -13,6 +13,8 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AppProvider } from "@/context/AppContext";
 import { Colors } from "@/constants/theme";
 import { initializeRevenueCat, SubscriptionProvider } from "@/lib/revenuecat";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { navigationRef } from "@/lib/navigationRef";
 
 initializeRevenueCat();
 
@@ -40,6 +42,11 @@ const DarkNavTheme = {
   },
 };
 
+function NotificationSetup() {
+  usePushNotifications();
+  return null;
+}
+
 export default function App() {
   const colorScheme = useColorScheme();
   const navTheme = colorScheme === "dark" ? DarkNavTheme : LightNavTheme;
@@ -51,7 +58,8 @@ export default function App() {
           <AppProvider>
             <SafeAreaProvider>
               <GestureHandlerRootView style={styles.root}>
-                <NavigationContainer theme={navTheme}>
+                <NavigationContainer theme={navTheme} ref={navigationRef}>
+                  <NotificationSetup />
                   <RootStackNavigator />
                 </NavigationContainer>
                 <StatusBar style="auto" />
