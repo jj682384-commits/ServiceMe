@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { Platform } from "react-native";
 import * as Google from "expo-auth-session/providers/google";
 import * as WebBrowser from "expo-web-browser";
 import { makeRedirectUri } from "expo-auth-session";
@@ -17,8 +18,16 @@ interface UseGoogleAuthOptions {
   onError?: (error: string) => void;
 }
 
+function getRedirectUri(): string {
+  const domain = process.env.EXPO_PUBLIC_DOMAIN;
+  if (domain) {
+    return `https://${domain}`;
+  }
+  return makeRedirectUri();
+}
+
 export function useGoogleAuth({ onSuccess, onError }: UseGoogleAuthOptions) {
-  const redirectUri = makeRedirectUri();
+  const redirectUri = getRedirectUri();
 
   const [request, response, promptAsync] = Google.useAuthRequest({
     webClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
@@ -39,6 +48,7 @@ export function useGoogleAuth({ onSuccess, onError }: UseGoogleAuthOptions) {
     request,
     signInWithGoogle: () => promptAsync(),
     isConfigured: !!process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
+    redirectUri,
   };
 }
 

@@ -51,3 +51,8 @@ task = "shell.exec"
 args = "npm run all:dev"
 waitForPort = 5000
 
+[userenv]
+
+[userenv.shared]
+EXPO_PUBLIC_DOMAIN = "486c76a4-cd45-4131-b166-4c2c82757aea-00-sor1akb194mn.riker.replit.dev"
+
