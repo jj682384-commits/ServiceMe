@@ -157,6 +157,7 @@ interface JobRecord {
 }
 
 const jobStore = new Map<string, JobRecord>();
+let broadcastJobUpdate: (job: JobRecord) => void = () => {};
 
 const PROVIDER_REPLIES = [
   "I'm on my way, shouldn't be too long!",
@@ -353,6 +354,7 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
     job.provider = req.body.provider ?? null;
     job.eta = req.body.eta ?? 8;
     console.log(`[ACCEPT] updated to accepted, provider=${JSON.stringify(job.provider)}`);
+    broadcastJobUpdate(job);
     res.json(job);
   });
 
@@ -369,12 +371,21 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
     const { status } = req.body as { status: string };
     if (!status) return res.status(400).json({ error: "status required" });
     job.status = status as JobRecord["status"];
+    broadcastJobUpdate(job);
     res.json(job);
   });
 
   const httpServer = createServer(app);
 
   const wss = new WebSocketServer({ server: httpServer, path: "/ws" });
+
+  broadcastJobUpdate = (job: JobRecord) => {
+    const data = JSON.stringify({ type: "job_status_update", job });
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) client.send(data);
+    });
+    console.log(`[WS BROADCAST] job=${job.id} status=${job.status} clients=${wss.clients.size}`);
+  };
 
   wss.on("connection", (ws: WebSocket) => {
     let clientRecord: WsClient | null = null;

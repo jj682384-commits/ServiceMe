@@ -113,7 +113,13 @@ export default function ActiveServiceScreen() {
 
   const [eta, setEta] = useState(activeRequest?.eta || 8);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
+  const activeRequestRef = useRef(activeRequest);
   const isFocused = useIsFocused();
+
+  useEffect(() => {
+    activeRequestRef.current = activeRequest;
+  }, [activeRequest]);
 
   useEffect(() => {
     if (!activeRequest) {
@@ -135,6 +141,57 @@ export default function ActiveServiceScreen() {
 
     return () => clearInterval(timer);
   }, [activeRequest, isFocused]);
+
+  useEffect(() => {
+    if (!activeRequest?.id) return;
+    const apiUrl = getApiUrl();
+    const wsBase = apiUrl.replace(/^https/, "wss").replace(/^http/, "ws").replace(/\/$/, "");
+    const wsUrl = `${wsBase}/ws`;
+
+    const applyJobUpdate = (job: { id: string; status: string; provider?: Provider; eta?: number }) => {
+      const current = activeRequestRef.current;
+      if (!current || job.id !== current.id) return;
+      if (job.status === "cancelled") {
+        setActiveRequest(null);
+        return;
+      }
+      const serverIdx = STATUS_ORDER.indexOf(job.status as ServiceStatus);
+      const localIdx = STATUS_ORDER.indexOf(current.status);
+      console.log(`[WS UPDATE] ${current.status} → ${job.status} (sIdx=${serverIdx} lIdx=${localIdx})`);
+      if (serverIdx > localIdx || (job.provider && !current.provider)) {
+        const newStatus = job.status as ServiceStatus;
+        const newProvider = job.provider ?? current.provider;
+        setActiveRequest({ ...current, status: newStatus, provider: newProvider, eta: job.eta ?? current.eta });
+        setEta(job.eta ?? current.eta ?? 8);
+        updateHistoryEntry(current.id, { status: newStatus, provider: newProvider });
+        if (newStatus === "completed") navigation.navigate("ServiceCompletion");
+      }
+    };
+
+    let cancelled = false;
+    const connect = () => {
+      if (cancelled) return;
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data as string);
+          if (data.type === "job_status_update") applyJobUpdate(data.job);
+        } catch {}
+      };
+      ws.onerror = () => {};
+      ws.onclose = () => {
+        if (!cancelled) setTimeout(connect, 3000);
+      };
+    };
+
+    connect();
+    return () => {
+      cancelled = true;
+      wsRef.current?.close();
+      wsRef.current = null;
+    };
+  }, [activeRequest?.id]);
 
   useEffect(() => {
     if (!activeRequest) return;
@@ -197,7 +254,7 @@ export default function ActiveServiceScreen() {
     };
 
     poll();
-    pollRef.current = setInterval(poll, 5000);
+    pollRef.current = setInterval(poll, 15000);
 
     return () => {
       if (pollRef.current) {
