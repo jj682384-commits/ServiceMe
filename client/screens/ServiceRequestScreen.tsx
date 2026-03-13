@@ -26,10 +26,10 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const PREMIUM_DISCOUNT = 0.20;
 
 const serviceTypes: { type: ServiceType; label: string; icon: keyof typeof Feather.glyphMap; price: number }[] = [
-  { type: "flat_tire", label: "Flat Tire", icon: "disc", price: 51 },
-  { type: "jump_start", label: "Jump Start", icon: "battery-charging", price: 38 },
+  { type: "flat_tire", label: "Flat Tire", icon: "disc", price: 40 },
+  { type: "jump_start", label: "Jump Start", icon: "battery-charging", price: 30 },
   { type: "fuel", label: "Fuel Delivery", icon: "droplet", price: 0 },
-  { type: "lockout", label: "Lockout", icon: "key", price: 47 },
+  { type: "lockout", label: "Lockout", icon: "key", price: 55 },
   { type: "obd_diagnostic", label: "OBD Diagnostic", icon: "cpu", price: 21 },
   { type: "other", label: "Other", icon: "more-horizontal", price: 55 },
 ];
