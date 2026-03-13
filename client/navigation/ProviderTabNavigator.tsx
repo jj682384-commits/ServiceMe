@@ -115,7 +115,7 @@ export default function ProviderTabNavigator() {
           ) : null,
         headerTitleAlign: "center",
         headerTransparent: true,
-        headerTintColor: isDark ? theme.text : "#FFFFFF",
+        headerTintColor: theme.text,
         headerStyle: {
           backgroundColor: Platform.select({
             ios: "transparent",

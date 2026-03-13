@@ -11,7 +11,7 @@ const FPS_INTERVAL = 33;
 const DEFAULT_COLORS = ["#00D9FF", "#FF6B35", "#7B2FFF", "#00FFD4", "#FF006E", "#FFE000"];
 
 export const DARK_BG = "#04081C";
-export const LIGHT_BG = "#0A1540";
+export const LIGHT_BG = "#C8DCFF";
 
 interface Particle {
   x: number;

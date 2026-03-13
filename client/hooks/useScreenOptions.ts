@@ -17,7 +17,7 @@ export function useScreenOptions({
     headerTitleAlign: "center",
     headerTransparent: transparent,
     headerBlurEffect: isDark ? "dark" : "light",
-    headerTintColor: isDark ? theme.text : "#FFFFFF",
+    headerTintColor: theme.text,
     headerStyle: {
       backgroundColor: Platform.select({
         ios: undefined,
