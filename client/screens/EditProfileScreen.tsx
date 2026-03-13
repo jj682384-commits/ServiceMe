@@ -14,7 +14,7 @@ import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { useTheme } from "@/hooks/useTheme";
-import { useApp, ServiceType } from "@/context/AppContext";
+import { useApp, ServiceType, EmergencyContact } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -174,7 +174,11 @@ export default function EditProfileScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const { theme } = useTheme();
-  const { userRole, currentDriver, currentProvider, setCurrentDriver, setCurrentProvider, authUser, setAuthUser } = useApp();
+  const {
+    userRole, currentDriver, currentProvider,
+    setCurrentDriver, setCurrentProvider, authUser, setAuthUser,
+    emergencyContacts, addEmergencyContact, removeEmergencyContact,
+  } = useApp();
   const navigation = useNavigation();
 
   const isProvider = userRole === "provider";
@@ -191,6 +195,11 @@ export default function EditProfileScreen() {
 
   const [isSaving, setIsSaving] = useState(false);
 
+  const [newContactName, setNewContactName] = useState("");
+  const [newContactPhone, setNewContactPhone] = useState("");
+  const [newContactRelationship, setNewContactRelationship] = useState("");
+  const [showAddContact, setShowAddContact] = useState(false);
+
   const scale = useSharedValue(1);
 
   const animatedButtonStyle = useAnimatedStyle(() => ({
@@ -198,6 +207,33 @@ export default function EditProfileScreen() {
   }));
 
   const allServices: ServiceType[] = ["flat_tire", "jump_start", "tow", "fuel", "lockout", "obd_diagnostic", "other"];
+
+  const handleAddContact = () => {
+    if (!newContactName.trim() || !newContactPhone.trim()) {
+      Alert.alert("Missing Info", "Please enter a name and phone number.");
+      return;
+    }
+    addEmergencyContact({
+      name: newContactName.trim(),
+      phone: newContactPhone.trim(),
+      relationship: newContactRelationship.trim() || "Contact",
+    });
+    setNewContactName("");
+    setNewContactPhone("");
+    setNewContactRelationship("");
+    setShowAddContact(false);
+  };
+
+  const handleRemoveContact = (index: number) => {
+    Alert.alert(
+      "Remove Contact",
+      `Remove ${emergencyContacts[index].name} from your emergency contacts?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Remove", style: "destructive", onPress: () => removeEmergencyContact(index) },
+      ]
+    );
+  };
 
   const handleToggleService = (service: ServiceType) => {
     setServicesOffered((prev) =>
@@ -308,6 +344,128 @@ export default function EditProfileScreen() {
               Appearance
             </ThemedText>
             <AvatarSelector selectedIndex={avatarPreset} onSelect={setAvatarPreset} />
+          </View>
+        ) : null}
+
+        {!isProvider ? (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Feather name="shield" size={18} color={theme.error} />
+              <ThemedText type="h4" style={styles.sectionTitle}>
+                Emergency Contacts
+              </ThemedText>
+            </View>
+            <ThemedText type="small" style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
+              These contacts receive an SMS with your location when SOS is activated.
+            </ThemedText>
+
+            {emergencyContacts.map((contact, index) => (
+              <View
+                key={index}
+                style={[styles.contactCard, { backgroundColor: theme.backgroundSecondary, borderColor: theme.border }]}
+              >
+                <View style={[styles.contactAvatar, { backgroundColor: theme.error + "20" }]}>
+                  <Feather name="user" size={20} color={theme.error} />
+                </View>
+                <View style={styles.contactInfo}>
+                  <ThemedText type="body" style={{ fontWeight: "600" }}>
+                    {contact.name}
+                  </ThemedText>
+                  <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                    {contact.phone}
+                  </ThemedText>
+                  <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                    {contact.relationship}
+                  </ThemedText>
+                </View>
+                <Pressable
+                  onPress={() => handleRemoveContact(index)}
+                  style={[styles.removeButton, { backgroundColor: theme.error + "15" }]}
+                >
+                  <Feather name="trash-2" size={16} color={theme.error} />
+                </Pressable>
+              </View>
+            ))}
+
+            {emergencyContacts.length === 0 ? (
+              <View style={[styles.emptyContacts, { borderColor: theme.border }]}>
+                <Feather name="user-x" size={28} color={theme.textSecondary} />
+                <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: Spacing.sm, textAlign: "center" }}>
+                  No emergency contacts added yet.{"\n"}Add at least one so SOS can alert them.
+                </ThemedText>
+              </View>
+            ) : null}
+
+            {showAddContact ? (
+              <View style={[styles.addContactForm, { backgroundColor: theme.backgroundSecondary, borderColor: theme.border }]}>
+                <ThemedText type="small" style={[styles.label, { color: theme.textSecondary }]}>Full Name *</ThemedText>
+                <View style={[styles.inputContainer, { backgroundColor: theme.backgroundDefault, borderColor: theme.border, marginBottom: Spacing.sm }]}>
+                  <Feather name="user" size={18} color={theme.textSecondary} />
+                  <TextInput
+                    style={[styles.input, { color: theme.text }]}
+                    value={newContactName}
+                    onChangeText={setNewContactName}
+                    placeholder="e.g., Jane Doe"
+                    placeholderTextColor={theme.textSecondary}
+                    autoCapitalize="words"
+                  />
+                </View>
+
+                <ThemedText type="small" style={[styles.label, { color: theme.textSecondary }]}>Phone Number *</ThemedText>
+                <View style={[styles.inputContainer, { backgroundColor: theme.backgroundDefault, borderColor: theme.border, marginBottom: Spacing.sm }]}>
+                  <Feather name="phone" size={18} color={theme.textSecondary} />
+                  <TextInput
+                    style={[styles.input, { color: theme.text }]}
+                    value={newContactPhone}
+                    onChangeText={setNewContactPhone}
+                    placeholder="+1 555-000-0000"
+                    placeholderTextColor={theme.textSecondary}
+                    keyboardType="phone-pad"
+                  />
+                </View>
+
+                <ThemedText type="small" style={[styles.label, { color: theme.textSecondary }]}>Relationship</ThemedText>
+                <View style={[styles.inputContainer, { backgroundColor: theme.backgroundDefault, borderColor: theme.border, marginBottom: Spacing.md }]}>
+                  <Feather name="heart" size={18} color={theme.textSecondary} />
+                  <TextInput
+                    style={[styles.input, { color: theme.text }]}
+                    value={newContactRelationship}
+                    onChangeText={setNewContactRelationship}
+                    placeholder="e.g., Spouse, Parent, Friend"
+                    placeholderTextColor={theme.textSecondary}
+                    autoCapitalize="words"
+                  />
+                </View>
+
+                <View style={styles.addContactActions}>
+                  <Pressable
+                    onPress={() => setShowAddContact(false)}
+                    style={[styles.cancelContactButton, { borderColor: theme.border }]}
+                  >
+                    <ThemedText type="small" style={{ color: theme.textSecondary, fontWeight: "600" }}>Cancel</ThemedText>
+                  </Pressable>
+                  <Pressable
+                    onPress={handleAddContact}
+                    style={[styles.saveContactButton, { backgroundColor: theme.error }]}
+                  >
+                    <Feather name="check" size={16} color="#FFF" />
+                    <ThemedText type="small" style={{ color: "#FFF", fontWeight: "600" }}>Add Contact</ThemedText>
+                  </Pressable>
+                </View>
+              </View>
+            ) : null}
+
+            {!showAddContact ? (
+              <Pressable
+                onPress={() => setShowAddContact(true)}
+                style={[styles.addContactButton, { borderColor: theme.error + "60", backgroundColor: theme.error + "10" }]}
+              >
+                <Feather name="plus" size={18} color={theme.error} />
+                <ThemedText type="body" style={{ color: theme.error, fontWeight: "600" }}>
+                  Add Emergency Contact
+                </ThemedText>
+              </Pressable>
+            ) : null}
           </View>
         ) : null}
 
@@ -479,5 +637,90 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: "#FFFFFF",
     fontWeight: "600",
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    marginBottom: Spacing.xs,
+  },
+  sectionSubtitle: {
+    fontSize: 13,
+    marginBottom: Spacing.md,
+    lineHeight: 18,
+  },
+  contactCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    marginBottom: Spacing.sm,
+    gap: Spacing.sm,
+  },
+  contactAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  contactInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  removeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyContacts: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: Spacing.xl,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    marginBottom: Spacing.md,
+  },
+  addContactForm: {
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    marginBottom: Spacing.sm,
+  },
+  addContactActions: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+  },
+  cancelContactButton: {
+    flex: 1,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  saveContactButton: {
+    flex: 2,
+    flexDirection: "row",
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.xs,
+  },
+  addContactButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1.5,
+    borderStyle: "dashed",
+    gap: Spacing.sm,
+    marginTop: Spacing.xs,
   },
 });
