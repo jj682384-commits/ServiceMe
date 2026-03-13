@@ -7,13 +7,14 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useHeaderHeight } from "@react-navigation/elements";
+
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
+import { GoogleMapView } from "@/components/GoogleMapView";
 import { ScreenDecoration } from "@/components/ScreenDecoration";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceStatus, ServiceType } from "@/context/AppContext";
@@ -59,7 +60,6 @@ const ADVANCE_STATUSES: ServiceStatus[] = ["accepted", "en_route", "arrived", "i
 
 export default function ProviderActiveJobScreen() {
   const insets = useSafeAreaInsets();
-  const headerHeight = useHeaderHeight();
   const { theme } = useTheme();
   const { activeRequest, setActiveRequest, updateHistoryEntry } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -108,6 +108,30 @@ export default function ProviderActiveJobScreen() {
   const config = statusConfig[activeRequest.status] ?? statusConfig.accepted;
   const canAdvance = ADVANCE_STATUSES.includes(activeRequest.status);
 
+  const customerLat = activeRequest.location.latitude ?? 37.7849;
+  const customerLng = activeRequest.location.longitude ?? -122.4094;
+
+  const mapMarkers = [
+    {
+      id: "user",
+      latitude: customerLat,
+      longitude: customerLng,
+      title: activeRequest.driver?.name ?? "Customer",
+      color: theme.primary,
+    },
+  ];
+
+  const MapFallback = (
+    <View style={[styles.mapFallback, { backgroundColor: theme.backgroundSecondary }]}>
+      <View style={[styles.customerMarker, { backgroundColor: theme.primary }]}>
+        <Feather name="map-pin" size={22} color="#FFFFFF" />
+      </View>
+      <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: Spacing.sm }}>
+        {activeRequest.location.address}
+      </ThemedText>
+    </View>
+  );
+
   const handleAdvance = async () => {
     if (advancing) return;
     setAdvancing(true);
@@ -154,9 +178,20 @@ export default function ProviderActiveJobScreen() {
   return (
     <ThemedView style={styles.container}>
       <ScreenDecoration />
+
+      <View style={styles.mapSection}>
+        <GoogleMapView
+          latitude={customerLat}
+          longitude={customerLng}
+          markers={mapMarkers}
+          fallback={MapFallback}
+          mapStyle="standard"
+        />
+      </View>
+
       <ScrollView
         contentContainerStyle={{
-          paddingTop: headerHeight + Spacing.lg,
+          paddingTop: Spacing.lg,
           paddingBottom: insets.bottom + Spacing.xl * 2,
           paddingHorizontal: Spacing.lg,
           gap: Spacing.lg,
@@ -334,6 +369,23 @@ function StatusTimeline({ currentStatus, theme }: { currentStatus: ServiceStatus
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  mapSection: {
+    height: 220,
+    width: "100%",
+  },
+  mapFallback: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.sm,
+  },
+  customerMarker: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   statusBanner: {
     flexDirection: "row",
     alignItems: "center",
