@@ -3,7 +3,7 @@ import { View, StyleSheet, Pressable, Alert, ActivityIndicator } from "react-nat
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Feather } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useIsFocused } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { ThemedView } from "@/components/ThemedView";
@@ -113,15 +113,11 @@ export default function ActiveServiceScreen() {
 
   const [eta, setEta] = useState(activeRequest?.eta || 8);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isFocused = useIsFocused();
 
   useEffect(() => {
     if (!activeRequest) {
-      navigation.goBack();
-      return;
-    }
-
-    if (activeRequest.status === "completed") {
-      navigation.navigate("ServiceCompletion");
+      if (isFocused) navigation.goBack();
       return;
     }
 
@@ -138,7 +134,7 @@ export default function ActiveServiceScreen() {
     }, 60000);
 
     return () => clearInterval(timer);
-  }, [activeRequest]);
+  }, [activeRequest, isFocused]);
 
   useEffect(() => {
     if (!activeRequest) return;
