@@ -120,7 +120,7 @@ export default function DriverTabNavigator() {
           ) : null,
         headerTitleAlign: "center",
         headerTransparent: true,
-        headerTintColor: theme.text,
+        headerTintColor: isDark ? theme.text : "#FFFFFF",
         headerStyle: {
           backgroundColor: Platform.select({
             ios: "transparent",
