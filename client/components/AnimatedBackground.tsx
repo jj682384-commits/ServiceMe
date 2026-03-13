@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo } from "react";
-import { View, StyleSheet, Dimensions, Image } from "react-native";
+import { View, StyleSheet, Dimensions } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -8,51 +8,61 @@ import Animated, {
   withTiming,
   Easing,
   interpolate,
+  SharedValue,
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
-const LOGO_SIZE = SCREEN_WIDTH * 1.2;
+const MAX_RING_SIZE = SCREEN_WIDTH * 0.78;
+const RING_CYCLE = 3600;
 
-interface OrbConfig {
-  size: number;
-  colors: string[];
-  startX: number;
-  startY: number;
-  driftX: number;
+interface RibbonConfig {
+  colors: [string, string];
+  yPosition: number;
+  height: number;
   driftY: number;
+  driftX: number;
   duration: number;
   delay: number;
   opacityRange: [number, number];
 }
 
-const BASE_ORB_CONFIGS: OrbConfig[] = [
-  { size: 320, colors: ["#00D9FF", "#0088CC"], startX: -60, startY: SCREEN_HEIGHT * 0.12, driftX: 100, driftY: -45, duration: 7000, delay: 0, opacityRange: [0.12, 0.28] },
-  { size: 240, colors: ["#FF6B35", "#FF3D00"], startX: SCREEN_WIDTH - 60, startY: SCREEN_HEIGHT * 0.5, driftX: -90, driftY: 55, duration: 9000, delay: 800, opacityRange: [0.10, 0.24] },
-  { size: 200, colors: ["#7B2FFF", "#4800FF"], startX: SCREEN_WIDTH * 0.4, startY: SCREEN_HEIGHT * 0.78, driftX: 65, driftY: -75, duration: 10000, delay: 1500, opacityRange: [0.10, 0.22] },
-  { size: 160, colors: ["#FF6B35", "#FF8C5A"], startX: SCREEN_WIDTH * 0.6, startY: SCREEN_HEIGHT * 0.1, driftX: -55, driftY: 65, duration: 8000, delay: 500, opacityRange: [0.10, 0.20] },
-  { size: 280, colors: ["#00D9FF", "#00FFD4"], startX: SCREEN_WIDTH * 0.05, startY: SCREEN_HEIGHT * 0.42, driftX: 70, driftY: 45, duration: 11000, delay: 1200, opacityRange: [0.08, 0.20] },
-  { size: 180, colors: ["#7B2FFF", "#00D9FF"], startX: SCREEN_WIDTH * 0.5, startY: SCREEN_HEIGHT * 0.3, driftX: -50, driftY: -40, duration: 8500, delay: 2000, opacityRange: [0.08, 0.18] },
+const BASE_RIBBON_CONFIGS: RibbonConfig[] = [
+  { colors: ["#00D9FF", "#0088CC"], yPosition: 0.10, height: 110, driftY: 38, driftX: 22, duration: 7200, delay: 0,    opacityRange: [0.10, 0.28] },
+  { colors: ["#FF6B35", "#FF3D00"], yPosition: 0.26, height: 85,  driftY: 52, driftX: 18, duration: 9400, delay: 600,  opacityRange: [0.08, 0.22] },
+  { colors: ["#7B2FFF", "#4800FF"], yPosition: 0.43, height: 130, driftY: 44, driftX: 30, duration: 8100, delay: 1400, opacityRange: [0.09, 0.24] },
+  { colors: ["#FF6B35", "#FF8C5A"], yPosition: 0.58, height: 90,  driftY: 36, driftX: 16, duration: 10200, delay: 400, opacityRange: [0.08, 0.20] },
+  { colors: ["#00D9FF", "#00FFD4"], yPosition: 0.73, height: 105, driftY: 48, driftX: 25, duration: 8800, delay: 1100, opacityRange: [0.09, 0.22] },
+  { colors: ["#7B2FFF", "#00D9FF"], yPosition: 0.88, height: 75,  driftY: 30, driftX: 14, duration: 7600, delay: 900,  opacityRange: [0.07, 0.18] },
 ];
 
-function FloatingOrb({ config }: { config: OrbConfig }) {
-  const progress = useSharedValue(0);
-  const pulse = useSharedValue(0);
+function AuroraRibbon({ config }: { config: RibbonConfig }) {
+  const translateY = useSharedValue(0);
+  const translateX = useSharedValue(0);
+  const opacity = useSharedValue(config.opacityRange[0]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      progress.value = withRepeat(
+      translateY.value = withRepeat(
         withSequence(
-          withTiming(1, { duration: config.duration, easing: Easing.inOut(Easing.sin) }),
-          withTiming(0, { duration: config.duration, easing: Easing.inOut(Easing.sin) })
+          withTiming(config.driftY, { duration: config.duration, easing: Easing.inOut(Easing.sin) }),
+          withTiming(-config.driftY, { duration: config.duration, easing: Easing.inOut(Easing.sin) })
         ),
         -1,
         false
       );
-      pulse.value = withRepeat(
+      translateX.value = withRepeat(
         withSequence(
-          withTiming(1, { duration: config.duration * 0.6, easing: Easing.inOut(Easing.sin) }),
-          withTiming(0, { duration: config.duration * 0.6, easing: Easing.inOut(Easing.sin) })
+          withTiming(config.driftX, { duration: config.duration * 1.4, easing: Easing.inOut(Easing.sin) }),
+          withTiming(-config.driftX, { duration: config.duration * 1.4, easing: Easing.inOut(Easing.sin) })
+        ),
+        -1,
+        false
+      );
+      opacity.value = withRepeat(
+        withSequence(
+          withTiming(config.opacityRange[1], { duration: config.duration * 0.65, easing: Easing.inOut(Easing.sin) }),
+          withTiming(config.opacityRange[0], { duration: config.duration * 0.65, easing: Easing.inOut(Easing.sin) })
         ),
         -1,
         false
@@ -61,87 +71,114 @@ function FloatingOrb({ config }: { config: OrbConfig }) {
     return () => clearTimeout(timer);
   }, []);
 
-  const animatedStyle = useAnimatedStyle(() => {
-    const translateX = interpolate(progress.value, [0, 0.5, 1], [0, config.driftX, 0]);
-    const translateY = interpolate(progress.value, [0, 0.5, 1], [0, config.driftY, 0]);
-    const opacity = interpolate(pulse.value, [0, 1], [config.opacityRange[0], config.opacityRange[1]]);
-    const scale = interpolate(pulse.value, [0, 1], [0.85, 1.15]);
-
-    return {
-      transform: [{ translateX }, { translateY }, { scale }],
-      opacity,
-    };
-  });
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }, { translateY: translateY.value }],
+    opacity: opacity.value,
+  }));
 
   return (
     <Animated.View
       style={[
         {
           position: "absolute",
-          left: config.startX - config.size / 2,
-          top: config.startY - config.size / 2,
-          width: config.size,
-          height: config.size,
-          borderRadius: config.size / 2,
-          overflow: "hidden",
+          left: -SCREEN_WIDTH * 0.12,
+          top: config.yPosition * SCREEN_HEIGHT - config.height / 2,
+          width: SCREEN_WIDTH * 1.24,
+          height: config.height,
         },
-        animatedStyle,
+        animStyle,
       ]}
     >
       <LinearGradient
-        colors={config.colors}
+        colors={["transparent", config.colors[0], config.colors[1], config.colors[0], "transparent"]}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ width: config.size, height: config.size, borderRadius: config.size / 2 }}
+        end={{ x: 0, y: 1 }}
+        style={{ flex: 1 }}
       />
     </Animated.View>
   );
 }
 
-export const DARK_BG = "#060918";
-export const LIGHT_BG = "#EFF6FF";
-
-function RotatingLogo({ isDark = true }: { isDark?: boolean }) {
-  const rotation = useSharedValue(0);
+function PulsingRing({ delay, color }: { delay: number; color: string }) {
+  const scale = useSharedValue(0.04);
+  const opacity = useSharedValue(0);
 
   useEffect(() => {
-    rotation.value = withRepeat(
-      withTiming(1, { duration: 30000, easing: Easing.linear }),
-      -1,
-      false
-    );
+    const timer = setTimeout(() => {
+      scale.value = withRepeat(
+        withSequence(
+          withTiming(0.04, { duration: 0 }),
+          withTiming(1, { duration: RING_CYCLE, easing: Easing.out(Easing.cubic) })
+        ),
+        -1,
+        false
+      );
+      opacity.value = withRepeat(
+        withSequence(
+          withTiming(0.32, { duration: 180 }),
+          withTiming(0, { duration: RING_CYCLE - 180, easing: Easing.out(Easing.quad) })
+        ),
+        -1,
+        false
+      );
+    }, delay);
+    return () => clearTimeout(timer);
   }, []);
 
   const animStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${interpolate(rotation.value, [0, 1], [0, 360])}deg` }],
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
   }));
 
   return (
-    <View style={styles.logoContainer}>
-      <Animated.View style={animStyle}>
-        <Image
-          source={require("../../assets/images/icon.png")}
-          style={[styles.logo, { opacity: isDark ? 0.04 : 0.06 }]}
-          resizeMode="contain"
-        />
-      </Animated.View>
+    <Animated.View
+      style={[
+        {
+          width: MAX_RING_SIZE,
+          height: MAX_RING_SIZE,
+          borderRadius: MAX_RING_SIZE / 2,
+          borderWidth: 1.5,
+          borderColor: color,
+          position: "absolute",
+        },
+        animStyle,
+      ]}
+    />
+  );
+}
+
+function PulsingRings({ color }: { color: string }) {
+  const interval = Math.round(RING_CYCLE / 3);
+  return (
+    <View style={styles.ringsContainer}>
+      <PulsingRing delay={0} color={color} />
+      <PulsingRing delay={interval} color={color} />
+      <PulsingRing delay={interval * 2} color={color} />
     </View>
   );
 }
 
-function OrbLayer({ configs, layerOpacity }: { configs: OrbConfig[]; layerOpacity: Animated.SharedValue<number> }) {
+function RibbonLayer({ configs, layerOpacity, ringColor }: {
+  configs: RibbonConfig[];
+  layerOpacity: SharedValue<number>;
+  ringColor: string;
+}) {
   const animStyle = useAnimatedStyle(() => ({
     opacity: layerOpacity.value,
   }));
 
   return (
     <Animated.View style={[StyleSheet.absoluteFillObject, animStyle]}>
+      <PulsingRings color={ringColor} />
       {configs.map((config, index) => (
-        <FloatingOrb key={`${index}-${config.colors.join()}`} config={config} />
+        <AuroraRibbon key={`${index}-${config.colors.join()}`} config={config} />
       ))}
     </Animated.View>
   );
 }
+
+export const DARK_BG = "#060918";
+export const LIGHT_BG = "#EFF6FF";
 
 interface AnimatedBackgroundProps {
   customColors?: string[][];
@@ -150,7 +187,12 @@ interface AnimatedBackgroundProps {
   isDark?: boolean;
 }
 
-export default function AnimatedBackground({ customColors, opacityBoost = 1, flashColor = "#FFFFFF", isDark = true }: AnimatedBackgroundProps) {
+export default function AnimatedBackground({
+  customColors,
+  opacityBoost = 1,
+  flashColor = "#FFFFFF",
+  isDark = true,
+}: AnimatedBackgroundProps) {
   const colorsKey = customColors ? customColors.map(c => c.join()).join("|") : "default";
   const [activeLayer, setActiveLayer] = useState<"a" | "b">("a");
   const [layerAColors, setLayerAColors] = useState(customColors);
@@ -187,37 +229,31 @@ export default function AnimatedBackground({ customColors, opacityBoost = 1, fla
     }
   }, [colorsKey]);
 
-  const configsA = useMemo(() => {
-    return layerAColors
-      ? BASE_ORB_CONFIGS.map((config, i) => ({
-          ...config,
-          colors: layerAColors[i % layerAColors.length],
-          opacityRange: [
-            Math.min(config.opacityRange[0] * layerABoost, 0.5),
-            Math.min(config.opacityRange[1] * layerABoost, 0.7),
-          ] as [number, number],
-        }))
-      : BASE_ORB_CONFIGS;
-  }, [layerAColors, layerABoost]);
+  const buildConfigs = (colors: string[][] | undefined, boost: number): RibbonConfig[] => {
+    if (!colors) return BASE_RIBBON_CONFIGS;
+    return BASE_RIBBON_CONFIGS.map((config, i) => {
+      const pair = colors[i % colors.length];
+      return {
+        ...config,
+        colors: [pair[0], pair[1] ?? pair[0]] as [string, string],
+        opacityRange: [
+          Math.min(config.opacityRange[0] * boost, 0.5),
+          Math.min(config.opacityRange[1] * boost, 0.7),
+        ] as [number, number],
+      };
+    });
+  };
 
-  const configsB = useMemo(() => {
-    return layerBColors
-      ? BASE_ORB_CONFIGS.map((config, i) => ({
-          ...config,
-          colors: layerBColors[i % layerBColors.length],
-          opacityRange: [
-            Math.min(config.opacityRange[0] * layerBBoost, 0.5),
-            Math.min(config.opacityRange[1] * layerBBoost, 0.7),
-          ] as [number, number],
-        }))
-      : BASE_ORB_CONFIGS;
-  }, [layerBColors, layerBBoost]);
+  const configsA = useMemo(() => buildConfigs(layerAColors, layerABoost), [layerAColors, layerABoost]);
+  const configsB = useMemo(() => buildConfigs(layerBColors, layerBBoost), [layerBColors, layerBBoost]);
+
+  const ringColorA = layerAColors ? layerAColors[0][0] : "#00D9FF";
+  const ringColorB = layerBColors ? layerBColors[0][0] : "#00D9FF";
 
   return (
     <View style={[styles.container, { pointerEvents: "none" }]}>
-      <RotatingLogo isDark={isDark} />
-      <OrbLayer configs={configsA} layerOpacity={layerAOpacity} />
-      <OrbLayer configs={configsB} layerOpacity={layerBOpacity} />
+      <RibbonLayer configs={configsA} layerOpacity={layerAOpacity} ringColor={ringColorA} />
+      <RibbonLayer configs={configsB} layerOpacity={layerBOpacity} ringColor={ringColorB} />
     </View>
   );
 }
@@ -227,13 +263,9 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     overflow: "hidden",
   },
-  logoContainer: {
+  ringsContainer: {
     ...StyleSheet.absoluteFillObject,
     alignItems: "center",
     justifyContent: "center",
-  },
-  logo: {
-    width: LOGO_SIZE,
-    height: LOGO_SIZE,
   },
 });
