@@ -139,17 +139,6 @@ export default function DriverTabNavigator() {
       }}
     >
       <Tab.Screen
-        name="MapTab"
-        component={AnimatedDriverMapScreen}
-        options={{
-          title: "Map",
-          headerShown: false,
-          tabBarIcon: ({ color, size }) => (
-            <Feather name="map" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
         name="EVTab"
         component={AnimatedEVModeScreen}
         options={{
@@ -178,6 +167,17 @@ export default function DriverTabNavigator() {
           title: "History",
           tabBarIcon: ({ color, size }) => (
             <Feather name="clock" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="MapTab"
+        component={AnimatedDriverMapScreen}
+        options={{
+          title: "Map",
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => (
+            <Feather name="map" size={size} color={color} />
           ),
         }}
       />
