@@ -178,7 +178,7 @@ export const BACKGROUND_SCHEMES: Record<BackgroundColorScheme, SchemeConfig> = {
   default: {
     label: "Cyber",
     bgColor: "#04081C",
-    bgColorLight: "#C8DCFF",
+    bgColorLight: "#F0F2F5",
     flashColor: "#00D9FF",
     flashColorLight: "#0055B3",
     colors: [
