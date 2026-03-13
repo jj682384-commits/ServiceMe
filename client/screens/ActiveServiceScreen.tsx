@@ -105,7 +105,7 @@ export default function ActiveServiceScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const { theme } = useTheme();
-  const { activeRequest, setActiveRequest, userRole } = useApp();
+  const { activeRequest, setActiveRequest, updateHistoryEntry, userRole } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const [eta, setEta] = useState(activeRequest?.eta || 8);
@@ -166,6 +166,7 @@ export default function ActiveServiceScreen() {
           text: "Yes, Cancel",
           style: "destructive",
           onPress: () => {
+            updateHistoryEntry(activeRequest.id, { status: "cancelled" });
             setActiveRequest(null);
             navigation.goBack();
           },
