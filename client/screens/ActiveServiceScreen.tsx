@@ -153,8 +153,13 @@ export default function ActiveServiceScreen() {
         const res = await fetch(url.toString(), {
           headers: { "Cache-Control": "no-cache", "Pragma": "no-cache" },
         });
-        if (!res.ok) return;
+        console.log(`[DRIVER POLL] status=${res.status} ok=${res.ok} id=${activeRequest.id}`);
+        if (!res.ok) {
+          console.log(`[DRIVER POLL] non-ok response, skipping`);
+          return;
+        }
         const job = await res.json();
+        console.log(`[DRIVER POLL] server status=${job.status} local status=${activeRequest.status}`);
 
         if (job.status === "cancelled") {
           if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
@@ -165,6 +170,7 @@ export default function ActiveServiceScreen() {
 
         const serverIdx = STATUS_ORDER.indexOf(job.status as ServiceStatus);
         const localIdx = STATUS_ORDER.indexOf(activeRequest.status);
+        console.log(`[DRIVER POLL] serverIdx=${serverIdx} localIdx=${localIdx}`);
 
         if (serverIdx > localIdx || (job.provider && !activeRequest.provider)) {
           const newStatus = job.status as ServiceStatus;

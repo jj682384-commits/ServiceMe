@@ -346,11 +346,13 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
 
   app.patch("/api/jobs/:id/accept", (req: Request, res: Response) => {
     const job = jobStore.get(req.params.id);
+    console.log(`[ACCEPT] job=${req.params.id} found=${!!job} status=${job?.status}`);
     if (!job) return res.status(404).json({ error: "Job not found" });
     if (job.status !== "pending") return res.status(409).json({ error: "Job already taken" });
     job.status = "accepted";
     job.provider = req.body.provider ?? null;
     job.eta = req.body.eta ?? 8;
+    console.log(`[ACCEPT] updated to accepted, provider=${JSON.stringify(job.provider)}`);
     res.json(job);
   });
 

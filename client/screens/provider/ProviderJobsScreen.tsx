@@ -63,12 +63,15 @@ function JobCard({ job }: { job: ServiceRequest }) {
     };
     try {
       const url = new URL(`/api/jobs/${job.id}/accept`, getApiUrl());
-      await fetch(url.toString(), {
+      console.log(`[PROVIDER ACCEPT] PATCH ${url.toString()}`);
+      const resp = await fetch(url.toString(), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ provider: currentProvider, eta: 8 }),
       });
-    } catch {
+      console.log(`[PROVIDER ACCEPT] response status=${resp.status}`);
+    } catch (e) {
+      console.log(`[PROVIDER ACCEPT] fetch error: ${e}`);
     }
     updateHistoryEntry(job.id, {
       status: "accepted",
