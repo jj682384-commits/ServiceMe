@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { View, StyleSheet, TextInput, Pressable, Alert, Platform, ScrollView } from "react-native";
+import { View, StyleSheet, TextInput, Pressable, Alert, Platform, ScrollView, Keyboard } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, CommonActions, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -90,6 +90,9 @@ function InputField({
           secureTextEntry={secureTextEntry && !showPassword}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
+          returnKeyType={multiline ? "default" : "done"}
+          onSubmitEditing={multiline ? undefined : () => Keyboard.dismiss()}
+          blurOnSubmit={!multiline}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           multiline={multiline}

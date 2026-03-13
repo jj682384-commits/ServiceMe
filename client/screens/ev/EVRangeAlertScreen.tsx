@@ -8,6 +8,7 @@ import {
   Alert,
   Switch,
   Platform,
+  Keyboard,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
@@ -189,6 +190,9 @@ export default function EVRangeAlertScreen() {
               const num = parseInt(text, 10);
               if (num > 0 && num < 500) setRangeThreshold(num);
             }}
+            returnKeyType="done"
+            onSubmitEditing={() => Keyboard.dismiss()}
+            blurOnSubmit
           />
           <Animated.Text style={[styles.customUnit, { color: EV.whiteDim }]}>miles</Animated.Text>
         </View>

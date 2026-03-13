@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, StyleSheet, ScrollView, Pressable, Alert, TextInput } from "react-native";
+import { View, StyleSheet, ScrollView, Pressable, Alert, TextInput, Keyboard } from "react-native";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
@@ -200,6 +200,9 @@ export default function PaymentMethodsScreen() {
               placeholder="Full name on card"
               placeholderTextColor={theme.textSecondary}
               autoCapitalize="words"
+              returnKeyType="done"
+              onSubmitEditing={() => Keyboard.dismiss()}
+              blurOnSubmit
             />
 
             <ThemedText type="small" style={[styles.inputLabel, { color: theme.textSecondary }]}>
@@ -214,6 +217,9 @@ export default function PaymentMethodsScreen() {
               keyboardType="number-pad"
               maxLength={19}
               secureTextEntry
+              returnKeyType="done"
+              onSubmitEditing={() => Keyboard.dismiss()}
+              blurOnSubmit
             />
 
             <View style={styles.formRow}>
@@ -229,6 +235,9 @@ export default function PaymentMethodsScreen() {
                   placeholderTextColor={theme.textSecondary}
                   keyboardType="number-pad"
                   maxLength={5}
+                  returnKeyType="done"
+                  onSubmitEditing={() => Keyboard.dismiss()}
+                  blurOnSubmit
                 />
               </View>
               <View style={{ flex: 1 }}>
@@ -243,6 +252,9 @@ export default function PaymentMethodsScreen() {
                   placeholderTextColor={theme.textSecondary}
                   keyboardType="number-pad"
                   maxLength={10}
+                  returnKeyType="done"
+                  onSubmitEditing={() => Keyboard.dismiss()}
+                  blurOnSubmit
                 />
               </View>
             </View>

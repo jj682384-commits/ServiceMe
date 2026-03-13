@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, StyleSheet, Pressable, TextInput, Alert, ActivityIndicator } from "react-native";
+import { View, StyleSheet, Pressable, TextInput, Alert, ActivityIndicator, Keyboard } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Feather } from "@expo/vector-icons";
@@ -76,6 +76,9 @@ function InputField({
           placeholderTextColor={theme.textSecondary}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
+          returnKeyType="done"
+          onSubmitEditing={() => Keyboard.dismiss()}
+          blurOnSubmit
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
         />
@@ -408,6 +411,9 @@ export default function EditProfileScreen() {
                     placeholder="e.g., Jane Doe"
                     placeholderTextColor={theme.textSecondary}
                     autoCapitalize="words"
+                    returnKeyType="done"
+                    onSubmitEditing={() => Keyboard.dismiss()}
+                    blurOnSubmit
                   />
                 </View>
 
@@ -421,6 +427,9 @@ export default function EditProfileScreen() {
                     placeholder="+1 555-000-0000"
                     placeholderTextColor={theme.textSecondary}
                     keyboardType="phone-pad"
+                    returnKeyType="done"
+                    onSubmitEditing={() => Keyboard.dismiss()}
+                    blurOnSubmit
                   />
                 </View>
 
@@ -434,6 +443,9 @@ export default function EditProfileScreen() {
                     placeholder="e.g., Spouse, Parent, Friend"
                     placeholderTextColor={theme.textSecondary}
                     autoCapitalize="words"
+                    returnKeyType="done"
+                    onSubmitEditing={() => Keyboard.dismiss()}
+                    blurOnSubmit
                   />
                 </View>
 

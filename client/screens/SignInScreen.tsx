@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, StyleSheet, TextInput, Pressable, Alert, Platform, Image } from "react-native";
+import { View, StyleSheet, TextInput, Pressable, Alert, Platform, Image, Keyboard } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, CommonActions } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -53,6 +53,9 @@ function InputField({
           secureTextEntry={secureTextEntry && !showPassword}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
+          returnKeyType="done"
+          onSubmitEditing={() => Keyboard.dismiss()}
+          blurOnSubmit
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
         />
