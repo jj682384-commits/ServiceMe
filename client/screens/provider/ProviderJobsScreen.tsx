@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, FlatList, Pressable, Alert } from "react-native";
+import { View, StyleSheet, FlatList, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
@@ -50,43 +50,36 @@ function JobCard({ job }: { job: ServiceRequest }) {
     return `${Math.floor(minutes / 60)}h ago`;
   };
 
-  const handleAccept = () => {
-    Alert.alert(
-      "Accept Job",
-      `Accept ${serviceTypeLabels[job.serviceType]} request from ${job.driver?.name ?? "Driver"}?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Accept",
-          onPress: async () => {
-            const acceptedJob: ServiceRequest = {
-              ...job,
-              status: "accepted",
-              provider: currentProvider ?? undefined,
-              eta: 8,
-            };
-            try {
-              const url = new URL(`/api/jobs/${job.id}/accept`, getApiUrl());
-              await fetch(url.toString(), {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ provider: currentProvider, eta: 8 }),
-              });
-            } catch {
-            }
-            updateHistoryEntry(job.id, {
-              status: "accepted",
-              provider: currentProvider ?? undefined,
-            });
-            removePendingJob(job.id);
-            addToHistory(acceptedJob);
-            setActiveRequest(acceptedJob);
-            queryClient.invalidateQueries({ queryKey: ["/api/jobs/pending"] });
-            navigation.navigate("ActiveService");
-          },
-        },
-      ]
-    );
+  const [accepting, setAccepting] = React.useState(false);
+
+  const handleAccept = async () => {
+    if (accepting) return;
+    setAccepting(true);
+    const acceptedJob: ServiceRequest = {
+      ...job,
+      status: "accepted",
+      provider: currentProvider ?? undefined,
+      eta: 8,
+    };
+    try {
+      const url = new URL(`/api/jobs/${job.id}/accept`, getApiUrl());
+      await fetch(url.toString(), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider: currentProvider, eta: 8 }),
+      });
+    } catch {
+    }
+    updateHistoryEntry(job.id, {
+      status: "accepted",
+      provider: currentProvider ?? undefined,
+    });
+    removePendingJob(job.id);
+    addToHistory(acceptedJob);
+    setActiveRequest(acceptedJob);
+    queryClient.invalidateQueries({ queryKey: ["/api/jobs/pending"] });
+    navigation.navigate("ActiveService");
+    setAccepting(false);
   };
 
   return (
@@ -141,13 +134,14 @@ function JobCard({ job }: { job: ServiceRequest }) {
 
       <Pressable
         onPress={handleAccept}
+        disabled={accepting}
         style={({ pressed }) => [
           styles.acceptButton,
-          { backgroundColor: theme.success, opacity: pressed ? 0.8 : 1 },
+          { backgroundColor: accepting ? theme.textSecondary : theme.success, opacity: pressed ? 0.8 : 1 },
         ]}
       >
         <ThemedText type="body" style={{ color: "#FFFFFF", fontWeight: "600" }}>
-          Accept Job
+          {accepting ? "Accepting..." : "Accept Job"}
         </ThemedText>
       </Pressable>
     </View>
