@@ -44,6 +44,7 @@ The application uses Drizzle ORM with a PostgreSQL dialect for database interact
 - **TanStack React Query**: Async state management
 - **expo-notifications**: Push notifications
 - **react-native-purchases**: RevenueCat SDK for subscriptions
+- **react-native-svg**: SVG rendering for constellation background animation
 
 ### Backend
 - **Express**: Web server

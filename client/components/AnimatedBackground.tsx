@@ -1,184 +1,27 @@
-import React, { useEffect, useRef, useState, useMemo } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { View, StyleSheet, Dimensions } from "react-native";
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withSequence,
-  withTiming,
-  Easing,
-  interpolate,
-  SharedValue,
-} from "react-native-reanimated";
-import { LinearGradient } from "expo-linear-gradient";
+import Svg, { Circle, Line, Defs, RadialGradient, Stop } from "react-native-svg";
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
-const MAX_RING_SIZE = SCREEN_WIDTH * 0.78;
-const RING_CYCLE = 3600;
+const { width: W, height: H } = Dimensions.get("window");
 
-interface RibbonConfig {
-  colors: [string, string];
-  yPosition: number;
-  height: number;
-  driftY: number;
-  driftX: number;
-  duration: number;
-  delay: number;
-  opacityRange: [number, number];
-}
+const PARTICLE_COUNT = 22;
+const CONNECT_DISTANCE = 140;
+const FPS_INTERVAL = 33;
 
-const BASE_RIBBON_CONFIGS: RibbonConfig[] = [
-  { colors: ["#00D9FF", "#0088CC"], yPosition: 0.10, height: 110, driftY: 38, driftX: 22, duration: 7200, delay: 0,    opacityRange: [0.10, 0.28] },
-  { colors: ["#FF6B35", "#FF3D00"], yPosition: 0.26, height: 85,  driftY: 52, driftX: 18, duration: 9400, delay: 600,  opacityRange: [0.08, 0.22] },
-  { colors: ["#7B2FFF", "#4800FF"], yPosition: 0.43, height: 130, driftY: 44, driftX: 30, duration: 8100, delay: 1400, opacityRange: [0.09, 0.24] },
-  { colors: ["#FF6B35", "#FF8C5A"], yPosition: 0.58, height: 90,  driftY: 36, driftX: 16, duration: 10200, delay: 400, opacityRange: [0.08, 0.20] },
-  { colors: ["#00D9FF", "#00FFD4"], yPosition: 0.73, height: 105, driftY: 48, driftX: 25, duration: 8800, delay: 1100, opacityRange: [0.09, 0.22] },
-  { colors: ["#7B2FFF", "#00D9FF"], yPosition: 0.88, height: 75,  driftY: 30, driftX: 14, duration: 7600, delay: 900,  opacityRange: [0.07, 0.18] },
-];
-
-function AuroraRibbon({ config }: { config: RibbonConfig }) {
-  const translateY = useSharedValue(0);
-  const translateX = useSharedValue(0);
-  const opacity = useSharedValue(config.opacityRange[0]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      translateY.value = withRepeat(
-        withSequence(
-          withTiming(config.driftY, { duration: config.duration, easing: Easing.inOut(Easing.sin) }),
-          withTiming(-config.driftY, { duration: config.duration, easing: Easing.inOut(Easing.sin) })
-        ),
-        -1,
-        false
-      );
-      translateX.value = withRepeat(
-        withSequence(
-          withTiming(config.driftX, { duration: config.duration * 1.4, easing: Easing.inOut(Easing.sin) }),
-          withTiming(-config.driftX, { duration: config.duration * 1.4, easing: Easing.inOut(Easing.sin) })
-        ),
-        -1,
-        false
-      );
-      opacity.value = withRepeat(
-        withSequence(
-          withTiming(config.opacityRange[1], { duration: config.duration * 0.65, easing: Easing.inOut(Easing.sin) }),
-          withTiming(config.opacityRange[0], { duration: config.duration * 0.65, easing: Easing.inOut(Easing.sin) })
-        ),
-        -1,
-        false
-      );
-    }, config.delay);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const animStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: translateX.value }, { translateY: translateY.value }],
-    opacity: opacity.value,
-  }));
-
-  return (
-    <Animated.View
-      style={[
-        {
-          position: "absolute",
-          left: -SCREEN_WIDTH * 0.12,
-          top: config.yPosition * SCREEN_HEIGHT - config.height / 2,
-          width: SCREEN_WIDTH * 1.24,
-          height: config.height,
-        },
-        animStyle,
-      ]}
-    >
-      <LinearGradient
-        colors={["transparent", config.colors[0], config.colors[1], config.colors[0], "transparent"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 1 }}
-        style={{ flex: 1 }}
-      />
-    </Animated.View>
-  );
-}
-
-function PulsingRing({ delay, color }: { delay: number; color: string }) {
-  const scale = useSharedValue(0.04);
-  const opacity = useSharedValue(0);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      scale.value = withRepeat(
-        withSequence(
-          withTiming(0.04, { duration: 0 }),
-          withTiming(1, { duration: RING_CYCLE, easing: Easing.out(Easing.cubic) })
-        ),
-        -1,
-        false
-      );
-      opacity.value = withRepeat(
-        withSequence(
-          withTiming(0.32, { duration: 180 }),
-          withTiming(0, { duration: RING_CYCLE - 180, easing: Easing.out(Easing.quad) })
-        ),
-        -1,
-        false
-      );
-    }, delay);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const animStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: opacity.value,
-  }));
-
-  return (
-    <Animated.View
-      style={[
-        {
-          width: MAX_RING_SIZE,
-          height: MAX_RING_SIZE,
-          borderRadius: MAX_RING_SIZE / 2,
-          borderWidth: 1.5,
-          borderColor: color,
-          position: "absolute",
-        },
-        animStyle,
-      ]}
-    />
-  );
-}
-
-function PulsingRings({ color }: { color: string }) {
-  const interval = Math.round(RING_CYCLE / 3);
-  return (
-    <View style={styles.ringsContainer}>
-      <PulsingRing delay={0} color={color} />
-      <PulsingRing delay={interval} color={color} />
-      <PulsingRing delay={interval * 2} color={color} />
-    </View>
-  );
-}
-
-function RibbonLayer({ configs, layerOpacity, ringColor }: {
-  configs: RibbonConfig[];
-  layerOpacity: SharedValue<number>;
-  ringColor: string;
-}) {
-  const animStyle = useAnimatedStyle(() => ({
-    opacity: layerOpacity.value,
-  }));
-
-  return (
-    <Animated.View style={[StyleSheet.absoluteFillObject, animStyle]}>
-      <PulsingRings color={ringColor} />
-      {configs.map((config, index) => (
-        <AuroraRibbon key={`${index}-${config.colors.join()}`} config={config} />
-      ))}
-    </Animated.View>
-  );
-}
+const DEFAULT_COLORS = ["#00D9FF", "#FF6B35", "#7B2FFF", "#00FFD4", "#FF6B35", "#0088CC"];
 
 export const DARK_BG = "#060918";
 export const LIGHT_BG = "#EFF6FF";
+
+interface Particle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  r: number;
+  opacity: number;
+  colorIndex: number;
+}
 
 interface AnimatedBackgroundProps {
   customColors?: string[][];
@@ -187,73 +30,133 @@ interface AnimatedBackgroundProps {
   isDark?: boolean;
 }
 
+function initParticles(): Particle[] {
+  return Array.from({ length: PARTICLE_COUNT }, (_, i) => {
+    const speed = 0.28 + Math.random() * 0.34;
+    const angle = Math.random() * Math.PI * 2;
+    return {
+      x: Math.random() * W,
+      y: Math.random() * H,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      r: 1.4 + Math.random() * 2.4,
+      opacity: 0.45 + Math.random() * 0.5,
+      colorIndex: i % DEFAULT_COLORS.length,
+    };
+  });
+}
+
+function stepParticles(prev: Particle[]): Particle[] {
+  return prev.map(p => {
+    let x = p.x + p.vx;
+    let y = p.y + p.vy;
+    if (x < -12) x = W + 12;
+    else if (x > W + 12) x = -12;
+    if (y < -12) y = H + 12;
+    else if (y > H + 12) y = -12;
+    return { ...p, x, y };
+  });
+}
+
 export default function AnimatedBackground({
   customColors,
   opacityBoost = 1,
-  flashColor = "#FFFFFF",
   isDark = true,
 }: AnimatedBackgroundProps) {
-  const colorsKey = customColors ? customColors.map(c => c.join()).join("|") : "default";
-  const [activeLayer, setActiveLayer] = useState<"a" | "b">("a");
-  const [layerAColors, setLayerAColors] = useState(customColors);
-  const [layerABoost, setLayerABoost] = useState(opacityBoost);
-  const [layerBColors, setLayerBColors] = useState(customColors);
-  const [layerBBoost, setLayerBBoost] = useState(opacityBoost);
-  const layerAOpacity = useSharedValue(1);
-  const layerBOpacity = useSharedValue(0);
-  const prevColorsRef = useRef(colorsKey);
-  const isFirstRender = useRef(true);
+  const [particles, setParticles] = useState<Particle[]>(initParticles);
+  const ref = useRef<Particle[]>(particles);
 
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
+    const id = setInterval(() => {
+      ref.current = stepParticles(ref.current);
+      setParticles([...ref.current]);
+    }, FPS_INTERVAL);
+    return () => clearInterval(id);
+  }, []);
+
+  const palette: string[] = customColors
+    ? customColors.map(pair => pair[0])
+    : DEFAULT_COLORS;
+
+  const primaryColor = palette[0];
+  const opacityScale = (isDark ? 1 : 0.55) * Math.min(opacityBoost, 2.5);
+
+  const connections: { x1: number; y1: number; x2: number; y2: number; alpha: number }[] = [];
+  for (let i = 0; i < particles.length; i++) {
+    for (let j = i + 1; j < particles.length; j++) {
+      const dx = particles[i].x - particles[j].x;
+      const dy = particles[i].y - particles[j].y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < CONNECT_DISTANCE) {
+        connections.push({
+          x1: particles[i].x,
+          y1: particles[i].y,
+          x2: particles[j].x,
+          y2: particles[j].y,
+          alpha: (1 - dist / CONNECT_DISTANCE) * 0.22 * opacityScale,
+        });
+      }
     }
-    if (prevColorsRef.current === colorsKey) return;
-    prevColorsRef.current = colorsKey;
-
-    if (activeLayer === "a") {
-      setLayerBColors(customColors);
-      setLayerBBoost(opacityBoost);
-      layerBOpacity.value = 0;
-      layerBOpacity.value = withTiming(1, { duration: 800, easing: Easing.inOut(Easing.quad) });
-      layerAOpacity.value = withTiming(0, { duration: 800, easing: Easing.inOut(Easing.quad) });
-      setTimeout(() => setActiveLayer("b"), 850);
-    } else {
-      setLayerAColors(customColors);
-      setLayerABoost(opacityBoost);
-      layerAOpacity.value = 0;
-      layerAOpacity.value = withTiming(1, { duration: 800, easing: Easing.inOut(Easing.quad) });
-      layerBOpacity.value = withTiming(0, { duration: 800, easing: Easing.inOut(Easing.quad) });
-      setTimeout(() => setActiveLayer("a"), 850);
-    }
-  }, [colorsKey]);
-
-  const buildConfigs = (colors: string[][] | undefined, boost: number): RibbonConfig[] => {
-    if (!colors) return BASE_RIBBON_CONFIGS;
-    return BASE_RIBBON_CONFIGS.map((config, i) => {
-      const pair = colors[i % colors.length];
-      return {
-        ...config,
-        colors: [pair[0], pair[1] ?? pair[0]] as [string, string],
-        opacityRange: [
-          Math.min(config.opacityRange[0] * boost, 0.5),
-          Math.min(config.opacityRange[1] * boost, 0.7),
-        ] as [number, number],
-      };
-    });
-  };
-
-  const configsA = useMemo(() => buildConfigs(layerAColors, layerABoost), [layerAColors, layerABoost]);
-  const configsB = useMemo(() => buildConfigs(layerBColors, layerBBoost), [layerBColors, layerBBoost]);
-
-  const ringColorA = layerAColors ? layerAColors[0][0] : "#00D9FF";
-  const ringColorB = layerBColors ? layerBColors[0][0] : "#00D9FF";
+  }
 
   return (
     <View style={[styles.container, { pointerEvents: "none" }]}>
-      <RibbonLayer configs={configsA} layerOpacity={layerAOpacity} ringColor={ringColorA} />
-      <RibbonLayer configs={configsB} layerOpacity={layerBOpacity} ringColor={ringColorB} />
+      <Svg width={W} height={H} style={StyleSheet.absoluteFillObject}>
+        <Defs>
+          {palette.map((color, i) => (
+            <RadialGradient
+              key={`glow-${i}`}
+              id={`glow${i}`}
+              cx="50%"
+              cy="50%"
+              r="50%"
+              fx="50%"
+              fy="50%"
+            >
+              <Stop offset="0%" stopColor={color} stopOpacity="1" />
+              <Stop offset="60%" stopColor={color} stopOpacity="0.4" />
+              <Stop offset="100%" stopColor={color} stopOpacity="0" />
+            </RadialGradient>
+          ))}
+        </Defs>
+
+        {connections.map((c, i) => (
+          <Line
+            key={`l${i}`}
+            x1={c.x1}
+            y1={c.y1}
+            x2={c.x2}
+            y2={c.y2}
+            stroke={primaryColor}
+            strokeWidth={0.8}
+            strokeOpacity={c.alpha}
+          />
+        ))}
+
+        {particles.map((p, i) => {
+          const glowR = p.r * 4.5;
+          const dotOpacity = p.opacity * opacityScale;
+          const colorIdx = p.colorIndex % palette.length;
+          return (
+            <React.Fragment key={`p${i}`}>
+              <Circle
+                cx={p.x}
+                cy={p.y}
+                r={glowR}
+                fill={`url(#glow${colorIdx})`}
+                fillOpacity={dotOpacity * 0.35}
+              />
+              <Circle
+                cx={p.x}
+                cy={p.y}
+                r={p.r}
+                fill={palette[colorIdx]}
+                fillOpacity={dotOpacity}
+              />
+            </React.Fragment>
+          );
+        })}
+      </Svg>
     </View>
   );
 }
@@ -262,10 +165,5 @@ const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
     overflow: "hidden",
-  },
-  ringsContainer: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: "center",
-    justifyContent: "center",
   },
 });
