@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import * as Location from "expo-location";
+import * as SMS from "expo-sms";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -24,7 +25,7 @@ type EmergencyPhase = "activating" | "active" | "dispatching" | "dispatched";
 export default function EmergencyModeScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
-  const { emergencyContacts, userLocation, setUserLocation } = useApp();
+  const { emergencyContacts, userLocation, setUserLocation, currentDriver, authUser } = useApp();
   const navigation = useNavigation();
 
   const [phase, setPhase] = useState<EmergencyPhase>("activating");
@@ -83,6 +84,31 @@ export default function EmergencyModeScreen() {
     }
   }, []);
 
+  const sendSOSSMS = async (location: { latitude: number; longitude: number } | null) => {
+    if (Platform.OS === "web") return;
+    if (emergencyContacts.length === 0) return;
+
+    try {
+      const isAvailable = await SMS.isAvailableAsync();
+      if (!isAvailable) return;
+
+      const driverName = currentDriver?.name || authUser?.name || "Someone";
+      const phoneNumbers = emergencyContacts.map((c) => c.phone);
+
+      const locationText = location
+        ? `Location: ${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}\nMaps: https://maps.google.com/?q=${location.latitude},${location.longitude}`
+        : "Location not available";
+
+      const message =
+        `[SOS ALERT] ${driverName} has activated Emergency Mode on ServiceMe and needs help.\n\n` +
+        `${locationText}\n\n` +
+        `Please check on them immediately or call 911 if needed.`;
+
+      await SMS.sendSMSAsync(phoneNumbers, message);
+    } catch {
+    }
+  };
+
   useEffect(() => {
     if (Platform.OS !== "web") {
       Vibration.vibrate([0, 200, 100, 200]);
@@ -93,6 +119,7 @@ export default function EmergencyModeScreen() {
     const phaseTimer3 = setTimeout(() => {
       setPhase("dispatched");
       notifySOSActivated();
+      sendSOSSMS(userLocation);
     }, 7000);
 
     return () => {
@@ -224,7 +251,7 @@ export default function EmergencyModeScreen() {
                   {contact.name}
                 </ThemedText>
                 <ThemedText type="small" style={styles.contactStatus}>
-                  {phase === "activating" ? "Notifying..." : "Notified"}
+                  {phase === "activating" ? "Notifying..." : phase === "dispatched" ? "SMS Sent" : "Notifying..."}
                 </ThemedText>
               </View>
             ))

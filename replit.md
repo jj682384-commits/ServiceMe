@@ -56,3 +56,30 @@ The application uses Drizzle ORM with a PostgreSQL dialect for database interact
 - **RevenueCat**: For in-app subscriptions and entitlement management.
 - **OpenAI**: Integrated via Replit AI for smart diagnostics (e.g., `gpt-4o`).
 - **Google Sign-In**: For user authentication.
+- **expo-sms**: Native SMS composer for SOS emergency contact alerts.
+
+## Implementation Notes
+
+### SOS SMS
+- Uses `expo-sms@~14.0.8` (device native SMS composer — no external account needed)
+- Fires at "dispatched" phase (~7s) in `EmergencyModeScreen.tsx`
+- Sends driver name, GPS coords, and Google Maps link to all saved emergency contacts
+- Silently skipped on web and when no contacts are saved
+- **Twilio upgrade pending**: Account suspended on signup; reactivation email sent. Once reinstated, store `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER` as secrets and replace expo-sms with a `/api/sos/sms` server endpoint for silent background sending.
+
+### Live Chat (WebSockets)
+- `ws` package on server; native `WebSocket` API on client
+- `server/routes.ts` hosts the WebSocket server at `/ws` on the same HTTP server as Express
+- `client/hooks/useChat.ts` manages connection, history, reconnect, and message state
+- Messages stored in memory per `conversationId` (Map), max 200 per conversation
+- Auto-reply simulation fires when no peer is in the same room (2–4s delay)
+
+### Google Sign-In
+- Web-only via `GoogleSignInButton` component (returns null on native to avoid crashes)
+- Uses only `webClientId` from `EXPO_PUBLIC_GOOGLE_CLIENT_ID`
+
+### Push Notifications
+- `expo-notifications@~0.32.16`; guarded with `Platform.OS !== "web"`
+- Android channels: `default` (cyan) and `emergency` (red)
+- Named helpers in `client/lib/notifications.ts`; hook in `client/hooks/usePushNotifications.ts`
+- Navigation on tap via `client/lib/navigationRef.ts`
