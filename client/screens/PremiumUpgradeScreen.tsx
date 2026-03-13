@@ -10,6 +10,7 @@ import { PurchasesPackage } from "react-native-purchases";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
+import { ScreenDecoration } from "@/components/ScreenDecoration";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/context/AppContext";
 import { useSubscription } from "@/lib/revenuecat";
@@ -122,6 +123,7 @@ export default function PremiumUpgradeScreen() {
 
   return (
     <ThemedView style={styles.container}>
+      <ScreenDecoration />
       <KeyboardAwareScrollViewCompat
         contentContainerStyle={{
           paddingTop: headerHeight + Spacing.lg,

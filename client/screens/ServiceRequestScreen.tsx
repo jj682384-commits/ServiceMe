@@ -15,6 +15,7 @@ import Animated, {
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
+import { ScreenDecoration } from "@/components/ScreenDecoration";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceType, ServiceRequest } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
@@ -249,6 +250,7 @@ export default function ServiceRequestScreen() {
 
   return (
     <ThemedView style={styles.container}>
+      <ScreenDecoration />
       <KeyboardAwareScrollViewCompat
         contentContainerStyle={[
           styles.scrollContent,

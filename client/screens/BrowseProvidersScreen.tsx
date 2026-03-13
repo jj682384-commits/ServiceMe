@@ -9,6 +9,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { VerificationBadge } from "@/components/VerificationBadge";
+import { ScreenDecoration } from "@/components/ScreenDecoration";
 import { ProviderTypeBadge } from "@/components/ProviderTypeBadge";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, Provider, ServiceType, BADGE_CONFIG, BadgeType, PREFERRED_THRESHOLD } from "@/context/AppContext";
@@ -205,6 +206,7 @@ export default function BrowseProvidersScreen() {
 
   return (
     <ThemedView style={styles.container}>
+      <ScreenDecoration />
       <View style={[styles.filtersContainer, { paddingTop: headerHeight + Spacing.sm }]}>
         <View style={styles.sortRow}>
           <ThemedText type="small" style={{ color: theme.textSecondary, marginRight: Spacing.sm }}>

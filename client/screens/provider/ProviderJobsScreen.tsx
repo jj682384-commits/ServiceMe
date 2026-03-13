@@ -9,6 +9,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
+import { ScreenDecoration } from "@/components/ScreenDecoration";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceType, ServiceRequest } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
@@ -190,6 +191,7 @@ export default function ProviderJobsScreen() {
 
   return (
     <ThemedView style={styles.container}>
+      <ScreenDecoration />
       <FlatList
         data={availableJobs}
         keyExtractor={(item) => item.id}

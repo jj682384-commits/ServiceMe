@@ -9,6 +9,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { GoogleMapView } from "@/components/GoogleMapView";
+import { ScreenDecoration } from "@/components/ScreenDecoration";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceStatus, ServiceType } from "@/context/AppContext";
 import { Spacing, BorderRadius, Shadows } from "@/constants/theme";
@@ -259,6 +260,7 @@ export default function ActiveServiceScreen() {
 
   return (
     <ThemedView style={styles.container}>
+      <ScreenDecoration />
       <View style={styles.mapPlaceholder}>
         <GoogleMapView
           latitude={(userLat + providerLat) / 2}

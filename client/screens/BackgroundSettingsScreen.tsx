@@ -22,8 +22,13 @@ function SchemePreview({ schemeKey, isSelected, onPress }: {
   isSelected: boolean;
   onPress: () => void;
 }) {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const scheme = BACKGROUND_SCHEMES[schemeKey];
+
+  const previewBg = isDark ? scheme.bgColor : scheme.bgColorLight;
+  const previewColors = isDark ? scheme.colors : scheme.colorsLight;
+  const previewOpacity = isDark ? scheme.opacityBoost : scheme.opacityBoostLight;
+  const cardBorder = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)";
 
   return (
     <Pressable
@@ -31,18 +36,19 @@ function SchemePreview({ schemeKey, isSelected, onPress }: {
       style={({ pressed }) => [
         styles.schemeCard,
         {
-          borderColor: isSelected ? theme.primary : "rgba(255,255,255,0.1)",
+          backgroundColor: isDark ? "rgba(20,25,45,0.75)" : "rgba(255,255,255,0.85)",
+          borderColor: isSelected ? theme.primary : cardBorder,
           borderWidth: isSelected ? 2 : 1,
           opacity: pressed ? 0.8 : 1,
           overflow: "hidden",
         },
       ]}
     >
-      <View style={[styles.schemePreviewBg, { backgroundColor: scheme.bgColor }]}>
-        {scheme.colors.slice(0, 4).map((colorPair, i) => (
+      <View style={[styles.schemePreviewBg, { backgroundColor: previewBg }]}>
+        {previewColors.slice(0, 4).map((colorPair, i) => (
           <LinearGradient
             key={i}
-            colors={colorPair}
+            colors={colorPair as [string, string]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={[
@@ -50,7 +56,7 @@ function SchemePreview({ schemeKey, isSelected, onPress }: {
               {
                 left: [4, 42, 16, 52][i],
                 top: [6, 20, 40, 8][i],
-                opacity: 0.5 * scheme.opacityBoost,
+                opacity: 0.55 * previewOpacity,
               },
             ]}
           />
