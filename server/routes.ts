@@ -359,6 +359,15 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
     res.json(job);
   });
 
+  app.patch("/api/jobs/:id/status", (req: Request, res: Response) => {
+    const job = jobStore.get(req.params.id);
+    if (!job) return res.status(404).json({ error: "Job not found" });
+    const { status } = req.body as { status: string };
+    if (!status) return res.status(400).json({ error: "status required" });
+    job.status = status as JobRecord["status"];
+    res.json(job);
+  });
+
   const httpServer = createServer(app);
 
   const wss = new WebSocketServer({ server: httpServer, path: "/ws" });

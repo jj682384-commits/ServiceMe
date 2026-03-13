@@ -51,6 +51,8 @@ const statusColors: Record<ServiceStatus, string> = {
   cancelled: "#DC2626",
 };
 
+const STATUS_ORDER: ServiceStatus[] = ["pending", "accepted", "en_route", "arrived", "in_progress", "completed", "cancelled"];
+
 function StatusTimeline({ currentStatus }: { currentStatus: ServiceStatus }) {
   const { theme } = useTheme();
   const statuses: ServiceStatus[] = ["accepted", "en_route", "arrived", "in_progress", "completed"];
@@ -134,7 +136,9 @@ export default function ActiveServiceScreen() {
   }, [activeRequest]);
 
   useEffect(() => {
-    if (!activeRequest || activeRequest.status !== "pending") {
+    if (!activeRequest) return;
+    const terminal = activeRequest.status === "completed" || activeRequest.status === "cancelled";
+    if (terminal) {
       if (pollRef.current) {
         clearInterval(pollRef.current);
         pollRef.current = null;
@@ -148,29 +152,29 @@ export default function ActiveServiceScreen() {
         const res = await fetch(url.toString());
         if (!res.ok) return;
         const job = await res.json();
-        if (job.status === "accepted" && job.provider) {
-          if (pollRef.current) {
-            clearInterval(pollRef.current);
-            pollRef.current = null;
-          }
-          setActiveRequest({
-            ...activeRequest,
-            status: "accepted",
-            provider: job.provider as Provider,
-            eta: job.eta ?? 8,
-          });
-          setEta(job.eta ?? 8);
-          updateHistoryEntry(activeRequest.id, {
-            status: "accepted",
-            provider: job.provider as Provider,
-          });
-        } else if (job.status === "cancelled") {
-          if (pollRef.current) {
-            clearInterval(pollRef.current);
-            pollRef.current = null;
-          }
+
+        if (job.status === "cancelled") {
+          if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
           setActiveRequest(null);
           navigation.goBack();
+          return;
+        }
+
+        const serverIdx = STATUS_ORDER.indexOf(job.status as ServiceStatus);
+        const localIdx = STATUS_ORDER.indexOf(activeRequest.status);
+
+        if (serverIdx > localIdx || (job.provider && !activeRequest.provider)) {
+          setActiveRequest({
+            ...activeRequest,
+            status: job.status as ServiceStatus,
+            provider: job.provider ? (job.provider as Provider) : activeRequest.provider,
+            eta: job.eta ?? activeRequest.eta,
+          });
+          setEta(job.eta ?? activeRequest.eta ?? 8);
+          updateHistoryEntry(activeRequest.id, {
+            status: job.status as ServiceStatus,
+            provider: job.provider ? (job.provider as Provider) : activeRequest.provider,
+          });
         }
       } catch {
       }
@@ -186,15 +190,6 @@ export default function ActiveServiceScreen() {
       }
     };
   }, [activeRequest?.id, activeRequest?.status]);
-
-  useEffect(() => {
-    if (activeRequest?.status === "accepted") {
-      const timer = setTimeout(() => {
-        setActiveRequest({ ...activeRequest, status: "en_route" });
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [activeRequest?.status]);
 
   useEffect(() => {
     if (!activeRequest) return;
@@ -279,30 +274,41 @@ export default function ActiveServiceScreen() {
     );
   }
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     setActiveRequest({ ...activeRequest, status: "completed" });
+    updateHistoryEntry(activeRequest.id, { status: "completed" });
+    try {
+      const url = new URL(`/api/jobs/${activeRequest.id}/status`, getApiUrl());
+      await fetch(url.toString(), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "completed" }),
+      });
+    } catch {
+    }
     if (userRole === "driver") {
       navigation.navigate("ServiceCompletion");
     } else {
-      Alert.alert(
-        "Service Completed",
-        "Great job! The service has been marked as complete. Payment will be processed automatically.",
-        [
-          {
-            text: "Done",
-            onPress: () => navigation.goBack(),
-          },
-        ]
-      );
+      navigation.goBack();
     }
   };
 
-  const handleAdvanceStatus = () => {
+  const handleAdvanceStatus = async () => {
     const statuses: ServiceStatus[] = ["accepted", "en_route", "arrived", "in_progress", "completed"];
     const currentIndex = statuses.indexOf(activeRequest.status);
     if (currentIndex < statuses.length - 1) {
       const nextStatus = statuses[currentIndex + 1];
       setActiveRequest({ ...activeRequest, status: nextStatus });
+      updateHistoryEntry(activeRequest.id, { status: nextStatus });
+      try {
+        const url = new URL(`/api/jobs/${activeRequest.id}/status`, getApiUrl());
+        await fetch(url.toString(), {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: nextStatus }),
+        });
+      } catch {
+      }
       if (nextStatus === "completed") {
         handleComplete();
       }
