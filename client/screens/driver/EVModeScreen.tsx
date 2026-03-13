@@ -7,6 +7,7 @@ import {
   Dimensions,
   Platform,
 } from "react-native";
+import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
@@ -276,7 +277,15 @@ function AnimatedGradientButton({ onPress, ev }: { onPress: () => void; ev: EVCo
   });
 
   return (
-    <Pressable onPress={onPress} style={styles.gateButton}>
+    <Pressable
+      onPress={() => {
+        if (Platform.OS !== "web") {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        }
+        onPress();
+      }}
+      style={styles.gateButton}
+    >
       <View style={[styles.gateButtonGradient, { overflow: "hidden" }]}>
         <Animated.View
           style={[
