@@ -68,7 +68,7 @@ function RoleCard({ icon, title, description, onPress, gradientColors, accentCol
 export default function RoleSelectionScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
-  const { setUserRole, setCurrentDriver, authUser } = useApp();
+  const { setUserRole, setCurrentDriver, setCurrentProvider, authUser } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const handleDriverSelect = () => {
@@ -85,7 +85,25 @@ export default function RoleSelectionScreen() {
   };
 
   const handleProviderSelect = () => {
-    navigation.navigate("ProviderTypeSelection");
+    setUserRole("provider");
+    setCurrentProvider({
+      id: authUser?.id || "p1",
+      name: authUser?.name || "Provider",
+      phone: authUser?.phone || "+1 555-0100",
+      email: authUser?.email || "provider@email.com",
+      rating: 4.8,
+      reviewCount: 47,
+      vehicleType: "service_van",
+      vehicleMake: "Ford",
+      vehicleModel: "Transit",
+      licensePlate: "SVC-001",
+      servicesOffered: ["jump_start", "flat_tire", "fuel", "lockout"],
+      isAvailable: false,
+      providerType: "independent",
+      verificationStatus: "verified",
+      badges: [{ type: "five_star" as const, label: "5-Star for 6 Months" }],
+    });
+    navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "ProviderTabs" }] }));
   };
 
   return (
