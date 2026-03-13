@@ -11,6 +11,8 @@ import Animated, {
   withSpring,
 } from "react-native-reanimated";
 import * as Location from "expo-location";
+import { useQuery } from "@tanstack/react-query";
+import { getApiUrl } from "@/lib/query-client";
 
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -119,12 +121,12 @@ function MechanicCard({ provider, onPress, isPreferred }: { provider: Provider; 
           <ThemedText type="small" style={{ color: theme.textSecondary, marginLeft: 2 }}>
             {provider.rating.toFixed(1)} ({provider.reviewCount})
           </ThemedText>
-          {provider.distance !== undefined ? (
+          {provider.distance != null ? (
             <>
               <View style={[styles.dot, { backgroundColor: theme.textSecondary }]} />
               <Feather name="navigation" size={12} color={theme.primary} />
               <ThemedText type="small" style={{ color: theme.primary, fontWeight: "600", marginLeft: 2 }}>
-                {provider.distance} mi
+                {typeof provider.distance === "number" ? provider.distance.toFixed(1) : provider.distance} mi
               </ThemedText>
             </>
           ) : null}
@@ -234,7 +236,7 @@ export default function DriverMapScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { theme } = useTheme();
-  const { activeRequest, setUserLocation, getProvidersWithDistance, userLocation, nearbyProviders, isPreferredProvider } = useApp();
+  const { activeRequest, setUserLocation, userLocation, isPreferredProvider, setNearbyProviders } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   
   const [permission, requestPermission] = Location.useForegroundPermissions();
@@ -283,10 +285,33 @@ export default function DriverMapScreen() {
     }
   }, [permission?.granted, setUserLocation]);
 
-  const providers = getProvidersWithDistance();
-  const filteredProviders = selectedFilter === "all" 
-    ? providers 
-    : providers.filter(p => p.servicesOffered.includes(selectedFilter));
+  const { data: apiProviders } = useQuery<Provider[]>({
+    queryKey: ["/api/providers/nearby", userLocation?.latitude, userLocation?.longitude],
+    queryFn: async () => {
+      const base = new URL("/api/providers/nearby", getApiUrl());
+      if (userLocation) {
+        base.searchParams.set("lat", String(userLocation.latitude));
+        base.searchParams.set("lng", String(userLocation.longitude));
+        base.searchParams.set("radius", "25");
+      }
+      const res = await fetch(base.toString());
+      if (!res.ok) throw new Error("Failed to fetch providers");
+      return res.json();
+    },
+    refetchInterval: 30000,
+    staleTime: 20000,
+  });
+
+  useEffect(() => {
+    if (apiProviders && apiProviders.length > 0) {
+      setNearbyProviders(apiProviders);
+    }
+  }, [apiProviders, setNearbyProviders]);
+
+  const providers = apiProviders ?? [];
+  const filteredProviders = selectedFilter === "all"
+    ? providers
+    : providers.filter((p) => p.servicesOffered.includes(selectedFilter as string));
 
   const handleOpenSettings = async () => {
     if (Platform.OS !== "web") {
@@ -351,14 +376,16 @@ export default function DriverMapScreen() {
   const isWeb = Platform.OS === "web";
   const hasPermission = isWeb || permission?.granted;
 
-  const providerMarkers = filteredProviders.map((p) => ({
-    id: p.id,
-    latitude: p.location.latitude,
-    longitude: p.location.longitude,
-    title: p.name,
-    description: `${p.rating.toFixed(1)}★ • ${p.distance ?? "?"} mi`,
-    color: isPreferredProvider(p.id) ? "#E91E63" : undefined,
-  }));
+  const providerMarkers = filteredProviders
+    .filter((p) => p.location != null)
+    .map((p) => ({
+      id: p.id,
+      latitude: p.location!.latitude,
+      longitude: p.location!.longitude,
+      title: p.name,
+      description: `${p.rating.toFixed(1)}★ • ${p.distance != null ? `${p.distance.toFixed(1)} mi` : "nearby"}`,
+      color: isPreferredProvider(p.id) ? "#E91E63" : undefined,
+    }));
 
   const mapCenter = userLocation ?? { latitude: 37.7849, longitude: -122.4094 };
 

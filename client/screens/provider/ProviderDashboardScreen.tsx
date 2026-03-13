@@ -10,6 +10,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useApp, BACKGROUND_SCHEMES } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { notifyNewJobRequest } from "@/lib/notifications";
+import { useProviderLocation, updateProviderAvailability, registerProviderOnServer } from "@/hooks/useProviderLocation";
 
 function StatCard({
   icon,
@@ -53,10 +54,19 @@ export default function ProviderDashboardScreen() {
 
   const jobRequestTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  useProviderLocation(currentProvider?.id ?? null, isAvailable);
+
+  React.useEffect(() => {
+    if (currentProvider) {
+      registerProviderOnServer(currentProvider);
+    }
+  }, [currentProvider?.id]);
+
   const handleAvailabilityChange = (value: boolean) => {
     setIsAvailable(value);
     if (currentProvider) {
       setCurrentProvider({ ...currentProvider, isAvailable: value });
+      updateProviderAvailability(currentProvider.id, value);
     }
     if (value) {
       if (jobRequestTimeout.current) clearTimeout(jobRequestTimeout.current);

@@ -3,6 +3,115 @@ import { createServer, type Server } from "node:http";
 import { WebSocketServer, WebSocket } from "ws";
 import OpenAI from "openai";
 
+interface ProviderBadge {
+  type: string;
+  label: string;
+}
+
+interface ProviderRecord {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  rating: number;
+  reviewCount: number;
+  vehicleType: "tow_truck" | "service_van" | "pickup";
+  vehicleMake: string;
+  vehicleModel: string;
+  licensePlate: string;
+  servicesOffered: string[];
+  isAvailable: boolean;
+  providerType: "shop" | "independent";
+  verificationStatus: string;
+  badges?: ProviderBadge[];
+  location: { latitude: number; longitude: number };
+  lastLocationUpdate?: string;
+}
+
+function calcDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 3959;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+const providerStore: ProviderRecord[] = [
+  {
+    id: "p1", name: "Mike's Towing", phone: "+1 555-0101", email: "mike@towing.com",
+    rating: 4.8, reviewCount: 156, vehicleType: "tow_truck", vehicleMake: "Ford",
+    vehicleModel: "F-550", licensePlate: "TOW-123",
+    servicesOffered: ["tow", "flat_tire", "jump_start", "lockout"],
+    isAvailable: true, providerType: "shop", verificationStatus: "verified",
+    badges: [{ type: "centurion", label: "100+ Successful Calls" }, { type: "veteran", label: "3+ Years Experience" }],
+    location: { latitude: 37.7849, longitude: -122.4094 },
+  },
+  {
+    id: "p2", name: "Quick Fix Auto", phone: "+1 555-0102", email: "quick@fixauto.com",
+    rating: 4.6, reviewCount: 89, vehicleType: "service_van", vehicleMake: "Mercedes",
+    vehicleModel: "Sprinter", licensePlate: "FIX-456",
+    servicesOffered: ["flat_tire", "jump_start", "fuel", "lockout"],
+    isAvailable: true, providerType: "shop", verificationStatus: "verified",
+    badges: [{ type: "speed_demon", label: "Fast Response" }],
+    location: { latitude: 37.7899, longitude: -122.4034 },
+  },
+  {
+    id: "p3", name: "Road Rescue", phone: "+1 555-0103", email: "help@roadrescue.com",
+    rating: 4.9, reviewCount: 234, vehicleType: "pickup", vehicleMake: "Chevrolet",
+    vehicleModel: "Silverado", licensePlate: "RES-789",
+    servicesOffered: ["flat_tire", "jump_start", "fuel", "other"],
+    isAvailable: true, providerType: "independent", verificationStatus: "verified",
+    badges: [{ type: "five_star", label: "5-Star for 6 Months" }, { type: "centurion", label: "100+ Successful Calls" }, { type: "night_owl", label: "Night Shift Specialist" }],
+    location: { latitude: 37.7799, longitude: -122.4194 },
+  },
+  {
+    id: "p4", name: "Bay Area Roadside", phone: "+1 555-0104", email: "bay@roadside.com",
+    rating: 4.5, reviewCount: 67, vehicleType: "service_van", vehicleMake: "Ford",
+    vehicleModel: "Transit", licensePlate: "BAY-321",
+    servicesOffered: ["flat_tire", "jump_start", "fuel", "lockout", "obd_diagnostic"],
+    isAvailable: true, providerType: "shop", verificationStatus: "verified",
+    badges: [{ type: "veteran", label: "3+ Years Experience" }],
+    location: { latitude: 37.7920, longitude: -122.4150 },
+  },
+  {
+    id: "p5", name: "Carlos H.", phone: "+1 555-0105", email: "carlos@helpers.com",
+    rating: 4.7, reviewCount: 42, vehicleType: "pickup", vehicleMake: "Toyota",
+    vehicleModel: "Tacoma", licensePlate: "HLP-555",
+    servicesOffered: ["flat_tire", "jump_start", "fuel"],
+    isAvailable: true, providerType: "independent", verificationStatus: "verified",
+    badges: [{ type: "speed_demon", label: "Fast Response" }, { type: "night_owl", label: "Night Shift Specialist" }],
+    location: { latitude: 37.7780, longitude: -122.4050 },
+  },
+  {
+    id: "p6", name: "Golden Gate Towing", phone: "+1 555-0106", email: "info@ggtowing.com",
+    rating: 4.4, reviewCount: 198, vehicleType: "tow_truck", vehicleMake: "International",
+    vehicleModel: "4300", licensePlate: "GGT-888",
+    servicesOffered: ["tow", "flat_tire", "lockout"],
+    isAvailable: true, providerType: "shop", verificationStatus: "verified",
+    badges: [{ type: "centurion", label: "100+ Successful Calls" }],
+    location: { latitude: 37.7950, longitude: -122.4200 },
+  },
+  {
+    id: "p7", name: "Sarah M.", phone: "+1 555-0107", email: "sarah@quickhelp.com",
+    rating: 5.0, reviewCount: 28, vehicleType: "pickup", vehicleMake: "Honda",
+    vehicleModel: "Ridgeline", licensePlate: "SRH-777",
+    servicesOffered: ["flat_tire", "jump_start", "lockout", "other"],
+    isAvailable: true, providerType: "independent", verificationStatus: "verified",
+    badges: [{ type: "five_star", label: "5-Star for 6 Months" }],
+    location: { latitude: 37.7830, longitude: -122.3990 },
+  },
+  {
+    id: "p8", name: "AutoCare Express", phone: "+1 555-0108", email: "service@autocare.com",
+    rating: 4.3, reviewCount: 312, vehicleType: "service_van", vehicleMake: "Ram",
+    vehicleModel: "ProMaster", licensePlate: "ACE-999",
+    servicesOffered: ["flat_tire", "jump_start", "fuel", "lockout", "obd_diagnostic", "other"],
+    isAvailable: true, providerType: "shop", verificationStatus: "verified",
+    badges: [{ type: "centurion", label: "100+ Successful Calls" }, { type: "veteran", label: "3+ Years Experience" }, { type: "speed_demon", label: "Fast Response" }],
+    location: { latitude: 37.7870, longitude: -122.4250 },
+  },
+];
+
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
@@ -123,6 +232,57 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
     const { conversationId } = req.params;
     const history = messageHistory.get(conversationId) || [];
     res.json({ messages: history });
+  });
+
+  app.get("/api/providers/nearby", (req: Request, res: Response) => {
+    const { lat, lng, radius } = req.query as Record<string, string>;
+    const maxRadius = parseFloat(radius || "25");
+    let result = providerStore.filter((p) => p.isAvailable);
+    if (lat && lng) {
+      const userLat = parseFloat(lat);
+      const userLng = parseFloat(lng);
+      result = result
+        .map((p) => ({ ...p, distance: calcDistance(userLat, userLng, p.location.latitude, p.location.longitude) }))
+        .filter((p) => p.distance <= maxRadius)
+        .sort((a, b) => (a.distance ?? 0) - (b.distance ?? 0));
+    }
+    res.json(result);
+  });
+
+  app.post("/api/providers/register", (req: Request, res: Response) => {
+    const data = req.body as ProviderRecord;
+    if (!data.id || !data.name) return res.status(400).json({ error: "id and name required" });
+    const existing = providerStore.find((p) => p.id === data.id);
+    if (existing) {
+      Object.assign(existing, data, { lastLocationUpdate: new Date().toISOString() });
+      return res.json(existing);
+    }
+    const provider: ProviderRecord = { ...data, lastLocationUpdate: new Date().toISOString() };
+    providerStore.push(provider);
+    res.json(provider);
+  });
+
+  app.patch("/api/providers/:id/location", (req: Request, res: Response) => {
+    const { latitude, longitude } = req.body;
+    if (typeof latitude !== "number" || typeof longitude !== "number") {
+      return res.status(400).json({ error: "latitude and longitude required" });
+    }
+    const provider = providerStore.find((p) => p.id === req.params.id);
+    if (!provider) return res.status(404).json({ error: "Provider not found" });
+    provider.location = { latitude, longitude };
+    provider.lastLocationUpdate = new Date().toISOString();
+    res.json({ success: true });
+  });
+
+  app.patch("/api/providers/:id/availability", (req: Request, res: Response) => {
+    const { isAvailable } = req.body;
+    if (typeof isAvailable !== "boolean") {
+      return res.status(400).json({ error: "isAvailable (boolean) required" });
+    }
+    const provider = providerStore.find((p) => p.id === req.params.id);
+    if (!provider) return res.status(404).json({ error: "Provider not found" });
+    provider.isAvailable = isAvailable;
+    res.json({ success: true });
   });
 
   const httpServer = createServer(app);
