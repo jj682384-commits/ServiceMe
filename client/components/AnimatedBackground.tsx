@@ -4,14 +4,14 @@ import Svg, { Circle, Line, Defs, RadialGradient, Stop } from "react-native-svg"
 
 const { width: W, height: H } = Dimensions.get("window");
 
-const PARTICLE_COUNT = 22;
-const CONNECT_DISTANCE = 140;
+const PARTICLE_COUNT = 24;
+const CONNECT_DISTANCE = 160;
 const FPS_INTERVAL = 33;
 
-const DEFAULT_COLORS = ["#00D9FF", "#FF6B35", "#7B2FFF", "#00FFD4", "#FF6B35", "#0088CC"];
+const DEFAULT_COLORS = ["#00D9FF", "#FF6B35", "#7B2FFF", "#00FFD4", "#FF006E", "#FFE000"];
 
-export const DARK_BG = "#060918";
-export const LIGHT_BG = "#EFF6FF";
+export const DARK_BG = "#04081C";
+export const LIGHT_BG = "#0A1540";
 
 interface Particle {
   x: number;
@@ -32,15 +32,15 @@ interface AnimatedBackgroundProps {
 
 function initParticles(): Particle[] {
   return Array.from({ length: PARTICLE_COUNT }, (_, i) => {
-    const speed = 0.28 + Math.random() * 0.34;
+    const speed = 0.26 + Math.random() * 0.36;
     const angle = Math.random() * Math.PI * 2;
     return {
       x: Math.random() * W,
       y: Math.random() * H,
       vx: Math.cos(angle) * speed,
       vy: Math.sin(angle) * speed,
-      r: 1.4 + Math.random() * 2.4,
-      opacity: 0.45 + Math.random() * 0.5,
+      r: 1.6 + Math.random() * 2.8,
+      opacity: 0.55 + Math.random() * 0.45,
       colorIndex: i % DEFAULT_COLORS.length,
     };
   });
@@ -50,10 +50,10 @@ function stepParticles(prev: Particle[]): Particle[] {
   return prev.map(p => {
     let x = p.x + p.vx;
     let y = p.y + p.vy;
-    if (x < -12) x = W + 12;
-    else if (x > W + 12) x = -12;
-    if (y < -12) y = H + 12;
-    else if (y > H + 12) y = -12;
+    if (x < -14) x = W + 14;
+    else if (x > W + 14) x = -14;
+    if (y < -14) y = H + 14;
+    else if (y > H + 14) y = -14;
     return { ...p, x, y };
   });
 }
@@ -79,7 +79,7 @@ export default function AnimatedBackground({
     : DEFAULT_COLORS;
 
   const primaryColor = palette[0];
-  const opacityScale = (isDark ? 1 : 0.55) * Math.min(opacityBoost, 2.5);
+  const opacityScale = Math.min(opacityBoost, 2.5);
 
   const connections: { x1: number; y1: number; x2: number; y2: number; alpha: number }[] = [];
   for (let i = 0; i < particles.length; i++) {
@@ -93,7 +93,7 @@ export default function AnimatedBackground({
           y1: particles[i].y,
           x2: particles[j].x,
           y2: particles[j].y,
-          alpha: (1 - dist / CONNECT_DISTANCE) * 0.22 * opacityScale,
+          alpha: (1 - dist / CONNECT_DISTANCE) * 0.28 * opacityScale,
         });
       }
     }
@@ -114,7 +114,7 @@ export default function AnimatedBackground({
               fy="50%"
             >
               <Stop offset="0%" stopColor={color} stopOpacity="1" />
-              <Stop offset="60%" stopColor={color} stopOpacity="0.4" />
+              <Stop offset="55%" stopColor={color} stopOpacity="0.45" />
               <Stop offset="100%" stopColor={color} stopOpacity="0" />
             </RadialGradient>
           ))}
@@ -128,13 +128,13 @@ export default function AnimatedBackground({
             x2={c.x2}
             y2={c.y2}
             stroke={primaryColor}
-            strokeWidth={0.8}
+            strokeWidth={0.9}
             strokeOpacity={c.alpha}
           />
         ))}
 
         {particles.map((p, i) => {
-          const glowR = p.r * 4.5;
+          const glowR = p.r * 5.5;
           const dotOpacity = p.opacity * opacityScale;
           const colorIdx = p.colorIndex % palette.length;
           return (
@@ -144,7 +144,7 @@ export default function AnimatedBackground({
                 cy={p.y}
                 r={glowR}
                 fill={`url(#glow${colorIdx})`}
-                fillOpacity={dotOpacity * 0.35}
+                fillOpacity={dotOpacity * 0.4}
               />
               <Circle
                 cx={p.x}

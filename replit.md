@@ -9,7 +9,7 @@ Preferred communication style: Simple, everyday language.
 ## System Architecture
 
 ### Frontend
-The frontend is built with React Native and Expo SDK 54, targeting iOS, Android, and web. Navigation uses React Navigation, with global state managed by `AppContext` and server state by `@tanstack/react-query`. The UI/UX features a dark-first design with electric cyan and coral accents, incorporating glassmorphic effects and spring-based animations. Location services are integrated using `expo-location`. The EV Charger Map uses a list-based UI.
+The frontend is built with React Native and Expo SDK 54, targeting iOS, Android, and web. Navigation uses React Navigation, with global state managed by `AppContext` and server state by `@tanstack/react-query`. The UI/UX features a dual-mode design system: dark mode uses a deep navy base (`#0A0E27`) with electric cyan/coral neons; light mode uses a rich sky-blue base (`#C8DCFF`) with white floating cards and deep saturated primaries (`#C4341E` coral, `#0055B3` blue). Glassmorphic effects, spring-based animations, and constellation particle backgrounds using `react-native-svg`. Location services via `expo-location`. The EV Charger Map uses a list-based UI.
 
 ### Backend
 The backend is an Express.js server developed with TypeScript, providing a RESTful API. It includes dynamic CORS configuration for Replit environments.

@@ -15,7 +15,6 @@ import {
 } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 
-const CARD_BG = "rgba(20, 25, 45, 0.75)";
 
 function SchemePreview({ schemeKey, isSelected, onPress }: {
   schemeKey: BackgroundColorScheme;
@@ -173,12 +172,12 @@ export default function BackgroundSettingsScreen() {
           </>
         ) : null}
 
-        <View style={[styles.infoCard, { backgroundColor: CARD_BG }]}>
+        <View style={[styles.infoCard, { backgroundColor: isDark ? "rgba(20, 25, 45, 0.75)" : "rgba(0, 0, 0, 0.12)", borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.1)", borderWidth: 1 }]}>
           <Feather name="info" size={16} color={theme.textSecondary} />
-          <ThemedText type="small" style={{ color: theme.textSecondary, flex: 1, marginLeft: Spacing.sm }}>
+          <ThemedText type="small" style={{ color: isDark ? theme.textSecondary : theme.text, flex: 1, marginLeft: Spacing.sm }}>
             {isAnimated
-              ? "Motion background is shown on the History, Messages, and Profile screens."
-              : "A solid dark background will be used on all screens."}
+              ? "Motion backgrounds apply to the History, Messages, and Profile screens."
+              : "A solid background will be used on all screens."}
           </ThemedText>
         </View>
       </ScrollView>

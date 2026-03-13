@@ -1,7 +1,5 @@
 import { Platform } from "react-native";
 
-// Modern 2025 Dark-First Color Palette
-// Electric cyan + coral gradient aesthetic
 const electricCyan = "#00D9FF";
 const electricCyanDark = "#00A8CC";
 const vibrantCoral = "#FF6B35";
@@ -10,28 +8,28 @@ const brightLime = "#39FF14";
 
 export const Colors = {
   light: {
-    text: "#1A1D21",
-    textSecondary: "#6B7280",
+    text: "#0F172A",
+    textSecondary: "#475569",
     buttonText: "#FFFFFF",
-    tabIconDefault: "#9CA3AF",
-    tabIconSelected: "#0891B2",
-    link: "#0891B2",
-    primary: "#E8533F",
-    primaryDark: coralDark,
-    primaryLight: "#FF8C5A",
-    secondary: "#0891B2",
-    secondaryDark: "#0E7490",
-    accent: "#10B981",
+    tabIconDefault: "#8FA8C8",
+    tabIconSelected: "#0055B3",
+    link: "#0055B3",
+    primary: "#C4341E",
+    primaryDark: "#9E2A17",
+    primaryLight: "#E55A3D",
+    secondary: "#0055B3",
+    secondaryDark: "#003D82",
+    accent: "#047857",
     success: "#059669",
-    warning: "#D97706",
+    warning: "#B45309",
     error: "#DC2626",
-    backgroundRoot: "#F8FAFC",
+    backgroundRoot: "#C8DCFF",
     backgroundDefault: "#FFFFFF",
-    backgroundSecondary: "#F1F5F9",
-    backgroundTertiary: "#E2E8F0",
-    border: "#CBD5E1",
-    glassmorphic: "rgba(255, 255, 255, 0.88)",
-    cardAnimatedBg: "rgba(255, 255, 255, 0.82)",
+    backgroundSecondary: "#E0ECFF",
+    backgroundTertiary: "#EEF5FF",
+    border: "#82AEDD",
+    glassmorphic: "rgba(255, 255, 255, 0.82)",
+    cardAnimatedBg: "rgba(255, 255, 255, 0.88)",
   },
   dark: {
     text: "#F0F2F5",
@@ -151,7 +149,6 @@ export const Fonts = Platform.select({
   },
 });
 
-// Modern Shadows & Effects
 export const Shadows = {
   sm: {
     shadowColor: "#000",
@@ -190,7 +187,6 @@ export const Shadows = {
   },
 };
 
-// Gradient Definitions
 export const Gradients = {
   primary: {
     colors: ["#FF6B35", "#FF8C5A"],
