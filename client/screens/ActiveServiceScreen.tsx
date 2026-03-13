@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { View, StyleSheet, Pressable, Alert } from "react-native";
+import React, { useState, useEffect, useRef } from "react";
+import { View, StyleSheet, Pressable, Alert, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Feather } from "@expo/vector-icons";
@@ -11,8 +11,9 @@ import { ThemedText } from "@/components/ThemedText";
 import { GoogleMapView } from "@/components/GoogleMapView";
 import { ScreenDecoration } from "@/components/ScreenDecoration";
 import { useTheme } from "@/hooks/useTheme";
-import { useApp, ServiceStatus, ServiceType } from "@/context/AppContext";
+import { useApp, ServiceStatus, ServiceType, Provider } from "@/context/AppContext";
 import { Spacing, BorderRadius, Shadows } from "@/constants/theme";
+import { getApiUrl } from "@/lib/query-client";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import {
   notifyProviderEnRoute,
@@ -109,6 +110,7 @@ export default function ActiveServiceScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const [eta, setEta] = useState(activeRequest?.eta || 8);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (!activeRequest) {
@@ -130,6 +132,60 @@ export default function ActiveServiceScreen() {
 
     return () => clearInterval(timer);
   }, [activeRequest]);
+
+  useEffect(() => {
+    if (!activeRequest || activeRequest.status !== "pending") {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+      return;
+    }
+
+    const poll = async () => {
+      try {
+        const url = new URL(`/api/jobs/${activeRequest.id}`, getApiUrl());
+        const res = await fetch(url.toString());
+        if (!res.ok) return;
+        const job = await res.json();
+        if (job.status === "accepted" && job.provider) {
+          if (pollRef.current) {
+            clearInterval(pollRef.current);
+            pollRef.current = null;
+          }
+          setActiveRequest({
+            ...activeRequest,
+            status: "accepted",
+            provider: job.provider as Provider,
+            eta: job.eta ?? 8,
+          });
+          setEta(job.eta ?? 8);
+          updateHistoryEntry(activeRequest.id, {
+            status: "accepted",
+            provider: job.provider as Provider,
+          });
+        } else if (job.status === "cancelled") {
+          if (pollRef.current) {
+            clearInterval(pollRef.current);
+            pollRef.current = null;
+          }
+          setActiveRequest(null);
+          navigation.goBack();
+        }
+      } catch {
+      }
+    };
+
+    poll();
+    pollRef.current = setInterval(poll, 5000);
+
+    return () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    };
+  }, [activeRequest?.id, activeRequest?.status]);
 
   useEffect(() => {
     if (activeRequest?.status === "accepted") {
@@ -165,7 +221,12 @@ export default function ActiveServiceScreen() {
         {
           text: "Yes, Cancel",
           style: "destructive",
-          onPress: () => {
+          onPress: async () => {
+            try {
+              const url = new URL(`/api/jobs/${activeRequest.id}/cancel`, getApiUrl());
+              await fetch(url.toString(), { method: "PATCH" });
+            } catch {
+            }
             updateHistoryEntry(activeRequest.id, { status: "cancelled" });
             setActiveRequest(null);
             navigation.goBack();
@@ -174,6 +235,49 @@ export default function ActiveServiceScreen() {
       ]
     );
   };
+
+  if (activeRequest.status === "pending") {
+    return (
+      <ThemedView style={styles.container}>
+        <ScreenDecoration />
+        <View style={[styles.pendingContainer, { paddingTop: headerHeight + Spacing.xl }]}>
+          <View style={[styles.pendingIcon, { backgroundColor: theme.primary + "15" }]}>
+            <ActivityIndicator size="large" color={theme.primary} />
+          </View>
+          <ThemedText type="h3" style={{ marginTop: Spacing.xl, textAlign: "center" }}>
+            Finding a Provider
+          </ThemedText>
+          <ThemedText type="body" style={{ color: theme.textSecondary, textAlign: "center", marginTop: Spacing.sm, paddingHorizontal: Spacing.xl }}>
+            Your request is live. Nearby providers are being notified and can accept your job.
+          </ThemedText>
+          <View style={[styles.pendingCard, { backgroundColor: theme.backgroundDefault, borderColor: theme.border }]}>
+            <Feather name="map-pin" size={16} color={theme.primary} />
+            <ThemedText type="body" style={{ marginLeft: Spacing.sm, flex: 1 }}>
+              {activeRequest.location.address}
+            </ThemedText>
+          </View>
+          <View style={[styles.pendingCard, { backgroundColor: theme.backgroundDefault, borderColor: theme.border }]}>
+            <Feather name="dollar-sign" size={16} color={theme.success} />
+            <ThemedText type="body" style={{ marginLeft: Spacing.sm, color: theme.success, fontWeight: "600" }}>
+              ${activeRequest.estimatedCost} estimated
+            </ThemedText>
+          </View>
+          <Pressable
+            onPress={handleCancel}
+            style={({ pressed }) => [
+              styles.cancelPendingBtn,
+              { backgroundColor: theme.backgroundDefault, borderColor: theme.border, opacity: pressed ? 0.7 : 1 },
+            ]}
+          >
+            <Feather name="x" size={16} color={theme.textSecondary} />
+            <ThemedText type="body" style={{ color: theme.textSecondary, marginLeft: Spacing.sm }}>
+              Cancel Request
+            </ThemedText>
+          </Pressable>
+        </View>
+      </ThemedView>
+    );
+  }
 
   const handleComplete = () => {
     setActiveRequest({ ...activeRequest, status: "completed" });
@@ -401,6 +505,39 @@ export default function ActiveServiceScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  pendingContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: Spacing.xl,
+    gap: Spacing.md,
+  },
+  pendingIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pendingCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    width: "100%",
+    marginTop: Spacing.xs,
+  },
+  cancelPendingBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    marginTop: Spacing.lg,
   },
   mapPlaceholder: {
     flex: 0.5,

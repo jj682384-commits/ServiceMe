@@ -136,6 +136,28 @@ interface WsClient {
 const messageHistory = new Map<string, ChatMessage[]>();
 const clients = new Set<WsClient>();
 
+interface JobRecord {
+  id: string;
+  serviceType: string;
+  location: { address: string; latitude: number; longitude: number };
+  notes: string;
+  status: "pending" | "accepted" | "cancelled";
+  estimatedCost: number;
+  driver?: Record<string, unknown>;
+  provider?: Record<string, unknown>;
+  eta?: number;
+  isExpress?: boolean;
+  expressFee?: number;
+  serviceFee?: number;
+  totalCost?: number;
+  receiptNumber?: string;
+  timeSaved?: number;
+  createdAt: string;
+  scheduledDate?: string;
+}
+
+const jobStore = new Map<string, JobRecord>();
+
 const PROVIDER_REPLIES = [
   "I'm on my way, shouldn't be too long!",
   "Got it, I'll be there shortly.",
@@ -283,6 +305,58 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
     if (!provider) return res.status(404).json({ error: "Provider not found" });
     provider.isAvailable = isAvailable;
     res.json({ success: true });
+  });
+
+  app.post("/api/jobs", (req: Request, res: Response) => {
+    const data = req.body as Partial<JobRecord>;
+    if (!data.id || !data.serviceType) return res.status(400).json({ error: "id and serviceType required" });
+    const job: JobRecord = {
+      id: data.id,
+      serviceType: data.serviceType,
+      location: data.location ?? { address: "Unknown", latitude: 0, longitude: 0 },
+      notes: data.notes ?? "",
+      status: "pending",
+      estimatedCost: data.estimatedCost ?? 0,
+      driver: data.driver,
+      eta: data.eta,
+      isExpress: data.isExpress,
+      expressFee: data.expressFee,
+      serviceFee: data.serviceFee,
+      totalCost: data.totalCost,
+      receiptNumber: data.receiptNumber,
+      timeSaved: data.timeSaved,
+      createdAt: data.createdAt ?? new Date().toISOString(),
+    };
+    jobStore.set(job.id, job);
+    res.json(job);
+  });
+
+  app.get("/api/jobs/pending", (_req: Request, res: Response) => {
+    const pending = Array.from(jobStore.values()).filter((j) => j.status === "pending");
+    res.json(pending);
+  });
+
+  app.get("/api/jobs/:id", (req: Request, res: Response) => {
+    const job = jobStore.get(req.params.id);
+    if (!job) return res.status(404).json({ error: "Job not found" });
+    res.json(job);
+  });
+
+  app.patch("/api/jobs/:id/accept", (req: Request, res: Response) => {
+    const job = jobStore.get(req.params.id);
+    if (!job) return res.status(404).json({ error: "Job not found" });
+    if (job.status !== "pending") return res.status(409).json({ error: "Job already taken" });
+    job.status = "accepted";
+    job.provider = req.body.provider ?? null;
+    job.eta = req.body.eta ?? 8;
+    res.json(job);
+  });
+
+  app.patch("/api/jobs/:id/cancel", (req: Request, res: Response) => {
+    const job = jobStore.get(req.params.id);
+    if (!job) return res.status(404).json({ error: "Job not found" });
+    job.status = "cancelled";
+    res.json(job);
   });
 
   const httpServer = createServer(app);

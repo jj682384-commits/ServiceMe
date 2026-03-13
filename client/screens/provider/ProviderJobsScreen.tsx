@@ -6,6 +6,7 @@ import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -13,6 +14,7 @@ import { ScreenDecoration } from "@/components/ScreenDecoration";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceType, ServiceRequest } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
+import { getApiUrl } from "@/lib/query-client";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 const serviceTypeLabels: Record<ServiceType, string> = {
@@ -37,8 +39,9 @@ const serviceTypeIcons: Record<ServiceType, keyof typeof Feather.glyphMap> = {
 
 function JobCard({ job }: { job: ServiceRequest }) {
   const { theme } = useTheme();
-  const { setActiveRequest, currentProvider, updateHistoryEntry, removePendingJob } = useApp();
+  const { setActiveRequest, currentProvider, updateHistoryEntry, removePendingJob, addToHistory } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const queryClient = useQueryClient();
 
   const getTimeAgo = (date: Date) => {
     const minutes = Math.floor((Date.now() - date.getTime()) / 60000);
@@ -55,19 +58,30 @@ function JobCard({ job }: { job: ServiceRequest }) {
         { text: "Cancel", style: "cancel" },
         {
           text: "Accept",
-          onPress: () => {
+          onPress: async () => {
             const acceptedJob: ServiceRequest = {
               ...job,
               status: "accepted",
               provider: currentProvider ?? undefined,
               eta: 8,
             };
+            try {
+              const url = new URL(`/api/jobs/${job.id}/accept`, getApiUrl());
+              await fetch(url.toString(), {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ provider: currentProvider, eta: 8 }),
+              });
+            } catch {
+            }
             updateHistoryEntry(job.id, {
               status: "accepted",
               provider: currentProvider ?? undefined,
             });
             removePendingJob(job.id);
+            addToHistory(acceptedJob);
             setActiveRequest(acceptedJob);
+            queryClient.invalidateQueries({ queryKey: ["/api/jobs/pending"] });
             navigation.navigate("ActiveService");
           },
         },
@@ -147,7 +161,25 @@ export default function ProviderJobsScreen() {
   const { theme } = useTheme();
   const { currentProvider, pendingJobs } = useApp();
 
-  const availableJobs = currentProvider?.isAvailable ? pendingJobs : [];
+  const { data: serverJobs } = useQuery<ServiceRequest[]>({
+    queryKey: ["/api/jobs/pending"],
+    queryFn: async () => {
+      const url = new URL("/api/jobs/pending", getApiUrl());
+      const res = await fetch(url.toString());
+      if (!res.ok) return [];
+      const data = await res.json();
+      return data.map((j: Record<string, unknown>) => ({
+        ...j,
+        createdAt: new Date(j.createdAt as string),
+      })) as ServiceRequest[];
+    },
+    refetchInterval: currentProvider?.isAvailable ? 5000 : false,
+    enabled: currentProvider?.isAvailable ?? false,
+  });
+
+  const availableJobs = currentProvider?.isAvailable
+    ? (serverJobs && serverJobs.length > 0 ? serverJobs : pendingJobs)
+    : [];
 
   return (
     <ThemedView style={styles.container}>

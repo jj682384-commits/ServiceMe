@@ -20,6 +20,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceType, ServiceRequest } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { SERVICE_FEE, EXPRESS_FEE } from "@/constants/pricing";
+import { getApiUrl } from "@/lib/query-client";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -244,15 +245,28 @@ export default function ServiceRequestScreen() {
       scheduledDate,
     };
 
-    setTimeout(() => {
+    setTimeout(async () => {
       if (isScheduled) {
         addToHistory(newRequest);
         setIsSubmitting(false);
         navigation.goBack();
       } else {
-        addPendingJob({ ...newRequest, provider: undefined, status: "pending" });
-        setActiveRequest(newRequest);
-        addToHistory(newRequest);
+        const pendingJob: ServiceRequest = { ...newRequest, provider: undefined, status: "pending" };
+        addPendingJob(pendingJob);
+        setActiveRequest(pendingJob);
+        addToHistory(pendingJob);
+        try {
+          const url = new URL("/api/jobs", getApiUrl());
+          await fetch(url.toString(), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ...pendingJob,
+              createdAt: pendingJob.createdAt.toISOString(),
+            }),
+          });
+        } catch {
+        }
         setIsSubmitting(false);
         navigation.goBack();
         navigation.navigate("ActiveService");
