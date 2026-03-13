@@ -19,7 +19,7 @@ import { ScreenDecoration } from "@/components/ScreenDecoration";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceType, ServiceRequest } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
-import { COMPETITOR_PRICES, SERVICE_FEE, EXPRESS_FEE } from "@/constants/pricing";
+import { SERVICE_FEE, EXPRESS_FEE } from "@/constants/pricing";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -440,40 +440,6 @@ export default function ServiceRequestScreen() {
           </>
         ) : null}
 
-        {selectedService && (() => {
-          const comp = COMPETITOR_PRICES[selectedService];
-          return (
-            <View style={[styles.priceAnchorCard, { backgroundColor: theme.backgroundSecondary }]}>
-              <View style={styles.priceAnchorHeader}>
-                <Feather name="info" size={16} color={theme.textSecondary} />
-                <ThemedText type="small" style={{ color: theme.textSecondary, marginLeft: Spacing.xs, flex: 1 }}>
-                  Traditional roadside services typically charge
-                </ThemedText>
-              </View>
-              <View style={styles.priceAnchorCompare}>
-                <View style={styles.priceAnchorOld}>
-                  <ThemedText type="small" style={{ color: theme.textSecondary }}>
-                    Others
-                  </ThemedText>
-                  <ThemedText type="body" style={{ color: theme.textSecondary, textDecorationLine: "line-through" }}>
-                    ${comp.low}-${comp.high}
-                  </ThemedText>
-                </View>
-                <View style={[styles.priceAnchorArrow, { backgroundColor: theme.success + "20" }]}>
-                  <Feather name="arrow-right" size={16} color={theme.success} />
-                </View>
-                <View style={styles.priceAnchorNew}>
-                  <ThemedText type="small" style={{ color: theme.success, fontWeight: "600" }}>
-                    ServiceMe
-                  </ThemedText>
-                  <ThemedText type="h4" style={{ color: theme.success }}>
-                    ${discountedBasePrice.toFixed(0)}
-                  </ThemedText>
-                </View>
-              </View>
-            </View>
-          );
-        })()}
 
         {defaultVehicle ? (
           <>
@@ -949,37 +915,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-  },
-  priceAnchorCard: {
-    padding: Spacing.lg,
-    borderRadius: BorderRadius.md,
-    marginTop: Spacing.lg,
-  },
-  priceAnchorHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: Spacing.md,
-  },
-  priceAnchorCompare: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: Spacing.lg,
-  },
-  priceAnchorOld: {
-    alignItems: "center",
-    gap: 2,
-  },
-  priceAnchorArrow: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  priceAnchorNew: {
-    alignItems: "center",
-    gap: 2,
   },
   vehicleInfoCard: {
     flexDirection: "row",
