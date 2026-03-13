@@ -120,6 +120,11 @@ export default function ActiveServiceScreen() {
       return;
     }
 
+    if (activeRequest.status === "completed") {
+      navigation.navigate("ServiceCompletion");
+      return;
+    }
+
     const timer = setInterval(() => {
       setEta((prev) => {
         if (prev <= 1) {
@@ -164,17 +169,24 @@ export default function ActiveServiceScreen() {
         const localIdx = STATUS_ORDER.indexOf(activeRequest.status);
 
         if (serverIdx > localIdx || (job.provider && !activeRequest.provider)) {
+          const newStatus = job.status as ServiceStatus;
+          const newProvider = job.provider ? (job.provider as Provider) : activeRequest.provider;
           setActiveRequest({
             ...activeRequest,
-            status: job.status as ServiceStatus,
-            provider: job.provider ? (job.provider as Provider) : activeRequest.provider,
+            status: newStatus,
+            provider: newProvider,
             eta: job.eta ?? activeRequest.eta,
           });
           setEta(job.eta ?? activeRequest.eta ?? 8);
           updateHistoryEntry(activeRequest.id, {
-            status: job.status as ServiceStatus,
-            provider: job.provider ? (job.provider as Provider) : activeRequest.provider,
+            status: newStatus,
+            provider: newProvider,
           });
+
+          if (newStatus === "completed") {
+            if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+            navigation.navigate("ServiceCompletion");
+          }
         }
       } catch {
       }
