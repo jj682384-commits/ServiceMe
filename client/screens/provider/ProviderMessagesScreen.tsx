@@ -9,49 +9,54 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ThemedText } from "@/components/ThemedText";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { useTheme } from "@/hooks/useTheme";
-import { useApp, BACKGROUND_SCHEMES } from "@/context/AppContext";
+import { useApp, ServiceRequest, BACKGROUND_SCHEMES } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
-interface Conversation {
-  id: string;
-  driverName: string;
-  lastMessage: string;
-  timestamp: Date;
-  unreadCount: number;
-  serviceType: string;
-}
+const SERVICE_LABELS: Record<string, string> = {
+  flat_tire: "Flat Tire",
+  jump_start: "Jump Start",
+  tow: "Tow Service",
+  fuel: "Fuel Delivery",
+  lockout: "Lockout",
+  obd_diagnostic: "OBD Diagnostic",
+  other: "Other",
+};
 
-const mockConversations: Conversation[] = [
-  {
-    id: "c1",
-    driverName: "Alex Johnson",
-    lastMessage: "Thank you! I'm waiting by the blue car.",
-    timestamp: new Date(Date.now() - 1800000),
-    unreadCount: 2,
-    serviceType: "Flat Tire",
-  },
-  {
-    id: "c2",
-    driverName: "Sarah Miller",
-    lastMessage: "Great, see you soon!",
-    timestamp: new Date(Date.now() - 86400000),
-    unreadCount: 0,
-    serviceType: "Jump Start",
-  },
-  {
-    id: "c3",
-    driverName: "Mike Chen",
-    lastMessage: "The service was excellent. Thank you!",
-    timestamp: new Date(Date.now() - 86400000 * 3),
-    unreadCount: 0,
-    serviceType: "Lockout",
-  },
-];
+const STATUS_PREVIEWS: Record<string, string> = {
+  completed: "Service completed successfully",
+  cancelled: "Service was cancelled",
+  accepted: "Job accepted, heading to driver",
+  en_route: "Heading to the driver",
+  arrived: "Arrived at location",
+  in_progress: "Service in progress",
+  pending: "New job request",
+};
 
 const avatarColors = ["#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#14B8A6"];
 
-function ConversationItem({ item, index, cardBg }: { item: Conversation; index: number; cardBg: string }) {
+function getConversations(requestHistory: ServiceRequest[]) {
+  return requestHistory
+    .filter((r) => r.driver !== undefined)
+    .map((r) => ({
+      id: r.id,
+      driverName: r.driver!.name,
+      lastMessage: STATUS_PREVIEWS[r.status] ?? "Service request",
+      timestamp: r.createdAt,
+      serviceType: SERVICE_LABELS[r.serviceType] ?? r.serviceType,
+    }))
+    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+}
+
+function ConversationItem({
+  item,
+  index,
+  cardBg,
+}: {
+  item: ReturnType<typeof getConversations>[number];
+  index: number;
+  cardBg: string;
+}) {
   const { theme } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const avatarColor = avatarColors[index % avatarColors.length];
@@ -59,7 +64,6 @@ function ConversationItem({ item, index, cardBg }: { item: Conversation; index: 
   const formatTime = (date: Date) => {
     const now = new Date();
     const diffDays = Math.floor((now.getTime() - date.getTime()) / 86400000);
-
     if (diffDays === 0) {
       return date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
     } else if (diffDays === 1) {
@@ -73,7 +77,12 @@ function ConversationItem({ item, index, cardBg }: { item: Conversation; index: 
 
   return (
     <Pressable
-      onPress={() => navigation.navigate("Chat", { conversationId: item.id, providerName: item.driverName })}
+      onPress={() =>
+        navigation.navigate("Chat", {
+          conversationId: item.id,
+          providerName: item.driverName,
+        })
+      }
       style={({ pressed }) => [
         styles.conversationItem,
         { backgroundColor: cardBg, opacity: pressed ? 0.8 : 1 },
@@ -96,22 +105,13 @@ function ConversationItem({ item, index, cardBg }: { item: Conversation; index: 
         <ThemedText type="small" style={{ color: theme.textSecondary }}>
           {item.serviceType}
         </ThemedText>
-        <View style={styles.messageRow}>
-          <ThemedText
-            type="body"
-            style={{ color: theme.textSecondary, flex: 1 }}
-            numberOfLines={1}
-          >
-            {item.lastMessage}
-          </ThemedText>
-          {item.unreadCount > 0 ? (
-            <View style={[styles.unreadBadge, { backgroundColor: theme.primary }]}>
-              <ThemedText type="small" style={{ color: "#FFFFFF", fontWeight: "600" }}>
-                {item.unreadCount}
-              </ThemedText>
-            </View>
-          ) : null}
-        </View>
+        <ThemedText
+          type="body"
+          style={{ color: theme.textSecondary, marginTop: 2 }}
+          numberOfLines={1}
+        >
+          {item.lastMessage}
+        </ThemedText>
       </View>
     </Pressable>
   );
@@ -121,18 +121,40 @@ export default function ProviderMessagesScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { theme, isDark } = useTheme();
-  const { backgroundPreferences } = useApp();
+  const { requestHistory, backgroundPreferences } = useApp();
   const isAnimated = backgroundPreferences.mode === "animated";
   const scheme = BACKGROUND_SCHEMES[backgroundPreferences.colorScheme];
   const cardBg = isAnimated ? theme.cardAnimatedBg : theme.backgroundDefault;
 
+  const conversations = getConversations(requestHistory);
+
   return (
-    <View style={[styles.container, { backgroundColor: isAnimated ? (isDark ? scheme.bgColor : scheme.bgColorLight) : theme.backgroundRoot }]}>
-      {isAnimated ? <AnimatedBackground customColors={isDark ? scheme.colors : scheme.colorsLight} opacityBoost={isDark ? scheme.opacityBoost : scheme.opacityBoostLight} flashColor={isDark ? scheme.flashColor : scheme.flashColorLight} isDark={isDark} /> : null}
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: isAnimated
+            ? isDark
+              ? scheme.bgColor
+              : scheme.bgColorLight
+            : theme.backgroundRoot,
+        },
+      ]}
+    >
+      {isAnimated ? (
+        <AnimatedBackground
+          customColors={isDark ? scheme.colors : scheme.colorsLight}
+          opacityBoost={isDark ? scheme.opacityBoost : scheme.opacityBoostLight}
+          flashColor={isDark ? scheme.flashColor : scheme.flashColorLight}
+          isDark={isDark}
+        />
+      ) : null}
       <FlatList
-        data={mockConversations}
+        data={conversations}
         keyExtractor={(item) => item.id}
-        renderItem={({ item, index }) => <ConversationItem item={item} index={index} cardBg={cardBg} />}
+        renderItem={({ item, index }) => (
+          <ConversationItem item={item} index={index} cardBg={cardBg} />
+        )}
         contentContainerStyle={{
           paddingTop: Math.max(insets.top, Spacing["2xl"]) + Spacing.lg,
           paddingBottom: tabBarHeight + Spacing.xl,
@@ -141,7 +163,9 @@ export default function ProviderMessagesScreen() {
         }}
         scrollIndicatorInsets={{ bottom: insets.bottom }}
         ListHeaderComponent={
-          <ThemedText type="h2" style={{ marginBottom: Spacing.sm }}>Messages</ThemedText>
+          <ThemedText type="h2" style={{ marginBottom: Spacing.sm }}>
+            Messages
+          </ThemedText>
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
@@ -153,7 +177,7 @@ export default function ProviderMessagesScreen() {
               type="body"
               style={{ color: theme.textSecondary, textAlign: "center", marginTop: Spacing.sm }}
             >
-              Your conversations with drivers will appear here
+              Conversations with drivers will appear here once you accept a job
             </ThemedText>
           </View>
         }
@@ -186,20 +210,6 @@ const styles = StyleSheet.create({
   conversationHeader: {
     flexDirection: "row",
     alignItems: "center",
-  },
-  messageRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 2,
-  },
-  unreadBadge: {
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 6,
-    marginLeft: Spacing.sm,
   },
   emptyState: {
     flex: 1,

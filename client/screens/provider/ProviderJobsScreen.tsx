@@ -21,6 +21,7 @@ const serviceTypeLabels: Record<ServiceType, string> = {
   tow: "Tow Service",
   fuel: "Fuel Delivery",
   lockout: "Lockout",
+  obd_diagnostic: "OBD Diagnostic",
   other: "Other",
 };
 
@@ -30,67 +31,18 @@ const serviceTypeIcons: Record<ServiceType, keyof typeof Feather.glyphMap> = {
   tow: "truck",
   fuel: "droplet",
   lockout: "key",
+  obd_diagnostic: "cpu",
   other: "more-horizontal",
 };
 
-const mockJobs: ServiceRequest[] = [
-  {
-    id: "j1",
-    serviceType: "flat_tire",
-    location: { address: "123 Main St, San Francisco, CA", latitude: 37.78, longitude: -122.41 },
-    notes: "Front left tire is completely flat",
-    status: "pending",
-    estimatedCost: 85,
-    createdAt: new Date(Date.now() - 300000),
-    driver: {
-      id: "d1",
-      name: "Alex Johnson",
-      phone: "+1 555-1234",
-      email: "alex@email.com",
-      avatarPreset: 1,
-    },
-  },
-  {
-    id: "j2",
-    serviceType: "jump_start",
-    location: { address: "456 Market St, San Francisco, CA", latitude: 37.79, longitude: -122.40 },
-    notes: "",
-    status: "pending",
-    estimatedCost: 55,
-    createdAt: new Date(Date.now() - 600000),
-    driver: {
-      id: "d2",
-      name: "Sarah Miller",
-      phone: "+1 555-5678",
-      email: "sarah@email.com",
-      avatarPreset: 2,
-    },
-  },
-  {
-    id: "j3",
-    serviceType: "lockout",
-    location: { address: "789 Valencia St, San Francisco, CA", latitude: 37.76, longitude: -122.42 },
-    notes: "Keys locked inside, parked in front of coffee shop",
-    status: "pending",
-    estimatedCost: 65,
-    createdAt: new Date(Date.now() - 900000),
-    driver: {
-      id: "d3",
-      name: "Mike Chen",
-      phone: "+1 555-9012",
-      email: "mike@email.com",
-      avatarPreset: 3,
-    },
-  },
-];
-
 function JobCard({ job }: { job: ServiceRequest }) {
   const { theme } = useTheme();
-  const { setActiveRequest } = useApp();
+  const { setActiveRequest, currentProvider, updateHistoryEntry, removePendingJob } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const getTimeAgo = (date: Date) => {
     const minutes = Math.floor((Date.now() - date.getTime()) / 60000);
+    if (minutes < 1) return "just now";
     if (minutes < 60) return `${minutes}m ago`;
     return `${Math.floor(minutes / 60)}h ago`;
   };
@@ -98,16 +50,24 @@ function JobCard({ job }: { job: ServiceRequest }) {
   const handleAccept = () => {
     Alert.alert(
       "Accept Job",
-      `Accept ${serviceTypeLabels[job.serviceType]} request from ${job.driver?.name}?`,
+      `Accept ${serviceTypeLabels[job.serviceType]} request from ${job.driver?.name ?? "Driver"}?`,
       [
         { text: "Cancel", style: "cancel" },
         {
           text: "Accept",
           onPress: () => {
-            setActiveRequest({
+            const acceptedJob: ServiceRequest = {
               ...job,
               status: "accepted",
+              provider: currentProvider ?? undefined,
+              eta: 8,
+            };
+            updateHistoryEntry(job.id, {
+              status: "accepted",
+              provider: currentProvider ?? undefined,
             });
+            removePendingJob(job.id);
+            setActiveRequest(acceptedJob);
             navigation.navigate("ActiveService");
           },
         },
@@ -116,9 +76,7 @@ function JobCard({ job }: { job: ServiceRequest }) {
   };
 
   return (
-    <Pressable
-      style={[styles.jobCard, { backgroundColor: theme.backgroundDefault }]}
-    >
+    <View style={[styles.jobCard, { backgroundColor: theme.backgroundDefault }]}>
       <View style={styles.jobHeader}>
         <View style={[styles.serviceIcon, { backgroundColor: theme.primary + "15" }]}>
           <Feather name={serviceTypeIcons[job.serviceType]} size={24} color={theme.primary} />
@@ -135,12 +93,14 @@ function JobCard({ job }: { job: ServiceRequest }) {
       </View>
 
       <View style={styles.jobDetails}>
-        <View style={styles.detailRow}>
-          <Feather name="user" size={16} color={theme.textSecondary} />
-          <ThemedText type="body" style={{ marginLeft: Spacing.sm }}>
-            {job.driver?.name}
-          </ThemedText>
-        </View>
+        {job.driver ? (
+          <View style={styles.detailRow}>
+            <Feather name="user" size={16} color={theme.textSecondary} />
+            <ThemedText type="body" style={{ marginLeft: Spacing.sm }}>
+              {job.driver.name}
+            </ThemedText>
+          </View>
+        ) : null}
         <View style={styles.detailRow}>
           <Feather name="map-pin" size={16} color={theme.textSecondary} />
           <ThemedText
@@ -176,7 +136,7 @@ function JobCard({ job }: { job: ServiceRequest }) {
           Accept Job
         </ThemedText>
       </Pressable>
-    </Pressable>
+    </View>
   );
 }
 
@@ -185,9 +145,9 @@ export default function ProviderJobsScreen() {
   const headerHeight = useHeaderHeight();
   const tabBarHeight = useBottomTabBarHeight();
   const { theme } = useTheme();
-  const { currentProvider } = useApp();
+  const { currentProvider, pendingJobs } = useApp();
 
-  const availableJobs = currentProvider?.isAvailable ? mockJobs : [];
+  const availableJobs = currentProvider?.isAvailable ? pendingJobs : [];
 
   return (
     <ThemedView style={styles.container}>

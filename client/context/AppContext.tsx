@@ -358,6 +358,9 @@ interface AppContextType {
   backgroundPreferences: BackgroundPreferences;
   setBackgroundMode: (mode: BackgroundMode) => void;
   setBackgroundColorScheme: (scheme: BackgroundColorScheme) => void;
+  pendingJobs: ServiceRequest[];
+  addPendingJob: (job: ServiceRequest) => void;
+  removePendingJob: (id: string) => void;
   logout: () => void;
 }
 
@@ -552,6 +555,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     mode: "animated",
     colorScheme: "default",
   });
+
+  const [pendingJobs, setPendingJobs] = useState<ServiceRequest[]>([]);
+
+  const addPendingJob = (job: ServiceRequest) => {
+    setPendingJobs((prev) => [job, ...prev]);
+  };
+
+  const removePendingJob = (id: string) => {
+    setPendingJobs((prev) => prev.filter((j) => j.id !== id));
+  };
 
   const setBackgroundMode = (mode: BackgroundMode) => {
     setBackgroundPreferences((prev) => ({ ...prev, mode }));
@@ -837,6 +850,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         backgroundPreferences,
         setBackgroundMode,
         setBackgroundColorScheme,
+        pendingJobs,
+        addPendingJob,
+        removePendingJob,
         logout,
       }}
     >

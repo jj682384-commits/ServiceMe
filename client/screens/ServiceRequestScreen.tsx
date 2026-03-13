@@ -147,7 +147,7 @@ export default function ServiceRequestScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const { theme } = useTheme();
-  const { nearbyProviders, getProvidersWithDistance, setActiveRequest, addToHistory, currentDriver, getDefaultVehicle } = useApp();
+  const { nearbyProviders, getProvidersWithDistance, setActiveRequest, addToHistory, addPendingJob, currentDriver, getDefaultVehicle } = useApp();
   const defaultVehicle = getDefaultVehicle();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, "ServiceRequest">>();
@@ -210,8 +210,18 @@ export default function ServiceRequestScreen() {
 
     const provider = selectedProvider || nearbyProviders[0];
     const scheduledDate = getScheduledDate();
+    const requestId = `req-${Date.now()}`;
+    const driverInfo = currentDriver
+      ? {
+          id: currentDriver.id,
+          name: currentDriver.name,
+          phone: currentDriver.phone,
+          email: currentDriver.email,
+          avatarPreset: currentDriver.avatarPreset,
+        }
+      : undefined;
     const newRequest: ServiceRequest = {
-      id: `req-${Date.now()}`,
+      id: requestId,
       serviceType: selectedService,
       location: {
         address: "Current Location",
@@ -223,6 +233,7 @@ export default function ServiceRequestScreen() {
       estimatedCost: discountedBasePrice,
       createdAt: new Date(),
       provider,
+      driver: driverInfo,
       eta: isScheduled ? undefined : (isExpress ? 4 : 8),
       isExpress: isScheduled ? false : isExpress,
       expressFee: isExpress && !isScheduled ? EXPRESS_FEE : 0,
@@ -239,6 +250,7 @@ export default function ServiceRequestScreen() {
         setIsSubmitting(false);
         navigation.goBack();
       } else {
+        addPendingJob({ ...newRequest, provider: undefined, status: "pending" });
         setActiveRequest(newRequest);
         addToHistory(newRequest);
         setIsSubmitting(false);

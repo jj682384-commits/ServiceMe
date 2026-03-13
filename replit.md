@@ -28,6 +28,9 @@ The application uses Drizzle ORM with a PostgreSQL dialect for database interact
 - **Legal Compliance**: Mandatory acceptance of legal documents during sign-up.
 - **Service Scheduling**: Users can choose immediate or scheduled service requests.
 - **Provider Sign-Up Flow**: Multi-step registration for independent helpers and roadside shops, including ID verification.
+- **Real-Time Job Dispatch**: Driver service requests are posted to a shared `pendingJobs` queue in AppContext. The provider Jobs screen reads live from this queue. On acceptance, the job moves to `activeRequest` for the provider and is removed from the queue. Both sides share the same WebSocket conversation ID (`request.id`) so chat is linked to the job.
+- **Live Messages Screens**: Driver and Provider Messages screens derive conversations from `requestHistory` (no mock data). Driver sees entries with a provider assigned; provider sees entries with a driver attached. Tapping opens the real WebSocket chat using the request ID as the conversation key.
+- **Billing History**: Reads from `requestHistory` filtered to `status === "completed"`. `totalCost` is written by `ServiceCompletionScreen` after tip selection. `driver` field is now stamped on every new service request for provider-side visibility.
 - **Animated Background System**: Dynamic backgrounds with customizable color schemes for various screens.
 - **In-App Subscriptions**: Integration with RevenueCat for managing premium memberships.
 - **Push Notifications**: `expo-notifications` for various alerts (e.g., SOS activated, provider en route, job requests).
