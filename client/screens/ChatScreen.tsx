@@ -112,6 +112,7 @@ export default function ChatScreen() {
     if (!inputText.trim()) return;
     sendMessage(inputText.trim());
     setInputText("");
+    Keyboard.dismiss();
   };
 
   return (
@@ -150,6 +151,8 @@ export default function ChatScreen() {
             ]}
             onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
             showsVerticalScrollIndicator={false}
+            keyboardDismissMode="interactive"
+            keyboardShouldPersistTaps="handled"
           />
         )}
 
