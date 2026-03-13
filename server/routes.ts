@@ -333,12 +333,14 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
 
   app.get("/api/jobs/pending", (_req: Request, res: Response) => {
     const pending = Array.from(jobStore.values()).filter((j) => j.status === "pending");
+    res.set("Cache-Control", "no-store");
     res.json(pending);
   });
 
   app.get("/api/jobs/:id", (req: Request, res: Response) => {
     const job = jobStore.get(req.params.id);
     if (!job) return res.status(404).json({ error: "Job not found" });
+    res.set("Cache-Control", "no-store");
     res.json(job);
   });
 

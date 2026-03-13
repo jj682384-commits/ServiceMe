@@ -85,7 +85,9 @@ export default function ProviderActiveJobScreen() {
     const poll = async () => {
       try {
         const url = new URL(`/api/jobs/${activeRequest.id}`, getApiUrl());
-        const res = await fetch(url.toString());
+        const res = await fetch(url.toString(), {
+          headers: { "Cache-Control": "no-cache", "Pragma": "no-cache" },
+        });
         if (!res.ok) return;
         const job = await res.json();
         if (job.status === "cancelled") {
