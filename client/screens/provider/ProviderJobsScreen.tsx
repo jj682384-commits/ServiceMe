@@ -78,7 +78,7 @@ function JobCard({ job }: { job: ServiceRequest }) {
     addToHistory(acceptedJob);
     setActiveRequest(acceptedJob);
     queryClient.invalidateQueries({ queryKey: ["/api/jobs/pending"] });
-    navigation.navigate("ActiveService");
+    navigation.navigate("ProviderActiveJob");
     setAccepting(false);
   };
 
