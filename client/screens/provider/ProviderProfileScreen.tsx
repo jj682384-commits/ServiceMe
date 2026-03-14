@@ -167,13 +167,13 @@ export default function ProviderProfileScreen() {
           <MenuItem
             icon="truck"
             label="Vehicle"
-            value={`${currentProvider?.vehicleMake || "Ford"} ${currentProvider?.vehicleModel || "Transit"}`}
+            value={currentProvider?.vehicleMake ? `${currentProvider.vehicleMake} ${currentProvider.vehicleModel || ""}`.trim() : "Not set"}
             showArrow={false}
           />
           <MenuItem
             icon="hash"
             label="License Plate"
-            value={currentProvider?.licensePlate || "SVC-001"}
+            value={currentProvider?.licensePlate || "Not set"}
             showArrow={false}
           />
         </View>
@@ -205,8 +205,8 @@ export default function ProviderProfileScreen() {
             ACCOUNT
           </ThemedText>
           <MenuItem icon="user" label="Edit Profile" onPress={() => navigation.navigate("EditProfile")} />
-          <MenuItem icon="phone" label="Phone" value={currentProvider?.phone || "+1 555-9999"} showArrow={false} />
-          <MenuItem icon="mail" label="Email" value={currentProvider?.email || "you@service.com"} showArrow={false} />
+          <MenuItem icon="phone" label="Phone" value={currentProvider?.phone || "Not set"} showArrow={false} />
+          <MenuItem icon="mail" label="Email" value={currentProvider?.email || "Not set"} showArrow={false} />
         </View>
 
         <View style={[styles.section, { backgroundColor: sectionBg }]}>

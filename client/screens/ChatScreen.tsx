@@ -82,11 +82,13 @@ export default function ChatScreen() {
   const headerHeight = useHeaderHeight();
   const { theme } = useTheme();
   const route = useRoute<ChatRouteProp>();
-  const { userRole } = useApp();
+  const { userRole, currentDriver, currentProvider } = useApp();
   const flatListRef = useRef<FlatList>(null);
   const [inputText, setInputText] = useState("");
 
-  const senderId = userRole === "driver" ? "d1" : "p1";
+  const senderId = userRole === "driver"
+    ? (currentDriver?.id || `d-${Date.now()}`)
+    : (currentProvider?.id || `p-${Date.now()}`);
 
   const { messages, status, sendMessage } = useChat({
     conversationId: route.params.conversationId,

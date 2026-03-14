@@ -49,16 +49,7 @@ export default function ProviderPaymentSettingsScreen() {
     .reduce((s, r) => s + (r.totalCost || r.estimatedCost || 0) * (1 - PLATFORM_FEE_PERCENT / 100), 0);
   const availableBalance = Math.max(0, totalNet - pendingBalance);
 
-  const [accounts, setAccounts] = useState<BankAccount[]>([
-    {
-      id: "bank-1",
-      bankName: "Chase Bank",
-      accountType: "checking",
-      last4: "4821",
-      routingLast4: "0113",
-      isDefault: true,
-    },
-  ]);
+  const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [payoutSchedule, setPayoutSchedule] = useState<PayoutSchedule>("weekly");
   const [instantPayoutEnabled, setInstantPayoutEnabled] = useState(false);
   const [minimumThreshold, setMinimumThreshold] = useState("25");
@@ -67,7 +58,7 @@ export default function ProviderPaymentSettingsScreen() {
   const [routingNumber, setRoutingNumber] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
   const [accountType, setAccountType] = useState<"checking" | "savings">("checking");
-  const [taxSSN, setTaxSSN] = useState("***-**-4729");
+  const [taxSSN, setTaxSSN] = useState("");
   const [showSSN, setShowSSN] = useState(false);
 
   const handleAddAccount = () => {
@@ -428,23 +419,41 @@ export default function ProviderPaymentSettingsScreen() {
             TAX INFORMATION
           </ThemedText>
 
-          <View style={[styles.taxRow, { borderTopColor: theme.border, borderTopWidth: 1 }]}>
+          <Pressable
+            style={[styles.taxRow, { borderTopColor: theme.border, borderTopWidth: 1 }]}
+            onPress={() => {
+              Alert.prompt(
+                "Social Security Number",
+                "Enter your SSN for 1099 tax reporting (stored securely)",
+                (value) => { if (value) setTaxSSN(value); },
+                "plain-text",
+                taxSSN,
+                "number-pad"
+              );
+            }}
+          >
             <Feather name="shield" size={18} color={theme.textSecondary} />
             <View style={styles.taxInfo}>
               <ThemedText type="body" style={{ fontWeight: "500" }}>Social Security Number</ThemedText>
               <ThemedText type="small" style={{ color: theme.textSecondary }}>
-                Used for 1099 tax reporting
+                {taxSSN ? "Used for 1099 tax reporting" : "Required — tap to add"}
               </ThemedText>
             </View>
             <View style={styles.ssnRow}>
-              <ThemedText type="body" style={{ fontWeight: "600", color: theme.text }}>
-                {showSSN ? "492-63-4729" : "•••-••-4729"}
-              </ThemedText>
-              <Pressable onPress={() => setShowSSN((v) => !v)} style={{ marginLeft: Spacing.sm }}>
-                <Feather name={showSSN ? "eye-off" : "eye"} size={16} color={theme.textSecondary} />
-              </Pressable>
+              {taxSSN ? (
+                <>
+                  <ThemedText type="body" style={{ fontWeight: "600", color: theme.text }}>
+                    {showSSN ? taxSSN : `•••-••-${taxSSN.slice(-4)}`}
+                  </ThemedText>
+                  <Pressable onPress={() => setShowSSN((v) => !v)} style={{ marginLeft: Spacing.sm }}>
+                    <Feather name={showSSN ? "eye-off" : "eye"} size={16} color={theme.textSecondary} />
+                  </Pressable>
+                </>
+              ) : (
+                <Feather name="plus-circle" size={18} color={theme.warning} />
+              )}
             </View>
-          </View>
+          </Pressable>
 
           <Pressable
             style={[styles.taxRow, { borderTopColor: theme.border, borderTopWidth: 1 }]}
@@ -454,17 +463,23 @@ export default function ProviderPaymentSettingsScreen() {
             <View style={styles.taxInfo}>
               <ThemedText type="body" style={{ fontWeight: "500" }}>Tax Documents (1099)</ThemedText>
               <ThemedText type="small" style={{ color: theme.textSecondary }}>
-                Download your annual 1099 forms
+                Available each January for the prior tax year
               </ThemedText>
             </View>
             <Feather name="chevron-right" size={18} color={theme.textSecondary} />
           </Pressable>
 
           <View style={[styles.taxRow, { borderTopColor: theme.border, borderTopWidth: 1 }]}>
-            <Feather name="check-circle" size={18} color={theme.success} />
+            <Feather
+              name={taxSSN ? "check-circle" : "alert-circle"}
+              size={18}
+              color={taxSSN ? theme.success : theme.warning}
+            />
             <View style={styles.taxInfo}>
               <ThemedText type="body" style={{ fontWeight: "500" }}>W-9 Status</ThemedText>
-              <ThemedText type="small" style={{ color: theme.success }}>Verified and on file</ThemedText>
+              <ThemedText type="small" style={{ color: taxSSN ? theme.success : theme.warning }}>
+                {taxSSN ? "On file — ready for payouts" : "SSN required to receive payouts"}
+              </ThemedText>
             </View>
           </View>
         </View>

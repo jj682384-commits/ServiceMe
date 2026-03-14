@@ -108,7 +108,7 @@ export default function SignInScreen() {
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
-      setAuthUser({ id: `user_${Date.now()}`, name: "Returning User", email: email.trim(), phone: "+1 555-0000" });
+      setAuthUser({ id: `user_${Date.now()}`, name: "User", email: email.trim(), phone: "" });
       setIsAuthenticated(true);
       navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "RoleSelection" }] }));
     }, 1000);

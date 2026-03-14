@@ -74,10 +74,10 @@ export default function RoleSelectionScreen() {
   const handleDriverSelect = () => {
     setUserRole("driver");
     setCurrentDriver({
-      id: authUser?.id || "d1",
+      id: authUser?.id || `d-${Date.now()}`,
       name: authUser?.name || "Driver",
-      phone: authUser?.phone || "+1 555-0000",
-      email: authUser?.email || "driver@email.com",
+      phone: authUser?.phone || "",
+      email: authUser?.email || "",
       avatarPreset: Math.floor(Math.random() * 5) + 1,
       membership: "free",
     });
@@ -87,21 +87,21 @@ export default function RoleSelectionScreen() {
   const handleProviderSelect = () => {
     setUserRole("provider");
     setCurrentProvider({
-      id: authUser?.id || "p1",
+      id: authUser?.id || `p-${Date.now()}`,
       name: authUser?.name || "Provider",
-      phone: authUser?.phone || "+1 555-0100",
-      email: authUser?.email || "provider@email.com",
-      rating: 4.8,
-      reviewCount: 47,
+      phone: authUser?.phone || "",
+      email: authUser?.email || "",
+      rating: 0,
+      reviewCount: 0,
       vehicleType: "service_van",
-      vehicleMake: "Ford",
-      vehicleModel: "Transit",
-      licensePlate: "SVC-001",
-      servicesOffered: ["jump_start", "flat_tire", "fuel", "lockout"],
+      vehicleMake: "",
+      vehicleModel: "",
+      licensePlate: "",
+      servicesOffered: [],
       isAvailable: false,
       providerType: "independent",
-      verificationStatus: "verified",
-      badges: [{ type: "five_star" as const, label: "5-Star for 6 Months" }],
+      verificationStatus: "not_started",
+      badges: [],
     });
     navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "ProviderTabs" }] }));
   };

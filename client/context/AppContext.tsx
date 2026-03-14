@@ -1,7 +1,5 @@
 import React, { createContext, useContext, useState, useMemo, useEffect, ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { mockHistory as initialHistory } from "@/constants/mockHistory";
-
 export type UserRole = "driver" | "provider" | null;
 
 export type MembershipTier = "free" | "premium";
@@ -368,175 +366,6 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-const mockProviders: Provider[] = [
-  {
-    id: "p1",
-    name: "Mike's Towing",
-    phone: "+1 555-0101",
-    email: "mike@towing.com",
-    rating: 4.8,
-    reviewCount: 156,
-    vehicleType: "tow_truck",
-    vehicleMake: "Ford",
-    vehicleModel: "F-550",
-    licensePlate: "TOW-123",
-    servicesOffered: ["tow", "flat_tire", "jump_start", "lockout"],
-    isAvailable: true,
-    providerType: "shop",
-    verificationStatus: "verified",
-    badges: [
-      { type: "centurion", label: "100+ Successful Calls" },
-      { type: "veteran", label: "3+ Years Experience" },
-    ],
-    location: { latitude: 37.7849, longitude: -122.4094 },
-  },
-  {
-    id: "p2",
-    name: "Quick Fix Auto",
-    phone: "+1 555-0102",
-    email: "quick@fixauto.com",
-    rating: 4.6,
-    reviewCount: 89,
-    vehicleType: "service_van",
-    vehicleMake: "Mercedes",
-    vehicleModel: "Sprinter",
-    licensePlate: "FIX-456",
-    servicesOffered: ["flat_tire", "jump_start", "fuel", "lockout"],
-    isAvailable: true,
-    providerType: "shop",
-    verificationStatus: "verified",
-    badges: [
-      { type: "speed_demon", label: "Fast Response" },
-    ],
-    location: { latitude: 37.7899, longitude: -122.4034 },
-  },
-  {
-    id: "p3",
-    name: "Road Rescue",
-    phone: "+1 555-0103",
-    email: "help@roadrescue.com",
-    rating: 4.9,
-    reviewCount: 234,
-    vehicleType: "pickup",
-    vehicleMake: "Chevrolet",
-    vehicleModel: "Silverado",
-    licensePlate: "RES-789",
-    servicesOffered: ["flat_tire", "jump_start", "fuel", "other"],
-    isAvailable: true,
-    providerType: "independent",
-    verificationStatus: "verified",
-    badges: [
-      { type: "five_star", label: "5-Star for 6 Months" },
-      { type: "centurion", label: "100+ Successful Calls" },
-      { type: "night_owl", label: "Night Shift Specialist" },
-    ],
-    location: { latitude: 37.7799, longitude: -122.4194 },
-  },
-  {
-    id: "p4",
-    name: "Bay Area Roadside",
-    phone: "+1 555-0104",
-    email: "bay@roadside.com",
-    rating: 4.5,
-    reviewCount: 67,
-    vehicleType: "service_van",
-    vehicleMake: "Ford",
-    vehicleModel: "Transit",
-    licensePlate: "BAY-321",
-    servicesOffered: ["flat_tire", "jump_start", "fuel", "lockout", "obd_diagnostic"],
-    isAvailable: true,
-    providerType: "shop",
-    verificationStatus: "verified",
-    badges: [
-      { type: "veteran", label: "3+ Years Experience" },
-    ],
-    location: { latitude: 37.7920, longitude: -122.4150 },
-  },
-  {
-    id: "p5",
-    name: "Carlos H.",
-    phone: "+1 555-0105",
-    email: "carlos@helpers.com",
-    rating: 4.7,
-    reviewCount: 42,
-    vehicleType: "pickup",
-    vehicleMake: "Toyota",
-    vehicleModel: "Tacoma",
-    licensePlate: "HLP-555",
-    servicesOffered: ["flat_tire", "jump_start", "fuel"],
-    isAvailable: true,
-    providerType: "independent",
-    verificationStatus: "verified",
-    badges: [
-      { type: "speed_demon", label: "Fast Response" },
-      { type: "night_owl", label: "Night Shift Specialist" },
-    ],
-    location: { latitude: 37.7780, longitude: -122.4050 },
-  },
-  {
-    id: "p6",
-    name: "Golden Gate Towing",
-    phone: "+1 555-0106",
-    email: "info@ggtowing.com",
-    rating: 4.4,
-    reviewCount: 198,
-    vehicleType: "tow_truck",
-    vehicleMake: "International",
-    vehicleModel: "4300",
-    licensePlate: "GGT-888",
-    servicesOffered: ["tow", "flat_tire", "lockout"],
-    isAvailable: true,
-    providerType: "shop",
-    verificationStatus: "verified",
-    badges: [
-      { type: "centurion", label: "100+ Successful Calls" },
-    ],
-    location: { latitude: 37.7950, longitude: -122.4200 },
-  },
-  {
-    id: "p7",
-    name: "Sarah M.",
-    phone: "+1 555-0107",
-    email: "sarah@quickhelp.com",
-    rating: 5.0,
-    reviewCount: 28,
-    vehicleType: "pickup",
-    vehicleMake: "Honda",
-    vehicleModel: "Ridgeline",
-    licensePlate: "SRH-777",
-    servicesOffered: ["flat_tire", "jump_start", "lockout", "other"],
-    isAvailable: true,
-    providerType: "independent",
-    verificationStatus: "verified",
-    badges: [
-      { type: "five_star", label: "5-Star for 6 Months" },
-    ],
-    location: { latitude: 37.7830, longitude: -122.3990 },
-  },
-  {
-    id: "p8",
-    name: "AutoCare Express",
-    phone: "+1 555-0108",
-    email: "service@autocare.com",
-    rating: 4.3,
-    reviewCount: 312,
-    vehicleType: "service_van",
-    vehicleMake: "Ram",
-    vehicleModel: "ProMaster",
-    licensePlate: "ACE-999",
-    servicesOffered: ["flat_tire", "jump_start", "fuel", "lockout", "obd_diagnostic", "other"],
-    isAvailable: true,
-    providerType: "shop",
-    verificationStatus: "verified",
-    badges: [
-      { type: "centurion", label: "100+ Successful Calls" },
-      { type: "veteran", label: "3+ Years Experience" },
-      { type: "speed_demon", label: "Fast Response" },
-    ],
-    location: { latitude: 37.7870, longitude: -122.4250 },
-  },
-];
-
 export function AppProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
@@ -545,9 +374,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [currentProvider, setCurrentProvider] = useState<Provider | null>(null);
   const [_persisted, _setPersisted] = useState(false);
   const [activeRequest, setActiveRequest] = useState<ServiceRequest | null>(null);
-  const [requestHistory, setRequestHistory] = useState<ServiceRequest[]>(initialHistory);
+  const [requestHistory, setRequestHistory] = useState<ServiceRequest[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [nearbyProviders, setNearbyProviders] = useState<Provider[]>(mockProviders);
+  const [nearbyProviders, setNearbyProviders] = useState<Provider[]>([]);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [searchRadius, setSearchRadius] = useState(10);
   const [serviceRadius, setServiceRadius] = useState(15);
@@ -612,26 +441,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setBackgroundPreferences((prev) => ({ ...prev, colorScheme: scheme }));
   };
 
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([
-    {
-      id: "pm-1",
-      type: "visa",
-      last4: "4242",
-      isDefault: true,
-      expiryMonth: 12,
-      expiryYear: 2027,
-      cardholderName: "Alex Johnson",
-    },
-    {
-      id: "pm-2",
-      type: "mastercard",
-      last4: "8888",
-      isDefault: false,
-      expiryMonth: 6,
-      expiryYear: 2026,
-      cardholderName: "Alex Johnson",
-    },
-  ]);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
 
   const getProviderServiceCount = (providerId: string): number => {
     return requestHistory.filter(

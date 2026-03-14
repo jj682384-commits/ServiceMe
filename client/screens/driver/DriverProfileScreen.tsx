@@ -160,14 +160,14 @@ export default function DriverProfileScreen() {
         <View style={styles.profileHeader}>
           <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
             <ThemedText type="h2" style={{ color: "#FFFFFF" }}>
-              {currentDriver?.name?.charAt(0) || "A"}
+              {currentDriver?.name?.charAt(0) || "D"}
             </ThemedText>
           </View>
           <ThemedText type="h3" style={styles.profileName}>
-            {currentDriver?.name || "Alex Johnson"}
+            {currentDriver?.name || "Driver"}
           </ThemedText>
           <ThemedText type="body" style={{ color: theme.textSecondary }}>
-            {currentDriver?.email || "alex@email.com"}
+            {currentDriver?.email || ""}
           </ThemedText>
         </View>
 
@@ -257,8 +257,8 @@ export default function DriverProfileScreen() {
             value={preferredProviders.length > 0 ? `${preferredProviders.length}` : undefined}
             onPress={() => navigation.navigate("PreferredProviders")}
           />
-          <MenuItem icon="phone" label="Phone" value={currentDriver?.phone || "+1 555-1234"} showArrow={false} />
-          <MenuItem icon="mail" label="Email" value={currentDriver?.email || "alex@email.com"} showArrow={false} />
+          <MenuItem icon="phone" label="Phone" value={currentDriver?.phone || "Not set"} showArrow={false} />
+          <MenuItem icon="mail" label="Email" value={currentDriver?.email || "Not set"} showArrow={false} />
         </View>
 
         <View style={[styles.section, { backgroundColor: sectionBg }]}>
