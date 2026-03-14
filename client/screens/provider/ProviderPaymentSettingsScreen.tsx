@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -7,7 +7,9 @@ import {
   Alert,
   TextInput,
   Switch,
+  Modal,
 } from "react-native";
+import Slider from "@react-native-community/slider";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
@@ -60,6 +62,14 @@ export default function ProviderPaymentSettingsScreen() {
   const [accountType, setAccountType] = useState<"checking" | "savings">("checking");
   const [taxSSN, setTaxSSN] = useState("");
   const [showSSN, setShowSSN] = useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [withdrawAmount, setWithdrawAmount] = useState(0);
+
+  useEffect(() => {
+    setWithdrawAmount(availableBalance);
+  }, [availableBalance]);
+
+  const PRESETS = [10, 25, 50, 100];
 
   const handleAddAccount = () => {
     if (!bankName.trim() || routingNumber.length < 9 || accountNumber.length < 4) {
@@ -107,13 +117,23 @@ export default function ProviderPaymentSettingsScreen() {
       Alert.alert("No Funds Available", "You don't have any funds available for transfer right now.");
       return;
     }
+    setWithdrawAmount(availableBalance);
+    setShowWithdrawModal(true);
+  };
+
+  const handleConfirmTransfer = () => {
+    if (withdrawAmount < 1) {
+      Alert.alert("Amount Too Low", "Please select at least $1 to transfer.");
+      return;
+    }
+    const defaultAccount = accounts.find((a) => a.isDefault);
+    const destination = defaultAccount
+      ? `${defaultAccount.bankName} ••••${defaultAccount.last4}`
+      : "your bank account";
+    setShowWithdrawModal(false);
     Alert.alert(
-      "Transfer Funds",
-      `Transfer $${availableBalance.toFixed(2)} to your ${accounts.find((a) => a.isDefault)?.bankName || "bank"}?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Transfer", onPress: () => Alert.alert("Transfer Initiated", "Funds will arrive in 1-2 business days.") },
-      ]
+      "Transfer Initiated",
+      `$${withdrawAmount.toFixed(2)} will arrive in ${destination} within 1-2 business days.`
     );
   };
 
@@ -491,6 +511,144 @@ export default function ProviderPaymentSettingsScreen() {
           </ThemedText>
         </View>
       </KeyboardAwareScrollViewCompat>
+
+      <Modal
+        visible={showWithdrawModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowWithdrawModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalSheet, { backgroundColor: theme.backgroundDefault }]}>
+            <View style={styles.modalHandle} />
+
+            <View style={styles.modalHeader}>
+              <ThemedText type="h3" style={{ fontWeight: "700" }}>Withdraw Funds</ThemedText>
+              <Pressable onPress={() => setShowWithdrawModal(false)}>
+                <Feather name="x" size={22} color={theme.textSecondary} />
+              </Pressable>
+            </View>
+
+            <View style={[styles.amountDisplay, { backgroundColor: theme.backgroundSecondary, borderColor: theme.border }]}>
+              <ThemedText type="small" style={{ color: theme.textSecondary, fontWeight: "500", marginBottom: 4 }}>
+                WITHDRAW AMOUNT
+              </ThemedText>
+              <ThemedText type="h1" style={{ color: theme.success, fontWeight: "800", fontSize: 48 }}>
+                ${withdrawAmount.toFixed(2)}
+              </ThemedText>
+              <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: 4 }}>
+                of ${availableBalance.toFixed(2)} available
+              </ThemedText>
+            </View>
+
+            <View style={styles.sliderWrapper}>
+              <ThemedText type="small" style={{ color: theme.textSecondary, marginBottom: Spacing.sm }}>
+                Drag to choose an amount
+              </ThemedText>
+              <Slider
+                style={styles.slider}
+                minimumValue={1}
+                maximumValue={Math.max(availableBalance, 1)}
+                step={1}
+                value={withdrawAmount}
+                onValueChange={(val) => setWithdrawAmount(Math.round(val))}
+                minimumTrackTintColor={theme.success}
+                maximumTrackTintColor={theme.border}
+                thumbTintColor={theme.success}
+              />
+              <View style={styles.sliderLabels}>
+                <ThemedText type="small" style={{ color: theme.textSecondary }}>$1</ThemedText>
+                <ThemedText type="small" style={{ color: theme.textSecondary }}>${Math.max(availableBalance, 1).toFixed(0)}</ThemedText>
+              </View>
+            </View>
+
+            <View style={styles.presetsRow}>
+              {PRESETS.filter((p) => p <= availableBalance).map((preset) => (
+                <Pressable
+                  key={preset}
+                  onPress={() => setWithdrawAmount(preset)}
+                  style={({ pressed }) => [
+                    styles.presetChip,
+                    {
+                      backgroundColor: withdrawAmount === preset ? theme.success : theme.backgroundSecondary,
+                      borderColor: withdrawAmount === preset ? theme.success : theme.border,
+                      opacity: pressed ? 0.7 : 1,
+                    },
+                  ]}
+                >
+                  <ThemedText
+                    type="small"
+                    style={{ fontWeight: "700", color: withdrawAmount === preset ? "#FFFFFF" : theme.text }}
+                  >
+                    ${preset}
+                  </ThemedText>
+                </Pressable>
+              ))}
+              <Pressable
+                onPress={() => setWithdrawAmount(availableBalance)}
+                style={({ pressed }) => [
+                  styles.presetChip,
+                  {
+                    backgroundColor: withdrawAmount === availableBalance ? theme.success : theme.backgroundSecondary,
+                    borderColor: withdrawAmount === availableBalance ? theme.success : theme.border,
+                    opacity: pressed ? 0.7 : 1,
+                  },
+                ]}
+              >
+                <ThemedText
+                  type="small"
+                  style={{ fontWeight: "700", color: withdrawAmount === availableBalance ? "#FFFFFF" : theme.text }}
+                >
+                  All
+                </ThemedText>
+              </Pressable>
+            </View>
+
+            {accounts.find((a) => a.isDefault) ? (
+              <View style={[styles.destinationRow, { backgroundColor: theme.backgroundSecondary, borderColor: theme.border }]}>
+                <Feather name="home" size={16} color={theme.textSecondary} />
+                <ThemedText type="small" style={{ color: theme.textSecondary, flex: 1 }}>
+                  To: {accounts.find((a) => a.isDefault)?.bankName} ••••{accounts.find((a) => a.isDefault)?.last4}
+                </ThemedText>
+              </View>
+            ) : (
+              <View style={[styles.destinationRow, { backgroundColor: theme.warning + "15", borderColor: theme.warning + "40" }]}>
+                <Feather name="alert-circle" size={16} color={theme.warning} />
+                <ThemedText type="small" style={{ color: theme.warning, flex: 1 }}>
+                  Add a bank account to enable transfers
+                </ThemedText>
+              </View>
+            )}
+
+            <View style={styles.modalActions}>
+              <Pressable
+                onPress={() => setShowWithdrawModal(false)}
+                style={({ pressed }) => [
+                  styles.modalActionButton,
+                  { backgroundColor: theme.backgroundSecondary, opacity: pressed ? 0.7 : 1 },
+                ]}
+              >
+                <ThemedText type="body" style={{ fontWeight: "600" }}>Cancel</ThemedText>
+              </Pressable>
+              <Pressable
+                onPress={handleConfirmTransfer}
+                style={({ pressed }) => [
+                  styles.modalActionButton,
+                  {
+                    backgroundColor: accounts.find((a) => a.isDefault) ? theme.success : theme.border,
+                    flex: 1,
+                    opacity: pressed ? 0.7 : 1,
+                  },
+                ]}
+              >
+                <ThemedText type="body" style={{ fontWeight: "700", color: "#FFFFFF" }}>
+                  Transfer ${withdrawAmount.toFixed(2)}
+                </ThemedText>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ThemedView>
   );
 }
@@ -677,5 +835,81 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: Spacing.xl,
     alignItems: "flex-start",
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0,0,0,0.45)",
+  },
+  modalSheet: {
+    borderTopLeftRadius: BorderRadius.xl,
+    borderTopRightRadius: BorderRadius.xl,
+    paddingBottom: 36,
+    paddingHorizontal: Spacing.lg,
+  },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "rgba(128,128,128,0.4)",
+    alignSelf: "center",
+    marginVertical: Spacing.md,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: Spacing.lg,
+  },
+  amountDisplay: {
+    alignItems: "center",
+    paddingVertical: Spacing.xl,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    marginBottom: Spacing.lg,
+  },
+  sliderWrapper: {
+    marginBottom: Spacing.lg,
+  },
+  slider: {
+    width: "100%",
+    height: 44,
+  },
+  sliderLabels: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: -Spacing.xs,
+  },
+  presetsRow: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+    marginBottom: Spacing.lg,
+    flexWrap: "wrap",
+  },
+  presetChip: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+  },
+  destinationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    marginBottom: Spacing.lg,
+  },
+  modalActions: {
+    flexDirection: "row",
+    gap: Spacing.md,
+  },
+  modalActionButton: {
+    borderRadius: BorderRadius.md,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
