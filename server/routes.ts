@@ -85,6 +85,7 @@ interface JobRecord {
   expressFee?: number;
   serviceFee?: number;
   totalCost?: number;
+  tip?: number;
   receiptNumber?: string;
   timeSaved?: number;
   createdAt: string;
@@ -408,6 +409,16 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
     }
 
     res.json(job);
+  });
+
+  app.patch("/api/jobs/:id/tip", (req: Request, res: Response) => {
+    const { tip, totalCost } = req.body as { tip?: number; totalCost?: number };
+    const job = jobStore.get(req.params.id);
+    if (!job) return res.status(404).json({ error: "Job not found" });
+    if (typeof tip === "number") job.tip = tip;
+    if (typeof totalCost === "number") job.totalCost = totalCost;
+    broadcastJobUpdate(job);
+    res.json({ success: true });
   });
 
   app.patch("/api/jobs/:id/location", (req: Request, res: Response) => {

@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect, useState } from "react";
 import { View, StyleSheet, FlatList, Pressable, Alert } from "react-native";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -8,6 +8,7 @@ import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceType, ServiceRequest } from "@/context/AppContext";
+import { getApiUrl } from "@/lib/queryClient";
 import { Spacing, BorderRadius } from "@/constants/theme";
 
 const PLATFORM_FEE = 0.15;
@@ -135,23 +136,57 @@ export default function ProviderEarningsHistoryScreen() {
   const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
-  const { requestHistory, currentProvider } = useApp();
+  const { requestHistory, currentProvider, updateHistoryEntry } = useApp();
+
+  // Map of jobId → tip amount fetched from server (so driver's tip shows correctly)
+  const [serverTips, setServerTips] = useState<Record<string, number>>({});
+
+  const completedJobs = useMemo(
+    () =>
+      requestHistory
+        .filter((r) => r.provider?.id === currentProvider?.id && r.status === "completed")
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()),
+    [requestHistory, currentProvider],
+  );
+
+  useEffect(() => {
+    if (completedJobs.length === 0) return;
+    const fetchTips = async () => {
+      const results: Record<string, number> = {};
+      await Promise.all(
+        completedJobs.map(async (r) => {
+          try {
+            const url = new URL(`/api/jobs/${r.id}`, getApiUrl());
+            const res = await fetch(url.toString(), { headers: { "Cache-Control": "no-cache" } });
+            if (!res.ok) return;
+            const job = await res.json();
+            if (typeof job.tip === "number") {
+              results[r.id] = job.tip;
+              // Write tip back into local history so dashboard totals stay accurate
+              if (r.tip !== job.tip) {
+                updateHistoryEntry(r.id, { tip: job.tip, totalCost: job.totalCost });
+              }
+            }
+          } catch {
+          }
+        }),
+      );
+      setServerTips((prev) => ({ ...prev, ...results }));
+    };
+    fetchTips();
+  }, [completedJobs.length]);
 
   const entries = useMemo<EarningEntry[]>(() => {
-    const completed = requestHistory
-      .filter((r) => r.provider?.id === currentProvider?.id && r.status === "completed")
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-
-    return completed.map((r, i) => {
+    return completedJobs.map((r, i) => {
       const gross = r.estimatedCost || 0;
-      const tip = (r.totalCost || 0) - gross;
-      const safeTip = tip > 0 ? tip : 0;
+      // Prefer server-fetched tip; fall back to local calculation
+      const tip = serverTips[r.id] !== undefined ? serverTips[r.id] : Math.max(0, (r.tip || 0));
       const fee = gross * PLATFORM_FEE;
-      const net = gross - fee + safeTip;
+      const net = gross - fee + tip;
       const { status, payoutDate } = getPayoutStatus(r, i);
-      return { id: r.id, request: r, gross, fee, net, tip: safeTip, status, payoutDate };
+      return { id: r.id, request: r, gross, fee, net, tip, status, payoutDate };
     });
-  }, [requestHistory, currentProvider]);
+  }, [completedJobs, serverTips]);
 
   const now = new Date();
   const startOfWeek = new Date(now);

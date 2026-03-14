@@ -15,6 +15,7 @@ import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceType } from "@/context/AppContext";
+import { getApiUrl } from "@/lib/queryClient";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { COMPETITOR_PRICES, SERVICE_FEE, SERVICE_TYPE_LABELS } from "@/constants/pricing";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
@@ -123,26 +124,33 @@ export default function ServiceCompletionScreen() {
   const tipAmount = calculateTip();
   const totalAmount = serviceCost + SERVICE_FEE + tipAmount;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setIsSubmitting(true);
-    
-    setTimeout(() => {
-      if (activeRequest?.id) {
-        updateHistoryEntry(activeRequest.id, {
-          tip: tipAmount,
-          totalCost: totalAmount,
-          status: "completed",
+    if (activeRequest?.id) {
+      updateHistoryEntry(activeRequest.id, {
+        tip: tipAmount,
+        totalCost: totalAmount,
+        status: "completed",
+      });
+      // Persist tip to server so provider earnings screen shows correct amount
+      try {
+        const url = new URL(`/api/jobs/${activeRequest.id}/tip`, getApiUrl());
+        await fetch(url.toString(), {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tip: tipAmount, totalCost: totalAmount }),
         });
+      } catch {
       }
-      setActiveRequest(null);
-      setIsSubmitting(false);
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [{ name: "DriverTabs" }],
-        })
-      );
-    }, 1000);
+    }
+    setActiveRequest(null);
+    setIsSubmitting(false);
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: "DriverTabs" }],
+      })
+    );
   };
 
   const ratingLabels = ["", "Poor", "Fair", "Good", "Great", "Excellent"];

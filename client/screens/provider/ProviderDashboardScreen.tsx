@@ -15,9 +15,9 @@ const PLATFORM_FEE = 0.15;
 
 function netEarnings(r: ServiceRequest): number {
   const gross = r.estimatedCost || 0;
-  const tip = (r.totalCost || 0) - gross;
-  const safeTip = tip > 0 ? tip : 0;
-  return gross * (1 - PLATFORM_FEE) + safeTip;
+  // r.tip is set when earnings history syncs from server; fall back to 0
+  const tip = typeof r.tip === "number" ? r.tip : 0;
+  return gross * (1 - PLATFORM_FEE) + tip;
 }
 
 function StatCard({
