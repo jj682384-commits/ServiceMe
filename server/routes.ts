@@ -1,7 +1,10 @@
-import type { Express, Request, Response } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "node:http";
 import { WebSocketServer, WebSocket } from "ws";
 import OpenAI from "openai";
+import * as crypto from "crypto";
+import * as fs from "fs";
+import * as path from "path";
 
 interface ProviderBadge {
   type: string;
@@ -23,6 +26,9 @@ interface ProviderRecord {
   isAvailable: boolean;
   providerType: "shop" | "independent";
   verificationStatus: string;
+  verificationDocuments?: Record<string, boolean>;
+  verificationSubmittedAt?: string;
+  verificationNotes?: string;
   badges?: ProviderBadge[];
   location: { latitude: number; longitude: number };
   lastLocationUpdate?: string;
@@ -124,7 +130,107 @@ function broadcastToConversation(conversationId: string, payload: object, exclud
   }
 }
 
+const adminTokens = new Set<string>();
+
+function adminAuth(req: Request, res: Response, next: NextFunction) {
+  const auth = req.headers["authorization"] || "";
+  const token = auth.replace("Bearer ", "").trim();
+  if (!token || !adminTokens.has(token)) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  next();
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
+
+  app.get("/admin", (_req: Request, res: Response) => {
+    const adminPage = path.resolve(process.cwd(), "server", "templates", "admin.html");
+    if (fs.existsSync(adminPage)) {
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.send(fs.readFileSync(adminPage, "utf-8"));
+    } else {
+      res.status(404).send("Admin page not found");
+    }
+  });
+
+  app.post("/api/admin/login", (req: Request, res: Response) => {
+    const { password } = req.body as { password: string };
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    if (!adminPassword) {
+      return res.status(503).json({ error: "ADMIN_PASSWORD not configured" });
+    }
+    if (!password || password !== adminPassword) {
+      return res.status(401).json({ error: "Invalid password" });
+    }
+    const token = crypto.randomBytes(32).toString("hex");
+    adminTokens.add(token);
+    res.json({ token });
+  });
+
+  app.get("/api/admin/providers", adminAuth, (_req: Request, res: Response) => {
+    const providers = providerStore.map((p) => ({
+      id: p.id,
+      name: p.name,
+      email: p.email,
+      phone: p.phone,
+      providerType: p.providerType,
+      verificationStatus: p.verificationStatus,
+      verificationDocuments: p.verificationDocuments || {},
+      verificationSubmittedAt: p.verificationSubmittedAt || null,
+      verificationNotes: p.verificationNotes || null,
+      servicesOffered: p.servicesOffered,
+      vehicleMake: p.vehicleMake,
+      vehicleModel: p.vehicleModel,
+      licensePlate: p.licensePlate,
+      rating: p.rating,
+      reviewCount: p.reviewCount,
+      isAvailable: p.isAvailable,
+    }));
+    res.json(providers);
+  });
+
+  app.post("/api/admin/providers/:id/approve", adminAuth, (req: Request, res: Response) => {
+    const provider = providerStore.find((p) => p.id === req.params.id);
+    if (!provider) return res.status(404).json({ error: "Provider not found" });
+    provider.verificationStatus = "verified";
+    provider.verificationNotes = undefined;
+    res.json({ success: true, verificationStatus: "verified" });
+  });
+
+  app.post("/api/admin/providers/:id/reject", adminAuth, (req: Request, res: Response) => {
+    const { notes } = req.body as { notes?: string };
+    const provider = providerStore.find((p) => p.id === req.params.id);
+    if (!provider) return res.status(404).json({ error: "Provider not found" });
+    provider.verificationStatus = "not_started";
+    provider.verificationNotes = notes || "Your documents were not accepted. Please re-upload and resubmit.";
+    provider.verificationDocuments = {};
+    provider.verificationSubmittedAt = undefined;
+    res.json({ success: true, verificationStatus: "not_started", notes: provider.verificationNotes });
+  });
+
+  app.post("/api/providers/:id/verification", (req: Request, res: Response) => {
+    const { verificationDocuments, verificationSubmittedAt } = req.body as {
+      verificationDocuments: Record<string, boolean>;
+      verificationSubmittedAt: string;
+    };
+    const provider = providerStore.find((p) => p.id === req.params.id);
+    if (!provider) return res.status(404).json({ error: "Provider not found" });
+    provider.verificationDocuments = verificationDocuments;
+    provider.verificationSubmittedAt = verificationSubmittedAt;
+    provider.verificationStatus = "pending";
+    res.json({ success: true });
+  });
+
+  app.get("/api/providers/:id/verification", (req: Request, res: Response) => {
+    const provider = providerStore.find((p) => p.id === req.params.id);
+    if (!provider) return res.status(404).json({ error: "Provider not found" });
+    res.json({
+      verificationStatus: provider.verificationStatus,
+      verificationNotes: provider.verificationNotes || null,
+      verificationSubmittedAt: provider.verificationSubmittedAt || null,
+    });
+  });
+
   app.post("/api/diagnose", async (req: Request, res: Response) => {
     try {
       const { symptom, symptomLabel, followUpQuestions, followUpAnswers } = req.body;

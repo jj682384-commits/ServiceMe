@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   StyleSheet,
@@ -12,10 +12,10 @@ import { Feather } from "@expo/vector-icons";
 
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
-import { VerificationBadge } from "@/components/VerificationBadge";
 import { ScreenDecoration } from "@/components/ScreenDecoration";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/context/AppContext";
+import { apiRequest } from "@/lib/query-client";
 import { Spacing, BorderRadius } from "@/constants/theme";
 
 const INDEPENDENT_DOCS: { key: string; label: string; description: string; icon: keyof typeof Feather.glyphMap }[] = [
@@ -144,15 +144,45 @@ export default function ProviderVerificationScreen() {
     currentProvider?.verificationDocuments ?? {}
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const allDocsUploaded = requiredDocs.every((d) => docs[d.key]);
   const anyDocUploaded = requiredDocs.some((d) => docs[d.key]);
   const submittedAt = currentProvider?.verificationSubmittedAt;
 
+  useEffect(() => {
+    if (status === "pending" && currentProvider?.id) {
+      pollRef.current = setInterval(async () => {
+        try {
+          const res = await apiRequest("GET", `/api/providers/${currentProvider.id}/verification`);
+          const data = await res.json();
+          if (data.verificationStatus && data.verificationStatus !== status) {
+            setCurrentProvider({
+              ...currentProvider,
+              verificationStatus: data.verificationStatus,
+              verificationNotes: data.verificationNotes || undefined,
+            });
+            if (data.verificationStatus === "verified") {
+              Alert.alert("Verified!", "Congratulations! Your identity has been verified. You now appear as a trusted provider.");
+            } else if (data.verificationStatus === "not_started") {
+              const note = data.verificationNotes || "Please re-upload your documents and resubmit.";
+              Alert.alert("Action Required", `Your documents were not accepted.\n\n${note}`);
+              setDocs({});
+            }
+            clearInterval(pollRef.current!);
+          }
+        } catch {
+          // silent — polling, not critical
+        }
+      }, 15000);
+    }
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  }, [status, currentProvider?.id]);
+
   const handleUpload = (key: string) => {
     Alert.alert(
       "Upload Document",
-      "In a production build, this opens your camera or photo library. For now, tap Confirm to mark this document as submitted.",
+      "In a production build this opens your camera or photo library. Tap Confirm to mark this document as ready.",
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -169,15 +199,23 @@ export default function ProviderVerificationScreen() {
     );
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!allDocsUploaded) {
       Alert.alert("Documents Required", "Please upload all required documents before submitting.");
       return;
     }
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      const now = new Date().toISOString();
+    const now = new Date().toISOString();
+    try {
+      if (currentProvider?.id) {
+        await apiRequest("POST", `/api/providers/${currentProvider.id}/verification`, {
+          verificationDocuments: docs,
+          verificationSubmittedAt: now,
+        });
+      }
+    } catch {
+      // If server is unreachable, save locally anyway
+    } finally {
       if (currentProvider) {
         setCurrentProvider({
           ...currentProvider,
@@ -186,12 +224,13 @@ export default function ProviderVerificationScreen() {
           verificationSubmittedAt: now,
         });
       }
+      setIsSubmitting(false);
       Alert.alert(
         "Submitted",
-        "Your documents have been submitted for review. You'll be notified once verified (typically 1–2 business days).",
+        "Your documents have been submitted for review. You'll be notified once verified — typically 1–2 business days.",
         [{ text: "OK" }]
       );
-    }, 1200);
+    }
   };
 
   const stepStatuses = (): { account: StepStatus; documents: StepStatus; review: StepStatus; verified: StepStatus } => {
