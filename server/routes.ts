@@ -156,10 +156,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/login", (req: Request, res: Response) => {
     const { password } = req.body as { password: string };
     const adminPassword = (process.env.ADMIN_PASSWORD || "").trim();
+    const submitted = (password || "").trim();
+    console.log(`[ADMIN] env pw len=${adminPassword.length} submitted len=${submitted.length} match=${submitted === adminPassword}`);
     if (!adminPassword) {
       return res.status(503).json({ error: "ADMIN_PASSWORD not configured" });
     }
-    if (!password || password.trim() !== adminPassword) {
+    if (!submitted || submitted !== adminPassword) {
       return res.status(401).json({ error: "Invalid password" });
     }
     const token = crypto.randomBytes(32).toString("hex");
