@@ -157,7 +157,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const { password } = req.body as { password: string };
     const adminPassword = (process.env.ADMIN_PASSWORD || "").trim();
     const submitted = (password || "").trim();
-    console.log(`[ADMIN] env pw len=${adminPassword.length} submitted len=${submitted.length} match=${submitted === adminPassword}`);
     if (!adminPassword) {
       return res.status(503).json({ error: "ADMIN_PASSWORD not configured" });
     }
