@@ -124,25 +124,32 @@ export default function ServiceCompletionScreen() {
   const tipAmount = calculateTip();
   const totalAmount = serviceCost + SERVICE_FEE + tipAmount;
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
+    if (isSubmitting) return;
     setIsSubmitting(true);
-    if (activeRequest?.id) {
-      updateHistoryEntry(activeRequest.id, {
+
+    const jobId = activeRequest?.id;
+
+    // Save tip locally first — this is instant and never blocked by the network
+    if (jobId) {
+      updateHistoryEntry(jobId, {
         tip: tipAmount,
         totalCost: totalAmount,
         status: "completed",
       });
-      // Persist tip to server so provider earnings screen shows correct amount
-      try {
-        const url = new URL(`/api/jobs/${activeRequest.id}/tip`, getApiUrl());
-        await fetch(url.toString(), {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ tip: tipAmount, totalCost: totalAmount }),
-        });
-      } catch {
-      }
     }
+
+    // Fire-and-forget: persist tip to server so provider earnings screen is accurate.
+    // Do NOT await — a slow/down server must never freeze the driver's UI.
+    if (jobId) {
+      const url = new URL(`/api/jobs/${jobId}/tip`, getApiUrl());
+      fetch(url.toString(), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tip: tipAmount, totalCost: totalAmount }),
+      }).catch(() => {});
+    }
+
     setActiveRequest(null);
     setIsSubmitting(false);
     navigation.dispatch(
