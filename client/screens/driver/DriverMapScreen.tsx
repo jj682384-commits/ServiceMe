@@ -523,7 +523,7 @@ export default function DriverMapScreen() {
         </Pressable>
       ) : null}
 
-      {!activeRequest ? (
+      {(!activeRequest || activeRequest.status === "completed" || activeRequest.status === "cancelled") ? (
         <View style={[styles.fabContainer, { bottom: tabBarHeight + Spacing.xl }]}>
           <AnimatedPressable
             onPress={() => navigation.navigate("SmartDiagnostic")}

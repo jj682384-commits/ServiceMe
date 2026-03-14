@@ -203,12 +203,11 @@ export default function ActiveServiceScreen() {
   }, [activeRequest?.id]);
 
   // Single source of truth for completion navigation — fires whenever status lands on "completed"
-  // Guard with isFocused so this can't re-trigger after the driver has already been sent home
   useEffect(() => {
-    if (activeRequest?.status === "completed" && userRole === "driver" && isFocused) {
+    if (activeRequest?.status === "completed" && userRole === "driver") {
       navigation.navigate("ServiceCompletion");
     }
-  }, [activeRequest?.status, isFocused]);
+  }, [activeRequest?.status]);
 
   useEffect(() => {
     if (!activeRequest) return;
