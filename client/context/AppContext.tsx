@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useMemo, ReactNode } from "react";
+import React, { createContext, useContext, useState, useMemo, useEffect, ReactNode } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { mockHistory as initialHistory } from "@/constants/mockHistory";
 
 export type UserRole = "driver" | "provider" | null;
@@ -541,6 +542,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [userRole, setUserRole] = useState<UserRole>(null);
   const [currentDriver, setCurrentDriver] = useState<Driver | null>(null);
   const [currentProvider, setCurrentProvider] = useState<Provider | null>(null);
+  const [_persisted, _setPersisted] = useState(false);
   const [activeRequest, setActiveRequest] = useState<ServiceRequest | null>(null);
   const [requestHistory, setRequestHistory] = useState<ServiceRequest[]>(initialHistory);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -565,6 +567,41 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const removePendingJob = (id: string) => {
     setPendingJobs((prev) => prev.filter((j) => j.id !== id));
   };
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [driverRaw, providerRaw, roleRaw] = await Promise.all([
+          AsyncStorage.getItem("currentDriver"),
+          AsyncStorage.getItem("currentProvider"),
+          AsyncStorage.getItem("userRole"),
+        ]);
+        if (driverRaw) setCurrentDriver(JSON.parse(driverRaw));
+        if (providerRaw) setCurrentProvider(JSON.parse(providerRaw));
+        if (roleRaw) setUserRole(roleRaw as UserRole);
+        if (driverRaw || providerRaw) setIsAuthenticated(true);
+      } catch {}
+      _setPersisted(true);
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (!_persisted) return;
+    if (currentDriver) AsyncStorage.setItem("currentDriver", JSON.stringify(currentDriver)).catch(() => {});
+    else AsyncStorage.removeItem("currentDriver").catch(() => {});
+  }, [currentDriver, _persisted]);
+
+  useEffect(() => {
+    if (!_persisted) return;
+    if (currentProvider) AsyncStorage.setItem("currentProvider", JSON.stringify(currentProvider)).catch(() => {});
+    else AsyncStorage.removeItem("currentProvider").catch(() => {});
+  }, [currentProvider, _persisted]);
+
+  useEffect(() => {
+    if (!_persisted) return;
+    if (userRole) AsyncStorage.setItem("userRole", userRole).catch(() => {});
+    else AsyncStorage.removeItem("userRole").catch(() => {});
+  }, [userRole, _persisted]);
 
   const setBackgroundMode = (mode: BackgroundMode) => {
     setBackgroundPreferences((prev) => ({ ...prev, mode }));
