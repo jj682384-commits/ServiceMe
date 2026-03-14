@@ -215,10 +215,16 @@ function setupErrorHandler(app: express.Application) {
     const message = error.message || "Internal Server Error";
 
     res.status(status).json({ message });
-
-    throw err;
   });
 }
+
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught exception:", err);
+});
+
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled rejection:", reason);
+});
 
 (async () => {
   setupCors(app);
