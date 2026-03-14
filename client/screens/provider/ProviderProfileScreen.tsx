@@ -168,13 +168,13 @@ export default function ProviderProfileScreen() {
             icon="truck"
             label="Vehicle"
             value={currentProvider?.vehicleMake ? `${currentProvider.vehicleMake} ${currentProvider.vehicleModel || ""}`.trim() : "Not set"}
-            showArrow={false}
+            onPress={() => navigation.navigate("ProviderVehicle")}
           />
           <MenuItem
             icon="hash"
             label="License Plate"
             value={currentProvider?.licensePlate || "Not set"}
-            showArrow={false}
+            onPress={() => navigation.navigate("ProviderVehicle")}
           />
         </View>
 
