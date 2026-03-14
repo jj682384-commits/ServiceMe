@@ -213,9 +213,9 @@ export default function ProviderProfileScreen() {
           <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
             EARNINGS
           </ThemedText>
-          <MenuItem icon="dollar-sign" label="Payment Settings" />
-          <MenuItem icon="file-text" label="Earnings History" />
-          <MenuItem icon="download" label="Tax Documents" />
+          <MenuItem icon="dollar-sign" label="Payout Settings" onPress={() => navigation.navigate("ProviderPaymentSettings")} />
+          <MenuItem icon="bar-chart-2" label="Earnings History" onPress={() => navigation.navigate("ProviderEarningsHistory")} />
+          <MenuItem icon="download" label="Tax Documents" onPress={() => navigation.navigate("ProviderPaymentSettings")} />
         </View>
 
         <View style={[styles.section, { backgroundColor: sectionBg }]}>

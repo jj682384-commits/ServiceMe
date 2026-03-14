@@ -38,6 +38,8 @@ import ServiceDetailScreen from "@/screens/ServiceDetailScreen";
 import ProviderSignUpScreen from "@/screens/ProviderSignUpScreen";
 import BackgroundSettingsScreen from "@/screens/BackgroundSettingsScreen";
 import ProviderActiveJobScreen from "@/screens/provider/ProviderActiveJobScreen";
+import ProviderPaymentSettingsScreen from "@/screens/provider/ProviderPaymentSettingsScreen";
+import ProviderEarningsHistoryScreen from "@/screens/provider/ProviderEarningsHistoryScreen";
 
 export type RootStackParamList = {
   Welcome: undefined;
@@ -76,6 +78,8 @@ export type RootStackParamList = {
   ServiceDetail: { requestId: string };
   BackgroundSettings: undefined;
   ProviderActiveJob: undefined;
+  ProviderPaymentSettings: undefined;
+  ProviderEarningsHistory: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -341,6 +345,20 @@ export default function RootStackNavigator() {
         component={ProviderActiveJobScreen}
         options={{
           headerTitle: "Active Job",
+        }}
+      />
+      <Stack.Screen
+        name="ProviderPaymentSettings"
+        component={ProviderPaymentSettingsScreen}
+        options={{
+          headerTitle: "Payout Settings",
+        }}
+      />
+      <Stack.Screen
+        name="ProviderEarningsHistory"
+        component={ProviderEarningsHistoryScreen}
+        options={{
+          headerTitle: "Earnings History",
         }}
       />
     </Stack.Navigator>
