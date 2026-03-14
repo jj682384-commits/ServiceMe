@@ -202,6 +202,26 @@ export default function ProviderProfileScreen() {
 
         <View style={[styles.section, { backgroundColor: sectionBg }]}>
           <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
+            VERIFICATION
+          </ThemedText>
+          <MenuItem
+            icon={
+              currentProvider?.verificationStatus === "verified" ? "shield" :
+              currentProvider?.verificationStatus === "pending" ? "clock" :
+              "alert-circle"
+            }
+            label="ID Verification"
+            value={
+              currentProvider?.verificationStatus === "verified" ? "Verified" :
+              currentProvider?.verificationStatus === "pending" ? "In Review" :
+              "Not Started"
+            }
+            onPress={() => navigation.navigate("ProviderVerification")}
+          />
+        </View>
+
+        <View style={[styles.section, { backgroundColor: sectionBg }]}>
+          <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
             ACCOUNT
           </ThemedText>
           <MenuItem icon="user" label="Edit Profile" onPress={() => navigation.navigate("EditProfile")} />

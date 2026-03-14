@@ -97,6 +97,8 @@ export interface Provider {
   isAvailable: boolean;
   providerType: ProviderType;
   verificationStatus: VerificationStatus;
+  verificationDocuments?: Record<string, boolean>;
+  verificationSubmittedAt?: string;
   badges?: ProviderBadge[];
   location?: {
     latitude: number;

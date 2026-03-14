@@ -41,6 +41,7 @@ import ProviderActiveJobScreen from "@/screens/provider/ProviderActiveJobScreen"
 import ProviderPaymentSettingsScreen from "@/screens/provider/ProviderPaymentSettingsScreen";
 import ProviderEarningsHistoryScreen from "@/screens/provider/ProviderEarningsHistoryScreen";
 import ProviderVehicleScreen from "@/screens/provider/ProviderVehicleScreen";
+import ProviderVerificationScreen from "@/screens/provider/ProviderVerificationScreen";
 
 export type RootStackParamList = {
   Welcome: undefined;
@@ -82,6 +83,7 @@ export type RootStackParamList = {
   ProviderPaymentSettings: undefined;
   ProviderEarningsHistory: undefined;
   ProviderVehicle: undefined;
+  ProviderVerification: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -368,6 +370,13 @@ export default function RootStackNavigator() {
         component={ProviderVehicleScreen}
         options={{
           headerTitle: "My Vehicle",
+        }}
+      />
+      <Stack.Screen
+        name="ProviderVerification"
+        component={ProviderVerificationScreen}
+        options={{
+          headerTitle: "ID Verification",
         }}
       />
     </Stack.Navigator>
