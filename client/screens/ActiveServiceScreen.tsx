@@ -117,6 +117,8 @@ export default function ActiveServiceScreen() {
   const wsRef = useRef<WebSocket | null>(null);
   const activeRequestRef = useRef(activeRequest);
   const isFocused = useIsFocused();
+  // Tracks whether we've already fired the immediate poll for the current job ID
+  const initialPollFiredRef = useRef<string | null>(null);
 
   useEffect(() => {
     activeRequestRef.current = activeRequest;
@@ -131,8 +133,9 @@ export default function ActiveServiceScreen() {
     const timer = setInterval(() => {
       setEta((prev) => {
         if (prev <= 1) {
-          if (activeRequest.status === "accepted" || activeRequest.status === "en_route") {
-            setActiveRequest({ ...activeRequest, status: "arrived" });
+          const cur = activeRequestRef.current;
+          if (cur && (cur.status === "accepted" || cur.status === "en_route")) {
+            setActiveRequest({ ...cur, status: "arrived" });
           }
           return 0;
         }
@@ -141,7 +144,8 @@ export default function ActiveServiceScreen() {
     }, 60000);
 
     return () => clearInterval(timer);
-  }, [activeRequest, isFocused]);
+  // Only recreate the timer when the job changes or focus changes, not on every status update
+  }, [activeRequest?.id, isFocused]);
 
   useEffect(() => {
     if (!activeRequest?.id) return;
@@ -262,7 +266,11 @@ export default function ActiveServiceScreen() {
       }
     };
 
-    poll();
+    // Only fire the immediate poll once per job ID to avoid thrashing on status-change re-runs
+    if (initialPollFiredRef.current !== activeRequest.id) {
+      initialPollFiredRef.current = activeRequest.id;
+      poll();
+    }
     pollRef.current = setInterval(poll, 5000);
 
     return () => {

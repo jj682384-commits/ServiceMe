@@ -268,8 +268,7 @@ export default function ServiceRequestScreen() {
         } catch {
         }
         setIsSubmitting(false);
-        navigation.goBack();
-        navigation.navigate("ActiveService");
+        navigation.replace("ActiveService");
       }
     }, 1000);
   };
