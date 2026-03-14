@@ -167,8 +167,17 @@ export default function ProviderJobsScreen() {
   const { data: serverJobs } = useQuery<ServiceRequest[]>({
     queryKey: ["/api/jobs/pending"],
     queryFn: async () => {
-      const url = new URL("/api/jobs/pending", getApiUrl());
-      const res = await fetch(url.toString());
+      const baseUrl = getApiUrl();
+      const url = new URL("/api/jobs/pending", baseUrl);
+      console.log(`[PROVIDER POLL] apiBase=${baseUrl} fetching ${url.toString()}`);
+      let res: Response;
+      try {
+        res = await fetch(url.toString());
+      } catch (e) {
+        console.log(`[PROVIDER POLL] fetch error: ${e}`);
+        return [];
+      }
+      console.log(`[PROVIDER POLL] status=${res.status} ok=${res.ok}`);
       if (!res.ok) return [];
       const data = await res.json();
       return data.map((j: Record<string, unknown>) => ({
