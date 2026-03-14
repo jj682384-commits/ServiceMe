@@ -1,20 +1,16 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 /**
- * Gets the base URL for the Express API server (e.g., "http://localhost:3000")
- * @returns {string} The API base URL
+ * Gets the base URL for the Express API server.
+ * EXPO_PUBLIC_DOMAIN is set by the workflow as "domain:5000".
+ * Port 5000 is explicitly mapped by Replit's proxy to the Express server.
+ * Do NOT strip the port — without it, requests go to Metro (port 80) instead of Express.
  */
 export function getApiUrl(): string {
-  let host = process.env.EXPO_PUBLIC_DOMAIN;
+  const host = process.env.EXPO_PUBLIC_DOMAIN;
 
   if (!host) {
     throw new Error("EXPO_PUBLIC_DOMAIN is not set");
-  }
-
-  // Replit's proxy routes the dev domain on port 443 to the app internally.
-  // Browsers block HTTPS to explicit non-standard ports, so strip it here.
-  if (host.includes(".replit.dev:")) {
-    host = host.split(":")[0];
   }
 
   const url = new URL(`https://${host}`);
