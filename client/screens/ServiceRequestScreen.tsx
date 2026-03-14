@@ -216,7 +216,7 @@ export default function ServiceRequestScreen() {
   };
 
   const handleSubmit = () => {
-    if (!canSubmit) return;
+    if (!canSubmit || isSubmitting) return;
 
     setIsSubmitting(true);
 
@@ -256,9 +256,7 @@ export default function ServiceRequestScreen() {
       scheduledDate,
     };
 
-    submitTimerRef.current = setTimeout(() => {
-      if (!mountedRef.current) return;
-
+    (async () => {
       if (isScheduled) {
         addToHistory(newRequest);
         if (mountedRef.current) setIsSubmitting(false);
@@ -266,27 +264,36 @@ export default function ServiceRequestScreen() {
         return;
       }
 
-      // Set up local state first — the app works optimistically without the server
+      // Register the job locally so the driver's UI works immediately
       const pendingJob: ServiceRequest = { ...newRequest, provider: undefined, status: "pending" };
       addPendingJob(pendingJob);
       setActiveRequest(pendingJob);
       addToHistory(pendingJob);
 
-      // Navigate immediately — never block on the network
-      if (mountedRef.current) setIsSubmitting(false);
-      navigation.replace("ActiveService");
-
-      // Fire-and-forget server sync — a slow or unreachable server must never freeze the UI
-      const url = new URL("/api/jobs", getApiUrl());
-      fetch(url.toString(), {
+      // POST to server with a 3-second hard abort — providers on separate devices can only
+      // see jobs that reach the server, so we wait for the POST but never hang indefinitely.
+      const controller = new AbortController();
+      const abortTimer = setTimeout(() => controller.abort(), 3000);
+      const postPromise = fetch(new URL("/api/jobs", getApiUrl()).toString(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...pendingJob,
-          createdAt: pendingJob.createdAt.toISOString(),
-        }),
+        body: JSON.stringify({ ...pendingJob, createdAt: pendingJob.createdAt.toISOString() }),
+        signal: controller.signal,
       }).catch(() => {});
-    }, 1000);
+
+      // Always show the spinner for at least 1 second (cosmetic feedback)
+      const cosmeticDelay = new Promise<void>((resolve) => {
+        submitTimerRef.current = setTimeout(resolve, 1000);
+      });
+
+      // Wait for both: POST done (or aborted) AND cosmetic delay elapsed
+      await Promise.all([postPromise, cosmeticDelay]);
+      clearTimeout(abortTimer);
+
+      if (!mountedRef.current) return;
+      setIsSubmitting(false);
+      navigation.replace("ActiveService");
+    })();
   };
 
   return (
