@@ -11,7 +11,13 @@ export function getApiUrl(): string {
     throw new Error("EXPO_PUBLIC_DOMAIN is not set");
   }
 
-  let url = new URL(`https://${host}`);
+  // Replit's proxy routes the dev domain on port 443 to the app internally.
+  // Browsers block HTTPS to explicit non-standard ports, so strip it here.
+  if (host.includes(".replit.dev:")) {
+    host = host.split(":")[0];
+  }
+
+  const url = new URL(`https://${host}`);
 
   return url.href;
 }
