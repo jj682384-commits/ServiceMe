@@ -149,25 +149,31 @@ export default function ActiveServiceScreen() {
     const wsBase = apiUrl.replace(/^https/, "wss").replace(/^http/, "ws").replace(/\/$/, "");
     const wsUrl = `${wsBase}/ws`;
 
-    const applyJobUpdate = (job: { id: string; status: string; provider?: Provider; eta?: number; providerLocation?: { latitude: number; longitude: number } }) => {
+    const applyJobUpdate = (job: Record<string, unknown>) => {
       const current = activeRequestRef.current;
       if (!current || job.id !== current.id) return;
       if (job.status === "cancelled") {
         setActiveRequest(null);
         return;
       }
-      if (job.providerLocation) {
-        setProviderLocation(job.providerLocation);
+      // Fix server field name mismatch: server sends { lat, lng }, client expects { latitude, longitude }
+      const rawLoc = job.providerLocation as { lat?: number; lng?: number; latitude?: number; longitude?: number } | undefined;
+      if (rawLoc) {
+        setProviderLocation({
+          latitude: rawLoc.latitude ?? rawLoc.lat ?? 0,
+          longitude: rawLoc.longitude ?? rawLoc.lng ?? 0,
+        });
       }
       const serverIdx = STATUS_ORDER.indexOf(job.status as ServiceStatus);
       const localIdx = STATUS_ORDER.indexOf(current.status);
-      if (serverIdx > localIdx || (job.provider && !current.provider)) {
+      // Apply if server is ahead OR if job is completed (safety net in case indices are tied)
+      if (serverIdx > localIdx || job.status === "completed" || (job.provider && !current.provider)) {
         const newStatus = job.status as ServiceStatus;
-        const newProvider = job.provider ?? current.provider;
-        setActiveRequest({ ...current, status: newStatus, provider: newProvider, eta: job.eta ?? current.eta });
-        setEta(job.eta ?? current.eta ?? 8);
+        const newProvider = (job.provider as Provider | undefined) ?? current.provider;
+        // setActiveRequest triggers the dedicated completion-navigation useEffect
+        setActiveRequest({ ...current, status: newStatus, provider: newProvider, eta: (job.eta as number | undefined) ?? current.eta });
+        setEta((job.eta as number | undefined) ?? current.eta ?? 8);
         updateHistoryEntry(current.id, { status: newStatus, provider: newProvider });
-        if (newStatus === "completed") navigation.navigate("ServiceCompletion");
       }
     };
 
@@ -196,16 +202,18 @@ export default function ActiveServiceScreen() {
     };
   }, [activeRequest?.id]);
 
+  // Single source of truth for completion navigation — fires whenever status lands on "completed"
+  useEffect(() => {
+    if (activeRequest?.status === "completed" && userRole === "driver") {
+      navigation.navigate("ServiceCompletion");
+    }
+  }, [activeRequest?.status]);
+
   useEffect(() => {
     if (!activeRequest) return;
-    const terminal = activeRequest.status === "completed" || activeRequest.status === "cancelled";
-    if (terminal) {
-      if (pollRef.current) {
-        clearInterval(pollRef.current);
-        pollRef.current = null;
-      }
-      return;
-    }
+    if (activeRequest.status === "cancelled") return;
+    // Don't poll if already completed — the navigation effect above handles it
+    if (activeRequest.status === "completed") return;
 
     const poll = async () => {
       try {
@@ -213,13 +221,8 @@ export default function ActiveServiceScreen() {
         const res = await fetch(url.toString(), {
           headers: { "Cache-Control": "no-cache", "Pragma": "no-cache" },
         });
-        console.log(`[DRIVER POLL] status=${res.status} ok=${res.ok} id=${activeRequest.id}`);
-        if (!res.ok) {
-          console.log(`[DRIVER POLL] non-ok response, skipping`);
-          return;
-        }
+        if (!res.ok) return;
         const job = await res.json();
-        console.log(`[DRIVER POLL] server status=${job.status} local status=${activeRequest.status}`);
 
         if (job.status === "cancelled") {
           if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
@@ -230,13 +233,17 @@ export default function ActiveServiceScreen() {
 
         const serverIdx = STATUS_ORDER.indexOf(job.status as ServiceStatus);
         const localIdx = STATUS_ORDER.indexOf(activeRequest.status);
-        console.log(`[DRIVER POLL] serverIdx=${serverIdx} localIdx=${localIdx}`);
 
         if (job.providerLocation) {
-          setProviderLocation(job.providerLocation as { latitude: number; longitude: number });
+          const loc = job.providerLocation as { lat?: number; lng?: number; latitude?: number; longitude?: number };
+          setProviderLocation({
+            latitude: loc.latitude ?? loc.lat ?? 0,
+            longitude: loc.longitude ?? loc.lng ?? 0,
+          });
         }
 
-        if (serverIdx > localIdx || (job.provider && !activeRequest.provider)) {
+        // Always apply if server is ahead OR if server says completed regardless of local state
+        if (serverIdx > localIdx || job.status === "completed" || (job.provider && !activeRequest.provider)) {
           const newStatus = job.status as ServiceStatus;
           const newProvider = job.provider ? (job.provider as Provider) : activeRequest.provider;
           setActiveRequest({
@@ -246,14 +253,9 @@ export default function ActiveServiceScreen() {
             eta: job.eta ?? activeRequest.eta,
           });
           setEta(job.eta ?? activeRequest.eta ?? 8);
-          updateHistoryEntry(activeRequest.id, {
-            status: newStatus,
-            provider: newProvider,
-          });
-
+          updateHistoryEntry(activeRequest.id, { status: newStatus, provider: newProvider });
           if (newStatus === "completed") {
             if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
-            navigation.navigate("ServiceCompletion");
           }
         }
       } catch {
@@ -261,7 +263,7 @@ export default function ActiveServiceScreen() {
     };
 
     poll();
-    pollRef.current = setInterval(poll, 15000);
+    pollRef.current = setInterval(poll, 5000);
 
     return () => {
       if (pollRef.current) {
