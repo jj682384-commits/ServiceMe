@@ -262,6 +262,7 @@ export default function DriverMapScreen() {
   };
 
   const handleViewActiveService = () => {
+    if (!activeRequest || activeRequest.status === "completed" || activeRequest.status === "cancelled") return;
     navigation.navigate("ActiveService");
   };
 
@@ -493,7 +494,7 @@ export default function DriverMapScreen() {
         </View>
       ) : null}
 
-      {activeRequest ? (
+      {activeRequest && activeRequest.status !== "completed" && activeRequest.status !== "cancelled" ? (
         <Pressable
           onPress={handleViewActiveService}
           style={[
@@ -508,10 +509,14 @@ export default function DriverMapScreen() {
           <View style={[styles.statusDot, { backgroundColor: theme.success }]} />
           <View style={styles.activeServiceInfo}>
             <ThemedText type="body" style={{ fontWeight: "600" }}>
-              Provider en route
+              {activeRequest.status === "pending" ? "Finding a provider…" :
+               activeRequest.status === "accepted" ? "Provider accepted" :
+               activeRequest.status === "arrived" ? "Provider arrived" :
+               activeRequest.status === "in_progress" ? "Service in progress" :
+               "Provider en route"}
             </ThemedText>
             <ThemedText type="small" style={{ color: theme.textSecondary }}>
-              {activeRequest.eta ? `${activeRequest.eta} min away • ${activeRequest.provider?.name}` : activeRequest.provider?.name}
+              {activeRequest.eta ? `${activeRequest.eta} min away • ${activeRequest.provider?.name}` : activeRequest.provider?.name ?? "Tap to track"}
             </ThemedText>
           </View>
           <Feather name="chevron-right" size={24} color={theme.textSecondary} />
