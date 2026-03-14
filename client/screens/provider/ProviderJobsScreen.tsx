@@ -135,18 +135,24 @@ function JobCard({ job }: { job: ServiceRequest }) {
         ) : null}
       </View>
 
-      <Pressable
-        onPress={handleAccept}
-        disabled={accepting}
-        style={({ pressed }) => [
-          styles.acceptButton,
-          { backgroundColor: accepting ? theme.textSecondary : theme.success, opacity: pressed ? 0.8 : 1 },
-        ]}
-      >
-        <ThemedText type="body" style={{ color: "#FFFFFF", fontWeight: "600" }}>
-          {accepting ? "Accepting..." : "Accept Job"}
-        </ThemedText>
-      </Pressable>
+      {currentProvider?.isAvailable ? (
+        <Pressable
+          onPress={handleAccept}
+          disabled={accepting}
+          style={({ pressed }) => [
+            styles.acceptButton,
+            { backgroundColor: accepting ? theme.textSecondary : theme.success, opacity: pressed ? 0.8 : 1 },
+          ]}
+        >
+          <ThemedText type="body" style={{ color: "#FFFFFF", fontWeight: "600" }}>
+            {accepting ? "Accepting..." : "Accept Job"}
+          </ThemedText>
+        </Pressable>
+      ) : (
+        <View style={[styles.acceptButton, { backgroundColor: theme.backgroundDefault, borderWidth: 1, borderColor: theme.border }]}>
+          <ThemedText type="small" style={{ color: theme.textSecondary }}>Go online to accept</ThemedText>
+        </View>
+      )}
     </View>
   );
 }
@@ -170,13 +176,18 @@ export default function ProviderJobsScreen() {
         createdAt: new Date(j.createdAt as string),
       })) as ServiceRequest[];
     },
-    refetchInterval: currentProvider?.isAvailable ? 5000 : false,
-    enabled: currentProvider?.isAvailable ?? false,
+    refetchInterval: 5000,
+    enabled: true,
   });
 
-  const availableJobs = currentProvider?.isAvailable
-    ? (serverJobs && serverJobs.length > 0 ? serverJobs : pendingJobs)
-    : [];
+  const merged = React.useMemo(() => {
+    const map = new Map<string, ServiceRequest>();
+    (pendingJobs ?? []).forEach((j) => map.set(j.id, j));
+    (serverJobs ?? []).forEach((j) => map.set(j.id, j));
+    return Array.from(map.values());
+  }, [serverJobs, pendingJobs]);
+
+  const availableJobs = merged;
 
   return (
     <ThemedView style={styles.container}>

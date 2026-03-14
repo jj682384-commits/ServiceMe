@@ -306,6 +306,7 @@ export interface PreferredProvider {
 }
 
 interface AppContextType {
+  hydrated: boolean;
   isAuthenticated: boolean;
   setIsAuthenticated: (value: boolean) => void;
   authUser: AuthUser | null;
@@ -834,6 +835,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   return (
     <AppContext.Provider
       value={{
+        hydrated: _persisted,
         isAuthenticated,
         setIsAuthenticated,
         authUser,

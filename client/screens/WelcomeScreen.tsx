@@ -3,6 +3,8 @@ import { View, StyleSheet, Image, Pressable, Dimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { CommonActions } from "@react-navigation/native";
+import { useApp } from "@/context/AppContext";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -102,11 +104,18 @@ export default function WelcomeScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { hydrated, isAuthenticated, userRole } = useApp();
   const logoRotate = useSharedValue(0);
 
   useEffect(() => {
     logoRotate.value = withRepeat(withTiming(1, { duration: 30000, easing: Easing.linear }), -1, false);
   }, []);
+
+  useEffect(() => {
+    if (!hydrated || !isAuthenticated) return;
+    const dest = userRole === "provider" ? "ProviderTabs" : "DriverTabs";
+    navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: dest }] }));
+  }, [hydrated, isAuthenticated, userRole]);
 
   const logoAnimStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${interpolate(logoRotate.value, [0, 1], [0, 360])}deg` }],
