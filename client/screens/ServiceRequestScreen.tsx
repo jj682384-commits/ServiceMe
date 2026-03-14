@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import { View, StyleSheet, Pressable, TextInput, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -164,6 +164,17 @@ export default function ServiceRequestScreen() {
   const [selectedService, setSelectedService] = useState<ServiceType | null>(initialServiceType || null);
   const [notes, setNotes] = useState(initialNotes);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const mountedRef = useRef(true);
+  const submitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (submitTimerRef.current) clearTimeout(submitTimerRef.current);
+    };
+  }, []);
+
   const [isExpress, setIsExpress] = useState(false);
   const [selectedFuelIndex, setSelectedFuelIndex] = useState(2);
   const [useCustomFuel, setUseCustomFuel] = useState(false);
@@ -245,31 +256,36 @@ export default function ServiceRequestScreen() {
       scheduledDate,
     };
 
-    setTimeout(async () => {
+    submitTimerRef.current = setTimeout(() => {
+      if (!mountedRef.current) return;
+
       if (isScheduled) {
         addToHistory(newRequest);
-        setIsSubmitting(false);
+        if (mountedRef.current) setIsSubmitting(false);
         navigation.goBack();
-      } else {
-        const pendingJob: ServiceRequest = { ...newRequest, provider: undefined, status: "pending" };
-        addPendingJob(pendingJob);
-        setActiveRequest(pendingJob);
-        addToHistory(pendingJob);
-        try {
-          const url = new URL("/api/jobs", getApiUrl());
-          await fetch(url.toString(), {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              ...pendingJob,
-              createdAt: pendingJob.createdAt.toISOString(),
-            }),
-          });
-        } catch {
-        }
-        setIsSubmitting(false);
-        navigation.replace("ActiveService");
+        return;
       }
+
+      // Set up local state first — the app works optimistically without the server
+      const pendingJob: ServiceRequest = { ...newRequest, provider: undefined, status: "pending" };
+      addPendingJob(pendingJob);
+      setActiveRequest(pendingJob);
+      addToHistory(pendingJob);
+
+      // Navigate immediately — never block on the network
+      if (mountedRef.current) setIsSubmitting(false);
+      navigation.replace("ActiveService");
+
+      // Fire-and-forget server sync — a slow or unreachable server must never freeze the UI
+      const url = new URL("/api/jobs", getApiUrl());
+      fetch(url.toString(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...pendingJob,
+          createdAt: pendingJob.createdAt.toISOString(),
+        }),
+      }).catch(() => {});
     }, 1000);
   };
 
