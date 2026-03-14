@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Location from "expo-location";
 
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -64,7 +65,37 @@ export default function ProviderActiveJobScreen() {
   const { activeRequest, setActiveRequest, updateHistoryEntry } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const gpsRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [advancing, setAdvancing] = useState(false);
+
+  useEffect(() => {
+    if (!activeRequest?.id) return;
+    const activeStatuses: ServiceStatus[] = ["accepted", "en_route", "arrived", "in_progress"];
+    if (!activeStatuses.includes(activeRequest.status)) {
+      if (gpsRef.current) { clearInterval(gpsRef.current); gpsRef.current = null; }
+      return;
+    }
+
+    const pushLocation = async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") return;
+        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        const url = new URL(`/api/jobs/${activeRequest.id}/location`, getApiUrl());
+        await fetch(url.toString(), {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ latitude: loc.coords.latitude, longitude: loc.coords.longitude }),
+        });
+      } catch {
+        // silent — GPS or network failure
+      }
+    };
+
+    pushLocation();
+    gpsRef.current = setInterval(pushLocation, 8000);
+    return () => { if (gpsRef.current) { clearInterval(gpsRef.current); gpsRef.current = null; } };
+  }, [activeRequest?.id, activeRequest?.status]);
 
   useEffect(() => {
     if (!activeRequest) {

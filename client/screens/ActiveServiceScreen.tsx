@@ -112,6 +112,7 @@ export default function ActiveServiceScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const [eta, setEta] = useState(activeRequest?.eta || 8);
+  const [providerLocation, setProviderLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const activeRequestRef = useRef(activeRequest);
@@ -148,16 +149,18 @@ export default function ActiveServiceScreen() {
     const wsBase = apiUrl.replace(/^https/, "wss").replace(/^http/, "ws").replace(/\/$/, "");
     const wsUrl = `${wsBase}/ws`;
 
-    const applyJobUpdate = (job: { id: string; status: string; provider?: Provider; eta?: number }) => {
+    const applyJobUpdate = (job: { id: string; status: string; provider?: Provider; eta?: number; providerLocation?: { latitude: number; longitude: number } }) => {
       const current = activeRequestRef.current;
       if (!current || job.id !== current.id) return;
       if (job.status === "cancelled") {
         setActiveRequest(null);
         return;
       }
+      if (job.providerLocation) {
+        setProviderLocation(job.providerLocation);
+      }
       const serverIdx = STATUS_ORDER.indexOf(job.status as ServiceStatus);
       const localIdx = STATUS_ORDER.indexOf(current.status);
-      console.log(`[WS UPDATE] ${current.status} → ${job.status} (sIdx=${serverIdx} lIdx=${localIdx})`);
       if (serverIdx > localIdx || (job.provider && !current.provider)) {
         const newStatus = job.status as ServiceStatus;
         const newProvider = job.provider ?? current.provider;
@@ -228,6 +231,10 @@ export default function ActiveServiceScreen() {
         const serverIdx = STATUS_ORDER.indexOf(job.status as ServiceStatus);
         const localIdx = STATUS_ORDER.indexOf(activeRequest.status);
         console.log(`[DRIVER POLL] serverIdx=${serverIdx} localIdx=${localIdx}`);
+
+        if (job.providerLocation) {
+          setProviderLocation(job.providerLocation as { latitude: number; longitude: number });
+        }
 
         if (serverIdx > localIdx || (job.provider && !activeRequest.provider)) {
           const newStatus = job.status as ServiceStatus;
@@ -397,8 +404,8 @@ export default function ActiveServiceScreen() {
 
   const userLat = activeRequest.location.latitude ?? 37.7849;
   const userLng = activeRequest.location.longitude ?? -122.4094;
-  const providerLat = activeRequest.provider?.location?.latitude ?? userLat + 0.01;
-  const providerLng = activeRequest.provider?.location?.longitude ?? userLng + 0.01;
+  const providerLat = providerLocation?.latitude ?? activeRequest.provider?.location?.latitude ?? userLat + 0.01;
+  const providerLng = providerLocation?.longitude ?? activeRequest.provider?.location?.longitude ?? userLng + 0.01;
 
   const routeCoords = [
     { latitude: userLat, longitude: userLng },

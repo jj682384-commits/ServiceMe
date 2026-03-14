@@ -19,18 +19,22 @@ import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { notifySOSActivated } from "@/lib/notifications";
+import { getApiUrl } from "@/lib/query-client";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 type EmergencyPhase = "activating" | "active" | "dispatching" | "dispatched";
 
 export default function EmergencyModeScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
-  const { emergencyContacts, userLocation, setUserLocation, currentDriver, authUser } = useApp();
-  const navigation = useNavigation();
+  const { emergencyContacts, userLocation, setUserLocation, currentDriver, authUser, setActiveRequest, addToHistory } = useApp();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const [phase, setPhase] = useState<EmergencyPhase>("activating");
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [arrivalPin] = useState(() => Math.floor(1000 + Math.random() * 9000).toString());
+  const [sosJobId, setSosJobId] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const pulseScale = useSharedValue(1);
@@ -109,13 +113,63 @@ export default function EmergencyModeScreen() {
     }
   };
 
+  const createEmergencyJob = async (location: { latitude: number; longitude: number } | null) => {
+    const jobId = `sos-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const driverName = currentDriver?.name || authUser?.name || "Driver";
+    const job = {
+      id: jobId,
+      serviceType: "other",
+      notes: `EMERGENCY SOS — Priority dispatch. Driver: ${driverName}. Arrival PIN: ${arrivalPin}`,
+      location: {
+        address: location ? `${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}` : "Location not available",
+        latitude: location?.latitude ?? 0,
+        longitude: location?.longitude ?? 0,
+      },
+      estimatedCost: 0,
+      isExpress: true,
+      isEmergency: true,
+      driver: currentDriver ? { id: currentDriver.id, name: currentDriver.name, phone: currentDriver.phone } : undefined,
+      createdAt: new Date().toISOString(),
+    };
+
+    const serviceRequest = {
+      id: jobId,
+      serviceType: "other" as const,
+      notes: job.notes,
+      location: job.location,
+      estimatedCost: 0,
+      isExpress: true,
+      status: "pending" as const,
+      createdAt: new Date(),
+      driver: currentDriver ?? undefined,
+    };
+
+    try {
+      const url = new URL("/api/jobs", getApiUrl());
+      await fetch(url.toString(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(job),
+      });
+    } catch {
+      // offline — still set local state so driver can track when reconnected
+    }
+
+    setActiveRequest(serviceRequest);
+    addToHistory(serviceRequest);
+    setSosJobId(jobId);
+  };
+
   useEffect(() => {
     if (Platform.OS !== "web") {
       Vibration.vibrate([0, 200, 100, 200]);
     }
 
     const phaseTimer1 = setTimeout(() => setPhase("active"), 1500);
-    const phaseTimer2 = setTimeout(() => setPhase("dispatching"), 4000);
+    const phaseTimer2 = setTimeout(() => {
+      setPhase("dispatching");
+      createEmergencyJob(userLocation);
+    }, 4000);
     const phaseTimer3 = setTimeout(() => {
       setPhase("dispatched");
       notifySOSActivated();
@@ -271,11 +325,22 @@ export default function EmergencyModeScreen() {
           </View>
           <ThemedText type="small" style={styles.infoCardValue}>
             {phase === "dispatched"
-              ? "Provider assigned - arriving soon"
+              ? "Your request is live — a nearby provider will accept shortly."
               : phase === "dispatching"
-                ? "Searching for nearest provider..."
+                ? "Posting your emergency to nearby providers..."
                 : "Will dispatch once activated"}
           </ThemedText>
+          {phase === "dispatched" && sosJobId ? (
+            <Pressable
+              onPress={() => navigation.navigate("ActiveService")}
+              style={[styles.trackButton, { backgroundColor: theme.secondary }]}
+            >
+              <Feather name="navigation" size={16} color="#000000" />
+              <ThemedText type="body" style={{ color: "#000000", fontWeight: "700", marginLeft: Spacing.sm }}>
+                Track Provider
+              </ThemedText>
+            </Pressable>
+          ) : null}
         </View>
 
         {phase === "dispatched" ? (
@@ -443,5 +508,14 @@ const styles = StyleSheet.create({
   cancelSosText: {
     color: "rgba(255,255,255,0.7)",
     fontWeight: "600",
+  },
+  trackButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: Spacing.md,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.full,
   },
 });

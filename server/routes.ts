@@ -32,6 +32,7 @@ interface ProviderRecord {
   badges?: ProviderBadge[];
   location: { latitude: number; longitude: number };
   lastLocationUpdate?: string;
+  pushToken?: string;
 }
 
 function calcDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -78,6 +79,7 @@ interface JobRecord {
   estimatedCost: number;
   driver?: Record<string, unknown>;
   provider?: Record<string, unknown>;
+  providerLocation?: { latitude: number; longitude: number };
   eta?: number;
   isExpress?: boolean;
   expressFee?: number;
@@ -87,6 +89,7 @@ interface JobRecord {
   timeSaved?: number;
   createdAt: string;
   scheduledDate?: string;
+  isEmergency?: boolean;
 }
 
 const jobStore = new Map<string, JobRecord>();
@@ -342,7 +345,15 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
     res.json({ success: true });
   });
 
-  app.post("/api/jobs", (req: Request, res: Response) => {
+  app.patch("/api/providers/:id/push-token", (req: Request, res: Response) => {
+    const { pushToken } = req.body as { pushToken: string };
+    const provider = providerStore.find((p) => p.id === req.params.id);
+    if (!provider) return res.status(404).json({ error: "Provider not found" });
+    provider.pushToken = pushToken || undefined;
+    res.json({ success: true });
+  });
+
+  app.post("/api/jobs", async (req: Request, res: Response) => {
     const data = req.body as Partial<JobRecord>;
     if (!data.id || !data.serviceType) return res.status(400).json({ error: "id and serviceType required" });
     const job: JobRecord = {
@@ -361,9 +372,54 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
       receiptNumber: data.receiptNumber,
       timeSaved: data.timeSaved,
       createdAt: data.createdAt ?? new Date().toISOString(),
+      isEmergency: data.isEmergency,
     };
     jobStore.set(job.id, job);
+
+    const serviceLabels: Record<string, string> = {
+      flat_tire: "Flat Tire", jump_start: "Jump Start", tow: "Tow Service",
+      fuel: "Fuel Delivery", lockout: "Lockout", obd_diagnostic: "OBD Diagnostic", other: "Roadside Assistance",
+    };
+    const serviceLabel = serviceLabels[job.serviceType] || "Roadside Assistance";
+    const urgency = job.isEmergency ? "EMERGENCY: " : "";
+    const tokens = providerStore
+      .filter((p) => p.isAvailable && p.pushToken)
+      .map((p) => p.pushToken as string);
+
+    if (tokens.length > 0) {
+      const messages = tokens.map((to) => ({
+        to,
+        title: `${urgency}New Job Request`,
+        body: `${serviceLabel} needed nearby — $${job.estimatedCost} estimated. Tap to accept.`,
+        data: { screen: "ProviderDashboard" },
+        sound: "default",
+        priority: job.isEmergency ? "high" : "normal",
+        channelId: job.isEmergency ? "emergency" : "default",
+      }));
+      try {
+        await fetch("https://exp.host/--/api/v2/push/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: JSON.stringify(messages),
+        });
+      } catch (err) {
+        console.error("[PUSH] Failed to send push notifications:", err);
+      }
+    }
+
     res.json(job);
+  });
+
+  app.patch("/api/jobs/:id/location", (req: Request, res: Response) => {
+    const { latitude, longitude } = req.body as { latitude: number; longitude: number };
+    if (typeof latitude !== "number" || typeof longitude !== "number") {
+      return res.status(400).json({ error: "latitude and longitude required" });
+    }
+    const job = jobStore.get(req.params.id);
+    if (!job) return res.status(404).json({ error: "Job not found" });
+    job.providerLocation = { latitude, longitude };
+    broadcastJobUpdate(job);
+    res.json({ success: true });
   });
 
   app.get("/api/jobs/pending", (_req: Request, res: Response) => {
