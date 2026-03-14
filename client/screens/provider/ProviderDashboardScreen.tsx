@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, ScrollView, Pressable, Switch } from "react-native";
+import { View, StyleSheet, ScrollView, Switch } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
@@ -7,10 +7,18 @@ import { Feather } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { useTheme } from "@/hooks/useTheme";
-import { useApp, BACKGROUND_SCHEMES } from "@/context/AppContext";
+import { useApp, BACKGROUND_SCHEMES, ServiceRequest } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
-import { notifyNewJobRequest } from "@/lib/notifications";
 import { useProviderLocation, updateProviderAvailability, registerProviderOnServer } from "@/hooks/useProviderLocation";
+
+const PLATFORM_FEE = 0.15;
+
+function netEarnings(r: ServiceRequest): number {
+  const gross = r.estimatedCost || 0;
+  const tip = (r.totalCost || 0) - gross;
+  const safeTip = tip > 0 ? tip : 0;
+  return gross * (1 - PLATFORM_FEE) + safeTip;
+}
 
 function StatCard({
   icon,
@@ -46,13 +54,11 @@ export default function ProviderDashboardScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { theme, isDark } = useTheme();
-  const { currentProvider, setCurrentProvider, backgroundPreferences } = useApp();
-  const [isAvailable, setIsAvailable] = React.useState(currentProvider?.isAvailable ?? true);
+  const { currentProvider, setCurrentProvider, requestHistory, backgroundPreferences } = useApp();
+  const [isAvailable, setIsAvailable] = React.useState(currentProvider?.isAvailable ?? false);
   const isAnimated = backgroundPreferences.mode === "animated";
   const scheme = BACKGROUND_SCHEMES[backgroundPreferences.colorScheme];
   const cardBg = isAnimated ? theme.cardAnimatedBg : theme.backgroundDefault;
-
-  const jobRequestTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useProviderLocation(currentProvider?.id ?? null, isAvailable);
 
@@ -68,21 +74,35 @@ export default function ProviderDashboardScreen() {
       setCurrentProvider({ ...currentProvider, isAvailable: value });
       updateProviderAvailability(currentProvider.id, value);
     }
-    if (value) {
-      if (jobRequestTimeout.current) clearTimeout(jobRequestTimeout.current);
-      jobRequestTimeout.current = setTimeout(() => {
-        notifyNewJobRequest("Jump Start", "0.4 miles");
-      }, 8000);
-    } else {
-      if (jobRequestTimeout.current) clearTimeout(jobRequestTimeout.current);
-    }
   };
 
-  React.useEffect(() => {
-    return () => {
-      if (jobRequestTimeout.current) clearTimeout(jobRequestTimeout.current);
-    };
-  }, []);
+  const myJobs = React.useMemo(() =>
+    requestHistory.filter(
+      (r) => r.provider?.id === currentProvider?.id && r.status === "completed"
+    ),
+    [requestHistory, currentProvider?.id]
+  );
+
+  const now = new Date();
+
+  const todayStart = new Date(now);
+  todayStart.setHours(0, 0, 0, 0);
+
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - now.getDay());
+  weekStart.setHours(0, 0, 0, 0);
+
+  const todayJobs = myJobs.filter((r) => r.createdAt >= todayStart);
+  const weekJobs = myJobs.filter((r) => r.createdAt >= weekStart);
+
+  const todayEarnings = todayJobs.reduce((s, r) => s + netEarnings(r), 0);
+  const weekEarnings = weekJobs.reduce((s, r) => s + netEarnings(r), 0);
+  const allTimeEarnings = myJobs.reduce((s, r) => s + netEarnings(r), 0);
+
+  const rating = currentProvider?.rating ?? 0;
+  const reviewCount = currentProvider?.reviewCount ?? 0;
+  const isVerified = currentProvider?.verificationStatus === "verified";
+  const hasAnyJobs = myJobs.length > 0;
 
   return (
     <View style={[styles.container, { backgroundColor: isAnimated ? (isDark ? scheme.bgColor : scheme.bgColorLight) : theme.backgroundRoot }]}>
@@ -97,24 +117,40 @@ export default function ProviderDashboardScreen() {
       >
         <ThemedText type="h2" style={{ marginBottom: Spacing.lg }}>Dashboard</ThemedText>
 
-        <View style={[styles.welcomeBanner, { backgroundColor: (theme.secondary + "15") }]}>
+        <View style={[styles.welcomeBanner, { backgroundColor: theme.secondary + "15" }]}>
           <Feather name="heart" size={20} color={theme.secondary} />
           <ThemedText type="body" style={{ color: theme.secondary, marginLeft: Spacing.sm, flex: 1 }}>
-            You're making a difference. Help someone get back on the road today!
+            {isAvailable
+              ? "You're online — drivers in your area can see you."
+              : "Toggle online when you're ready to accept jobs."}
           </ThemedText>
         </View>
 
-        <View style={[styles.verificationBanner, { backgroundColor: theme.success + "15" }]}>
-          <Feather name="shield" size={20} color={theme.success} />
-          <View style={{ marginLeft: Spacing.sm, flex: 1 }}>
-            <ThemedText type="body" style={{ color: theme.success, fontWeight: "600" }}>
-              ID Verified Provider
-            </ThemedText>
-            <ThemedText type="small" style={{ color: theme.textSecondary }}>
-              Your identity has been verified for driver safety
-            </ThemedText>
+        {isVerified ? (
+          <View style={[styles.verificationBanner, { backgroundColor: theme.success + "15" }]}>
+            <Feather name="shield" size={20} color={theme.success} />
+            <View style={{ marginLeft: Spacing.sm, flex: 1 }}>
+              <ThemedText type="body" style={{ color: theme.success, fontWeight: "600" }}>
+                ID Verified Provider
+              </ThemedText>
+              <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                Your identity has been verified for driver safety
+              </ThemedText>
+            </View>
           </View>
-        </View>
+        ) : (
+          <View style={[styles.verificationBanner, { backgroundColor: theme.warning + "15" }]}>
+            <Feather name="alert-circle" size={20} color={theme.warning} />
+            <View style={{ marginLeft: Spacing.sm, flex: 1 }}>
+              <ThemedText type="body" style={{ color: theme.warning, fontWeight: "600" }}>
+                Verification Pending
+              </ThemedText>
+              <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                Complete ID verification to appear in driver searches
+              </ThemedText>
+            </View>
+          </View>
+        )}
 
         <View style={[styles.availabilityCard, { backgroundColor: cardBg }]}>
           <View style={styles.availabilityRow}>
@@ -143,49 +179,57 @@ export default function ProviderDashboardScreen() {
           Today's Stats
         </ThemedText>
         <View style={styles.statsGrid}>
-          <StatCard icon="dollar-sign" label="Earnings" value="$245" color={theme.success} cardBg={cardBg} />
-          <StatCard icon="check-circle" label="Jobs Done" value="5" color={theme.secondary} cardBg={cardBg} />
-          <StatCard icon="clock" label="Hours" value="6.5" color={theme.warning} cardBg={cardBg} />
-          <StatCard icon="star" label="Rating" value="4.9" color="#F59E0B" cardBg={cardBg} />
+          <StatCard
+            icon="dollar-sign"
+            label="Earnings"
+            value={todayJobs.length > 0 ? `$${todayEarnings.toFixed(2)}` : "$0.00"}
+            color={theme.success}
+            cardBg={cardBg}
+          />
+          <StatCard
+            icon="check-circle"
+            label="Jobs Done"
+            value={String(todayJobs.length)}
+            color={theme.secondary}
+            cardBg={cardBg}
+          />
+          <StatCard
+            icon="star"
+            label="Rating"
+            value={rating > 0 ? rating.toFixed(1) : "--"}
+            color="#F59E0B"
+            cardBg={cardBg}
+          />
+          <StatCard
+            icon="briefcase"
+            label="Total Jobs"
+            value={String(myJobs.length)}
+            color={theme.primary}
+            cardBg={cardBg}
+          />
         </View>
 
         <ThemedText type="h4" style={styles.sectionTitle}>
-          Active Job
-        </ThemedText>
-        <Pressable
-          style={({ pressed }) => [
-            styles.activeJobCard,
-            { backgroundColor: cardBg, opacity: pressed ? 0.8 : 1 },
-          ]}
-        >
-          <View style={styles.noActiveJob}>
-            <Feather name="inbox" size={32} color={theme.textSecondary} />
-            <ThemedText type="body" style={{ color: theme.textSecondary, marginTop: Spacing.sm }}>
-              No active job
-            </ThemedText>
-            <ThemedText type="small" style={{ color: theme.textSecondary }}>
-              Accept a job from the Jobs tab
-            </ThemedText>
-          </View>
-        </Pressable>
-
-        <ThemedText type="h4" style={styles.sectionTitle}>
-          Weekly Summary
+          This Week
         </ThemedText>
         <View style={[styles.weeklyCard, { backgroundColor: cardBg }]}>
           <View style={styles.weeklyRow}>
-            <ThemedText type="body">Total Earnings</ThemedText>
-            <ThemedText type="h4">$1,245.00</ThemedText>
+            <ThemedText type="body">Net Earnings</ThemedText>
+            <ThemedText type="h4" style={{ color: theme.success }}>
+              ${weekEarnings.toFixed(2)}
+            </ThemedText>
           </View>
           <View style={[styles.divider, { backgroundColor: theme.border }]} />
           <View style={styles.weeklyRow}>
             <ThemedText type="body">Jobs Completed</ThemedText>
-            <ThemedText type="h4">23</ThemedText>
+            <ThemedText type="h4">{weekJobs.length}</ThemedText>
           </View>
           <View style={[styles.divider, { backgroundColor: theme.border }]} />
           <View style={styles.weeklyRow}>
-            <ThemedText type="body">Hours Worked</ThemedText>
-            <ThemedText type="h4">32.5</ThemedText>
+            <ThemedText type="body">All-Time Earned</ThemedText>
+            <ThemedText type="h4" style={{ color: theme.success }}>
+              ${allTimeEarnings.toFixed(2)}
+            </ThemedText>
           </View>
           <View style={[styles.divider, { backgroundColor: theme.border }]} />
           <View style={styles.weeklyRow}>
@@ -193,11 +237,23 @@ export default function ProviderDashboardScreen() {
             <View style={styles.ratingRow}>
               <Feather name="star" size={16} color={theme.warning} />
               <ThemedText type="h4" style={{ marginLeft: 4 }}>
-                4.8
+                {rating > 0 ? `${rating.toFixed(1)} (${reviewCount})` : "--"}
               </ThemedText>
             </View>
           </View>
         </View>
+
+        {!hasAnyJobs ? (
+          <View style={[styles.emptyState, { backgroundColor: cardBg }]}>
+            <Feather name="zap" size={32} color={theme.secondary} />
+            <ThemedText type="h4" style={{ marginTop: Spacing.md, textAlign: "center" }}>
+              Ready for Your First Job
+            </ThemedText>
+            <ThemedText type="body" style={{ color: theme.textSecondary, textAlign: "center", marginTop: Spacing.sm }}>
+              Toggle online above and accept jobs from the Jobs tab. Your earnings and stats will appear here after each completed job.
+            </ThemedText>
+          </View>
+        ) : null}
       </ScrollView>
     </View>
   );
@@ -267,18 +323,10 @@ const styles = StyleSheet.create({
   statValue: {
     marginBottom: 2,
   },
-  activeJobCard: {
-    padding: Spacing.xl,
-    borderRadius: BorderRadius.md,
-    marginBottom: Spacing["2xl"],
-  },
-  noActiveJob: {
-    alignItems: "center",
-    paddingVertical: Spacing.xl,
-  },
   weeklyCard: {
     borderRadius: BorderRadius.md,
     overflow: "hidden",
+    marginBottom: Spacing["2xl"],
   },
   weeklyRow: {
     flexDirection: "row",
@@ -293,5 +341,10 @@ const styles = StyleSheet.create({
   ratingRow: {
     flexDirection: "row",
     alignItems: "center",
+  },
+  emptyState: {
+    alignItems: "center",
+    padding: Spacing["2xl"],
+    borderRadius: BorderRadius.md,
   },
 });
