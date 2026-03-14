@@ -1,5 +1,5 @@
-import React from "react";
-import { View, StyleSheet, ScrollView, Switch } from "react-native";
+import React, { useState, useCallback, useRef, useEffect } from "react";
+import { View, StyleSheet, ScrollView, Switch, RefreshControl, Animated } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
@@ -10,12 +10,12 @@ import { useTheme } from "@/hooks/useTheme";
 import { useApp, BACKGROUND_SCHEMES, ServiceRequest } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { useProviderLocation, updateProviderAvailability, registerProviderOnServer } from "@/hooks/useProviderLocation";
+import { getApiUrl } from "@/lib/query-client";
 
 const PLATFORM_FEE = 0.15;
 
 function netEarnings(r: ServiceRequest): number {
   const gross = r.estimatedCost || 0;
-  // r.tip is set when earnings history syncs from server; fall back to 0
   const tip = typeof r.tip === "number" ? r.tip : 0;
   return gross * (1 - PLATFORM_FEE) + tip;
 }
@@ -54,19 +54,45 @@ export default function ProviderDashboardScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { theme, isDark } = useTheme();
-  const { currentProvider, setCurrentProvider, requestHistory, backgroundPreferences } = useApp();
-  const [isAvailable, setIsAvailable] = React.useState(currentProvider?.isAvailable ?? false);
+  const { currentProvider, setCurrentProvider, requestHistory, updateHistoryEntry, backgroundPreferences } = useApp();
+  const [isAvailable, setIsAvailable] = useState(currentProvider?.isAvailable ?? false);
   const isAnimated = backgroundPreferences.mode === "animated";
   const scheme = BACKGROUND_SCHEMES[backgroundPreferences.colorScheme];
   const cardBg = isAnimated ? theme.cardAnimatedBg : theme.backgroundDefault;
 
   useProviderLocation(currentProvider?.id ?? null, isAvailable);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (currentProvider) {
       registerProviderOnServer(currentProvider);
     }
   }, [currentProvider?.id]);
+
+  // Pull-to-refresh state
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Tip notification banner
+  const [tipBanner, setTipBanner] = useState<{ totalTips: number; jobCount: number } | null>(null);
+  const bannerOpacity = useRef(new Animated.Value(0)).current;
+  const bannerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showTipBanner = useCallback((totalTips: number, jobCount: number) => {
+    if (bannerTimer.current) clearTimeout(bannerTimer.current);
+    setTipBanner({ totalTips, jobCount });
+    Animated.sequence([
+      Animated.timing(bannerOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
+      Animated.delay(3500),
+      Animated.timing(bannerOpacity, { toValue: 0, duration: 400, useNativeDriver: true }),
+    ]).start(() => {
+      bannerTimer.current = setTimeout(() => setTipBanner(null), 50);
+    });
+  }, [bannerOpacity]);
+
+  useEffect(() => {
+    return () => {
+      if (bannerTimer.current) clearTimeout(bannerTimer.current);
+    };
+  }, []);
 
   const handleAvailabilityChange = (value: boolean) => {
     setIsAvailable(value);
@@ -83,11 +109,48 @@ export default function ProviderDashboardScreen() {
     [requestHistory, currentProvider?.id]
   );
 
-  const now = new Date();
+  // Sync tips from server and return info about newly found tips
+  const syncTipsFromServer = useCallback(async () => {
+    if (myJobs.length === 0) return;
+    let newTipTotal = 0;
+    let newTipJobs = 0;
+    await Promise.all(
+      myJobs.map(async (r) => {
+        try {
+          const url = new URL(`/api/jobs/${r.id}`, getApiUrl());
+          const res = await fetch(url.toString(), {
+            headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
+          });
+          if (!res.ok) return;
+          const job = await res.json();
+          if (typeof job.tip === "number" && job.tip > 0) {
+            const prevTip = r.tip ?? 0;
+            if (job.tip > prevTip) {
+              newTipTotal += job.tip - prevTip;
+              newTipJobs += 1;
+            }
+            updateHistoryEntry(r.id, { tip: job.tip, totalCost: job.totalCost });
+          }
+        } catch {
+          // silent — offline or server restarted
+        }
+      })
+    );
+    return { newTipTotal, newTipJobs };
+  }, [myJobs, updateHistoryEntry]);
 
+  const onRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    const result = await syncTipsFromServer();
+    setIsRefreshing(false);
+    if (result && result.newTipJobs > 0) {
+      showTipBanner(result.newTipTotal, result.newTipJobs);
+    }
+  }, [syncTipsFromServer, showTipBanner]);
+
+  const now = new Date();
   const todayStart = new Date(now);
   todayStart.setHours(0, 0, 0, 0);
-
   const weekStart = new Date(now);
   weekStart.setDate(now.getDate() - now.getDay());
   weekStart.setHours(0, 0, 0, 0);
@@ -98,6 +161,7 @@ export default function ProviderDashboardScreen() {
   const todayEarnings = todayJobs.reduce((s, r) => s + netEarnings(r), 0);
   const weekEarnings = weekJobs.reduce((s, r) => s + netEarnings(r), 0);
   const allTimeEarnings = myJobs.reduce((s, r) => s + netEarnings(r), 0);
+  const totalTips = myJobs.reduce((s, r) => s + (r.tip ?? 0), 0);
 
   const rating = currentProvider?.rating ?? 0;
   const reviewCount = currentProvider?.reviewCount ?? 0;
@@ -107,6 +171,31 @@ export default function ProviderDashboardScreen() {
   return (
     <View style={[styles.container, { backgroundColor: isAnimated ? (isDark ? scheme.bgColor : scheme.bgColorLight) : theme.backgroundRoot }]}>
       {isAnimated ? <AnimatedBackground customColors={isDark ? scheme.colors : scheme.colorsLight} opacityBoost={isDark ? scheme.opacityBoost : scheme.opacityBoostLight} flashColor={isDark ? scheme.flashColor : scheme.flashColorLight} isDark={isDark} /> : null}
+
+      {tipBanner ? (
+        <Animated.View
+          style={[
+            styles.tipBanner,
+            {
+              backgroundColor: theme.success,
+              top: insets.top + Spacing.sm,
+              opacity: bannerOpacity,
+            },
+          ]}
+        >
+          <Feather name="gift" size={18} color="#FFFFFF" />
+          <View style={{ marginLeft: Spacing.sm, flex: 1 }}>
+            <ThemedText type="body" style={{ color: "#FFFFFF", fontWeight: "700" }}>
+              New tip received!
+            </ThemedText>
+            <ThemedText type="small" style={{ color: "#FFFFFF" + "CC" }}>
+              +${tipBanner.totalTips.toFixed(2)} across {tipBanner.jobCount} {tipBanner.jobCount === 1 ? "job" : "jobs"}
+            </ThemedText>
+          </View>
+          <Feather name="dollar-sign" size={18} color="#FFFFFF" />
+        </Animated.View>
+      ) : null}
+
       <ScrollView
         contentContainerStyle={{
           paddingTop: Math.max(insets.top, Spacing["2xl"]) + Spacing.lg,
@@ -114,6 +203,16 @@ export default function ProviderDashboardScreen() {
           paddingHorizontal: Spacing.lg,
         }}
         scrollIndicatorInsets={{ bottom: insets.bottom }}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.primary}
+            colors={[theme.primary]}
+            title="Syncing earnings..."
+            titleColor={theme.textSecondary}
+          />
+        }
       >
         <ThemedText type="h2" style={{ marginBottom: Spacing.lg }}>Dashboard</ThemedText>
 
@@ -231,6 +330,20 @@ export default function ProviderDashboardScreen() {
               ${allTimeEarnings.toFixed(2)}
             </ThemedText>
           </View>
+          {totalTips > 0 ? (
+            <>
+              <View style={[styles.divider, { backgroundColor: theme.border }]} />
+              <View style={[styles.weeklyRow, styles.tipRow, { backgroundColor: theme.success + "10" }]}>
+                <View style={styles.tipRowLeft}>
+                  <Feather name="gift" size={16} color={theme.success} />
+                  <ThemedText type="body" style={{ marginLeft: Spacing.sm }}>Tips Received</ThemedText>
+                </View>
+                <ThemedText type="h4" style={{ color: theme.success }}>
+                  +${totalTips.toFixed(2)}
+                </ThemedText>
+              </View>
+            </>
+          ) : null}
           <View style={[styles.divider, { backgroundColor: theme.border }]} />
           <View style={styles.weeklyRow}>
             <ThemedText type="body">Avg. Rating</ThemedText>
@@ -241,6 +354,13 @@ export default function ProviderDashboardScreen() {
               </ThemedText>
             </View>
           </View>
+        </View>
+
+        <View style={[styles.refreshHint, { backgroundColor: cardBg }]}>
+          <Feather name="refresh-cw" size={14} color={theme.textSecondary} />
+          <ThemedText type="small" style={{ color: theme.textSecondary, marginLeft: Spacing.xs }}>
+            Pull down to sync your latest tips and earnings
+          </ThemedText>
         </View>
 
         {!hasAnyJobs ? (
@@ -262,6 +382,21 @@ export default function ProviderDashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  tipBanner: {
+    position: "absolute",
+    left: Spacing.lg,
+    right: Spacing.lg,
+    flexDirection: "row",
+    alignItems: "center",
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    zIndex: 100,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
   },
   welcomeBanner: {
     flexDirection: "row",
@@ -326,13 +461,20 @@ const styles = StyleSheet.create({
   weeklyCard: {
     borderRadius: BorderRadius.md,
     overflow: "hidden",
-    marginBottom: Spacing["2xl"],
+    marginBottom: Spacing.lg,
   },
   weeklyRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     padding: Spacing.lg,
+  },
+  tipRow: {
+    borderRadius: 0,
+  },
+  tipRowLeft: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   divider: {
     height: 1,
@@ -341,6 +483,14 @@ const styles = StyleSheet.create({
   ratingRow: {
     flexDirection: "row",
     alignItems: "center",
+  },
+  refreshHint: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: Spacing.sm,
+    borderRadius: BorderRadius.sm,
+    marginBottom: Spacing["2xl"],
   },
   emptyState: {
     alignItems: "center",
