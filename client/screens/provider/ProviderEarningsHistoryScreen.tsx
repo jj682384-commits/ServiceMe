@@ -8,7 +8,7 @@ import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceType, ServiceRequest } from "@/context/AppContext";
-import { getApiUrl } from "@/lib/queryClient";
+import { getApiUrl } from "@/lib/query-client";
 import { Spacing, BorderRadius } from "@/constants/theme";
 
 const PLATFORM_FEE = 0.15;

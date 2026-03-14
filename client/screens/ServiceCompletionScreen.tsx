@@ -15,7 +15,7 @@ import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceType } from "@/context/AppContext";
-import { getApiUrl } from "@/lib/queryClient";
+import { getApiUrl } from "@/lib/query-client";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { COMPETITOR_PRICES, SERVICE_FEE, SERVICE_TYPE_LABELS } from "@/constants/pricing";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
