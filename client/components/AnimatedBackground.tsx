@@ -1,12 +1,13 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { View, StyleSheet, Dimensions } from "react-native";
 import Svg, { Circle, Line, Defs, RadialGradient, Stop } from "react-native-svg";
+import { useFocusEffect } from "@react-navigation/native";
 
 const { width: W, height: H } = Dimensions.get("window");
 
-const PARTICLE_COUNT = 24;
-const CONNECT_DISTANCE = 160;
-const FPS_INTERVAL = 33;
+const PARTICLE_COUNT = 14;
+const CONNECT_DISTANCE = 100;
+const FPS_INTERVAL = 50;
 
 const DEFAULT_COLORS = ["#00D9FF", "#FF6B35", "#7B2FFF", "#00FFD4", "#FF006E", "#FFE000"];
 
@@ -64,15 +65,34 @@ export default function AnimatedBackground({
   isDark = true,
 }: AnimatedBackgroundProps) {
   const [particles, setParticles] = useState<Particle[]>(initParticles);
-  const ref = useRef<Particle[]>(particles);
+  const particleRef = useRef<Particle[]>(particles);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const stopAnimation = useCallback(() => {
+    if (intervalRef.current !== null) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  }, []);
+
+  const startAnimation = useCallback(() => {
+    stopAnimation();
+    intervalRef.current = setInterval(() => {
+      particleRef.current = stepParticles(particleRef.current);
+      setParticles([...particleRef.current]);
+    }, FPS_INTERVAL);
+  }, [stopAnimation]);
+
+  useFocusEffect(
+    useCallback(() => {
+      startAnimation();
+      return stopAnimation;
+    }, [startAnimation, stopAnimation])
+  );
 
   useEffect(() => {
-    const id = setInterval(() => {
-      ref.current = stepParticles(ref.current);
-      setParticles([...ref.current]);
-    }, FPS_INTERVAL);
-    return () => clearInterval(id);
-  }, []);
+    return stopAnimation;
+  }, [stopAnimation]);
 
   const palette: string[] = customColors
     ? customColors.map(pair => pair[0])
