@@ -280,6 +280,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ success: true });
   });
 
+  app.get("/privacy", (_req: Request, res: Response) => {
+    const privacyPage = path.resolve(process.cwd(), "server", "templates", "privacy.html");
+    if (fs.existsSync(privacyPage)) {
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.send(fs.readFileSync(privacyPage, "utf-8"));
+    } else {
+      res.status(404).send("Privacy policy not found");
+    }
+  });
+
   app.get("/admin", (_req: Request, res: Response) => {
     const adminPage = path.resolve(process.cwd(), "server", "templates", "admin.html");
     if (fs.existsSync(adminPage)) {
