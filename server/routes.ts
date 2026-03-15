@@ -184,11 +184,18 @@ async function refreshSmartcarToken(userId: string): Promise<string | null> {
 
 export async function registerRoutes(app: Express): Promise<Server> {
 
+  function getSmartcarRedirectUri(): string {
+    const domain = process.env.EXPO_PUBLIC_DOMAIN || process.env.REPLIT_DEV_DOMAIN;
+    if (!domain) return "http://localhost:5000/api/smartcar/callback";
+    if (domain.includes(":")) return `https://${domain}/api/smartcar/callback`;
+    return `https://${domain}/api/smartcar/callback`;
+  }
+
   app.get("/api/smartcar/auth-url", (req: Request, res: Response) => {
     const clientId = process.env.SMARTCAR_CLIENT_ID;
     if (!clientId) return res.status(503).json({ error: "SmartCar not configured" });
     const userId = (req.query.userId as string) || "guest";
-    const redirectUri = (req.query.redirectUri as string) || "";
+    const redirectUri = getSmartcarRedirectUri();
     const params = new URLSearchParams({
       response_type: "code",
       client_id: clientId,
@@ -197,13 +204,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       state: userId,
       mode: "simulated",
     });
-    res.json({ url: `https://connect.smartcar.com/oauth/authorize?${params.toString()}` });
+    console.log(`[SmartCar] auth-url redirectUri=${redirectUri}`);
+    res.json({ url: `https://connect.smartcar.com/oauth/authorize?${params.toString()}`, redirectUri });
   });
 
-  app.post("/api/smartcar/exchange", async (req: Request, res: Response) => {
-    const { code, redirectUri, userId } = req.body as { code: string; redirectUri: string; userId: string };
-    if (!code || !redirectUri || !userId) return res.status(400).json({ error: "Missing params" });
+  app.get("/api/smartcar/callback", async (req: Request, res: Response) => {
+    const { code, state: userId, error } = req.query as Record<string, string>;
+    if (error) {
+      const html = fs.readFileSync(path.resolve(process.cwd(), "server", "templates", "smartcar-result.html"), "utf-8")
+        .replace("{{STATUS}}", "error")
+        .replace("{{MESSAGE}}", "Connection was cancelled or denied.");
+      return res.setHeader("Content-Type", "text/html").send(html);
+    }
+    if (!code || !userId) {
+      return res.status(400).send("Missing code or state");
+    }
     try {
+      const redirectUri = getSmartcarRedirectUri();
       const creds = Buffer.from(`${process.env.SMARTCAR_CLIENT_ID}:${process.env.SMARTCAR_CLIENT_SECRET}`).toString("base64");
       const tokenRes = await fetch("https://auth.smartcar.com/oauth/token", {
         method: "POST",
@@ -211,8 +228,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         body: new URLSearchParams({ grant_type: "authorization_code", code, redirect_uri: redirectUri }),
       });
       if (!tokenRes.ok) {
-        const err = await tokenRes.text();
-        return res.status(400).json({ error: `Token exchange failed: ${err}` });
+        const errText = await tokenRes.text();
+        console.error("[SmartCar] token exchange failed:", errText);
+        const html = fs.readFileSync(path.resolve(process.cwd(), "server", "templates", "smartcar-result.html"), "utf-8")
+          .replace("{{STATUS}}", "error")
+          .replace("{{MESSAGE}}", "Could not connect your vehicle. Please try again.");
+        return res.setHeader("Content-Type", "text/html").send(html);
       }
       const tokens = await tokenRes.json() as { access_token: string; refresh_token: string; expires_in: number };
       const vehiclesRes = await fetch("https://api.smartcar.com/v2.0/vehicles", {
@@ -225,10 +246,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         expiresAt: Date.now() + tokens.expires_in * 1000,
         vehicleIds: vehiclesJson.vehicles || [],
       });
-      res.json({ success: true, vehicleCount: (vehiclesJson.vehicles || []).length });
+      console.log(`[SmartCar] connected userId=${userId} vehicles=${(vehiclesJson.vehicles || []).length}`);
+      const html = fs.readFileSync(path.resolve(process.cwd(), "server", "templates", "smartcar-result.html"), "utf-8")
+        .replace("{{STATUS}}", "success")
+        .replace("{{MESSAGE}}", `Connected! ${(vehiclesJson.vehicles || []).length} vehicle(s) linked. You can close this window and return to the app.`);
+      res.setHeader("Content-Type", "text/html").send(html);
     } catch (err) {
-      res.status(500).json({ error: String(err) });
+      console.error("[SmartCar] callback error:", err);
+      res.status(500).send("Internal server error");
     }
+  });
+
+  app.get("/api/smartcar/status", (req: Request, res: Response) => {
+    const userId = (req.query.userId as string) || "guest";
+    const data = smartcarTokenStore.get(userId);
+    if (!data) return res.json({ connected: false });
+    res.json({ connected: true, vehicleId: data.vehicleIds[0] || null, vehicleCount: data.vehicleIds.length });
   });
 
   app.get("/api/smartcar/vehicles", async (req: Request, res: Response) => {

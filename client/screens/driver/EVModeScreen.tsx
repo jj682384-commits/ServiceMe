@@ -10,7 +10,6 @@ import {
 } from "react-native";
 import * as Haptics from "expo-haptics";
 import * as WebBrowser from "expo-web-browser";
-import * as Linking from "expo-linking";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
@@ -465,9 +464,6 @@ export default function EVModeScreen() {
   const refreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const apiBase = getApiUrl();
-  const redirectUri = Platform.OS === "web"
-    ? `${apiBase}/smartcar-callback`
-    : Linking.createURL("smartcar-callback");
 
   const fetchBatteryData = useCallback(async (vid: string) => {
     try {
@@ -515,51 +511,65 @@ export default function EVModeScreen() {
   }, [smartcarConnected, smartcarVehicleId, fetchBatteryData]);
 
   const handleConnectCar = useCallback(async () => {
-    if (Platform.OS === "web") {
-      Alert.alert("Open in Expo Go", "Car connection requires the Expo Go app on your phone.");
-      return;
-    }
     setSmartcarLoading(true);
+    let pollInterval: ReturnType<typeof setInterval> | null = null;
     try {
       const authRes = await fetch(
-        `${apiBase}/api/smartcar/auth-url?userId=${encodeURIComponent(userId)}&redirectUri=${encodeURIComponent(redirectUri)}`
+        `${apiBase}/api/smartcar/auth-url?userId=${encodeURIComponent(userId)}`
       );
-      const { url } = await authRes.json() as { url: string };
-      const result = await WebBrowser.openAuthSessionAsync(url, redirectUri);
-      if (result.type === "success" && result.url) {
-        const parsed = new URL(result.url);
-        const code = parsed.searchParams.get("code");
-        if (code) {
-          const exchangeRes = await fetch(`${apiBase}/api/smartcar/exchange`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ code, redirectUri, userId }),
-          });
-          const exchangeData = await exchangeRes.json() as { success?: boolean; error?: string };
-          if (exchangeData.success) {
-            const vehiclesRes = await fetch(
-              `${apiBase}/api/smartcar/vehicles?userId=${encodeURIComponent(userId)}`
-            );
-            const vData = await vehiclesRes.json() as { vehicles?: { id: string }[] };
-            const firstVehicleId = vData.vehicles?.[0]?.id;
-            if (firstVehicleId) {
-              setSmartcarVehicleId(firstVehicleId);
-              setSmartcarConnected(true);
-              await AsyncStorage.setItem(`smartcar_vehicle_${userId}`, firstVehicleId);
-              await fetchBatteryData(firstVehicleId);
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            }
-          } else {
-            Alert.alert("Connection Failed", exchangeData.error || "Could not connect your car.");
+      const { url } = await authRes.json() as { url: string; redirectUri: string };
+
+      let connected = false;
+
+      pollInterval = setInterval(async () => {
+        try {
+          const statusRes = await fetch(
+            `${apiBase}/api/smartcar/status?userId=${encodeURIComponent(userId)}`
+          );
+          const status = await statusRes.json() as { connected: boolean; vehicleId: string | null };
+          if (status.connected && status.vehicleId && !connected) {
+            connected = true;
+            if (pollInterval) clearInterval(pollInterval);
+            setSmartcarVehicleId(status.vehicleId);
+            setSmartcarConnected(true);
+            await AsyncStorage.setItem(`smartcar_vehicle_${userId}`, status.vehicleId);
+            await fetchBatteryData(status.vehicleId);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            WebBrowser.dismissBrowser();
+            setSmartcarLoading(false);
           }
+        } catch {
+        }
+      }, 2000);
+
+      await WebBrowser.openBrowserAsync(url, {
+        presentationStyle: WebBrowser.WebBrowserPresentationStyle.PAGE_SHEET,
+        controlsColor: "#00f5c4",
+        toolbarColor: "#0A0E27",
+      });
+
+      if (pollInterval) clearInterval(pollInterval);
+
+      if (!connected) {
+        const finalCheck = await fetch(
+          `${apiBase}/api/smartcar/status?userId=${encodeURIComponent(userId)}`
+        );
+        const finalStatus = await finalCheck.json() as { connected: boolean; vehicleId: string | null };
+        if (finalStatus.connected && finalStatus.vehicleId) {
+          setSmartcarVehicleId(finalStatus.vehicleId);
+          setSmartcarConnected(true);
+          await AsyncStorage.setItem(`smartcar_vehicle_${userId}`, finalStatus.vehicleId);
+          await fetchBatteryData(finalStatus.vehicleId);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
       }
-    } catch (err) {
+    } catch {
       Alert.alert("Error", "Could not start car connection. Please try again.");
+      if (pollInterval) clearInterval(pollInterval);
     } finally {
       setSmartcarLoading(false);
     }
-  }, [apiBase, userId, redirectUri, fetchBatteryData]);
+  }, [apiBase, userId, fetchBatteryData]);
 
   const handleDisconnectCar = useCallback(() => {
     Alert.alert("Disconnect Car", "Remove live data connection to your vehicle?", [
