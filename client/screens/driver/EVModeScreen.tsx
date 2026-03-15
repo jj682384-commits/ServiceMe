@@ -7,7 +7,9 @@ import {
   Dimensions,
   Platform,
   Alert,
+  ActivityIndicator,
 } from "react-native";
+import * as Location from "expo-location";
 import * as Haptics from "expo-haptics";
 import * as WebBrowser from "expo-web-browser";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -461,6 +463,18 @@ export default function EVModeScreen() {
   const [chargeStatus, setChargeStatus] = useState<string | null>(null);
   const [smartcarLoading, setSmartcarLoading] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+
+  type NearbyCharger = {
+    id: number;
+    name: string;
+    distance: string;
+    speed: string;
+    available: number;
+    total: number;
+  };
+  const [nearbyChargers, setNearbyChargers] = useState<NearbyCharger[]>([]);
+  const [chargersLoading, setChargersLoading] = useState(true);
+  const [locationDenied, setLocationDenied] = useState(false);
   const refreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const apiBase = getApiUrl();
@@ -509,6 +523,105 @@ export default function EVModeScreen() {
       if (refreshIntervalRef.current) clearInterval(refreshIntervalRef.current);
     };
   }, [smartcarConnected, smartcarVehicleId, fetchBatteryData]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadNearbyChargers() {
+      setChargersLoading(true);
+      setLocationDenied(false);
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        if (!cancelled) {
+          setLocationDenied(true);
+          setChargersLoading(false);
+        }
+        return;
+      }
+      try {
+        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        const { latitude, longitude } = loc.coords;
+        const url =
+          `https://api.openchargemap.io/v3/poi/?output=json` +
+          `&latitude=${latitude}&longitude=${longitude}` +
+          `&distance=10&distanceunit=Miles&maxresults=4&compact=true&verbose=false`;
+        const res = await fetch(url);
+        const data = await res.json() as Array<{
+          ID: number;
+          AddressInfo?: { Title?: string; Distance?: number };
+          Connections?: Array<{ PowerKW?: number | null; Quantity?: number }>;
+        }>;
+        if (!cancelled) {
+          const chargers: NearbyCharger[] = data.map((poi) => {
+            const maxKW = Math.max(
+              0,
+              ...(poi.Connections ?? []).map((c) => c.PowerKW ?? 0)
+            );
+            const total = (poi.Connections ?? []).reduce((s, c) => s + (c.Quantity ?? 1), 0);
+            const rawDist = poi.AddressInfo?.Distance ?? 0;
+            const dist = rawDist < 0.1 ? "<0.1" : rawDist.toFixed(1);
+            return {
+              id: poi.ID,
+              name: poi.AddressInfo?.Title ?? "Charging Station",
+              distance: `${dist} mi`,
+              speed: maxKW >= 50 ? "DC Fast" : "Level 2",
+              available: 0,
+              total,
+            };
+          });
+          setNearbyChargers(chargers);
+          setChargersLoading(false);
+        }
+      } catch {
+        if (!cancelled) setChargersLoading(false);
+      }
+    }
+    loadNearbyChargers();
+    return () => { cancelled = true; };
+  }, []);
+
+  const handleRetryChargers = useCallback(async () => {
+    setChargersLoading(true);
+    setLocationDenied(false);
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== "granted") {
+      setLocationDenied(true);
+      setChargersLoading(false);
+      return;
+    }
+    try {
+      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const { latitude, longitude } = loc.coords;
+      const url =
+        `https://api.openchargemap.io/v3/poi/?output=json` +
+        `&latitude=${latitude}&longitude=${longitude}` +
+        `&distance=10&distanceunit=Miles&maxresults=4&compact=true&verbose=false`;
+      const res = await fetch(url);
+      const data = await res.json() as Array<{
+        ID: number;
+        AddressInfo?: { Title?: string; Distance?: number };
+        Connections?: Array<{ PowerKW?: number | null; Quantity?: number }>;
+      }>;
+      const chargers: NearbyCharger[] = data.map((poi) => {
+        const maxKW = Math.max(0, ...(poi.Connections ?? []).map((c) => c.PowerKW ?? 0));
+        const total = (poi.Connections ?? []).reduce((s, c) => s + (c.Quantity ?? 1), 0);
+        const rawDist = poi.AddressInfo?.Distance ?? 0;
+        const dist = rawDist < 0.1 ? "<0.1" : rawDist.toFixed(1);
+        return {
+          id: poi.ID,
+          name: poi.AddressInfo?.Title ?? "Charging Station",
+          distance: `${dist} mi`,
+          speed: maxKW >= 50 ? "DC Fast" : "Level 2",
+          available: 0,
+          total,
+        };
+      });
+      setNearbyChargers(chargers);
+    } catch {
+      /* silently ignore */
+    } finally {
+      setChargersLoading(false);
+    }
+  }, []);
 
   const handleConnectCar = useCallback(async () => {
     setSmartcarLoading(true);
@@ -829,13 +942,50 @@ export default function EVModeScreen() {
         </View>
 
         <GlowCard glowColor={ev.neonCyan} ev={ev}>
-          <ChargingStation name="Volta Station - Downtown" distance="0.4 mi" chargerCount={8} speed="DC Fast" available={3} ev={ev} />
-          <View style={[styles.stationSep, { backgroundColor: ev.border }]} />
-          <ChargingStation name="ChargePoint - Oak Plaza" distance="1.2 mi" chargerCount={4} speed="Level 2" available={2} ev={ev} />
-          <View style={[styles.stationSep, { backgroundColor: ev.border }]} />
-          <ChargingStation name="Tesla Supercharger - Mall" distance="2.8 mi" chargerCount={12} speed="DC Fast" available={7} ev={ev} />
-          <View style={[styles.stationSep, { backgroundColor: ev.border }]} />
-          <ChargingStation name="EVgo - Gas Station" distance="3.1 mi" chargerCount={2} speed="DC Fast" available={0} ev={ev} />
+          {chargersLoading ? (
+            <View style={{ paddingVertical: 24, alignItems: "center" }}>
+              <ActivityIndicator color={ev.neonCyan} />
+              <Animated.Text style={[styles.stationMeta, { color: ev.whiteDim, marginTop: 8 }]}>
+                Finding chargers near you...
+              </Animated.Text>
+            </View>
+          ) : locationDenied ? (
+            <View style={{ paddingVertical: 20, alignItems: "center", gap: 12 }}>
+              <Feather name="map-pin" size={28} color={ev.neonCyan} />
+              <Animated.Text style={[styles.stationMeta, { color: ev.whiteDim, textAlign: "center" }]}>
+                Location access is needed to find chargers near you.
+              </Animated.Text>
+              <Pressable
+                onPress={handleRetryChargers}
+                style={{ backgroundColor: ev.neonCyan + "20", borderRadius: 10, paddingHorizontal: 20, paddingVertical: 10, borderWidth: 1, borderColor: ev.neonCyan + "60" }}
+              >
+                <Animated.Text style={{ color: ev.neonCyan, fontWeight: "600", fontSize: 14 }}>
+                  Grant Location Access
+                </Animated.Text>
+              </Pressable>
+            </View>
+          ) : nearbyChargers.length === 0 ? (
+            <View style={{ paddingVertical: 20, alignItems: "center", gap: 8 }}>
+              <Feather name="zap-off" size={28} color={ev.whiteDim} />
+              <Animated.Text style={[styles.stationMeta, { color: ev.whiteDim, textAlign: "center" }]}>
+                No chargers found nearby.
+              </Animated.Text>
+            </View>
+          ) : (
+            nearbyChargers.map((c, idx) => (
+              <React.Fragment key={c.id}>
+                {idx > 0 && <View style={[styles.stationSep, { backgroundColor: ev.border }]} />}
+                <ChargingStation
+                  name={c.name}
+                  distance={c.distance}
+                  chargerCount={c.total}
+                  speed={c.speed}
+                  available={c.available}
+                  ev={ev}
+                />
+              </React.Fragment>
+            ))
+          )}
         </GlowCard>
 
         <View style={styles.sectionHeader}>
