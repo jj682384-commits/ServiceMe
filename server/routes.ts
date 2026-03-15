@@ -185,10 +185,14 @@ async function refreshSmartcarToken(userId: string): Promise<string | null> {
 export async function registerRoutes(app: Express): Promise<Server> {
 
   function getSmartcarRedirectUri(): string {
-    const domain = process.env.EXPO_PUBLIC_DOMAIN || process.env.REPLIT_DEV_DOMAIN;
-    if (!domain) return "http://localhost:5000/api/smartcar/callback";
-    if (domain.includes(":")) return `https://${domain}/api/smartcar/callback`;
-    return `https://${domain}/api/smartcar/callback`;
+    // Production: Express runs on port 8081 which maps to external port 80 (no explicit port needed)
+    const prodDomain = process.env.REPLIT_INTERNAL_APP_DOMAIN;
+    if (prodDomain) return `https://${prodDomain}/api/smartcar/callback`;
+    // Dev: Express runs on port 5000, Metro on 8081 (port 8081 = external 80, so default domain hits Metro)
+    // Must use explicit :5000 so the callback reaches Express, not Metro
+    const devDomain = process.env.REPLIT_DEV_DOMAIN;
+    if (devDomain) return `https://${devDomain}:5000/api/smartcar/callback`;
+    return "http://localhost:5000/api/smartcar/callback";
   }
 
   app.get("/api/smartcar/auth-url", (req: Request, res: Response) => {
