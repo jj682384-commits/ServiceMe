@@ -390,6 +390,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     colorScheme: "default",
   });
 
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [pendingJobs, setPendingJobs] = useState<ServiceRequest[]>([]);
 
   const addPendingJob = (job: ServiceRequest) => {
@@ -403,15 +404,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     (async () => {
       try {
-        const [driverRaw, providerRaw, roleRaw] = await Promise.all([
+        const [
+          driverRaw,
+          providerRaw,
+          roleRaw,
+          vehiclesRaw,
+          paymentsRaw,
+          historyRaw,
+          contactsRaw,
+          bgPrefRaw,
+        ] = await Promise.all([
           AsyncStorage.getItem("currentDriver"),
           AsyncStorage.getItem("currentProvider"),
           AsyncStorage.getItem("userRole"),
+          AsyncStorage.getItem("vehicles"),
+          AsyncStorage.getItem("paymentMethods"),
+          AsyncStorage.getItem("requestHistory"),
+          AsyncStorage.getItem("emergencyContacts"),
+          AsyncStorage.getItem("backgroundPreferences"),
         ]);
         if (driverRaw) setCurrentDriver(JSON.parse(driverRaw));
         if (providerRaw) setCurrentProvider(JSON.parse(providerRaw));
         if (roleRaw) setUserRole(roleRaw as UserRole);
         if (driverRaw || providerRaw) setIsAuthenticated(true);
+        if (vehiclesRaw) setVehicles(JSON.parse(vehiclesRaw));
+        if (paymentsRaw) setPaymentMethods(JSON.parse(paymentsRaw));
+        if (historyRaw) {
+          const parsed = JSON.parse(historyRaw) as ServiceRequest[];
+          setRequestHistory(
+            parsed.map((r) => ({ ...r, createdAt: new Date(r.createdAt) }))
+          );
+        }
+        if (contactsRaw) setEmergencyContacts(JSON.parse(contactsRaw));
+        if (bgPrefRaw) setBackgroundPreferences(JSON.parse(bgPrefRaw));
       } catch {}
       _setPersisted(true);
     })();
@@ -435,6 +460,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
     else AsyncStorage.removeItem("userRole").catch(() => {});
   }, [userRole, _persisted]);
 
+  useEffect(() => {
+    if (!_persisted) return;
+    AsyncStorage.setItem("vehicles", JSON.stringify(vehicles)).catch(() => {});
+  }, [vehicles, _persisted]);
+
+  useEffect(() => {
+    if (!_persisted) return;
+    AsyncStorage.setItem("paymentMethods", JSON.stringify(paymentMethods)).catch(() => {});
+  }, [paymentMethods, _persisted]);
+
+  useEffect(() => {
+    if (!_persisted) return;
+    AsyncStorage.setItem("requestHistory", JSON.stringify(requestHistory)).catch(() => {});
+  }, [requestHistory, _persisted]);
+
+  useEffect(() => {
+    if (!_persisted) return;
+    AsyncStorage.setItem("emergencyContacts", JSON.stringify(emergencyContacts)).catch(() => {});
+  }, [emergencyContacts, _persisted]);
+
+  useEffect(() => {
+    if (!_persisted) return;
+    AsyncStorage.setItem("backgroundPreferences", JSON.stringify(backgroundPreferences)).catch(() => {});
+  }, [backgroundPreferences, _persisted]);
+
   const setBackgroundMode = (mode: BackgroundMode) => {
     setBackgroundPreferences((prev) => ({ ...prev, mode }));
   };
@@ -442,8 +492,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const setBackgroundColorScheme = (scheme: BackgroundColorScheme) => {
     setBackgroundPreferences((prev) => ({ ...prev, colorScheme: scheme }));
   };
-
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
 
   const getProviderServiceCount = (providerId: string): number => {
     return requestHistory.filter(
@@ -642,6 +690,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setCurrentDriver(null);
     setCurrentProvider(null);
     setActiveRequest(null);
+    setVehicles([]);
+    setPaymentMethods([]);
+    setRequestHistory([]);
+    setEmergencyContacts([]);
+    AsyncStorage.multiRemove([
+      "vehicles",
+      "paymentMethods",
+      "requestHistory",
+      "emergencyContacts",
+    ]).catch(() => {});
   };
 
   return (

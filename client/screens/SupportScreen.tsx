@@ -24,6 +24,7 @@ import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { useTheme } from "@/hooks/useTheme";
+import { getApiUrl } from "@/lib/query-client";
 import { Spacing, BorderRadius, Shadows } from "@/constants/theme";
 
 const SUPPORT_PHONE = "1-800-SERVICE";
@@ -71,7 +72,9 @@ export default function SupportScreen() {
     });
   };
 
-  const handleSendMessage = (text: string) => {
+  const chatHistoryRef = React.useRef<Array<{ role: "user" | "assistant"; content: string }>>([]);
+
+  const handleSendMessage = async (text: string) => {
     if (!text.trim()) return;
 
     const userMessage: ChatMessage = {
@@ -85,33 +88,49 @@ export default function SupportScreen() {
     setInputText("");
     setIsTyping(true);
 
-    setTimeout(() => {
+    chatHistoryRef.current = [
+      ...chatHistoryRef.current,
+      { role: "user", content: text.trim() },
+    ];
+
+    try {
+      const url = new URL("/api/support/chat", getApiUrl()).toString();
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: text.trim(),
+          history: chatHistoryRef.current.slice(-6),
+        }),
+      });
+      const data = res.ok ? await res.json() : null;
+      const replyText: string =
+        data?.reply ||
+        "I'm having trouble right now. Please call 1-800-SERVICE for immediate help.";
+
+      chatHistoryRef.current = [
+        ...chatHistoryRef.current,
+        { role: "assistant", content: replyText },
+      ];
+
       const agentResponse: ChatMessage = {
         id: (Date.now() + 1).toString(),
-        text: getAgentResponse(text),
+        text: replyText,
         isUser: false,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, agentResponse]);
+    } catch {
+      const agentResponse: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        text: "I'm unable to connect right now. Please call 1-800-SERVICE for immediate assistance.",
+        isUser: false,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, agentResponse]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
-  };
-
-  const getAgentResponse = (userText: string): string => {
-    const lowerText = userText.toLowerCase();
-    if (lowerText.includes("payment") || lowerText.includes("billing") || lowerText.includes("charge")) {
-      return "I understand you have a payment or billing concern. Our billing team can help resolve this quickly. Would you like me to connect you with a billing specialist, or can you tell me more about the specific issue?";
     }
-    if (lowerText.includes("safety") || lowerText.includes("emergency") || lowerText.includes("danger")) {
-      return "Your safety is our top priority. If you're in immediate danger, please call 911. For safety concerns about a service or provider, I can escalate this to our Trust & Safety team right away. Please share more details.";
-    }
-    if (lowerText.includes("service") || lowerText.includes("request") || lowerText.includes("provider")) {
-      return "I can help with your service request. Are you having trouble finding a provider, experiencing delays, or is there an issue with a completed service? Let me know the details so I can assist.";
-    }
-    if (lowerText.includes("app") || lowerText.includes("bug") || lowerText.includes("crash") || lowerText.includes("technical")) {
-      return "I'm sorry you're experiencing technical difficulties. Can you describe what's happening? For example: is the app crashing, not loading, or showing an error message? I'll do my best to help troubleshoot.";
-    }
-    return "Thank you for reaching out. I'm here to help! Can you provide more details about your concern so I can assist you better? You can also call us at 1-800-SERVICE for immediate assistance.";
   };
 
   const handleQuickReply = (reply: string) => {

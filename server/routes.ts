@@ -656,6 +656,78 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
     res.json(job);
   });
 
+  // ── Report Problem ─────────────────────────────────────────────────────
+  interface ReportRecord {
+    id: string;
+    category: string;
+    description: string;
+    userId?: string;
+    userRole?: string;
+    createdAt: string;
+  }
+  const reportStore: ReportRecord[] = [];
+
+  app.post("/api/reports", (req: Request, res: Response) => {
+    const { category, description, userId, userRole } = req.body as {
+      category: string;
+      description: string;
+      userId?: string;
+      userRole?: string;
+    };
+    if (!category || !description) {
+      return res.status(400).json({ error: "category and description are required" });
+    }
+    const report: ReportRecord = {
+      id: `rep-${Date.now()}`,
+      category,
+      description: description.slice(0, 1000),
+      userId,
+      userRole,
+      createdAt: new Date().toISOString(),
+    };
+    reportStore.push(report);
+    console.log(`[REPORT] id=${report.id} category=${category} user=${userId || "anonymous"}`);
+    res.status(201).json({ success: true, reportId: report.id });
+  });
+
+  // ── Support Chat ────────────────────────────────────────────────────────
+  app.post("/api/support/chat", async (req: Request, res: Response) => {
+    try {
+      const { message, history } = req.body as {
+        message: string;
+        history?: Array<{ role: "user" | "assistant"; content: string }>;
+      };
+      if (!message) return res.status(400).json({ error: "message required" });
+
+      const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
+        {
+          role: "system",
+          content:
+            "You are a helpful customer support agent for ServiceMe, a roadside assistance app. " +
+            "You help drivers and service providers with service requests, payments, the app, and safety concerns. " +
+            "Be concise, empathetic, and professional. Keep responses under 3 sentences unless more detail is needed. " +
+            "For emergencies always direct users to call 911.",
+        },
+        ...(history || []).slice(-6),
+        { role: "user", content: message },
+      ];
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages,
+        max_tokens: 250,
+      });
+
+      const reply =
+        response.choices[0]?.message?.content ||
+        "I couldn't process your message right now. Please call 1-800-SERVICE for immediate assistance.";
+      res.json({ reply });
+    } catch (error) {
+      console.error("[Support chat error]", error);
+      res.status(500).json({ error: "Support chat unavailable" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   const wss = new WebSocketServer({ server: httpServer, path: "/ws" });
