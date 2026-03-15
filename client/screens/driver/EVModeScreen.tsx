@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   View,
   StyleSheet,
@@ -6,8 +6,12 @@ import {
   ScrollView,
   Dimensions,
   Platform,
+  Alert,
 } from "react-native";
 import * as Haptics from "expo-haptics";
+import * as WebBrowser from "expo-web-browser";
+import * as Linking from "expo-linking";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
@@ -29,6 +33,7 @@ import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { useApp } from "@/context/AppContext";
 import { useTheme } from "@/hooks/useTheme";
 import EVAnimatedBackground from "@/components/EVAnimatedBackground";
+import { getApiUrl } from "@/lib/query-client";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -437,7 +442,7 @@ export default function EVModeScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { vehicles, getDefaultVehicle } = useApp();
+  const { vehicles, getDefaultVehicle, currentDriver } = useApp();
   const { isDark } = useTheme();
 
   const ev = isDark ? EV_DARK : EV_LIGHT;
@@ -448,8 +453,140 @@ export default function EVModeScreen() {
     ? defaultVehicle
     : vehicles.find((v) => v.fuelType === "electric");
 
-  const batteryLevel = 73;
-  const rangeEstimate = 218;
+  const userId = currentDriver?.id || "guest";
+
+  const [smartcarConnected, setSmartcarConnected] = useState(false);
+  const [smartcarVehicleId, setSmartcarVehicleId] = useState<string | null>(null);
+  const [batteryLevel, setBatteryLevel] = useState<number | null>(null);
+  const [rangeEstimate, setRangeEstimate] = useState<number | null>(null);
+  const [chargeStatus, setChargeStatus] = useState<string | null>(null);
+  const [smartcarLoading, setSmartcarLoading] = useState(false);
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  const refreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const apiBase = getApiUrl();
+  const redirectUri = Platform.OS === "web"
+    ? `${apiBase}/smartcar-callback`
+    : Linking.createURL("smartcar-callback");
+
+  const fetchBatteryData = useCallback(async (vid: string) => {
+    try {
+      const res = await fetch(
+        `${apiBase}/api/smartcar/vehicle/${vid}/battery?userId=${encodeURIComponent(userId)}`
+      );
+      if (!res.ok) return;
+      const data = await res.json() as {
+        battery?: { percentRemaining?: number; range?: number };
+        charge?: { state?: string };
+      };
+      if (data.battery?.percentRemaining != null) {
+        setBatteryLevel(Math.round(data.battery.percentRemaining * 100));
+      }
+      if (data.battery?.range != null) {
+        setRangeEstimate(Math.round(data.battery.range));
+      }
+      if (data.charge?.state) {
+        setChargeStatus(data.charge.state);
+      }
+      setLastRefreshed(new Date());
+    } catch {
+    }
+  }, [apiBase, userId]);
+
+  useEffect(() => {
+    AsyncStorage.getItem(`smartcar_vehicle_${userId}`).then((vid) => {
+      if (vid) {
+        setSmartcarConnected(true);
+        setSmartcarVehicleId(vid);
+        fetchBatteryData(vid);
+      }
+    }).catch(() => {});
+  }, [userId, fetchBatteryData]);
+
+  useEffect(() => {
+    if (smartcarConnected && smartcarVehicleId) {
+      refreshIntervalRef.current = setInterval(() => {
+        fetchBatteryData(smartcarVehicleId);
+      }, 5 * 60 * 1000);
+    }
+    return () => {
+      if (refreshIntervalRef.current) clearInterval(refreshIntervalRef.current);
+    };
+  }, [smartcarConnected, smartcarVehicleId, fetchBatteryData]);
+
+  const handleConnectCar = useCallback(async () => {
+    if (Platform.OS === "web") {
+      Alert.alert("Open in Expo Go", "Car connection requires the Expo Go app on your phone.");
+      return;
+    }
+    setSmartcarLoading(true);
+    try {
+      const authRes = await fetch(
+        `${apiBase}/api/smartcar/auth-url?userId=${encodeURIComponent(userId)}&redirectUri=${encodeURIComponent(redirectUri)}`
+      );
+      const { url } = await authRes.json() as { url: string };
+      const result = await WebBrowser.openAuthSessionAsync(url, redirectUri);
+      if (result.type === "success" && result.url) {
+        const parsed = new URL(result.url);
+        const code = parsed.searchParams.get("code");
+        if (code) {
+          const exchangeRes = await fetch(`${apiBase}/api/smartcar/exchange`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code, redirectUri, userId }),
+          });
+          const exchangeData = await exchangeRes.json() as { success?: boolean; error?: string };
+          if (exchangeData.success) {
+            const vehiclesRes = await fetch(
+              `${apiBase}/api/smartcar/vehicles?userId=${encodeURIComponent(userId)}`
+            );
+            const vData = await vehiclesRes.json() as { vehicles?: { id: string }[] };
+            const firstVehicleId = vData.vehicles?.[0]?.id;
+            if (firstVehicleId) {
+              setSmartcarVehicleId(firstVehicleId);
+              setSmartcarConnected(true);
+              await AsyncStorage.setItem(`smartcar_vehicle_${userId}`, firstVehicleId);
+              await fetchBatteryData(firstVehicleId);
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            }
+          } else {
+            Alert.alert("Connection Failed", exchangeData.error || "Could not connect your car.");
+          }
+        }
+      }
+    } catch (err) {
+      Alert.alert("Error", "Could not start car connection. Please try again.");
+    } finally {
+      setSmartcarLoading(false);
+    }
+  }, [apiBase, userId, redirectUri, fetchBatteryData]);
+
+  const handleDisconnectCar = useCallback(() => {
+    Alert.alert("Disconnect Car", "Remove live data connection to your vehicle?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Disconnect",
+        style: "destructive",
+        onPress: async () => {
+          await fetch(`${apiBase}/api/smartcar/disconnect?userId=${encodeURIComponent(userId)}`, { method: "DELETE" });
+          await AsyncStorage.removeItem(`smartcar_vehicle_${userId}`);
+          setSmartcarConnected(false);
+          setSmartcarVehicleId(null);
+          setBatteryLevel(null);
+          setRangeEstimate(null);
+          setChargeStatus(null);
+          setLastRefreshed(null);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        },
+      },
+    ]);
+  }, [apiBase, userId]);
+
+  const displayBattery = batteryLevel != null ? `${batteryLevel}%` : "--";
+  const displayRange = rangeEstimate != null ? `${rangeEstimate} mi` : "-- mi";
+  const displayCharge = chargeStatus
+    ? chargeStatus.charAt(0).toUpperCase() + chargeStatus.slice(1).toLowerCase()
+    : "--";
 
   const scanPulse = useSharedValue(0);
   useEffect(() => {
@@ -550,7 +687,7 @@ export default function EVModeScreen() {
                   style={styles.batteryCircleInner}
                 >
                   <Animated.Text style={[styles.batteryPercent, { color: ev.neonGreen }, scanStyle]}>
-                    {batteryLevel}%
+                    {displayBattery}
                   </Animated.Text>
                   <Animated.Text style={[styles.batteryLabel, { color: ev.whiteDim }]}>CHARGE</Animated.Text>
                 </LinearGradient>
@@ -559,30 +696,71 @@ export default function EVModeScreen() {
             <View style={styles.batteryStats}>
               <View style={styles.batteryStatItem}>
                 <Feather name="navigation" size={16} color={ev.neonCyan} />
-                <Animated.Text style={[styles.batteryStatValue, { color: ev.white }]}>{rangeEstimate} mi</Animated.Text>
+                <Animated.Text style={[styles.batteryStatValue, { color: ev.white }]}>{displayRange}</Animated.Text>
                 <Animated.Text style={[styles.batteryStatLabel, { color: ev.whiteDim }]}>Est. Range</Animated.Text>
               </View>
               <View style={[styles.batteryDivider, { backgroundColor: ev.border }]} />
               <View style={styles.batteryStatItem}>
-                <Feather name="clock" size={16} color={ev.neonPurple} />
-                <Animated.Text style={[styles.batteryStatValue, { color: ev.white }]}>1h 12m</Animated.Text>
-                <Animated.Text style={[styles.batteryStatLabel, { color: ev.whiteDim }]}>To Full</Animated.Text>
+                <Feather name="zap" size={16} color={ev.neonPurple} />
+                <Animated.Text style={[styles.batteryStatValue, { color: ev.white }]}>{displayCharge}</Animated.Text>
+                <Animated.Text style={[styles.batteryStatLabel, { color: ev.whiteDim }]}>Status</Animated.Text>
               </View>
               <View style={[styles.batteryDivider, { backgroundColor: ev.border }]} />
               <View style={styles.batteryStatItem}>
-                <Feather name="trending-up" size={16} color={ev.neonGreen} />
-                <Animated.Text style={[styles.batteryStatValue, { color: ev.white }]}>3.8</Animated.Text>
-                <Animated.Text style={[styles.batteryStatLabel, { color: ev.whiteDim }]}>mi/kWh</Animated.Text>
+                <Feather name="refresh-cw" size={16} color={ev.neonGreen} />
+                <Animated.Text style={[styles.batteryStatValue, { color: ev.white }]} numberOfLines={1}>
+                  {lastRefreshed ? `${lastRefreshed.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "--"}
+                </Animated.Text>
+                <Animated.Text style={[styles.batteryStatLabel, { color: ev.whiteDim }]}>Updated</Animated.Text>
               </View>
             </View>
+          </View>
+
+          <View style={[styles.connectRow, { borderTopColor: ev.border }]}>
+            {smartcarConnected ? (
+              <View style={styles.connectRowInner}>
+                <View style={styles.connectedBadge}>
+                  <View style={[styles.connectedDot, { backgroundColor: ev.neonGreen }]} />
+                  <Animated.Text style={[styles.connectedText, { color: ev.neonGreen }]}>Car Connected</Animated.Text>
+                </View>
+                <View style={styles.connectRowButtons}>
+                  <Pressable
+                    onPress={() => smartcarVehicleId && fetchBatteryData(smartcarVehicleId)}
+                    style={[styles.refreshBtn, { borderColor: ev.neonGreen + "50", backgroundColor: ev.neonGreen + "12" }]}
+                  >
+                    <Feather name="refresh-cw" size={14} color={ev.neonGreen} />
+                  </Pressable>
+                  <Pressable
+                    onPress={handleDisconnectCar}
+                    style={[styles.disconnectBtn, { borderColor: ev.border }]}
+                  >
+                    <Animated.Text style={[styles.disconnectText, { color: ev.whiteDim }]}>Disconnect</Animated.Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : (
+              <Pressable
+                onPress={handleConnectCar}
+                disabled={smartcarLoading}
+                style={({ pressed }) => [
+                  styles.connectBtn,
+                  { backgroundColor: ev.neonGreen + (pressed ? "25" : "18"), borderColor: ev.neonGreen + "50" },
+                ]}
+              >
+                <Feather name="link" size={16} color={ev.neonGreen} />
+                <Animated.Text style={[styles.connectBtnText, { color: ev.neonGreen }]}>
+                  {smartcarLoading ? "Connecting..." : "Connect Your Car for Live Data"}
+                </Animated.Text>
+              </Pressable>
+            )}
           </View>
         </GlowCard>
 
         <View style={styles.statsGrid}>
-          <StatPill icon="battery-charging" value="Level 2" label="Last Charge" color={ev.neonGreen} ev={ev} />
-          <StatPill icon="map-pin" value="0.4 mi" label="Nearest Charger" color={ev.neonCyan} ev={ev} />
-          <StatPill icon="dollar-sign" value="$4.80" label="Est. Cost" color={ev.neonPurple} ev={ev} />
-          <StatPill icon="thermometer" value="72F" label="Battery Temp" color={ev.neonBlue} ev={ev} />
+          <StatPill icon="battery-charging" value={smartcarConnected ? displayCharge : "--"} label="Charge Status" color={ev.neonGreen} ev={ev} />
+          <StatPill icon="navigation" value={displayRange} label="Est. Range" color={ev.neonCyan} ev={ev} />
+          <StatPill icon="activity" value={batteryLevel != null ? (batteryLevel <= 20 ? "Low" : batteryLevel <= 50 ? "Ok" : "Good") : "--"} label="Battery Health" color={ev.neonPurple} ev={ev} />
+          <StatPill icon="zap" value={smartcarConnected ? "Live" : "Offline"} label="Data Feed" color={smartcarConnected ? ev.neonGreen : ev.whiteDim} ev={ev} />
         </View>
 
         <View style={styles.sectionHeader}>
@@ -989,5 +1167,66 @@ const styles = StyleSheet.create({
   },
   gateFeatureText: {
     fontSize: 17,
+  },
+  connectRow: {
+    borderTopWidth: 1,
+    marginTop: 16,
+    paddingTop: 14,
+  },
+  connectRowInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  connectedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  connectedDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  connectedText: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  connectRowButtons: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  refreshBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  disconnectBtn: {
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  disconnectText: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  connectBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingVertical: 13,
+    paddingHorizontal: 16,
+  },
+  connectBtnText: {
+    fontSize: 14,
+    fontWeight: "700",
   },
 });

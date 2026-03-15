@@ -145,7 +145,140 @@ function adminAuth(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
+const smartcarTokenStore = new Map<string, {
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: number;
+  vehicleIds: string[];
+}>();
+
+async function smartcarRequest(url: string, accessToken: string) {
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}`, "sc-unit-system": "imperial" },
+  });
+  if (!response.ok) throw new Error(`SmartCar API error: ${response.status}`);
+  return response.json();
+}
+
+async function refreshSmartcarToken(userId: string): Promise<string | null> {
+  const data = smartcarTokenStore.get(userId);
+  if (!data) return null;
+  if (Date.now() < data.expiresAt - 60000) return data.accessToken;
+  try {
+    const creds = Buffer.from(`${process.env.SMARTCAR_CLIENT_ID}:${process.env.SMARTCAR_CLIENT_SECRET}`).toString("base64");
+    const res = await fetch("https://auth.smartcar.com/oauth/token", {
+      method: "POST",
+      headers: { Authorization: `Basic ${creds}`, "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: data.refreshToken }),
+    });
+    if (!res.ok) return null;
+    const json = await res.json() as { access_token: string; refresh_token: string; expires_in: number };
+    data.accessToken = json.access_token;
+    data.refreshToken = json.refresh_token;
+    data.expiresAt = Date.now() + json.expires_in * 1000;
+    return data.accessToken;
+  } catch {
+    return null;
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
+
+  app.get("/api/smartcar/auth-url", (req: Request, res: Response) => {
+    const clientId = process.env.SMARTCAR_CLIENT_ID;
+    if (!clientId) return res.status(503).json({ error: "SmartCar not configured" });
+    const userId = (req.query.userId as string) || "guest";
+    const redirectUri = (req.query.redirectUri as string) || "";
+    const params = new URLSearchParams({
+      response_type: "code",
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      scope: "read_battery read_charge read_fuel read_vehicle_info read_odometer",
+      state: userId,
+      mode: "simulated",
+    });
+    res.json({ url: `https://connect.smartcar.com/oauth/authorize?${params.toString()}` });
+  });
+
+  app.post("/api/smartcar/exchange", async (req: Request, res: Response) => {
+    const { code, redirectUri, userId } = req.body as { code: string; redirectUri: string; userId: string };
+    if (!code || !redirectUri || !userId) return res.status(400).json({ error: "Missing params" });
+    try {
+      const creds = Buffer.from(`${process.env.SMARTCAR_CLIENT_ID}:${process.env.SMARTCAR_CLIENT_SECRET}`).toString("base64");
+      const tokenRes = await fetch("https://auth.smartcar.com/oauth/token", {
+        method: "POST",
+        headers: { Authorization: `Basic ${creds}`, "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ grant_type: "authorization_code", code, redirect_uri: redirectUri }),
+      });
+      if (!tokenRes.ok) {
+        const err = await tokenRes.text();
+        return res.status(400).json({ error: `Token exchange failed: ${err}` });
+      }
+      const tokens = await tokenRes.json() as { access_token: string; refresh_token: string; expires_in: number };
+      const vehiclesRes = await fetch("https://api.smartcar.com/v2.0/vehicles", {
+        headers: { Authorization: `Bearer ${tokens.access_token}` },
+      });
+      const vehiclesJson = await vehiclesRes.json() as { vehicles: string[] };
+      smartcarTokenStore.set(userId, {
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token,
+        expiresAt: Date.now() + tokens.expires_in * 1000,
+        vehicleIds: vehiclesJson.vehicles || [],
+      });
+      res.json({ success: true, vehicleCount: (vehiclesJson.vehicles || []).length });
+    } catch (err) {
+      res.status(500).json({ error: String(err) });
+    }
+  });
+
+  app.get("/api/smartcar/vehicles", async (req: Request, res: Response) => {
+    const userId = (req.query.userId as string) || "guest";
+    const token = await refreshSmartcarToken(userId);
+    if (!token) return res.status(401).json({ error: "Not connected" });
+    const data = smartcarTokenStore.get(userId)!;
+    try {
+      const vehicles = await Promise.all(data.vehicleIds.map(async (vid) => {
+        const info = await smartcarRequest(`https://api.smartcar.com/v2.0/vehicles/${vid}`, token);
+        return { id: vid, ...info };
+      }));
+      res.json({ vehicles });
+    } catch (err) {
+      res.status(500).json({ error: String(err) });
+    }
+  });
+
+  app.get("/api/smartcar/vehicle/:vehicleId/battery", async (req: Request, res: Response) => {
+    const userId = (req.query.userId as string) || "guest";
+    const token = await refreshSmartcarToken(userId);
+    if (!token) return res.status(401).json({ error: "Not connected" });
+    try {
+      const [battery, charge] = await Promise.all([
+        smartcarRequest(`https://api.smartcar.com/v2.0/vehicles/${req.params.vehicleId}/battery`, token),
+        smartcarRequest(`https://api.smartcar.com/v2.0/vehicles/${req.params.vehicleId}/charge`, token).catch(() => null),
+      ]);
+      res.json({ battery, charge });
+    } catch (err) {
+      res.status(500).json({ error: String(err) });
+    }
+  });
+
+  app.get("/api/smartcar/vehicle/:vehicleId/odometer", async (req: Request, res: Response) => {
+    const userId = (req.query.userId as string) || "guest";
+    const token = await refreshSmartcarToken(userId);
+    if (!token) return res.status(401).json({ error: "Not connected" });
+    try {
+      const odometer = await smartcarRequest(`https://api.smartcar.com/v2.0/vehicles/${req.params.vehicleId}/odometer`, token);
+      res.json(odometer);
+    } catch (err) {
+      res.status(500).json({ error: String(err) });
+    }
+  });
+
+  app.delete("/api/smartcar/disconnect", (req: Request, res: Response) => {
+    const userId = (req.query.userId as string) || "guest";
+    smartcarTokenStore.delete(userId);
+    res.json({ success: true });
+  });
 
   app.get("/admin", (_req: Request, res: Response) => {
     const adminPage = path.resolve(process.cwd(), "server", "templates", "admin.html");
