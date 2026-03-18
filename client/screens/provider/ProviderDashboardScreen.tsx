@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
-import { View, StyleSheet, ScrollView, Switch, RefreshControl, Animated } from "react-native";
+import { View, StyleSheet, ScrollView, Switch, RefreshControl, Animated, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
@@ -71,10 +71,13 @@ export default function ProviderDashboardScreen() {
   // Pull-to-refresh state
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Tip notification banner
+  // Notification banners
   const [tipBanner, setTipBanner] = useState<{ totalTips: number; jobCount: number } | null>(null);
+  const [reviewBanner, setReviewBanner] = useState<{ newRating: number } | null>(null);
   const bannerOpacity = useRef(new Animated.Value(0)).current;
+  const reviewBannerOpacity = useRef(new Animated.Value(0)).current;
   const bannerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reviewBannerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showTipBanner = useCallback((totalTips: number, jobCount: number) => {
     if (bannerTimer.current) clearTimeout(bannerTimer.current);
@@ -88,9 +91,22 @@ export default function ProviderDashboardScreen() {
     });
   }, [bannerOpacity]);
 
+  const showReviewBanner = useCallback((newRating: number) => {
+    if (reviewBannerTimer.current) clearTimeout(reviewBannerTimer.current);
+    setReviewBanner({ newRating });
+    Animated.sequence([
+      Animated.timing(reviewBannerOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
+      Animated.delay(4000),
+      Animated.timing(reviewBannerOpacity, { toValue: 0, duration: 400, useNativeDriver: true }),
+    ]).start(() => {
+      reviewBannerTimer.current = setTimeout(() => setReviewBanner(null), 50);
+    });
+  }, [reviewBannerOpacity]);
+
   useEffect(() => {
     return () => {
       if (bannerTimer.current) clearTimeout(bannerTimer.current);
+      if (reviewBannerTimer.current) clearTimeout(reviewBannerTimer.current);
     };
   }, []);
 
@@ -109,44 +125,87 @@ export default function ProviderDashboardScreen() {
     [requestHistory, currentProvider?.id]
   );
 
-  // Sync tips from server and return info about newly found tips
-  const syncTipsFromServer = useCallback(async () => {
-    if (myJobs.length === 0) return;
+  // Sync tips + ratings from server
+  const syncFromServer = useCallback(async () => {
     let newTipTotal = 0;
     let newTipJobs = 0;
-    await Promise.all(
-      myJobs.map(async (r) => {
-        try {
-          const url = new URL(`/api/jobs/${r.id}`, getApiUrl());
-          const res = await fetch(url.toString(), {
-            headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
-          });
-          if (!res.ok) return;
-          const job = await res.json();
-          if (typeof job.tip === "number" && job.tip > 0) {
-            const prevTip = r.tip ?? 0;
-            if (job.tip > prevTip) {
-              newTipTotal += job.tip - prevTip;
-              newTipJobs += 1;
+    let newReviewRating = 0;
+    let newReviews = 0;
+
+    if (myJobs.length > 0) {
+      await Promise.all(
+        myJobs.map(async (r) => {
+          try {
+            const url = new URL(`/api/jobs/${r.id}`, getApiUrl());
+            const res = await fetch(url.toString(), {
+              headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
+            });
+            if (!res.ok) return;
+            const job = await res.json() as { tip?: number; totalCost?: number; driverRating?: number };
+            const updates: Record<string, unknown> = {};
+            if (typeof job.tip === "number" && job.tip > 0) {
+              const prevTip = r.tip ?? 0;
+              if (job.tip > prevTip) {
+                newTipTotal += job.tip - prevTip;
+                newTipJobs += 1;
+              }
+              updates.tip = job.tip;
+              updates.totalCost = job.totalCost;
             }
-            updateHistoryEntry(r.id, { tip: job.tip, totalCost: job.totalCost });
+            if (typeof job.driverRating === "number" && job.driverRating > 0) {
+              const prevRating = r.driverRating ?? 0;
+              if (prevRating === 0) {
+                newReviewRating = job.driverRating;
+                newReviews += 1;
+              }
+              updates.driverRating = job.driverRating;
+            }
+            if (Object.keys(updates).length > 0) {
+              updateHistoryEntry(r.id, updates as Partial<import("@/context/AppContext").ServiceRequest>);
+            }
+          } catch {
+            // silent — offline or server restarted
           }
-        } catch {
-          // silent — offline or server restarted
+        })
+      );
+    }
+
+    // Refresh provider's overall rating/reviewCount from server
+    if (currentProvider?.id) {
+      try {
+        const provUrl = new URL(`/api/providers/${currentProvider.id}`, getApiUrl());
+        const provRes = await fetch(provUrl.toString(), {
+          headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
+        });
+        if (provRes.ok) {
+          const provData = await provRes.json() as { rating: number; reviewCount: number };
+          if (
+            typeof provData.rating === "number" &&
+            typeof provData.reviewCount === "number" &&
+            (provData.rating !== currentProvider.rating || provData.reviewCount !== currentProvider.reviewCount)
+          ) {
+            setCurrentProvider({ ...currentProvider, rating: provData.rating, reviewCount: provData.reviewCount });
+          }
         }
-      })
-    );
-    return { newTipTotal, newTipJobs };
-  }, [myJobs, updateHistoryEntry]);
+      } catch {
+        // silent
+      }
+    }
+
+    return { newTipTotal, newTipJobs, newReviewRating, newReviews };
+  }, [myJobs, updateHistoryEntry, currentProvider, setCurrentProvider]);
 
   const onRefresh = useCallback(async () => {
     setIsRefreshing(true);
-    const result = await syncTipsFromServer();
+    const result = await syncFromServer();
     setIsRefreshing(false);
-    if (result && result.newTipJobs > 0) {
+    if (result.newTipJobs > 0) {
       showTipBanner(result.newTipTotal, result.newTipJobs);
     }
-  }, [syncTipsFromServer, showTipBanner]);
+    if (result.newReviews > 0) {
+      showReviewBanner(result.newReviewRating);
+    }
+  }, [syncFromServer, showTipBanner, showReviewBanner]);
 
   const now = new Date();
   const todayStart = new Date(now);
@@ -193,6 +252,34 @@ export default function ProviderDashboardScreen() {
             </ThemedText>
           </View>
           <Feather name="dollar-sign" size={18} color="#FFFFFF" />
+        </Animated.View>
+      ) : null}
+
+      {reviewBanner ? (
+        <Animated.View
+          style={[
+            styles.tipBanner,
+            {
+              backgroundColor: "#F59E0B",
+              top: insets.top + (tipBanner ? 80 : 0) + Spacing.sm,
+              opacity: reviewBannerOpacity,
+            },
+          ]}
+        >
+          <Feather name="star" size={18} color="#FFFFFF" />
+          <View style={{ marginLeft: Spacing.sm, flex: 1 }}>
+            <ThemedText type="body" style={{ color: "#FFFFFF", fontWeight: "700" }}>
+              New review received!
+            </ThemedText>
+            <ThemedText type="small" style={{ color: "#FFFFFF" + "CC" }}>
+              A driver rated you {reviewBanner.newRating} {reviewBanner.newRating === 1 ? "star" : "stars"}
+            </ThemedText>
+          </View>
+          <View style={{ flexDirection: "row" }}>
+            {[1, 2, 3, 4, 5].map((s) => (
+              <Feather key={s} name="star" size={12} color={s <= reviewBanner.newRating ? "#FFFFFF" : "#FFFFFF66"} style={{ marginLeft: 2 }} />
+            ))}
+          </View>
         </Animated.View>
       ) : null}
 
@@ -359,9 +446,56 @@ export default function ProviderDashboardScreen() {
         <View style={[styles.refreshHint, { backgroundColor: cardBg }]}>
           <Feather name="refresh-cw" size={14} color={theme.textSecondary} />
           <ThemedText type="small" style={{ color: theme.textSecondary, marginLeft: Spacing.xs }}>
-            Pull down to sync your latest tips and earnings
+            Pull down to sync tips, earnings and reviews
           </ThemedText>
         </View>
+
+        {myJobs.filter((r) => typeof r.driverRating === "number").length > 0 ? (
+          <>
+            <ThemedText type="h4" style={styles.sectionTitle}>Recent Reviews</ThemedText>
+            <View style={[styles.reviewsCard, { backgroundColor: cardBg }]}>
+              {myJobs
+                .filter((r) => typeof r.driverRating === "number")
+                .slice(-5)
+                .reverse()
+                .map((r, idx, arr) => (
+                  <View key={r.id}>
+                    <View style={styles.reviewRow}>
+                      <View style={styles.reviewLeft}>
+                        <View style={[styles.reviewAvatar, { backgroundColor: theme.primary + "20" }]}>
+                          <Feather name="user" size={16} color={theme.primary} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <ThemedText type="body" style={{ fontWeight: "600" }}>
+                            {r.driver?.name ?? "Driver"}
+                          </ThemedText>
+                          <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                            {r.serviceType?.replace(/_/g, " ") ?? "Service"} · {
+                              new Date(r.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                            }
+                          </ThemedText>
+                        </View>
+                      </View>
+                      <View style={styles.reviewStars}>
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <Feather
+                            key={s}
+                            name="star"
+                            size={14}
+                            color={s <= (r.driverRating ?? 0) ? "#F59E0B" : theme.border}
+                            style={{ marginLeft: 2 }}
+                          />
+                        ))}
+                      </View>
+                    </View>
+                    {idx < arr.length - 1 ? (
+                      <View style={[styles.divider, { backgroundColor: theme.border }]} />
+                    ) : null}
+                  </View>
+                ))}
+            </View>
+          </>
+        ) : null}
 
         {!hasAnyJobs ? (
           <View style={[styles.emptyState, { backgroundColor: cardBg }]}>
@@ -496,5 +630,33 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: Spacing["2xl"],
     borderRadius: BorderRadius.md,
+  },
+  reviewsCard: {
+    borderRadius: BorderRadius.md,
+    overflow: "hidden",
+    marginBottom: Spacing.lg,
+  },
+  reviewRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: Spacing.lg,
+  },
+  reviewLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+    gap: Spacing.sm,
+  },
+  reviewAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  reviewStars: {
+    flexDirection: "row",
+    alignItems: "center",
   },
 });

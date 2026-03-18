@@ -86,6 +86,7 @@ interface JobRecord {
   serviceFee?: number;
   totalCost?: number;
   tip?: number;
+  driverRating?: number;
   receiptNumber?: string;
   timeSaved?: number;
   createdAt: string;
@@ -592,13 +593,41 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
   });
 
   app.patch("/api/jobs/:id/tip", (req: Request, res: Response) => {
-    const { tip, totalCost } = req.body as { tip?: number; totalCost?: number };
+    const { tip, totalCost, driverRating } = req.body as { tip?: number; totalCost?: number; driverRating?: number };
     const job = jobStore.get(req.params.id);
     if (!job) return res.status(404).json({ error: "Job not found" });
     if (typeof tip === "number") job.tip = tip;
     if (typeof totalCost === "number") job.totalCost = totalCost;
+    if (typeof driverRating === "number" && driverRating >= 1 && driverRating <= 5) {
+      job.driverRating = driverRating;
+      const providerId = (job.provider as Record<string, unknown> | undefined)?.id as string | undefined;
+      if (providerId) {
+        const provider = providerStore.find((p) => p.id === providerId);
+        if (provider) {
+          const ratedJobs = Array.from(jobStore.values()).filter(
+            (j) => (j.provider as Record<string, unknown> | undefined)?.id === providerId &&
+              typeof j.driverRating === "number"
+          );
+          const avg = ratedJobs.reduce((s, j) => s + (j.driverRating ?? 0), 0) / ratedJobs.length;
+          provider.rating = Math.round(avg * 10) / 10;
+          provider.reviewCount = ratedJobs.length;
+        }
+      }
+    }
     broadcastJobUpdate(job);
     res.json({ success: true });
+  });
+
+  app.get("/api/providers/:id", (req: Request, res: Response) => {
+    const provider = providerStore.find((p) => p.id === req.params.id);
+    if (!provider) return res.status(404).json({ error: "Provider not found" });
+    res.json({
+      id: provider.id,
+      rating: provider.rating,
+      reviewCount: provider.reviewCount,
+      isAvailable: provider.isAvailable,
+      verificationStatus: provider.verificationStatus,
+    });
   });
 
   app.patch("/api/jobs/:id/location", (req: Request, res: Response) => {

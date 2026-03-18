@@ -130,23 +130,26 @@ export default function ServiceCompletionScreen() {
 
     const jobId = activeRequest?.id;
 
-    // Save tip locally first — this is instant and never blocked by the network
+    // Save tip + rating locally first — instant, never blocked by network
     if (jobId) {
       updateHistoryEntry(jobId, {
         tip: tipAmount,
         totalCost: totalAmount,
         status: "completed",
+        driverRating: rating > 0 ? rating : undefined,
       });
     }
 
-    // Fire-and-forget: persist tip to server so provider earnings screen is accurate.
+    // Fire-and-forget: persist tip + rating to server.
     // Do NOT await — a slow/down server must never freeze the driver's UI.
     if (jobId) {
       const url = new URL(`/api/jobs/${jobId}/tip`, getApiUrl());
+      const body: Record<string, unknown> = { tip: tipAmount, totalCost: totalAmount };
+      if (rating > 0) body.driverRating = rating;
       fetch(url.toString(), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tip: tipAmount, totalCost: totalAmount }),
+        body: JSON.stringify(body),
       }).catch(() => {});
     }
 

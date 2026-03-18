@@ -62,6 +62,7 @@ export interface ServiceRequest {
   serviceFee?: number;
   totalCost?: number;
   tip?: number;
+  driverRating?: number;
   receiptNumber?: string;
   timeSaved?: number;
   scheduledDate?: Date;
