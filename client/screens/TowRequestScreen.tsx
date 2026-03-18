@@ -136,7 +136,7 @@ export default function TowRequestScreen() {
   const expressFee = isExpress ? EXPRESS_FEE : 0;
   const totalCost = basePrice + winchFee + SERVICE_FEE + expressFee;
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!selectedSize || isSubmitting) return;
 
     setIsSubmitting(true);
@@ -170,17 +170,18 @@ export default function TowRequestScreen() {
     setActiveRequest(pendingJob);
     addToHistory(pendingJob);
 
+    // Register with server in background — don't block the user's journey to ActiveService.
+    // Use a generous 15s timeout so Replit's dev server has time to respond.
     const controller = new AbortController();
-    const abortTimer = setTimeout(() => controller.abort(), 3000);
-    try {
-      await fetch(new URL("/api/jobs", getApiUrl()).toString(), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...pendingJob, createdAt: pendingJob.createdAt.toISOString() }),
-        signal: controller.signal,
-      });
-    } catch {}
-    clearTimeout(abortTimer);
+    const abortTimer = setTimeout(() => controller.abort(), 15000);
+    fetch(new URL("/api/jobs", getApiUrl()).toString(), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...pendingJob, createdAt: pendingJob.createdAt.toISOString() }),
+      signal: controller.signal,
+    })
+      .catch(() => {})
+      .finally(() => clearTimeout(abortTimer));
 
     if (mountedRef.current) {
       setIsSubmitting(false);

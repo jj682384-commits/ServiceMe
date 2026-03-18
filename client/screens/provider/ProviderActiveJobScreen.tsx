@@ -165,29 +165,32 @@ export default function ProviderActiveJobScreen() {
     </View>
   );
 
-  const handleAdvance = async () => {
+  const handleAdvance = () => {
     if (advancing) return;
-    setAdvancing(true);
+
     const statuses: ServiceStatus[] = ["accepted", "en_route", "arrived", "in_progress", "completed"];
     const currentIndex = statuses.indexOf(activeRequest.status);
-    if (currentIndex < 0 || currentIndex >= statuses.length - 1) {
-      setAdvancing(false);
-      return;
-    }
+    if (currentIndex < 0 || currentIndex >= statuses.length - 1) return;
+
     const nextStatus = statuses[currentIndex + 1];
+    setAdvancing(true);
+
+    // Update local state immediately — don't make the user wait for the server
     const updated = { ...activeRequest, status: nextStatus };
     setActiveRequest(updated);
     updateHistoryEntry(activeRequest.id, { status: nextStatus });
-    try {
-      const url = new URL(`/api/jobs/${activeRequest.id}/status`, getApiUrl());
-      await fetch(url.toString(), {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: nextStatus }),
-      });
-    } catch {
-    }
+
+    // PATCH server in background (fire-and-forget). The WebSocket broadcast will
+    // notify the driver's screen when this lands. Even if it fails, local state is
+    // already correct and the driver's polling will reconcile.
+    fetch(new URL(`/api/jobs/${activeRequest.id}/status`, getApiUrl()).toString(), {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: nextStatus }),
+    }).catch(() => {});
+
     setAdvancing(false);
+
     if (nextStatus === "completed") {
       navigation.goBack();
     }

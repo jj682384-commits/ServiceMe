@@ -284,10 +284,10 @@ export default function ServiceRequestScreen() {
       setActiveRequest(pendingJob);
       addToHistory(pendingJob);
 
-      // POST to server with a 3-second hard abort — providers on separate devices can only
-      // see jobs that reach the server, so we wait for the POST but never hang indefinitely.
+      // POST to server — providers on separate devices can only see jobs that reach the
+      // server. Use a generous 15s window so Replit's dev server has time to respond.
       const controller = new AbortController();
-      const abortTimer = setTimeout(() => controller.abort(), 3000);
+      const abortTimer = setTimeout(() => controller.abort(), 15000);
       const postPromise = fetch(new URL("/api/jobs", getApiUrl()).toString(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
