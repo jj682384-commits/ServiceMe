@@ -34,7 +34,7 @@ import Animated, {
 import { useApp, TireType, FuelType, DrivetrainType } from "@/context/AppContext";
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing, BorderRadius } from "@/constants/theme";
-import { VEHICLE_MAKES, VEHICLE_MAKES_MODELS } from "@/constants/vehicleData";
+import { VEHICLE_MAKES, VEHICLE_MAKES_MODELS, VEHICLE_COLORS } from "@/constants/vehicleData";
 import { getEVColors, type EVColors } from "@/constants/evColors";
 import EVAnimatedBackground from "@/components/EVAnimatedBackground";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
@@ -389,6 +389,7 @@ export default function EVAddVehicleScreen() {
   const [make, setMake] = useState("");
   const [model, setModel] = useState("");
   const [year, setYear] = useState(currentYear);
+  const [color, setColor] = useState("");
   const [tireType, setTireType] = useState<TireType>("run_flat");
   const [drivetrain, setDrivetrain] = useState<DrivetrainType>("awd");
 
@@ -414,6 +415,7 @@ export default function EVAddVehicleScreen() {
       make: make.trim(),
       model: model.trim(),
       year,
+      color: color || undefined,
       tireType,
       fuelType: "electric",
       drivetrain,
@@ -523,6 +525,50 @@ export default function EVAddVehicleScreen() {
                 </Pressable>
               ))}
             </ScrollView>
+          </Animated.View>
+
+          <Animated.View entering={FadeInUp.duration(500).delay(300)} style={[styles.formCard, { backgroundColor: ev.bgCard + "CC", borderColor: ev.border }]}>
+            <View style={styles.sectionHeader}>
+              <Feather name="droplet" size={16} color={ev.neonCyan} />
+              <Animated.Text style={[styles.sectionTitle, { color: ev.whiteDim }]}>VEHICLE COLOR</Animated.Text>
+            </View>
+            <View style={styles.colorHeaderRow}>
+              <Animated.Text style={{ color: ev.whiteDim, fontSize: 13 }}>
+                {color
+                  ? (VEHICLE_COLORS.find((c) => c.hex === color)?.label ?? "Custom")
+                  : "Optional — helps providers find you"}
+              </Animated.Text>
+              {color ? (
+                <View style={[styles.colorSelectedDot, { backgroundColor: color }]} />
+              ) : null}
+            </View>
+            <View style={styles.colorGrid}>
+              {VEHICLE_COLORS.map((c) => {
+                const active = color === c.hex;
+                const isLight = (() => {
+                  const r = parseInt(c.hex.slice(1, 3), 16);
+                  const g = parseInt(c.hex.slice(3, 5), 16);
+                  const b = parseInt(c.hex.slice(5, 7), 16);
+                  return (r * 299 + g * 587 + b * 114) / 1000 > 180;
+                })();
+                return (
+                  <Pressable
+                    key={c.hex}
+                    onPress={() => setColor(active ? "" : c.hex)}
+                    style={[
+                      styles.colorSwatch,
+                      { backgroundColor: c.hex },
+                      isLight ? { borderWidth: 1, borderColor: ev.border } : null,
+                      active ? { borderWidth: 3, borderColor: ev.neonCyan } : null,
+                    ]}
+                  >
+                    {active ? (
+                      <Feather name="check" size={13} color={isLight ? "#000" : "#FFF"} />
+                    ) : null}
+                  </Pressable>
+                );
+              })}
+            </View>
           </Animated.View>
 
           <Animated.View entering={FadeInUp.duration(500).delay(350)} style={[styles.formCard, { backgroundColor: ev.bgCard + "CC", borderColor: ev.border }]}>
@@ -848,5 +894,30 @@ const styles = StyleSheet.create({
   emptySearch: {
     alignItems: "center",
     padding: Spacing["2xl"],
+  },
+  colorHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: Spacing.md,
+  },
+  colorSelectedDot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.2)",
+  },
+  colorGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  colorSwatch: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

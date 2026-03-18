@@ -17,7 +17,7 @@ import { ScreenDecoration } from "@/components/ScreenDecoration";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, Vehicle, TireType, FuelType, DrivetrainType } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
-import { VEHICLE_MAKES, VEHICLE_MAKES_MODELS } from "@/constants/vehicleData";
+import { VEHICLE_MAKES, VEHICLE_MAKES_MODELS, VEHICLE_COLORS } from "@/constants/vehicleData";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -192,6 +192,62 @@ function PickerButton({
   );
 }
 
+function ColorPicker({
+  selected,
+  onSelect,
+}: {
+  selected: string;
+  onSelect: (hex: string) => void;
+}) {
+  const { theme } = useTheme();
+  const isLight = (hex: string) => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return (r * 299 + g * 587 + b * 114) / 1000 > 180;
+  };
+
+  return (
+    <>
+      <View style={styles.colorHeaderRow}>
+        <ThemedText type="small" style={[styles.fieldLabel, { color: theme.textSecondary, marginTop: 0, marginBottom: 0 }]}>
+          Color
+        </ThemedText>
+        {selected ? (
+          <View style={styles.colorSelectedTag}>
+            <View style={[styles.colorSelectedDot, { backgroundColor: selected, borderWidth: isLight(selected) ? 1 : 0, borderColor: theme.border }]} />
+            <ThemedText type="small" style={{ color: theme.textSecondary, fontSize: 12 }}>
+              {VEHICLE_COLORS.find((c) => c.hex === selected)?.label ?? "Custom"}
+            </ThemedText>
+          </View>
+        ) : null}
+      </View>
+      <View style={styles.colorGrid}>
+        {VEHICLE_COLORS.map((c) => {
+          const active = selected === c.hex;
+          const light = isLight(c.hex);
+          return (
+            <Pressable
+              key={c.hex}
+              onPress={() => onSelect(c.hex)}
+              style={[
+                styles.colorSwatch,
+                { backgroundColor: c.hex },
+                light ? { borderWidth: 1, borderColor: theme.border } : null,
+                active ? styles.colorSwatchActive : null,
+              ]}
+            >
+              {active ? (
+                <Feather name="check" size={14} color={light ? "#000" : "#FFF"} />
+              ) : null}
+            </Pressable>
+          );
+        })}
+      </View>
+    </>
+  );
+}
+
 function VehicleCard({
   vehicle,
   onSetDefault,
@@ -208,6 +264,10 @@ function VehicleCard({
     transform: [{ scale: scale.value }],
   }));
 
+  const colorEntry = vehicle.color
+    ? VEHICLE_COLORS.find((c) => c.hex === vehicle.color)
+    : null;
+
   return (
     <AnimatedPressable
       onPressIn={() => { scale.value = withSpring(0.98, { damping: 15, stiffness: 150 }); }}
@@ -223,18 +283,39 @@ function VehicleCard({
       ]}
     >
       <View style={styles.vehicleCardHeader}>
-        <View style={[styles.vehicleIcon, { backgroundColor: vehicle.isDefault ? theme.primary + "20" : theme.backgroundTertiary }]}>
-          <Feather
-            name={vehicle.fuelType === "electric" ? "battery-charging" : "truck"}
-            size={24}
-            color={vehicle.isDefault ? theme.primary : theme.textSecondary}
-          />
+        <View style={styles.vehicleIconWrap}>
+          <View style={[styles.vehicleIcon, { backgroundColor: vehicle.isDefault ? theme.primary + "20" : theme.backgroundTertiary }]}>
+            <Feather
+              name={vehicle.fuelType === "electric" ? "battery-charging" : "truck"}
+              size={24}
+              color={vehicle.isDefault ? theme.primary : theme.textSecondary}
+            />
+          </View>
+          {vehicle.color ? (
+            <View
+              style={[
+                styles.colorDot,
+                {
+                  backgroundColor: vehicle.color,
+                  borderColor: theme.backgroundDefault,
+                },
+              ]}
+            />
+          ) : null}
         </View>
         <View style={styles.vehicleCardInfo}>
           <ThemedText type="body" style={{ fontWeight: "700" }}>
             {vehicle.year} {vehicle.make} {vehicle.model}
           </ThemedText>
           <View style={styles.vehicleMetaRow}>
+            {colorEntry ? (
+              <>
+                <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                  {colorEntry.label}
+                </ThemedText>
+                <View style={[styles.metaDot, { backgroundColor: theme.textSecondary }]} />
+              </>
+            ) : null}
             <ThemedText type="small" style={{ color: theme.textSecondary }}>
               {vehicle.fuelType.charAt(0).toUpperCase() + vehicle.fuelType.slice(1)}
             </ThemedText>
@@ -299,6 +380,7 @@ export default function VehicleManagementScreen() {
   const [make, setMake] = useState("");
   const [model, setModel] = useState("");
   const [year, setYear] = useState(currentYear);
+  const [color, setColor] = useState("");
   const [tireType, setTireType] = useState<TireType>("spare");
   const [fuelType, setFuelType] = useState<FuelType>("regular");
   const [drivetrain, setDrivetrain] = useState<DrivetrainType>("fwd");
@@ -315,6 +397,7 @@ export default function VehicleManagementScreen() {
     setMake("");
     setModel("");
     setYear(currentYear);
+    setColor("");
     setTireType("spare");
     setFuelType("regular");
     setDrivetrain("fwd");
@@ -341,6 +424,7 @@ export default function VehicleManagementScreen() {
       make: make.trim(),
       model: model.trim(),
       year,
+      color: color || undefined,
       tireType,
       fuelType,
       drivetrain,
@@ -433,6 +517,10 @@ export default function VehicleManagementScreen() {
                 </Pressable>
               ))}
             </ScrollView>
+
+            <View style={{ marginTop: Spacing.md }}>
+              <ColorPicker selected={color} onSelect={setColor} />
+            </View>
 
             <ThemedText type="small" style={[styles.fieldLabel, { color: theme.textSecondary }]}>
               Tire Type
@@ -604,12 +692,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: Spacing.md,
   },
+  vehicleIconWrap: {
+    position: "relative",
+  },
   vehicleIcon: {
     width: 48,
     height: 48,
     borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
+  },
+  colorDot: {
+    position: "absolute",
+    bottom: -2,
+    right: -2,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 2,
   },
   vehicleCardInfo: {
     flex: 1,
@@ -618,6 +718,7 @@ const styles = StyleSheet.create({
   vehicleMetaRow: {
     flexDirection: "row",
     alignItems: "center",
+    flexWrap: "wrap",
     gap: Spacing.xs,
   },
   metaDot: {
@@ -670,96 +771,132 @@ const styles = StyleSheet.create({
   yearChip: {
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.full,
+    borderRadius: BorderRadius.sm,
     borderWidth: 1,
+  },
+  colorHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  colorSelectedTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  colorSelectedDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+  },
+  colorGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  colorSwatch: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  colorSwatchActive: {
+    borderWidth: 3,
+    borderColor: "#00D9FF",
   },
   optionRow: {
     flexDirection: "row",
     gap: Spacing.sm,
+    flexWrap: "wrap",
   },
   optionChip: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.md,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.xs,
+    borderRadius: BorderRadius.sm,
     borderWidth: 1,
   },
   formActions: {
     flexDirection: "row",
     gap: Spacing.md,
-    marginTop: Spacing.xl,
+    marginTop: Spacing.lg,
   },
   cancelButton: {
     flex: 1,
-    alignItems: "center",
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.md,
     borderWidth: 1,
+    alignItems: "center",
   },
   saveButton: {
     flex: 2,
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.md,
+    alignItems: "center",
+    justifyContent: "center",
   },
   addButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: Spacing.lg,
+    padding: Spacing.lg,
     borderRadius: BorderRadius.md,
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderStyle: "dashed",
     marginTop: Spacing.md,
   },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
   },
   modalContent: {
-    flex: 1,
     borderTopLeftRadius: BorderRadius.xl,
     borderTopRightRadius: BorderRadius.xl,
-    marginTop: 60,
-    paddingHorizontal: Spacing.lg,
+    height: "75%",
   },
   modalHeader: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: Spacing.lg,
+    alignItems: "center",
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.md,
   },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.sm,
     paddingHorizontal: Spacing.md,
-    paddingVertical: Platform.OS === "ios" ? Spacing.md : Spacing.sm,
+    paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.md,
     borderWidth: 1,
-    marginBottom: Spacing.md,
     gap: Spacing.sm,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
-    paddingVertical: 0,
+    padding: 0,
   },
   pickerItem: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: Spacing.lg,
-    paddingHorizontal: Spacing.md,
+    alignItems: "center",
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
   },
   separator: {
-    height: StyleSheet.hairlineWidth,
-    marginHorizontal: Spacing.md,
+    height: 1,
+    marginHorizontal: Spacing.lg,
   },
   emptySearch: {
+    padding: Spacing.xl,
     alignItems: "center",
-    padding: Spacing["2xl"],
   },
 });

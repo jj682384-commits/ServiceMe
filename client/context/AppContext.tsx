@@ -21,6 +21,7 @@ export interface Vehicle {
   make: string;
   model: string;
   year: number;
+  color?: string;
   tireType: TireType;
   fuelType: FuelType;
   drivetrain: DrivetrainType;

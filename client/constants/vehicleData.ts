@@ -134,6 +134,31 @@ export const TOW_TRUCK_MAKES_MODELS: Record<string, string[]> = {
 
 export const TOW_TRUCK_MAKES = Object.keys(TOW_TRUCK_MAKES_MODELS).sort();
 
+export const VEHICLE_COLORS: { label: string; hex: string }[] = [
+  { label: "White", hex: "#FFFFFF" },
+  { label: "Pearl White", hex: "#F0EEE8" },
+  { label: "Champagne", hex: "#F7E7CE" },
+  { label: "Silver", hex: "#C0C0C0" },
+  { label: "Gray", hex: "#808080" },
+  { label: "Dark Gray", hex: "#404040" },
+  { label: "Black", hex: "#1A1A1A" },
+  { label: "Red", hex: "#CC2200" },
+  { label: "Dark Red", hex: "#8B0000" },
+  { label: "Maroon", hex: "#6B2737" },
+  { label: "Orange", hex: "#E85D04" },
+  { label: "Yellow", hex: "#F4CC00" },
+  { label: "Gold", hex: "#B8860B" },
+  { label: "Green", hex: "#2D7A2D" },
+  { label: "Dark Green", hex: "#1B4332" },
+  { label: "Teal", hex: "#0D9488" },
+  { label: "Blue", hex: "#1A56DB" },
+  { label: "Dark Blue", hex: "#1E3A5F" },
+  { label: "Navy", hex: "#001F5B" },
+  { label: "Purple", hex: "#6B21A8" },
+  { label: "Brown", hex: "#795548" },
+  { label: "Tan / Beige", hex: "#C8A882" },
+];
+
 export const TOW_TRUCK_CLASSES: { label: string; description: string }[] = [
   { label: "Light-Duty Wrecker", description: "Passenger cars, small trucks (up to 10,000 lbs)" },
   { label: "Medium-Duty Wrecker", description: "Vans, box trucks, medium vehicles (up to 26,000 lbs)" },
