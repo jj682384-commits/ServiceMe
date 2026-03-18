@@ -11,7 +11,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { VerificationBadge } from "@/components/VerificationBadge";
 import { ProviderTypeBadge } from "@/components/ProviderTypeBadge";
 import { useTheme } from "@/hooks/useTheme";
-import { useApp, Provider, BADGE_CONFIG, BadgeType, PREFERRED_THRESHOLD } from "@/context/AppContext";
+import { useApp, Provider, ServiceRequest, BADGE_CONFIG, BadgeType, PREFERRED_THRESHOLD } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
@@ -131,27 +131,42 @@ function PreferredProviderCard({
   );
 }
 
+function getLatestProviderFromHistory(providerId: string, history: ServiceRequest[]): Provider | undefined {
+  const relevant = history
+    .filter((r) => r.provider?.id === providerId && r.provider)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  return relevant[0]?.provider as Provider | undefined;
+}
+
 export default function PreferredProvidersScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const { theme } = useTheme();
-  const { preferredProviders, getProvidersWithDistance, getProviderServiceCount } = useApp();
+  const { preferredProviders, getProvidersWithDistance, requestHistory } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const allProviders = getProvidersWithDistance();
 
   const preferredWithDetails = preferredProviders
     .map((pref) => {
-      const provider = allProviders.find((p) => p.id === pref.providerId);
+      // First try the live nearby list, then fall back to request history
+      const liveProvider = allProviders.find((p) => p.id === pref.providerId);
+      const provider = liveProvider ?? getLatestProviderFromHistory(pref.providerId, requestHistory);
       return provider ? { provider, serviceCount: pref.serviceCount } : null;
     })
     .filter(Boolean) as { provider: Provider; serviceCount: number }[];
 
-  const nonPreferredProgress = allProviders
-    .filter((p) => !preferredProviders.some((pref) => pref.providerId === p.id))
-    .map((p) => ({ provider: p, count: getProviderServiceCount(p.id) }))
-    .filter((item) => item.count > 0)
-    .sort((a, b) => b.count - a.count);
+  // Build "almost there" list: providers from history not yet preferred, with at least 1 completed service
+  const preferredIds = new Set(preferredProviders.map((p) => p.providerId));
+  const progressMap: Record<string, { provider: Provider; count: number }> = {};
+  requestHistory.forEach((r) => {
+    if (r.provider && r.status === "completed" && !preferredIds.has(r.provider.id)) {
+      const pid = r.provider.id;
+      if (!progressMap[pid]) progressMap[pid] = { provider: r.provider as Provider, count: 0 };
+      progressMap[pid].count++;
+    }
+  });
+  const nonPreferredProgress = Object.values(progressMap).sort((a, b) => b.count - a.count);
 
   return (
     <ThemedView style={styles.container}>
