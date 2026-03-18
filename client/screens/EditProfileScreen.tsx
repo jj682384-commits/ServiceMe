@@ -16,6 +16,7 @@ import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollV
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceType, EmergencyContact } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
+import { getApiUrl } from "@/lib/query-client";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -257,43 +258,48 @@ export default function EditProfileScreen() {
 
     setIsSaving(true);
 
-    setTimeout(() => {
-      setIsSaving(false);
+    if (authUser) {
+      setAuthUser({
+        ...authUser,
+        name: name.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+      });
+    }
 
-      if (authUser) {
-        setAuthUser({
-          ...authUser,
-          name: name.trim(),
-          email: email.trim(),
-          phone: phone.trim(),
+    if (isProvider && currentProvider) {
+      const updatedProvider = {
+        ...currentProvider,
+        name: name.trim(),
+        phone: phone.trim(),
+        email: email.trim(),
+        vehicleMake: vehicleMake.trim(),
+        vehicleModel: vehicleModel.trim(),
+        licensePlate: licensePlate.trim().toUpperCase(),
+        servicesOffered,
+      };
+      setCurrentProvider(updatedProvider);
+      try {
+        await fetch(new URL("/api/providers/register", getApiUrl()).toString(), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updatedProvider),
         });
-      }
+      } catch {}
+    } else if (currentDriver) {
+      setCurrentDriver({
+        ...currentDriver,
+        name: name.trim(),
+        phone: phone.trim(),
+        email: email.trim(),
+        avatarPreset,
+      });
+    }
 
-      if (isProvider && currentProvider) {
-        setCurrentProvider({
-          ...currentProvider,
-          name: name.trim(),
-          phone: phone.trim(),
-          email: email.trim(),
-          vehicleMake: vehicleMake.trim(),
-          vehicleModel: vehicleModel.trim(),
-          licensePlate: licensePlate.trim().toUpperCase(),
-          servicesOffered,
-        });
-      } else if (currentDriver) {
-        setCurrentDriver({
-          ...currentDriver,
-          name: name.trim(),
-          phone: phone.trim(),
-          email: email.trim(),
-          avatarPreset,
-        });
-      }
-
-      Alert.alert("Profile Updated", "Your changes have been saved.", [
-        { text: "OK", onPress: () => navigation.goBack() },
-      ]);
-    }, 1000);
+    setIsSaving(false);
+    Alert.alert("Profile Updated", "Your changes have been saved.", [
+      { text: "OK", onPress: () => navigation.goBack() },
+    ]);
   };
 
   return (

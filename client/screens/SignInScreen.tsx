@@ -72,7 +72,7 @@ function InputField({
 export default function SignInScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
-  const { setIsAuthenticated, setAuthUser } = useApp();
+  const { setIsAuthenticated, setAuthUser, userRole, currentDriver, currentProvider } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const [email, setEmail] = useState("");
@@ -82,6 +82,16 @@ export default function SignInScreen() {
   const scale = useSharedValue(1);
   const animatedButtonStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
+  const navigateAfterAuth = () => {
+    if (userRole === "driver" && currentDriver) {
+      navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "DriverTabs" }] }));
+    } else if (userRole === "provider" && currentProvider) {
+      navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "ProviderTabs" }] }));
+    } else {
+      navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "RoleSelection" }] }));
+    }
+  };
+
   const handleGoogleSuccess = (googleUser: { id: string; name: string; email: string }) => {
     setAuthUser({
       id: `google_${googleUser.id}`,
@@ -90,7 +100,7 @@ export default function SignInScreen() {
       phone: "",
     });
     setIsAuthenticated(true);
-    navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "RoleSelection" }] }));
+    navigateAfterAuth();
   };
 
   const handleGoogleError = (error: string) => {
@@ -108,9 +118,12 @@ export default function SignInScreen() {
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
-      setAuthUser({ id: `user_${Date.now()}`, name: "User", email: email.trim(), phone: "" });
+      const stableId = `user_${email.trim().toLowerCase().replace(/[^a-z0-9]/g, "_")}`;
+      const existingName = currentDriver?.name || currentProvider?.name || "User";
+      const existingPhone = currentDriver?.phone || currentProvider?.phone || "";
+      setAuthUser({ id: stableId, name: existingName, email: email.trim(), phone: existingPhone });
       setIsAuthenticated(true);
-      navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "RoleSelection" }] }));
+      navigateAfterAuth();
     }, 1000);
   };
 

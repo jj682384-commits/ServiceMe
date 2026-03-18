@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { View, StyleSheet, Pressable, TextInput } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -10,6 +10,7 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from "react-native-reanimated";
+import * as Location from "expo-location";
 
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -17,6 +18,7 @@ import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollV
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceRequest, Provider } from "@/context/AppContext";
 import { Spacing, BorderRadius, Shadows } from "@/constants/theme";
+import { getApiUrl } from "@/lib/query-client";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -99,9 +101,10 @@ export default function TowRequestScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const { theme } = useTheme();
-  const { getTowProviders, setActiveRequest, addToHistory } = useApp();
+  const { getTowProviders, setActiveRequest, addToHistory, addPendingJob, currentDriver } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const towProviders = getTowProviders();
+  const mountedRef = useRef(true);
 
   const [selectedSize, setSelectedSize] = useState<VehicleSize | null>(null);
   const [destination, setDestination] = useState("");
@@ -109,6 +112,23 @@ export default function TowRequestScreen() {
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExpress, setIsExpress] = useState(false);
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === "granted") {
+          const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+          if (mountedRef.current) {
+            setUserLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+          }
+        }
+      } catch {}
+    })();
+    return () => { mountedRef.current = false; };
+  }, []);
 
   const selectedSizeData = vehicleSizes.find((s) => s.type === selectedSize);
   const basePrice = selectedSizeData?.basePrice || 0;
@@ -116,26 +136,29 @@ export default function TowRequestScreen() {
   const expressFee = isExpress ? EXPRESS_FEE : 0;
   const totalCost = basePrice + winchFee + SERVICE_FEE + expressFee;
 
-  const handleSubmit = () => {
-    if (!selectedSize) return;
+  const handleSubmit = async () => {
+    if (!selectedSize || isSubmitting) return;
 
     setIsSubmitting(true);
 
-    const provider = towProviders.length > 0 ? towProviders[0] : undefined;
+    const coords = userLocation ?? { latitude: 37.7849, longitude: -122.4094 };
+    const driverInfo = currentDriver
+      ? { id: currentDriver.id, name: currentDriver.name, phone: currentDriver.phone, email: currentDriver.email, avatarPreset: currentDriver.avatarPreset }
+      : undefined;
 
-    const newRequest: ServiceRequest = {
+    const pendingJob: ServiceRequest = {
       id: `tow-${Date.now()}`,
       serviceType: "tow",
       location: {
         address: "Current Location",
-        latitude: 37.7849,
-        longitude: -122.4094,
+        latitude: coords.latitude,
+        longitude: coords.longitude,
       },
       notes: `Vehicle: ${selectedSizeData?.label}${destination ? ` | Destination: ${destination}` : ""}${needsWinch ? " | Winch required" : ""}${notes ? ` | ${notes}` : ""}`,
-      status: "accepted",
+      status: "pending",
       estimatedCost: basePrice + winchFee,
       createdAt: new Date(),
-      provider,
+      driver: driverInfo,
       eta: isExpress ? 6 : 12,
       isExpress,
       expressFee: isExpress ? EXPRESS_FEE : 0,
@@ -143,13 +166,26 @@ export default function TowRequestScreen() {
       totalCost,
     };
 
-    setTimeout(() => {
-      setActiveRequest(newRequest);
-      addToHistory(newRequest);
+    addPendingJob(pendingJob);
+    setActiveRequest(pendingJob);
+    addToHistory(pendingJob);
+
+    const controller = new AbortController();
+    const abortTimer = setTimeout(() => controller.abort(), 3000);
+    try {
+      await fetch(new URL("/api/jobs", getApiUrl()).toString(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...pendingJob, createdAt: pendingJob.createdAt.toISOString() }),
+        signal: controller.signal,
+      });
+    } catch {}
+    clearTimeout(abortTimer);
+
+    if (mountedRef.current) {
       setIsSubmitting(false);
-      navigation.goBack();
-      navigation.navigate("ActiveService");
-    }, 1000);
+      navigation.replace("ActiveService");
+    }
   };
 
   return (

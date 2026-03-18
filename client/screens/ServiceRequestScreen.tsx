@@ -11,6 +11,7 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from "react-native-reanimated";
+import * as Location from "expo-location";
 
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -166,9 +167,21 @@ export default function ServiceRequestScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const mountedRef = useRef(true);
   const submitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
 
   useEffect(() => {
     mountedRef.current = true;
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === "granted") {
+          const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+          if (mountedRef.current) {
+            setUserLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+          }
+        }
+      } catch {}
+    })();
     return () => {
       mountedRef.current = false;
       if (submitTimerRef.current) clearTimeout(submitTimerRef.current);
@@ -232,13 +245,14 @@ export default function ServiceRequestScreen() {
           avatarPreset: currentDriver.avatarPreset,
         }
       : undefined;
+    const coords = userLocation ?? { latitude: 37.7849, longitude: -122.4094 };
     const newRequest: ServiceRequest = {
       id: requestId,
       serviceType: selectedService,
       location: {
         address: "Current Location",
-        latitude: 37.7849,
-        longitude: -122.4094,
+        latitude: coords.latitude,
+        longitude: coords.longitude,
       },
       notes,
       status: isScheduled ? "pending" : "accepted",

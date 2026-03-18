@@ -1,10 +1,11 @@
-import React, { useState, useMemo } from "react";
-import { View, StyleSheet, Pressable, ScrollView, FlatList } from "react-native";
+import React, { useState, useMemo, useEffect } from "react";
+import { View, StyleSheet, Pressable, ScrollView, FlatList, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import * as Location from "expo-location";
 
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -14,6 +15,7 @@ import { ProviderTypeBadge } from "@/components/ProviderTypeBadge";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, Provider, ServiceType, BADGE_CONFIG, BadgeType, PREFERRED_THRESHOLD } from "@/context/AppContext";
 import { Spacing, BorderRadius, Shadows } from "@/constants/theme";
+import { getApiUrl } from "@/lib/query-client";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 type SortOption = "nearest" | "highest_rated" | "most_reviews";
@@ -161,14 +163,46 @@ export default function BrowseProvidersScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const { theme } = useTheme();
-  const { getProvidersWithDistance, isPreferredProvider } = useApp();
+  const { isPreferredProvider } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const [sortBy, setSortBy] = useState<SortOption>("nearest");
   const [serviceFilter, setServiceFilter] = useState<ServiceType | "all">("all");
   const [typeFilter, setTypeFilter] = useState<ProviderTypeFilter>("all");
+  const [allProviders, setAllProviders] = useState<Provider[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
 
-  const allProviders = getProvidersWithDistance();
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setIsLoading(true);
+      setFetchError(false);
+      try {
+        let lat = 37.7849;
+        let lng = -122.4094;
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === "granted") {
+          const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+          lat = pos.coords.latitude;
+          lng = pos.coords.longitude;
+        }
+        const url = new URL("/api/providers/nearby", getApiUrl());
+        url.searchParams.set("lat", String(lat));
+        url.searchParams.set("lng", String(lng));
+        url.searchParams.set("radius", "50");
+        const res = await fetch(url.toString());
+        if (!res.ok) throw new Error("fetch failed");
+        const data = await res.json();
+        if (!cancelled) setAllProviders(Array.isArray(data) ? data : []);
+      } catch {
+        if (!cancelled) setFetchError(true);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const filteredAndSorted = useMemo(() => {
     let result = [...allProviders];
@@ -308,33 +342,62 @@ export default function BrowseProvidersScreen() {
       </View>
 
       <View style={styles.resultsHeader}>
-        <ThemedText type="body" style={{ fontWeight: "600" }}>
-          {filteredAndSorted.length} Provider{filteredAndSorted.length !== 1 ? "s" : ""} Found
-        </ThemedText>
+        {isLoading ? (
+          <ThemedText type="body" style={{ fontWeight: "600", color: theme.textSecondary }}>
+            Finding providers near you...
+          </ThemedText>
+        ) : fetchError ? (
+          <ThemedText type="body" style={{ fontWeight: "600", color: theme.textSecondary }}>
+            Could not load providers
+          </ThemedText>
+        ) : (
+          <ThemedText type="body" style={{ fontWeight: "600" }}>
+            {filteredAndSorted.length} Provider{filteredAndSorted.length !== 1 ? "s" : ""} Found
+          </ThemedText>
+        )}
       </View>
 
-      <FlatList
-        data={filteredAndSorted}
-        renderItem={renderProvider}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={[
-          styles.listContent,
-          { paddingBottom: insets.bottom + Spacing.xl },
-        ]}
-        showsVerticalScrollIndicator={false}
-        ItemSeparatorComponent={() => <View style={{ height: Spacing.md }} />}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Feather name="search" size={48} color={theme.textSecondary} />
-            <ThemedText type="body" style={{ color: theme.textSecondary, marginTop: Spacing.md, textAlign: "center" }}>
-              No providers match your filters.
-            </ThemedText>
-            <ThemedText type="small" style={{ color: theme.textSecondary, textAlign: "center", marginTop: Spacing.sm }}>
-              Try adjusting your sort or filter options.
-            </ThemedText>
-          </View>
-        }
-      />
+      {isLoading ? (
+        <View style={styles.emptyState}>
+          <ActivityIndicator size="large" color={theme.primary} />
+          <ThemedText type="body" style={{ color: theme.textSecondary, marginTop: Spacing.md, textAlign: "center" }}>
+            Finding providers near you...
+          </ThemedText>
+        </View>
+      ) : fetchError ? (
+        <View style={styles.emptyState}>
+          <Feather name="wifi-off" size={48} color={theme.textSecondary} />
+          <ThemedText type="body" style={{ color: theme.textSecondary, marginTop: Spacing.md, textAlign: "center" }}>
+            Could not reach the server.
+          </ThemedText>
+          <ThemedText type="small" style={{ color: theme.textSecondary, textAlign: "center", marginTop: Spacing.sm }}>
+            Check your connection and try again.
+          </ThemedText>
+        </View>
+      ) : (
+        <FlatList
+          data={filteredAndSorted}
+          renderItem={renderProvider}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={[
+            styles.listContent,
+            { paddingBottom: insets.bottom + Spacing.xl },
+          ]}
+          showsVerticalScrollIndicator={false}
+          ItemSeparatorComponent={() => <View style={{ height: Spacing.md }} />}
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Feather name="search" size={48} color={theme.textSecondary} />
+              <ThemedText type="body" style={{ color: theme.textSecondary, marginTop: Spacing.md, textAlign: "center" }}>
+                No providers match your filters.
+              </ThemedText>
+              <ThemedText type="small" style={{ color: theme.textSecondary, textAlign: "center", marginTop: Spacing.sm }}>
+                Try adjusting your sort or filter options.
+              </ThemedText>
+            </View>
+          }
+        />
+      )}
     </ThemedView>
   );
 }
