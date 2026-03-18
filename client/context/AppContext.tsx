@@ -348,6 +348,7 @@ interface AppContextType {
   removeEmergencyContact: (index: number) => void;
   vehicles: Vehicle[];
   addVehicle: (vehicle: Omit<Vehicle, "id">) => void;
+  updateVehicle: (id: string, updates: Partial<Omit<Vehicle, "id">>) => void;
   removeVehicle: (id: string) => void;
   setDefaultVehicle: (id: string) => void;
   getDefaultVehicle: () => Vehicle | undefined;
@@ -636,6 +637,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const updateVehicle = (id: string, updates: Partial<Omit<Vehicle, "id">>) => {
+    setVehicles((prev) =>
+      prev.map((v) => (v.id === id ? { ...v, ...updates } : v))
+    );
+  };
+
   const removeVehicle = (id: string) => {
     setVehicles((prev) => {
       const filtered = prev.filter((v) => v.id !== id);
@@ -747,6 +754,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         removeEmergencyContact,
         vehicles,
         addVehicle,
+        updateVehicle,
         removeVehicle,
         setDefaultVehicle,
         getDefaultVehicle,

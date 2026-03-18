@@ -251,10 +251,12 @@ function ColorPicker({
 function VehicleCard({
   vehicle,
   onSetDefault,
+  onEdit,
   onRemove,
 }: {
   vehicle: Vehicle;
   onSetDefault: () => void;
+  onEdit: () => void;
   onRemove: () => void;
 }) {
   const { theme } = useTheme();
@@ -350,6 +352,12 @@ function VehicleCard({
             </ThemedText>
           </Pressable>
         ) : null}
+        <Pressable onPress={onEdit} style={[styles.actionButton, { borderColor: theme.textSecondary }]}>
+          <Feather name="edit-2" size={14} color={theme.textSecondary} />
+          <ThemedText type="small" style={{ color: theme.textSecondary, marginLeft: 4 }}>
+            Edit
+          </ThemedText>
+        </Pressable>
         <Pressable
           onPress={() => {
             Alert.alert("Remove Vehicle", `Remove ${vehicle.year} ${vehicle.make} ${vehicle.model}?`, [
@@ -373,7 +381,7 @@ export default function VehicleManagementScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const { theme } = useTheme();
-  const { vehicles, addVehicle, removeVehicle, setDefaultVehicle } = useApp();
+  const { vehicles, addVehicle, updateVehicle, removeVehicle, setDefaultVehicle } = useApp();
   const navigation = useNavigation();
 
   const [showAddForm, setShowAddForm] = useState(false);
@@ -388,10 +396,61 @@ export default function VehicleManagementScreen() {
   const [showMakePicker, setShowMakePicker] = useState(false);
   const [showModelPicker, setShowModelPicker] = useState(false);
 
+  const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
+  const [editMake, setEditMake] = useState("");
+  const [editModel, setEditModel] = useState("");
+  const [editYear, setEditYear] = useState(currentYear);
+  const [editColor, setEditColor] = useState("");
+  const [editTireType, setEditTireType] = useState<TireType>("spare");
+  const [editFuelType, setEditFuelType] = useState<FuelType>("regular");
+  const [editDrivetrain, setEditDrivetrain] = useState<DrivetrainType>("fwd");
+  const [showEditMakePicker, setShowEditMakePicker] = useState(false);
+  const [showEditModelPicker, setShowEditModelPicker] = useState(false);
+
   const availableModels = useMemo(() => {
     if (!make) return [];
     return VEHICLE_MAKES_MODELS[make] || [];
   }, [make]);
+
+  const editAvailableModels = useMemo(() => {
+    if (!editMake) return [];
+    return VEHICLE_MAKES_MODELS[editMake] || [];
+  }, [editMake]);
+
+  const openEdit = (vehicle: Vehicle) => {
+    setEditingVehicle(vehicle);
+    setEditMake(vehicle.make);
+    setEditModel(vehicle.model);
+    setEditYear(vehicle.year);
+    setEditColor(vehicle.color || "");
+    setEditTireType(vehicle.tireType);
+    setEditFuelType(vehicle.fuelType);
+    setEditDrivetrain(vehicle.drivetrain || "fwd");
+  };
+
+  const closeEdit = () => {
+    setEditingVehicle(null);
+    setShowEditMakePicker(false);
+    setShowEditModelPicker(false);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingVehicle) return;
+    if (!editMake.trim() || !editModel.trim()) {
+      Alert.alert("Missing Info", "Please select a make and model.");
+      return;
+    }
+    updateVehicle(editingVehicle.id, {
+      make: editMake.trim(),
+      model: editModel.trim(),
+      year: editYear,
+      color: editColor || undefined,
+      tireType: editTireType,
+      fuelType: editFuelType,
+      drivetrain: editDrivetrain,
+    });
+    closeEdit();
+  };
 
   const resetForm = () => {
     setMake("");
@@ -451,6 +510,7 @@ export default function VehicleManagementScreen() {
             key={vehicle.id}
             vehicle={vehicle}
             onSetDefault={() => setDefaultVehicle(vehicle.id)}
+            onEdit={() => openEdit(vehicle)}
             onRemove={() => removeVehicle(vehicle.id)}
           />
         ))}
@@ -668,6 +728,210 @@ export default function VehicleManagementScreen() {
         onSelect={handleSelectModel}
         items={availableModels}
         title={`${make} Models`}
+        searchPlaceholder="Search models..."
+      />
+
+      <Modal visible={!!editingVehicle} animationType="slide" transparent>
+        <View style={[styles.modalOverlay]}>
+          <View
+            style={[
+              styles.modalContent,
+              {
+                backgroundColor: theme.backgroundDefault,
+                paddingTop: insets.top + Spacing.md,
+                paddingBottom: insets.bottom + Spacing.md,
+              },
+            ]}
+          >
+            <View style={styles.modalHeader}>
+              <ThemedText type="h3">Edit Vehicle</ThemedText>
+              <Pressable onPress={closeEdit} hitSlop={12}>
+                <Feather name="x" size={24} color={theme.text} />
+              </Pressable>
+            </View>
+
+            <KeyboardAwareScrollViewCompat
+              contentContainerStyle={{ paddingBottom: Spacing.xl }}
+              keyboardShouldPersistTaps="handled"
+            >
+              <PickerButton
+                label="Make"
+                value={editMake}
+                placeholder="Select make..."
+                onPress={() => setShowEditMakePicker(true)}
+              />
+
+              <PickerButton
+                label="Model"
+                value={editModel}
+                placeholder={editMake ? "Select model..." : "Select a make first"}
+                onPress={() => setShowEditModelPicker(true)}
+                disabled={!editMake}
+              />
+
+              <ThemedText type="small" style={[styles.fieldLabel, { color: theme.textSecondary }]}>
+                Year
+              </ThemedText>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: Spacing.sm, paddingBottom: Spacing.sm }}
+              >
+                {YEARS.slice(0, 15).map((y) => (
+                  <Pressable
+                    key={y}
+                    onPress={() => setEditYear(y)}
+                    style={[
+                      styles.yearChip,
+                      {
+                        backgroundColor: editYear === y ? theme.primary : theme.backgroundDefault,
+                        borderColor: editYear === y ? theme.primary : theme.border,
+                      },
+                    ]}
+                  >
+                    <ThemedText
+                      type="small"
+                      style={{ color: editYear === y ? "#FFFFFF" : theme.text, fontWeight: editYear === y ? "600" : "400" }}
+                    >
+                      {y}
+                    </ThemedText>
+                  </Pressable>
+                ))}
+              </ScrollView>
+
+              <View style={{ marginTop: Spacing.md }}>
+                <ColorPicker selected={editColor} onSelect={setEditColor} />
+              </View>
+
+              <ThemedText type="small" style={[styles.fieldLabel, { color: theme.textSecondary }]}>
+                Tire Type
+              </ThemedText>
+              <View style={styles.optionRow}>
+                {TIRE_TYPES.map((t) => (
+                  <Pressable
+                    key={t.value}
+                    onPress={() => setEditTireType(t.value)}
+                    style={[
+                      styles.optionChip,
+                      {
+                        backgroundColor: editTireType === t.value ? theme.primary + "15" : theme.backgroundDefault,
+                        borderColor: editTireType === t.value ? theme.primary : theme.border,
+                        flex: 1,
+                      },
+                    ]}
+                  >
+                    <ThemedText
+                      type="small"
+                      style={{
+                        color: editTireType === t.value ? theme.primary : theme.text,
+                        fontWeight: editTireType === t.value ? "600" : "400",
+                        textAlign: "center",
+                      }}
+                    >
+                      {t.label}
+                    </ThemedText>
+                  </Pressable>
+                ))}
+              </View>
+
+              <ThemedText type="small" style={[styles.fieldLabel, { color: theme.textSecondary }]}>
+                Fuel Type
+              </ThemedText>
+              <View style={styles.optionRow}>
+                {FUEL_TYPES.map((f) => (
+                  <Pressable
+                    key={f.value}
+                    onPress={() => setEditFuelType(f.value)}
+                    style={[
+                      styles.optionChip,
+                      {
+                        backgroundColor: editFuelType === f.value ? theme.primary + "15" : theme.backgroundDefault,
+                        borderColor: editFuelType === f.value ? theme.primary : theme.border,
+                        flex: 1,
+                      },
+                    ]}
+                  >
+                    <Feather
+                      name={f.icon}
+                      size={14}
+                      color={editFuelType === f.value ? theme.primary : theme.textSecondary}
+                    />
+                    <ThemedText
+                      type="small"
+                      style={{
+                        color: editFuelType === f.value ? theme.primary : theme.text,
+                        fontWeight: editFuelType === f.value ? "600" : "400",
+                        marginLeft: 4,
+                      }}
+                    >
+                      {f.label}
+                    </ThemedText>
+                  </Pressable>
+                ))}
+              </View>
+
+              <ThemedText type="small" style={[styles.fieldLabel, { color: theme.textSecondary }]}>
+                Drivetrain
+              </ThemedText>
+              <View style={styles.optionRow}>
+                {DRIVETRAIN_TYPES.map((d) => (
+                  <Pressable
+                    key={d.value}
+                    onPress={() => setEditDrivetrain(d.value)}
+                    style={[
+                      styles.optionChip,
+                      {
+                        backgroundColor: editDrivetrain === d.value ? theme.primary + "15" : theme.backgroundDefault,
+                        borderColor: editDrivetrain === d.value ? theme.primary : theme.border,
+                        flex: 1,
+                      },
+                    ]}
+                  >
+                    <ThemedText
+                      type="small"
+                      style={{
+                        color: editDrivetrain === d.value ? theme.primary : theme.text,
+                        fontWeight: editDrivetrain === d.value ? "600" : "400",
+                        textAlign: "center",
+                      }}
+                    >
+                      {d.label}
+                    </ThemedText>
+                  </Pressable>
+                ))}
+              </View>
+
+              <View style={styles.formActions}>
+                <Pressable onPress={closeEdit} style={[styles.cancelButton, { borderColor: theme.border }]}>
+                  <ThemedText type="body" style={{ color: theme.textSecondary }}>Cancel</ThemedText>
+                </Pressable>
+                <Pressable onPress={handleSaveEdit} style={[styles.saveButton, { backgroundColor: theme.primary }]}>
+                  <Feather name="check" size={18} color="#FFFFFF" />
+                  <ThemedText type="body" style={{ color: "#FFFFFF", fontWeight: "600", marginLeft: Spacing.xs }}>
+                    Save Changes
+                  </ThemedText>
+                </Pressable>
+              </View>
+            </KeyboardAwareScrollViewCompat>
+          </View>
+        </View>
+      </Modal>
+
+      <SearchablePicker
+        visible={showEditMakePicker}
+        onClose={() => setShowEditMakePicker(false)}
+        onSelect={(m) => { setEditMake(m); setEditModel(""); setShowEditMakePicker(false); }}
+        items={VEHICLE_MAKES}
+        title="Select Make"
+        searchPlaceholder="Search makes..."
+      />
+
+      <SearchablePicker
+        visible={showEditModelPicker}
+        onClose={() => setShowEditModelPicker(false)}
+        onSelect={(m) => { setEditModel(m); setShowEditModelPicker(false); }}
+        items={editAvailableModels}
+        title={`${editMake} Models`}
         searchPlaceholder="Search models..."
       />
     </ThemedView>
