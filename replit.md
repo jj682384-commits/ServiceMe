@@ -22,7 +22,7 @@ The application uses Drizzle ORM with a PostgreSQL dialect for database interact
 - **Emergency Mode**: One-tap SOS activation with GPS sharing and trusted contact notifications.
 - **Premium Membership**: Subscription tiers with benefits like free services and priority response.
 - **EV Mode Tab**: Dedicated section for electric vehicles, offering EV-specific services like mobile charging and EV-safe towing, along with range alerts.
-- **Vehicle Profiles**: Management of multiple vehicle profiles.
+- **Vehicle Profiles**: Management of multiple vehicle profiles. Provider vehicle screen has smart make/model pickers that switch between standard passenger car data and commercial tow truck data (14 manufacturers, 62 models, 6 wrecker classes) depending on the selected vehicle type. Tow truck class selection (Light-Duty Wrecker, Flatbed/Rollback, Heavy-Duty Wrecker, etc.) is stored alongside the model. Same smart pickers are available during provider sign-up.
 - **Provider Management**: Preferred provider identification, verified technician badges, and provider browsing with filtering.
 - **Financial Management**: Detailed service receipts, enhanced tipping options, breakdown history, and secure payment method management.
 - **Legal Compliance**: Mandatory acceptance of legal documents during sign-up.

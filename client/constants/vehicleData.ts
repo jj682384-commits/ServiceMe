@@ -38,3 +38,107 @@ export const VEHICLE_MAKES_MODELS: Record<string, string[]> = {
 };
 
 export const VEHICLE_MAKES = Object.keys(VEHICLE_MAKES_MODELS).sort();
+
+export const TOW_TRUCK_MAKES_MODELS: Record<string, string[]> = {
+  "Chevrolet": [
+    "Silverado 4500HD",
+    "Silverado 5500HD",
+    "Silverado 6500HD",
+  ],
+  "Ford": [
+    "F-450 Super Duty",
+    "F-550 Super Duty",
+    "F-650 Super Duty",
+    "F-750 Super Duty",
+  ],
+  "Freightliner": [
+    "M2 106",
+    "M2 106 Plus",
+    "108SD",
+    "Cascadia 126",
+  ],
+  "GMC": [
+    "Sierra 4500HD",
+    "Sierra 5500HD",
+  ],
+  "Hino": [
+    "195",
+    "195H",
+    "258",
+    "258ALP",
+    "268",
+    "268A",
+    "338",
+  ],
+  "International": [
+    "CV515",
+    "HX520",
+    "HX615",
+    "MV607",
+    "MV607 SBA",
+  ],
+  "Isuzu": [
+    "NPR-HD",
+    "NQR",
+    "NRR",
+    "FTR",
+    "FVR",
+  ],
+  "Kenworth": [
+    "T270",
+    "T370",
+    "T470",
+    "T680",
+    "W900",
+  ],
+  "Mack": [
+    "Anthem",
+    "Granite",
+    "Pinnacle",
+    "TerraPro",
+  ],
+  "Peterbilt": [
+    "320",
+    "337",
+    "348",
+    "365",
+    "386",
+    "389",
+  ],
+  "RAM": [
+    "3500 Tradesman",
+    "4500 Tradesman",
+    "5500 Tradesman",
+  ],
+  "Sterling": [
+    "A-Line",
+    "L-Line 7500",
+    "L-Line 8500",
+    "L-Line 9500",
+  ],
+  "Volvo Trucks": [
+    "VNL 300",
+    "VNL 400",
+    "VNL 760",
+    "VNL 860",
+    "VHD 300",
+  ],
+  "Western Star": [
+    "4700",
+    "4900",
+    "47X",
+    "49X",
+    "57X",
+  ],
+};
+
+export const TOW_TRUCK_MAKES = Object.keys(TOW_TRUCK_MAKES_MODELS).sort();
+
+export const TOW_TRUCK_CLASSES: { label: string; description: string }[] = [
+  { label: "Light-Duty Wrecker", description: "Passenger cars, small trucks (up to 10,000 lbs)" },
+  { label: "Medium-Duty Wrecker", description: "Vans, box trucks, medium vehicles (up to 26,000 lbs)" },
+  { label: "Heavy-Duty Wrecker", description: "Semi-trucks, buses, large vehicles (26,000+ lbs)" },
+  { label: "Flatbed / Rollback", description: "Transports on a flat platform, all vehicle types" },
+  { label: "Integrated / Repo", description: "Wheel-lift integrated, repo and tight-space towing" },
+  { label: "Rotator", description: "360° boom, complex recoveries and heavy rescues" },
+];

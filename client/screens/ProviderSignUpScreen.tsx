@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from "react";
-import { View, StyleSheet, TextInput, Pressable, Alert, Platform, ScrollView, Keyboard } from "react-native";
+import React, { useState, useCallback, useMemo } from "react";
+import { View, StyleSheet, TextInput, Pressable, Alert, Platform, ScrollView, Keyboard, FlatList, Modal } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, CommonActions, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -21,6 +21,13 @@ import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceType } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
+import {
+  VEHICLE_MAKES,
+  VEHICLE_MAKES_MODELS,
+  TOW_TRUCK_MAKES,
+  TOW_TRUCK_MAKES_MODELS,
+  TOW_TRUCK_CLASSES,
+} from "@/constants/vehicleData";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -204,6 +211,10 @@ export default function ProviderSignUpScreen() {
   const [vehicleType, setVehicleType] = useState<"pickup" | "service_van" | "tow_truck">("pickup");
   const [vehicleMake, setVehicleMake] = useState("");
   const [vehicleModel, setVehicleModel] = useState("");
+  const [towClass, setTowClass] = useState("");
+  const [showMakePicker, setShowMakePicker] = useState(false);
+  const [showModelPicker, setShowModelPicker] = useState(false);
+  const [showTowClassPicker, setShowTowClassPicker] = useState(false);
   const [yearsExperience, setYearsExperience] = useState("");
   const [bio, setBio] = useState("");
   const [selectedServices, setSelectedServices] = useState<ServiceType[]>([]);
@@ -223,6 +234,21 @@ export default function ProviderSignUpScreen() {
   const allAccepted = acceptedDocs.privacy && acceptedDocs.terms && acceptedDocs.liability;
   const scale = useSharedValue(1);
   const animatedButtonStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+
+  const isTowTruck = vehicleType === "tow_truck";
+  const activeMakes = isTowTruck ? TOW_TRUCK_MAKES : VEHICLE_MAKES;
+  const activeMakesModels = isTowTruck ? TOW_TRUCK_MAKES_MODELS : VEHICLE_MAKES_MODELS;
+  const availableSignupModels = useMemo(() => {
+    if (!vehicleMake) return [];
+    return activeMakesModels[vehicleMake] || [];
+  }, [vehicleMake, activeMakesModels]);
+
+  const handleVehicleTypeChange = (type: "pickup" | "service_van" | "tow_truck") => {
+    setVehicleType(type);
+    setVehicleMake("");
+    setVehicleModel("");
+    setTowClass("");
+  };
 
   const toggleService = useCallback((service: ServiceType) => {
     setSelectedServices((prev) =>
@@ -374,7 +400,7 @@ export default function ProviderSignUpScreen() {
             {([["pickup", "Pickup Truck", "truck"], ["service_van", "Service Van", "package"], ["tow_truck", "Tow Truck", "truck"]] as const).map(([type, label, icon]) => (
               <Pressable
                 key={type}
-                onPress={() => setVehicleType(type)}
+                onPress={() => handleVehicleTypeChange(type)}
                 style={[styles.vehicleTypeOption, vehicleType === type ? styles.vehicleTypeSelected : null]}
               >
                 <Feather name={icon} size={18} color={vehicleType === type ? "#00D9FF" : "rgba(255,255,255,0.4)"} />
@@ -384,8 +410,62 @@ export default function ProviderSignUpScreen() {
           </View>
         </View>
 
-        <InputField label="Vehicle Make" value={vehicleMake} onChangeText={setVehicleMake} placeholder="e.g. Ford, Toyota" icon="truck" autoCapitalize="words" />
-        <InputField label="Vehicle Model" value={vehicleModel} onChangeText={setVehicleModel} placeholder="e.g. F-150, Tacoma" icon="truck" autoCapitalize="words" />
+        {isTowTruck ? (
+          <View style={styles.signupTowBanner}>
+            <Feather name="info" size={13} color="#00D9FF" />
+            <ThemedText type="small" style={{ color: "rgba(0,217,255,0.9)", flex: 1, marginLeft: 8, fontSize: 12 }}>
+              Commercial tow truck makes & models are loaded. Select your chassis below.
+            </ThemedText>
+          </View>
+        ) : null}
+
+        <View style={styles.inputContainer}>
+          <ThemedText type="small" style={styles.inputLabel}>
+            {isTowTruck ? "Tow Truck Make" : "Vehicle Make"}
+          </ThemedText>
+          <Pressable
+            onPress={() => setShowMakePicker(true)}
+            style={[styles.signupPickerBtn, vehicleMake ? styles.signupPickerBtnFilled : null]}
+          >
+            <Feather name="truck" size={16} color={vehicleMake ? "#00D9FF" : "rgba(255,255,255,0.4)"} />
+            <ThemedText type="small" style={{ color: vehicleMake ? "#FFF" : "rgba(255,255,255,0.4)", flex: 1, marginLeft: 10, fontSize: 14 }}>
+              {vehicleMake || (isTowTruck ? "Select tow truck make..." : "Select make...")}
+            </ThemedText>
+            <Feather name="chevron-down" size={16} color="rgba(255,255,255,0.4)" />
+          </Pressable>
+        </View>
+
+        <View style={styles.inputContainer}>
+          <ThemedText type="small" style={styles.inputLabel}>
+            {isTowTruck ? "Tow Truck Model" : "Vehicle Model"}
+          </ThemedText>
+          <Pressable
+            onPress={() => vehicleMake ? setShowModelPicker(true) : null}
+            style={[styles.signupPickerBtn, vehicleModel ? styles.signupPickerBtnFilled : null, !vehicleMake ? { opacity: 0.5 } : null]}
+          >
+            <Feather name="truck" size={16} color={vehicleModel ? "#00D9FF" : "rgba(255,255,255,0.4)"} />
+            <ThemedText type="small" style={{ color: vehicleModel ? "#FFF" : "rgba(255,255,255,0.4)", flex: 1, marginLeft: 10, fontSize: 14 }}>
+              {vehicleModel || (vehicleMake ? "Select model..." : "Select a make first")}
+            </ThemedText>
+            <Feather name="chevron-down" size={16} color="rgba(255,255,255,0.4)" />
+          </Pressable>
+        </View>
+
+        {isTowTruck ? (
+          <View style={styles.inputContainer}>
+            <ThemedText type="small" style={styles.inputLabel}>Tow Truck Class</ThemedText>
+            <Pressable
+              onPress={() => setShowTowClassPicker(true)}
+              style={[styles.signupPickerBtn, towClass ? styles.signupPickerBtnFilled : null]}
+            >
+              <Feather name="layers" size={16} color={towClass ? "#00D9FF" : "rgba(255,255,255,0.4)"} />
+              <ThemedText type="small" style={{ color: towClass ? "#FFF" : "rgba(255,255,255,0.4)", flex: 1, marginLeft: 10, fontSize: 14 }}>
+                {towClass || "Select wrecker class..."}
+              </ThemedText>
+              <Feather name="chevron-down" size={16} color="rgba(255,255,255,0.4)" />
+            </Pressable>
+          </View>
+        ) : null}
         <InputField label="Years of Experience (optional)" value={yearsExperience} onChangeText={setYearsExperience} placeholder="How many years?" icon="clock" keyboardType="number-pad" />
 
         <View style={styles.inputContainer}>
@@ -613,6 +693,95 @@ export default function ProviderSignUpScreen() {
           ) : null}
         </View>
       </KeyboardAwareScrollViewCompat>
+
+      <Modal visible={showMakePicker} animationType="slide" transparent>
+        <View style={styles.signupModalOverlay}>
+          <View style={[styles.signupModalContent, { paddingTop: insets.top + Spacing.md, paddingBottom: insets.bottom + Spacing.md }]}>
+            <View style={styles.signupModalHeader}>
+              <ThemedText type="h3" style={{ color: "#FFF" }}>
+                {isTowTruck ? "Select Tow Truck Make" : "Select Make"}
+              </ThemedText>
+              <Pressable onPress={() => setShowMakePicker(false)} hitSlop={12}>
+                <Feather name="x" size={24} color="#FFF" />
+              </Pressable>
+            </View>
+            <FlatList
+              data={activeMakes}
+              keyExtractor={(item) => item}
+              keyboardShouldPersistTaps="handled"
+              renderItem={({ item }) => (
+                <Pressable
+                  onPress={() => { setVehicleMake(item); setVehicleModel(""); setShowMakePicker(false); }}
+                  style={({ pressed }) => [styles.signupPickerItem, { backgroundColor: pressed ? "rgba(255,255,255,0.08)" : "transparent" }]}
+                >
+                  <ThemedText type="body" style={{ color: "#FFF" }}>{item}</ThemedText>
+                  <Feather name="chevron-right" size={16} color="rgba(255,255,255,0.4)" />
+                </Pressable>
+              )}
+              ItemSeparatorComponent={() => <View style={styles.signupSeparator} />}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showModelPicker} animationType="slide" transparent>
+        <View style={styles.signupModalOverlay}>
+          <View style={[styles.signupModalContent, { paddingTop: insets.top + Spacing.md, paddingBottom: insets.bottom + Spacing.md }]}>
+            <View style={styles.signupModalHeader}>
+              <ThemedText type="h3" style={{ color: "#FFF" }}>{vehicleMake} Models</ThemedText>
+              <Pressable onPress={() => setShowModelPicker(false)} hitSlop={12}>
+                <Feather name="x" size={24} color="#FFF" />
+              </Pressable>
+            </View>
+            <FlatList
+              data={availableSignupModels}
+              keyExtractor={(item) => item}
+              keyboardShouldPersistTaps="handled"
+              renderItem={({ item }) => (
+                <Pressable
+                  onPress={() => { setVehicleModel(item); setShowModelPicker(false); }}
+                  style={({ pressed }) => [styles.signupPickerItem, { backgroundColor: pressed ? "rgba(255,255,255,0.08)" : "transparent" }]}
+                >
+                  <ThemedText type="body" style={{ color: "#FFF" }}>{item}</ThemedText>
+                  <Feather name="chevron-right" size={16} color="rgba(255,255,255,0.4)" />
+                </Pressable>
+              )}
+              ItemSeparatorComponent={() => <View style={styles.signupSeparator} />}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showTowClassPicker} animationType="slide" transparent>
+        <View style={styles.signupModalOverlay}>
+          <View style={[styles.signupModalContent, { paddingTop: insets.top + Spacing.md, paddingBottom: insets.bottom + Spacing.md }]}>
+            <View style={styles.signupModalHeader}>
+              <ThemedText type="h3" style={{ color: "#FFF" }}>Tow Truck Class</ThemedText>
+              <Pressable onPress={() => setShowTowClassPicker(false)} hitSlop={12}>
+                <Feather name="x" size={24} color="#FFF" />
+              </Pressable>
+            </View>
+            <FlatList
+              data={TOW_TRUCK_CLASSES}
+              keyExtractor={(item) => item.label}
+              keyboardShouldPersistTaps="handled"
+              renderItem={({ item }) => (
+                <Pressable
+                  onPress={() => { setTowClass(item.label); setShowTowClassPicker(false); }}
+                  style={({ pressed }) => [styles.signupPickerItem, styles.signupClassItem, { backgroundColor: pressed ? "rgba(255,255,255,0.08)" : "transparent" }]}
+                >
+                  <View style={{ flex: 1 }}>
+                    <ThemedText type="body" style={{ color: "#FFF", fontWeight: "600" }}>{item.label}</ThemedText>
+                    <ThemedText type="small" style={{ color: "rgba(255,255,255,0.5)", marginTop: 2 }}>{item.description}</ThemedText>
+                  </View>
+                  <Feather name="chevron-right" size={16} color="rgba(255,255,255,0.4)" />
+                </Pressable>
+              )}
+              ItemSeparatorComponent={() => <View style={styles.signupSeparator} />}
+            />
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -674,4 +843,64 @@ const styles = StyleSheet.create({
   nextButtonText: { fontWeight: "700", fontSize: 16 },
   acceptHint: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 },
   acceptHintText: { color: "rgba(255,255,255,0.4)" },
+  signupTowBanner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 4,
+    borderColor: "rgba(0,217,255,0.25)",
+    backgroundColor: "rgba(0,217,255,0.06)",
+  },
+  signupPickerBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "rgba(255,255,255,0.04)",
+  },
+  signupPickerBtnFilled: {
+    borderColor: "rgba(0,217,255,0.4)",
+    backgroundColor: "rgba(0,217,255,0.06)",
+  },
+  signupModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "flex-end",
+  },
+  signupModalContent: {
+    backgroundColor: "#0D1B2A",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    height: "70%",
+  },
+  signupModalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(255,255,255,0.1)",
+    marginBottom: Spacing.sm,
+  },
+  signupPickerItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 14,
+    paddingHorizontal: Spacing.lg,
+  },
+  signupClassItem: {
+    alignItems: "flex-start",
+    paddingVertical: Spacing.md,
+  },
+  signupSeparator: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: "rgba(255,255,255,0.07)",
+    marginHorizontal: Spacing.lg,
+  },
 });

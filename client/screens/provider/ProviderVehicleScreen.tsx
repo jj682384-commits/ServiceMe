@@ -20,7 +20,13 @@ import { ScreenDecoration } from "@/components/ScreenDecoration";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
-import { VEHICLE_MAKES, VEHICLE_MAKES_MODELS } from "@/constants/vehicleData";
+import {
+  VEHICLE_MAKES,
+  VEHICLE_MAKES_MODELS,
+  TOW_TRUCK_MAKES,
+  TOW_TRUCK_MAKES_MODELS,
+  TOW_TRUCK_CLASSES,
+} from "@/constants/vehicleData";
 
 type ProviderVehicleType = "tow_truck" | "service_van" | "pickup";
 
@@ -132,26 +138,99 @@ function SearchablePicker({
   );
 }
 
+function TowClassPicker({
+  visible,
+  onClose,
+  onSelect,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onSelect: (cls: string) => void;
+}) {
+  const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent>
+      <View style={styles.modalOverlay}>
+        <View
+          style={[
+            styles.modalContent,
+            {
+              backgroundColor: theme.backgroundDefault,
+              paddingTop: insets.top + Spacing.md,
+              paddingBottom: insets.bottom + Spacing.md,
+            },
+          ]}
+        >
+          <View style={styles.modalHeader}>
+            <ThemedText type="h3">Tow Truck Class</ThemedText>
+            <Pressable onPress={onClose} hitSlop={12}>
+              <Feather name="x" size={24} color={theme.text} />
+            </Pressable>
+          </View>
+          <FlatList
+            data={TOW_TRUCK_CLASSES}
+            keyExtractor={(item) => item.label}
+            keyboardShouldPersistTaps="handled"
+            renderItem={({ item }) => (
+              <Pressable
+                onPress={() => onSelect(item.label)}
+                style={({ pressed }) => [
+                  styles.classPickerItem,
+                  { backgroundColor: pressed ? theme.backgroundSecondary : "transparent" },
+                ]}
+              >
+                <View style={{ flex: 1 }}>
+                  <ThemedText type="body" style={{ fontWeight: "600" }}>{item.label}</ThemedText>
+                  <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: 2 }}>
+                    {item.description}
+                  </ThemedText>
+                </View>
+                <Feather name="chevron-right" size={16} color={theme.textSecondary} />
+              </Pressable>
+            )}
+            ItemSeparatorComponent={() => (
+              <View style={[styles.separator, { backgroundColor: theme.border }]} />
+            )}
+          />
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 function PickerButton({
   label,
   value,
   placeholder,
   onPress,
   disabled,
+  badge,
 }: {
   label: string;
   value: string;
   placeholder: string;
   onPress: () => void;
   disabled?: boolean;
+  badge?: string;
 }) {
   const { theme } = useTheme();
 
   return (
     <>
-      <ThemedText type="small" style={[styles.fieldLabel, { color: theme.textSecondary }]}>
-        {label}
-      </ThemedText>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: Spacing.sm }}>
+        <ThemedText type="small" style={[styles.fieldLabel, { color: theme.textSecondary, marginTop: 0, marginBottom: 0, flex: 1 }]}>
+          {label}
+        </ThemedText>
+        {badge ? (
+          <View style={[styles.badge, { backgroundColor: theme.primary + "20" }]}>
+            <ThemedText type="small" style={{ color: theme.primary, fontSize: 10, fontWeight: "700" }}>
+              {badge}
+            </ThemedText>
+          </View>
+        ) : null}
+      </View>
       <Pressable
         onPress={onPress}
         disabled={disabled}
@@ -161,6 +240,7 @@ function PickerButton({
             backgroundColor: theme.backgroundDefault,
             borderColor: value ? theme.primary : theme.border,
             opacity: disabled ? 0.5 : 1,
+            marginTop: Spacing.sm,
           },
         ]}
       >
@@ -189,14 +269,28 @@ export default function ProviderVehicleScreen() {
     currentProvider?.vehicleType || "pickup"
   );
   const [licensePlate, setLicensePlate] = useState(currentProvider?.licensePlate || "");
+  const [towClass, setTowClass] = useState("");
 
   const [showMakePicker, setShowMakePicker] = useState(false);
   const [showModelPicker, setShowModelPicker] = useState(false);
+  const [showTowClassPicker, setShowTowClassPicker] = useState(false);
+
+  const isTowTruck = vehicleType === "tow_truck";
+
+  const activeMakes = isTowTruck ? TOW_TRUCK_MAKES : VEHICLE_MAKES;
+  const activeMakesModels = isTowTruck ? TOW_TRUCK_MAKES_MODELS : VEHICLE_MAKES_MODELS;
 
   const availableModels = useMemo(() => {
     if (!make) return [];
-    return VEHICLE_MAKES_MODELS[make] || [];
-  }, [make]);
+    return activeMakesModels[make] || [];
+  }, [make, activeMakesModels]);
+
+  const handleChangeVehicleType = (type: ProviderVehicleType) => {
+    setVehicleType(type);
+    setMake("");
+    setModel("");
+    setTowClass("");
+  };
 
   const handleSelectMake = (selectedMake: string) => {
     setMake(selectedMake);
@@ -214,11 +308,15 @@ export default function ProviderVehicleScreen() {
       Alert.alert("Missing Info", "Please select a make and model for your vehicle.");
       return;
     }
+    if (isTowTruck && !towClass.trim()) {
+      Alert.alert("Missing Info", "Please select your tow truck class.");
+      return;
+    }
     if (!currentProvider) return;
     setCurrentProvider({
       ...currentProvider,
       vehicleMake: make.trim(),
-      vehicleModel: model.trim(),
+      vehicleModel: towClass ? `${model.trim()} (${towClass})` : model.trim(),
       vehicleType,
       licensePlate: licensePlate.trim().toUpperCase(),
     });
@@ -239,20 +337,87 @@ export default function ProviderVehicleScreen() {
         </ThemedText>
 
         <View style={[styles.formCard, { backgroundColor: theme.backgroundSecondary }]}>
-          <PickerButton
-            label="Make"
-            value={make}
-            placeholder="Select make..."
-            onPress={() => setShowMakePicker(true)}
-          />
+          <ThemedText type="small" style={[styles.fieldLabel, { color: theme.textSecondary }]}>
+            Vehicle Type
+          </ThemedText>
+          <View style={styles.optionRow}>
+            {VEHICLE_TYPES.map((t) => (
+              <Pressable
+                key={t.value}
+                onPress={() => handleChangeVehicleType(t.value)}
+                style={[
+                  styles.optionChip,
+                  {
+                    backgroundColor: vehicleType === t.value ? theme.primary + "15" : theme.backgroundDefault,
+                    borderColor: vehicleType === t.value ? theme.primary : theme.border,
+                    flex: 1,
+                  },
+                ]}
+              >
+                <Feather
+                  name={t.icon}
+                  size={14}
+                  color={vehicleType === t.value ? theme.primary : theme.textSecondary}
+                />
+                <ThemedText
+                  type="small"
+                  style={{
+                    color: vehicleType === t.value ? theme.primary : theme.text,
+                    fontWeight: vehicleType === t.value ? "600" : "400",
+                    marginLeft: 4,
+                    textAlign: "center",
+                  }}
+                >
+                  {t.label}
+                </ThemedText>
+              </Pressable>
+            ))}
+          </View>
 
-          <PickerButton
-            label="Model"
-            value={model}
-            placeholder={make ? "Select model..." : "Select a make first"}
-            onPress={() => setShowModelPicker(true)}
-            disabled={!make}
-          />
+          {isTowTruck ? (
+            <View
+              style={[
+                styles.towBanner,
+                { backgroundColor: theme.primary + "10", borderColor: theme.primary + "30" },
+              ]}
+            >
+              <Feather name="info" size={14} color={theme.primary} />
+              <ThemedText type="small" style={{ color: theme.primary, flex: 1, marginLeft: Spacing.sm }}>
+                Showing commercial tow truck manufacturers. Select your chassis make and model.
+              </ThemedText>
+            </View>
+          ) : null}
+
+          <View style={{ marginTop: Spacing.md }}>
+            <PickerButton
+              label="Make"
+              value={make}
+              placeholder={isTowTruck ? "Select tow truck make..." : "Select make..."}
+              onPress={() => setShowMakePicker(true)}
+              badge={isTowTruck ? "TOW" : undefined}
+            />
+          </View>
+
+          <View style={{ marginTop: Spacing.md }}>
+            <PickerButton
+              label="Model"
+              value={model}
+              placeholder={make ? "Select model..." : "Select a make first"}
+              onPress={() => setShowModelPicker(true)}
+              disabled={!make}
+            />
+          </View>
+
+          {isTowTruck ? (
+            <View style={{ marginTop: Spacing.md }}>
+              <PickerButton
+                label="Tow Truck Class"
+                value={towClass}
+                placeholder="Select wrecker class..."
+                onPress={() => setShowTowClassPicker(true)}
+              />
+            </View>
+          ) : null}
 
           <ThemedText type="small" style={[styles.fieldLabel, { color: theme.textSecondary }]}>
             Year
@@ -286,43 +451,6 @@ export default function ProviderVehicleScreen() {
               </Pressable>
             ))}
           </ScrollView>
-
-          <ThemedText type="small" style={[styles.fieldLabel, { color: theme.textSecondary }]}>
-            Vehicle Type
-          </ThemedText>
-          <View style={styles.optionRow}>
-            {VEHICLE_TYPES.map((t) => (
-              <Pressable
-                key={t.value}
-                onPress={() => setVehicleType(t.value)}
-                style={[
-                  styles.optionChip,
-                  {
-                    backgroundColor: vehicleType === t.value ? theme.primary + "15" : theme.backgroundDefault,
-                    borderColor: vehicleType === t.value ? theme.primary : theme.border,
-                    flex: 1,
-                  },
-                ]}
-              >
-                <Feather
-                  name={t.icon}
-                  size={14}
-                  color={vehicleType === t.value ? theme.primary : theme.textSecondary}
-                />
-                <ThemedText
-                  type="small"
-                  style={{
-                    color: vehicleType === t.value ? theme.primary : theme.text,
-                    fontWeight: vehicleType === t.value ? "600" : "400",
-                    marginLeft: 4,
-                    textAlign: "center",
-                  }}
-                >
-                  {t.label}
-                </ThemedText>
-              </Pressable>
-            ))}
-          </View>
 
           <ThemedText type="small" style={[styles.fieldLabel, { color: theme.textSecondary }]}>
             License Plate
@@ -364,8 +492,8 @@ export default function ProviderVehicleScreen() {
         visible={showMakePicker}
         onClose={() => setShowMakePicker(false)}
         onSelect={handleSelectMake}
-        items={VEHICLE_MAKES}
-        title="Select Make"
+        items={activeMakes}
+        title={isTowTruck ? "Select Tow Truck Make" : "Select Make"}
         searchPlaceholder="Search makes..."
       />
 
@@ -376,6 +504,12 @@ export default function ProviderVehicleScreen() {
         items={availableModels}
         title={`${make} Models`}
         searchPlaceholder="Search models..."
+      />
+
+      <TowClassPicker
+        visible={showTowClassPicker}
+        onClose={() => setShowTowClassPicker(false)}
+        onSelect={(cls) => { setTowClass(cls); setShowTowClassPicker(false); }}
       />
     </ThemedView>
   );
@@ -421,6 +555,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xs,
     borderRadius: BorderRadius.sm,
     borderWidth: 1,
+  },
+  towBanner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    borderWidth: 1,
+    borderRadius: BorderRadius.sm,
+    padding: Spacing.sm,
+    marginTop: Spacing.md,
+    gap: 0,
+  },
+  badge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
   textInput: {
     padding: Spacing.md,
@@ -476,6 +624,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.lg,
+  },
+  classPickerItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    gap: Spacing.sm,
   },
   separator: {
     height: 1,
