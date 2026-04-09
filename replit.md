@@ -15,7 +15,7 @@ The frontend is built with React Native and Expo SDK 54, targeting iOS, Android,
 The backend is an Express.js server developed with TypeScript, providing a RESTful API. It includes dynamic CORS configuration for Replit environments.
 
 ### Data Layer
-The application uses Drizzle ORM with a PostgreSQL dialect for database interactions, and `MemStorage` for in-memory storage, with future migration to a persistent database in mind. Zod schemas ensure type-safe API input validation. Common code (e.g., schema definitions) is shared between client and server via a `shared/` directory.
+The application uses a PostgreSQL database (via the `pg` Pool in `server/db.ts`) for all persistent server-side data. Three tables are provisioned: `providers`, `jobs`, and `reports`. Zod schemas and Drizzle ORM utilities are used for type-safe validation. Common code (e.g., schema definitions) is shared between client and server via a `shared/` directory. In-memory stores remain only for ephemeral real-time state: WebSocket chat history, admin session tokens, and SmartCar OAuth tokens.
 
 ### Key Features
 - **Smart Issue Detection**: AI-powered diagnostic flow recommending services and estimating costs.

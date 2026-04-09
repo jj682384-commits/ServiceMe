@@ -5,6 +5,9 @@ import OpenAI from "openai";
 import * as crypto from "crypto";
 import * as fs from "fs";
 import * as path from "path";
+import { pool, rowToProvider, rowToJob, type ProviderRow, type JobRow } from "./db";
+
+// ── Types ────────────────────────────────────────────────────────────────────
 
 interface ProviderBadge {
   type: string;
@@ -35,41 +38,6 @@ interface ProviderRecord {
   pushToken?: string;
 }
 
-function calcDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 3959;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-const providerStore: ProviderRecord[] = [];
-
-const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-});
-
-interface ChatMessage {
-  id: string;
-  conversationId: string;
-  senderId: string;
-  senderRole: "driver" | "provider" | null;
-  content: string;
-  timestamp: string;
-}
-
-interface WsClient {
-  ws: WebSocket;
-  conversationId: string;
-  senderId: string;
-  senderRole: "driver" | "provider" | null;
-}
-
-const messageHistory = new Map<string, ChatMessage[]>();
-const clients = new Set<WsClient>();
-
 interface JobRecord {
   id: string;
   serviceType: string;
@@ -94,8 +62,42 @@ interface JobRecord {
   isEmergency?: boolean;
 }
 
-const jobStore = new Map<string, JobRecord>();
-let broadcastJobUpdate: (job: JobRecord) => void = () => {};
+interface ChatMessage {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  senderRole: "driver" | "provider" | null;
+  content: string;
+  timestamp: string;
+}
+
+interface WsClient {
+  ws: WebSocket;
+  conversationId: string;
+  senderId: string;
+  senderRole: "driver" | "provider" | null;
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function calcDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 3959;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+const openai = new OpenAI({
+  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+});
+
+// ── Chat (in-memory — ephemeral real-time only) ───────────────────────────────
+
+const messageHistory = new Map<string, ChatMessage[]>();
+const clients = new Set<WsClient>();
 
 const PROVIDER_REPLIES = [
   "I'm on my way, shouldn't be too long!",
@@ -135,6 +137,8 @@ function broadcastToConversation(conversationId: string, payload: object, exclud
   }
 }
 
+// ── Admin ─────────────────────────────────────────────────────────────────────
+
 const adminTokens = new Set<string>();
 
 function adminAuth(req: Request, res: Response, next: NextFunction) {
@@ -145,6 +149,8 @@ function adminAuth(req: Request, res: Response, next: NextFunction) {
   }
   next();
 }
+
+// ── SmartCar (in-memory — OAuth tokens, not user data) ───────────────────────
 
 const smartcarTokenStore = new Map<string, {
   accessToken: string;
@@ -183,18 +189,23 @@ async function refreshSmartcarToken(userId: string): Promise<string | null> {
   }
 }
 
+// ── DB broadcast helper ───────────────────────────────────────────────────────
+
+let broadcastJobUpdate: (job: JobRecord) => void = () => {};
+
+// ── Routes ────────────────────────────────────────────────────────────────────
+
 export async function registerRoutes(app: Express): Promise<Server> {
 
   function getSmartcarRedirectUri(): string {
-    // Production: Express runs on port 8081 which maps to external port 80 (no explicit port needed)
     const prodDomain = process.env.REPLIT_INTERNAL_APP_DOMAIN;
     if (prodDomain) return `https://${prodDomain}/api/smartcar/callback`;
-    // Dev: Express runs on port 5000, Metro on 8081 (port 8081 = external 80, so default domain hits Metro)
-    // Must use explicit :5000 so the callback reaches Express, not Metro
     const devDomain = process.env.REPLIT_DEV_DOMAIN;
     if (devDomain) return `https://${devDomain}:5000/api/smartcar/callback`;
     return "http://localhost:5000/api/smartcar/callback";
   }
+
+  // ── SmartCar ────────────────────────────────────────────────────────────────
 
   app.get("/api/smartcar/auth-url", (req: Request, res: Response) => {
     const clientId = process.env.SMARTCAR_CLIENT_ID;
@@ -221,9 +232,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .replace("{{MESSAGE}}", "Connection was cancelled or denied.");
       return res.setHeader("Content-Type", "text/html").send(html);
     }
-    if (!code || !userId) {
-      return res.status(400).send("Missing code or state");
-    }
+    if (!code || !userId) return res.status(400).send("Missing code or state");
     try {
       const redirectUri = getSmartcarRedirectUri();
       const creds = Buffer.from(`${process.env.SMARTCAR_CLIENT_ID}:${process.env.SMARTCAR_CLIENT_SECRET}`).toString("base64");
@@ -318,6 +327,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ success: true });
   });
 
+  // ── Static pages ─────────────────────────────────────────────────────────────
+
   app.get("/privacy", (_req: Request, res: Response) => {
     const privacyPage = path.resolve(process.cwd(), "server", "templates", "privacy.html");
     if (fs.existsSync(privacyPage)) {
@@ -338,100 +349,135 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── Admin auth ────────────────────────────────────────────────────────────────
+
   app.post("/api/admin/login", (req: Request, res: Response) => {
     const { password } = req.body as { password: string };
     const adminPassword = (process.env.ADMIN_PASSWORD || "").trim();
     const submitted = (password || "").trim();
-    if (!adminPassword) {
-      return res.status(503).json({ error: "ADMIN_PASSWORD not configured" });
-    }
-    if (!submitted || submitted !== adminPassword) {
-      return res.status(401).json({ error: "Invalid password" });
-    }
+    if (!adminPassword) return res.status(503).json({ error: "ADMIN_PASSWORD not configured" });
+    if (!submitted || submitted !== adminPassword) return res.status(401).json({ error: "Invalid password" });
     const token = crypto.randomBytes(32).toString("hex");
     adminTokens.add(token);
     res.json({ token });
   });
 
-  app.get("/api/admin/providers", adminAuth, (_req: Request, res: Response) => {
-    const providers = providerStore.map((p) => ({
-      id: p.id,
-      name: p.name,
-      email: p.email,
-      phone: p.phone,
-      providerType: p.providerType,
-      verificationStatus: p.verificationStatus,
-      verificationDocuments: p.verificationDocuments || {},
-      verificationSubmittedAt: p.verificationSubmittedAt || null,
-      verificationNotes: p.verificationNotes || null,
-      servicesOffered: p.servicesOffered,
-      vehicleMake: p.vehicleMake,
-      vehicleModel: p.vehicleModel,
-      licensePlate: p.licensePlate,
-      rating: p.rating,
-      reviewCount: p.reviewCount,
-      isAvailable: p.isAvailable,
-    }));
-    res.json(providers);
+  // ── Admin: providers ──────────────────────────────────────────────────────────
+
+  app.get("/api/admin/providers", adminAuth, async (_req: Request, res: Response) => {
+    try {
+      const { rows } = await pool.query<ProviderRow>("SELECT * FROM providers ORDER BY created_at DESC");
+      res.json(rows.map((r) => {
+        const p = rowToProvider(r);
+        return {
+          id: p.id, name: p.name, email: p.email, phone: p.phone,
+          providerType: p.providerType, verificationStatus: p.verificationStatus,
+          verificationDocuments: p.verificationDocuments || {},
+          verificationSubmittedAt: p.verificationSubmittedAt || null,
+          verificationNotes: p.verificationNotes || null,
+          servicesOffered: p.servicesOffered,
+          vehicleMake: p.vehicleMake, vehicleModel: p.vehicleModel,
+          licensePlate: p.licensePlate, rating: p.rating, reviewCount: p.reviewCount,
+          isAvailable: p.isAvailable,
+        };
+      }));
+    } catch (err) {
+      console.error("[admin/providers]", err);
+      res.status(500).json({ error: "Database error" });
+    }
   });
 
-  app.post("/api/admin/providers/:id/approve", adminAuth, (req: Request, res: Response) => {
-    const provider = providerStore.find((p) => p.id === req.params.id);
-    if (!provider) return res.status(404).json({ error: "Provider not found" });
-    provider.verificationStatus = "verified";
-    provider.verificationNotes = undefined;
-    res.json({ success: true, verificationStatus: "verified" });
+  app.post("/api/admin/providers/:id/approve", adminAuth, async (req: Request, res: Response) => {
+    try {
+      const { rowCount } = await pool.query(
+        "UPDATE providers SET verification_status = 'verified', verification_notes = NULL, updated_at = NOW() WHERE id = $1",
+        [req.params.id]
+      );
+      if (!rowCount) return res.status(404).json({ error: "Provider not found" });
+      res.json({ success: true, verificationStatus: "verified" });
+    } catch (err) {
+      console.error("[admin/approve]", err);
+      res.status(500).json({ error: "Database error" });
+    }
   });
 
-  app.post("/api/admin/providers/:id/reject", adminAuth, (req: Request, res: Response) => {
+  app.post("/api/admin/providers/:id/reject", adminAuth, async (req: Request, res: Response) => {
     const { notes } = req.body as { notes?: string };
-    const provider = providerStore.find((p) => p.id === req.params.id);
-    if (!provider) return res.status(404).json({ error: "Provider not found" });
-    provider.verificationStatus = "not_started";
-    provider.verificationNotes = notes || "Your documents were not accepted. Please re-upload and resubmit.";
-    provider.verificationDocuments = {};
-    provider.verificationSubmittedAt = undefined;
-    res.json({ success: true, verificationStatus: "not_started", notes: provider.verificationNotes });
+    const noteText = notes || "Your documents were not accepted. Please re-upload and resubmit.";
+    try {
+      const { rowCount } = await pool.query(
+        `UPDATE providers
+         SET verification_status = 'not_started',
+             verification_notes = $2,
+             verification_documents = '{}',
+             verification_submitted_at = NULL,
+             updated_at = NOW()
+         WHERE id = $1`,
+        [req.params.id, noteText]
+      );
+      if (!rowCount) return res.status(404).json({ error: "Provider not found" });
+      res.json({ success: true, verificationStatus: "not_started", notes: noteText });
+    } catch (err) {
+      console.error("[admin/reject]", err);
+      res.status(500).json({ error: "Database error" });
+    }
   });
 
-  app.post("/api/providers/:id/verification", (req: Request, res: Response) => {
+  // ── Provider verification ─────────────────────────────────────────────────────
+
+  app.post("/api/providers/:id/verification", async (req: Request, res: Response) => {
     const { verificationDocuments, verificationSubmittedAt } = req.body as {
       verificationDocuments: Record<string, boolean>;
       verificationSubmittedAt: string;
     };
-    const provider = providerStore.find((p) => p.id === req.params.id);
-    if (!provider) return res.status(404).json({ error: "Provider not found" });
-    provider.verificationDocuments = verificationDocuments;
-    provider.verificationSubmittedAt = verificationSubmittedAt;
-    provider.verificationStatus = "pending";
-    res.json({ success: true });
+    try {
+      const { rowCount } = await pool.query(
+        `UPDATE providers
+         SET verification_documents = $2,
+             verification_submitted_at = $3,
+             verification_status = 'pending',
+             updated_at = NOW()
+         WHERE id = $1`,
+        [req.params.id, JSON.stringify(verificationDocuments), verificationSubmittedAt]
+      );
+      if (!rowCount) return res.status(404).json({ error: "Provider not found" });
+      res.json({ success: true });
+    } catch (err) {
+      console.error("[providers/verification]", err);
+      res.status(500).json({ error: "Database error" });
+    }
   });
 
-  app.get("/api/providers/:id/verification", (req: Request, res: Response) => {
-    const provider = providerStore.find((p) => p.id === req.params.id);
-    if (!provider) return res.status(404).json({ error: "Provider not found" });
-    res.json({
-      verificationStatus: provider.verificationStatus,
-      verificationNotes: provider.verificationNotes || null,
-      verificationSubmittedAt: provider.verificationSubmittedAt || null,
-    });
+  app.get("/api/providers/:id/verification", async (req: Request, res: Response) => {
+    try {
+      const { rows } = await pool.query<ProviderRow>(
+        "SELECT * FROM providers WHERE id = $1", [req.params.id]
+      );
+      if (!rows.length) return res.status(404).json({ error: "Provider not found" });
+      const p = rowToProvider(rows[0]);
+      res.json({
+        verificationStatus: p.verificationStatus,
+        verificationNotes: p.verificationNotes || null,
+        verificationSubmittedAt: p.verificationSubmittedAt || null,
+      });
+    } catch (err) {
+      console.error("[providers/verification GET]", err);
+      res.status(500).json({ error: "Database error" });
+    }
   });
+
+  // ── AI Diagnostics ────────────────────────────────────────────────────────────
 
   app.post("/api/diagnose", async (req: Request, res: Response) => {
     try {
       const { symptom, symptomLabel, followUpQuestions, followUpAnswers } = req.body;
-
-      if (!symptom) {
-        return res.status(400).json({ error: "symptom is required" });
-      }
-
+      if (!symptom) return res.status(400).json({ error: "symptom is required" });
       const qaLines = (followUpQuestions || [])
         .map((q: { question: string; id: string }) => {
           const answer = (followUpAnswers || {})[q.id] || "Not answered";
           return `Q: ${q.question}\nA: ${answer}`;
         })
         .join("\n\n");
-
       const prompt = `You are an expert automotive roadside assistance diagnostic AI for the ServiceMe app. A driver is stranded and needs help.
 
 Primary symptom reported: "${symptomLabel || symptom}"
@@ -452,274 +498,406 @@ Based on these symptoms, provide a diagnosis and service recommendation. You MUS
 }
 
 Be concise, accurate, and reassuring. Base serviceType on what service would actually fix the problem.`;
-
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [{ role: "user", content: prompt }],
         response_format: { type: "json_object" },
         max_tokens: 500,
       });
-
       const content = response.choices[0]?.message?.content || "{}";
-      const result = JSON.parse(content);
-
-      res.json(result);
+      res.json(JSON.parse(content));
     } catch (error) {
       console.error("Diagnosis error:", error);
       res.status(500).json({ error: "Failed to generate diagnosis" });
     }
   });
 
+  // ── Chat history ──────────────────────────────────────────────────────────────
+
   app.get("/api/chat/:conversationId/messages", (req: Request, res: Response) => {
-    const { conversationId } = req.params;
-    const history = messageHistory.get(conversationId) || [];
+    const history = messageHistory.get(req.params.conversationId) || [];
     res.json({ messages: history });
   });
 
-  app.get("/api/providers/nearby", (req: Request, res: Response) => {
+  // ── Providers: nearby & register ─────────────────────────────────────────────
+
+  app.get("/api/providers/nearby", async (req: Request, res: Response) => {
     const { lat, lng, radius } = req.query as Record<string, string>;
     const maxRadius = parseFloat(radius || "25");
-    let result = providerStore.filter((p) => p.isAvailable);
-    if (lat && lng) {
-      const userLat = parseFloat(lat);
-      const userLng = parseFloat(lng);
-      result = result
-        .map((p) => ({ ...p, distance: calcDistance(userLat, userLng, p.location.latitude, p.location.longitude) }))
-        .filter((p) => p.distance <= maxRadius)
-        .sort((a, b) => (a.distance ?? 0) - (b.distance ?? 0));
+    try {
+      const { rows } = await pool.query<ProviderRow>(
+        "SELECT * FROM providers WHERE is_available = true"
+      );
+      let result = rows.map(rowToProvider);
+      if (lat && lng) {
+        const userLat = parseFloat(lat);
+        const userLng = parseFloat(lng);
+        result = result
+          .map((p) => ({ ...p, distance: calcDistance(userLat, userLng, p.location.latitude, p.location.longitude) }))
+          .filter((p) => (p as ProviderRecord & { distance: number }).distance <= maxRadius)
+          .sort((a, b) => ((a as ProviderRecord & { distance: number }).distance ?? 0) - ((b as ProviderRecord & { distance: number }).distance ?? 0));
+      }
+      res.json(result);
+    } catch (err) {
+      console.error("[providers/nearby]", err);
+      res.status(500).json({ error: "Database error" });
     }
-    res.json(result);
   });
 
-  app.post("/api/providers/register", (req: Request, res: Response) => {
+  app.post("/api/providers/register", async (req: Request, res: Response) => {
     const data = req.body as ProviderRecord;
     if (!data.id || !data.name) return res.status(400).json({ error: "id and name required" });
-    const existing = providerStore.find((p) => p.id === data.id);
-    if (existing) {
-      Object.assign(existing, data, { lastLocationUpdate: new Date().toISOString() });
-      return res.json(existing);
+    try {
+      const { rows } = await pool.query<ProviderRow>(
+        `INSERT INTO providers (
+           id, name, phone, email, rating, review_count,
+           vehicle_type, vehicle_make, vehicle_model, license_plate,
+           services_offered, is_available, provider_type,
+           verification_status, verification_documents, verification_submitted_at,
+           verification_notes, badges, location, last_location_update, push_token
+         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
+         ON CONFLICT (id) DO UPDATE SET
+           name = EXCLUDED.name,
+           phone = EXCLUDED.phone,
+           email = EXCLUDED.email,
+           vehicle_type = EXCLUDED.vehicle_type,
+           vehicle_make = EXCLUDED.vehicle_make,
+           vehicle_model = EXCLUDED.vehicle_model,
+           license_plate = EXCLUDED.license_plate,
+           services_offered = EXCLUDED.services_offered,
+           is_available = EXCLUDED.is_available,
+           provider_type = EXCLUDED.provider_type,
+           badges = EXCLUDED.badges,
+           location = EXCLUDED.location,
+           last_location_update = EXCLUDED.last_location_update,
+           push_token = EXCLUDED.push_token,
+           updated_at = NOW()
+         RETURNING *`,
+        [
+          data.id, data.name, data.phone || "", data.email || "",
+          data.rating ?? 4.8, data.reviewCount ?? 0,
+          data.vehicleType || "service_van", data.vehicleMake || "",
+          data.vehicleModel || "", data.licensePlate || "",
+          JSON.stringify(data.servicesOffered || []),
+          data.isAvailable ?? true, data.providerType || "independent",
+          data.verificationStatus || "not_started",
+          data.verificationDocuments ? JSON.stringify(data.verificationDocuments) : null,
+          data.verificationSubmittedAt || null, data.verificationNotes || null,
+          data.badges ? JSON.stringify(data.badges) : null,
+          JSON.stringify(data.location || { latitude: 0, longitude: 0 }),
+          new Date().toISOString(), data.pushToken || null,
+        ]
+      );
+      res.json(rowToProvider(rows[0]));
+    } catch (err) {
+      console.error("[providers/register]", err);
+      res.status(500).json({ error: "Database error" });
     }
-    const provider: ProviderRecord = { ...data, lastLocationUpdate: new Date().toISOString() };
-    providerStore.push(provider);
-    res.json(provider);
   });
 
-  app.patch("/api/providers/:id/location", (req: Request, res: Response) => {
+  app.patch("/api/providers/:id/location", async (req: Request, res: Response) => {
     const { latitude, longitude } = req.body;
     if (typeof latitude !== "number" || typeof longitude !== "number") {
       return res.status(400).json({ error: "latitude and longitude required" });
     }
-    const provider = providerStore.find((p) => p.id === req.params.id);
-    if (!provider) return res.status(404).json({ error: "Provider not found" });
-    provider.location = { latitude, longitude };
-    provider.lastLocationUpdate = new Date().toISOString();
-    res.json({ success: true });
+    try {
+      const { rowCount } = await pool.query(
+        "UPDATE providers SET location = $2, last_location_update = $3, updated_at = NOW() WHERE id = $1",
+        [req.params.id, JSON.stringify({ latitude, longitude }), new Date().toISOString()]
+      );
+      if (!rowCount) return res.status(404).json({ error: "Provider not found" });
+      res.json({ success: true });
+    } catch (err) {
+      console.error("[providers/location]", err);
+      res.status(500).json({ error: "Database error" });
+    }
   });
 
-  app.patch("/api/providers/:id/availability", (req: Request, res: Response) => {
+  app.patch("/api/providers/:id/availability", async (req: Request, res: Response) => {
     const { isAvailable } = req.body;
     if (typeof isAvailable !== "boolean") {
       return res.status(400).json({ error: "isAvailable (boolean) required" });
     }
-    const provider = providerStore.find((p) => p.id === req.params.id);
-    if (!provider) return res.status(404).json({ error: "Provider not found" });
-    provider.isAvailable = isAvailable;
-    res.json({ success: true });
+    try {
+      const { rowCount } = await pool.query(
+        "UPDATE providers SET is_available = $2, updated_at = NOW() WHERE id = $1",
+        [req.params.id, isAvailable]
+      );
+      if (!rowCount) return res.status(404).json({ error: "Provider not found" });
+      res.json({ success: true });
+    } catch (err) {
+      console.error("[providers/availability]", err);
+      res.status(500).json({ error: "Database error" });
+    }
   });
 
-  app.patch("/api/providers/:id/push-token", (req: Request, res: Response) => {
+  app.patch("/api/providers/:id/push-token", async (req: Request, res: Response) => {
     const { pushToken } = req.body as { pushToken: string };
-    const provider = providerStore.find((p) => p.id === req.params.id);
-    if (!provider) return res.status(404).json({ error: "Provider not found" });
-    provider.pushToken = pushToken || undefined;
-    res.json({ success: true });
+    try {
+      const { rowCount } = await pool.query(
+        "UPDATE providers SET push_token = $2, updated_at = NOW() WHERE id = $1",
+        [req.params.id, pushToken || null]
+      );
+      if (!rowCount) return res.status(404).json({ error: "Provider not found" });
+      res.json({ success: true });
+    } catch (err) {
+      console.error("[providers/push-token]", err);
+      res.status(500).json({ error: "Database error" });
+    }
   });
+
+  app.get("/api/providers/:id", async (req: Request, res: Response) => {
+    try {
+      const { rows } = await pool.query<ProviderRow>(
+        "SELECT * FROM providers WHERE id = $1", [req.params.id]
+      );
+      if (!rows.length) return res.status(404).json({ error: "Provider not found" });
+      const p = rowToProvider(rows[0]);
+      res.json({
+        id: p.id, rating: p.rating, reviewCount: p.reviewCount,
+        isAvailable: p.isAvailable, verificationStatus: p.verificationStatus,
+      });
+    } catch (err) {
+      console.error("[providers/:id]", err);
+      res.status(500).json({ error: "Database error" });
+    }
+  });
+
+  // ── Jobs ──────────────────────────────────────────────────────────────────────
 
   app.post("/api/jobs", async (req: Request, res: Response) => {
     const data = req.body as Partial<JobRecord>;
     if (!data.id || !data.serviceType) return res.status(400).json({ error: "id and serviceType required" });
-    const job: JobRecord = {
-      id: data.id,
-      serviceType: data.serviceType,
-      location: data.location ?? { address: "Unknown", latitude: 0, longitude: 0 },
-      notes: data.notes ?? "",
-      status: "pending",
-      estimatedCost: data.estimatedCost ?? 0,
-      driver: data.driver,
-      eta: data.eta,
-      isExpress: data.isExpress,
-      expressFee: data.expressFee,
-      serviceFee: data.serviceFee,
-      totalCost: data.totalCost,
-      receiptNumber: data.receiptNumber,
-      timeSaved: data.timeSaved,
-      createdAt: data.createdAt ?? new Date().toISOString(),
-      isEmergency: data.isEmergency,
-    };
-    jobStore.set(job.id, job);
+    try {
+      const { rows } = await pool.query<JobRow>(
+        `INSERT INTO jobs (
+           id, service_type, location, notes, status, estimated_cost,
+           driver, eta, is_express, express_fee, service_fee, total_cost,
+           receipt_number, time_saved, created_at, is_emergency
+         ) VALUES ($1,$2,$3,$4,'pending',$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+         ON CONFLICT (id) DO NOTHING
+         RETURNING *`,
+        [
+          data.id, data.serviceType,
+          JSON.stringify(data.location ?? { address: "Unknown", latitude: 0, longitude: 0 }),
+          data.notes ?? "", data.estimatedCost ?? 0,
+          data.driver ? JSON.stringify(data.driver) : null,
+          data.eta ?? null, data.isExpress ?? null,
+          data.expressFee ?? null, data.serviceFee ?? null,
+          data.totalCost ?? null, data.receiptNumber ?? null,
+          data.timeSaved ?? null,
+          data.createdAt ?? new Date().toISOString(),
+          data.isEmergency ?? null,
+        ]
+      );
+      const job = rows.length ? rowToJob(rows[0]) : { ...data, status: "pending", createdAt: new Date().toISOString() } as JobRecord;
 
-    const serviceLabels: Record<string, string> = {
-      flat_tire: "Flat Tire", jump_start: "Jump Start", tow: "Tow Service",
-      fuel: "Fuel Delivery", lockout: "Lockout", obd_diagnostic: "OBD Diagnostic", other: "Roadside Assistance",
-    };
-    const serviceLabel = serviceLabels[job.serviceType] || "Roadside Assistance";
-    const urgency = job.isEmergency ? "EMERGENCY: " : "";
-    const tokens = providerStore
-      .filter((p) => p.isAvailable && p.pushToken)
-      .map((p) => p.pushToken as string);
-
-    if (tokens.length > 0) {
-      const messages = tokens.map((to) => ({
-        to,
-        title: `${urgency}New Job Request`,
-        body: `${serviceLabel} needed nearby — $${job.estimatedCost} estimated. Tap to accept.`,
-        data: { screen: "ProviderDashboard" },
-        sound: "default",
-        priority: job.isEmergency ? "high" : "normal",
-        channelId: job.isEmergency ? "emergency" : "default",
-      }));
-      try {
-        await fetch("https://exp.host/--/api/v2/push/send", {
+      // Push notifications to available providers
+      const { rows: providers } = await pool.query<ProviderRow>(
+        "SELECT push_token FROM providers WHERE is_available = true AND push_token IS NOT NULL"
+      );
+      const tokens = providers.map((p) => p.push_token as string).filter(Boolean);
+      if (tokens.length > 0) {
+        const serviceLabels: Record<string, string> = {
+          flat_tire: "Flat Tire", jump_start: "Jump Start", tow: "Tow Service",
+          fuel: "Fuel Delivery", lockout: "Lockout", obd_diagnostic: "OBD Diagnostic", other: "Roadside Assistance",
+        };
+        const serviceLabel = serviceLabels[job.serviceType] || "Roadside Assistance";
+        const urgency = job.isEmergency ? "EMERGENCY: " : "";
+        const messages = tokens.map((to) => ({
+          to, title: `${urgency}New Job Request`,
+          body: `${serviceLabel} needed nearby — $${job.estimatedCost} estimated. Tap to accept.`,
+          data: { screen: "ProviderDashboard" }, sound: "default",
+          priority: job.isEmergency ? "high" : "normal",
+          channelId: job.isEmergency ? "emergency" : "default",
+        }));
+        fetch("https://exp.host/--/api/v2/push/send", {
           method: "POST",
           headers: { "Content-Type": "application/json", "Accept": "application/json" },
           body: JSON.stringify(messages),
-        });
-      } catch (err) {
-        console.error("[PUSH] Failed to send push notifications:", err);
+        }).catch((err) => console.error("[PUSH] Failed:", err));
       }
+      res.json(job);
+    } catch (err) {
+      console.error("[jobs POST]", err);
+      res.status(500).json({ error: "Database error" });
     }
-
-    res.json(job);
   });
 
-  app.patch("/api/jobs/:id/tip", (req: Request, res: Response) => {
-    const { tip, totalCost, driverRating } = req.body as { tip?: number; totalCost?: number; driverRating?: number };
-    const job = jobStore.get(req.params.id);
-    if (!job) return res.status(404).json({ error: "Job not found" });
-    if (typeof tip === "number") job.tip = tip;
-    if (typeof totalCost === "number") job.totalCost = totalCost;
-    if (typeof driverRating === "number" && driverRating >= 1 && driverRating <= 5) {
-      job.driverRating = driverRating;
-      const providerId = (job.provider as Record<string, unknown> | undefined)?.id as string | undefined;
-      if (providerId) {
-        const provider = providerStore.find((p) => p.id === providerId);
-        if (provider) {
-          const ratedJobs = Array.from(jobStore.values()).filter(
-            (j) => (j.provider as Record<string, unknown> | undefined)?.id === providerId &&
-              typeof j.driverRating === "number"
-          );
-          const avg = ratedJobs.reduce((s, j) => s + (j.driverRating ?? 0), 0) / ratedJobs.length;
-          provider.rating = Math.round(avg * 10) / 10;
-          provider.reviewCount = ratedJobs.length;
-        }
+  app.get("/api/jobs/pending", async (_req: Request, res: Response) => {
+    try {
+      const { rows } = await pool.query<JobRow>(
+        "SELECT * FROM jobs WHERE status = 'pending' ORDER BY created_at ASC"
+      );
+      res.set("Cache-Control", "no-store");
+      res.json(rows.map(rowToJob));
+    } catch (err) {
+      console.error("[jobs/pending]", err);
+      res.status(500).json({ error: "Database error" });
+    }
+  });
+
+  app.get("/api/jobs/:id", async (req: Request, res: Response) => {
+    try {
+      const { rows } = await pool.query<JobRow>("SELECT * FROM jobs WHERE id = $1", [req.params.id]);
+      if (!rows.length) return res.status(404).json({ error: "Job not found" });
+      res.set("Cache-Control", "no-store");
+      res.json(rowToJob(rows[0]));
+    } catch (err) {
+      console.error("[jobs/:id]", err);
+      res.status(500).json({ error: "Database error" });
+    }
+  });
+
+  app.patch("/api/jobs/:id/accept", async (req: Request, res: Response) => {
+    const jobId = req.params.id;
+    console.log(`[ACCEPT] job=${jobId}`);
+    try {
+      const { rows } = await pool.query<JobRow>(
+        `UPDATE jobs
+         SET status = 'accepted', provider = $2, eta = $3, updated_at = NOW()
+         WHERE id = $1 AND status = 'pending'
+         RETURNING *`,
+        [jobId, req.body.provider ? JSON.stringify(req.body.provider) : null, req.body.eta ?? 8]
+      );
+      if (!rows.length) {
+        // Check if it exists but was already taken
+        const check = await pool.query("SELECT status FROM jobs WHERE id = $1", [jobId]);
+        if (!check.rows.length) return res.status(404).json({ error: "Job not found" });
+        return res.status(409).json({ error: "Job already taken" });
       }
+      const job = rowToJob(rows[0]);
+      console.log(`[ACCEPT] updated to accepted, provider=${JSON.stringify(job.provider)}`);
+      broadcastJobUpdate(job as JobRecord);
+      res.json(job);
+    } catch (err) {
+      console.error("[jobs/accept]", err);
+      res.status(500).json({ error: "Database error" });
     }
-    broadcastJobUpdate(job);
-    res.json({ success: true });
   });
 
-  app.get("/api/providers/:id", (req: Request, res: Response) => {
-    const provider = providerStore.find((p) => p.id === req.params.id);
-    if (!provider) return res.status(404).json({ error: "Provider not found" });
-    res.json({
-      id: provider.id,
-      rating: provider.rating,
-      reviewCount: provider.reviewCount,
-      isAvailable: provider.isAvailable,
-      verificationStatus: provider.verificationStatus,
-    });
+  app.patch("/api/jobs/:id/cancel", async (req: Request, res: Response) => {
+    try {
+      const { rows } = await pool.query<JobRow>(
+        "UPDATE jobs SET status = 'cancelled', updated_at = NOW() WHERE id = $1 RETURNING *",
+        [req.params.id]
+      );
+      if (!rows.length) return res.status(404).json({ error: "Job not found" });
+      res.json(rowToJob(rows[0]));
+    } catch (err) {
+      console.error("[jobs/cancel]", err);
+      res.status(500).json({ error: "Database error" });
+    }
   });
 
-  app.patch("/api/jobs/:id/location", (req: Request, res: Response) => {
+  app.patch("/api/jobs/:id/status", async (req: Request, res: Response) => {
+    const { status } = req.body as { status: string };
+    if (!status) return res.status(400).json({ error: "status required" });
+    try {
+      const { rows } = await pool.query<JobRow>(
+        "UPDATE jobs SET status = $2, updated_at = NOW() WHERE id = $1 RETURNING *",
+        [req.params.id, status]
+      );
+      if (!rows.length) return res.status(404).json({ error: "Job not found" });
+      const job = rowToJob(rows[0]);
+      broadcastJobUpdate(job as JobRecord);
+      res.json(job);
+    } catch (err) {
+      console.error("[jobs/status]", err);
+      res.status(500).json({ error: "Database error" });
+    }
+  });
+
+  app.patch("/api/jobs/:id/location", async (req: Request, res: Response) => {
     const { latitude, longitude } = req.body as { latitude: number; longitude: number };
     if (typeof latitude !== "number" || typeof longitude !== "number") {
       return res.status(400).json({ error: "latitude and longitude required" });
     }
-    const job = jobStore.get(req.params.id);
-    if (!job) return res.status(404).json({ error: "Job not found" });
-    job.providerLocation = { latitude, longitude };
-    broadcastJobUpdate(job);
-    res.json({ success: true });
+    try {
+      const { rows } = await pool.query<JobRow>(
+        "UPDATE jobs SET provider_location = $2, updated_at = NOW() WHERE id = $1 RETURNING *",
+        [req.params.id, JSON.stringify({ latitude, longitude })]
+      );
+      if (!rows.length) return res.status(404).json({ error: "Job not found" });
+      const job = rowToJob(rows[0]);
+      broadcastJobUpdate(job as JobRecord);
+      res.json({ success: true });
+    } catch (err) {
+      console.error("[jobs/location]", err);
+      res.status(500).json({ error: "Database error" });
+    }
   });
 
-  app.get("/api/jobs/pending", (_req: Request, res: Response) => {
-    const pending = Array.from(jobStore.values()).filter((j) => j.status === "pending");
-    res.set("Cache-Control", "no-store");
-    res.json(pending);
+  app.patch("/api/jobs/:id/tip", async (req: Request, res: Response) => {
+    const { tip, totalCost, driverRating } = req.body as { tip?: number; totalCost?: number; driverRating?: number };
+    try {
+      const { rows } = await pool.query<JobRow>(
+        `UPDATE jobs
+         SET tip = COALESCE($2, tip),
+             total_cost = COALESCE($3, total_cost),
+             driver_rating = COALESCE($4, driver_rating),
+             updated_at = NOW()
+         WHERE id = $1
+         RETURNING *`,
+        [req.params.id, tip ?? null, totalCost ?? null, driverRating ?? null]
+      );
+      if (!rows.length) return res.status(404).json({ error: "Job not found" });
+      const job = rowToJob(rows[0]);
+
+      // Recalculate provider rating if a driver rating was given
+      if (typeof driverRating === "number" && driverRating >= 1 && driverRating <= 5) {
+        const providerId = (job.provider as Record<string, unknown> | undefined)?.id as string | undefined;
+        if (providerId) {
+          const { rows: ratedJobs } = await pool.query<{ avg: string; cnt: string }>(
+            `SELECT AVG(driver_rating)::numeric(4,2) AS avg, COUNT(*) AS cnt
+             FROM jobs
+             WHERE provider->>'id' = $1 AND driver_rating IS NOT NULL`,
+            [providerId]
+          );
+          if (ratedJobs.length) {
+            const avg = Math.round(parseFloat(ratedJobs[0].avg) * 10) / 10;
+            const cnt = parseInt(ratedJobs[0].cnt, 10);
+            await pool.query(
+              "UPDATE providers SET rating = $2, review_count = $3, updated_at = NOW() WHERE id = $1",
+              [providerId, avg, cnt]
+            );
+          }
+        }
+      }
+
+      broadcastJobUpdate(job as JobRecord);
+      res.json({ success: true });
+    } catch (err) {
+      console.error("[jobs/tip]", err);
+      res.status(500).json({ error: "Database error" });
+    }
   });
 
-  app.get("/api/jobs/:id", (req: Request, res: Response) => {
-    const job = jobStore.get(req.params.id);
-    if (!job) return res.status(404).json({ error: "Job not found" });
-    res.set("Cache-Control", "no-store");
-    res.json(job);
-  });
+  // ── Report a Problem ──────────────────────────────────────────────────────────
 
-  app.patch("/api/jobs/:id/accept", (req: Request, res: Response) => {
-    const job = jobStore.get(req.params.id);
-    console.log(`[ACCEPT] job=${req.params.id} found=${!!job} status=${job?.status}`);
-    if (!job) return res.status(404).json({ error: "Job not found" });
-    if (job.status !== "pending") return res.status(409).json({ error: "Job already taken" });
-    job.status = "accepted";
-    job.provider = req.body.provider ?? null;
-    job.eta = req.body.eta ?? 8;
-    console.log(`[ACCEPT] updated to accepted, provider=${JSON.stringify(job.provider)}`);
-    broadcastJobUpdate(job);
-    res.json(job);
-  });
-
-  app.patch("/api/jobs/:id/cancel", (req: Request, res: Response) => {
-    const job = jobStore.get(req.params.id);
-    if (!job) return res.status(404).json({ error: "Job not found" });
-    job.status = "cancelled";
-    res.json(job);
-  });
-
-  app.patch("/api/jobs/:id/status", (req: Request, res: Response) => {
-    const job = jobStore.get(req.params.id);
-    if (!job) return res.status(404).json({ error: "Job not found" });
-    const { status } = req.body as { status: string };
-    if (!status) return res.status(400).json({ error: "status required" });
-    job.status = status as JobRecord["status"];
-    broadcastJobUpdate(job);
-    res.json(job);
-  });
-
-  // ── Report Problem ─────────────────────────────────────────────────────
-  interface ReportRecord {
-    id: string;
-    category: string;
-    description: string;
-    userId?: string;
-    userRole?: string;
-    createdAt: string;
-  }
-  const reportStore: ReportRecord[] = [];
-
-  app.post("/api/reports", (req: Request, res: Response) => {
+  app.post("/api/reports", async (req: Request, res: Response) => {
     const { category, description, userId, userRole } = req.body as {
-      category: string;
-      description: string;
-      userId?: string;
-      userRole?: string;
+      category: string; description: string; userId?: string; userRole?: string;
     };
     if (!category || !description) {
       return res.status(400).json({ error: "category and description are required" });
     }
-    const report: ReportRecord = {
-      id: `rep-${Date.now()}`,
-      category,
-      description: description.slice(0, 1000),
-      userId,
-      userRole,
-      createdAt: new Date().toISOString(),
-    };
-    reportStore.push(report);
-    console.log(`[REPORT] id=${report.id} category=${category} user=${userId || "anonymous"}`);
-    res.status(201).json({ success: true, reportId: report.id });
+    try {
+      const reportId = `rep-${Date.now()}`;
+      await pool.query(
+        "INSERT INTO reports (id, category, description, user_id, user_role) VALUES ($1,$2,$3,$4,$5)",
+        [reportId, category, description.slice(0, 1000), userId || null, userRole || null]
+      );
+      console.log(`[REPORT] id=${reportId} category=${category} user=${userId || "anonymous"}`);
+      res.status(201).json({ success: true, reportId });
+    } catch (err) {
+      console.error("[reports POST]", err);
+      res.status(500).json({ error: "Database error" });
+    }
   });
 
-  // ── Support Chat ────────────────────────────────────────────────────────
+  // ── Support Chat ──────────────────────────────────────────────────────────────
+
   app.post("/api/support/chat", async (req: Request, res: Response) => {
     try {
       const { message, history } = req.body as {
@@ -727,7 +905,6 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
         history?: Array<{ role: "user" | "assistant"; content: string }>;
       };
       if (!message) return res.status(400).json({ error: "message required" });
-
       const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
         {
           role: "system",
@@ -740,15 +917,10 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
         ...(history || []).slice(-6),
         { role: "user", content: message },
       ];
-
       const response = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages,
-        max_tokens: 250,
+        model: "gpt-4o", messages, max_tokens: 250,
       });
-
-      const reply =
-        response.choices[0]?.message?.content ||
+      const reply = response.choices[0]?.message?.content ||
         "I couldn't process your message right now. Please call 1-800-SERVICE for immediate assistance.";
       res.json({ reply });
     } catch (error) {
@@ -757,8 +929,9 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
     }
   });
 
-  const httpServer = createServer(app);
+  // ── WebSocket + HTTP server ───────────────────────────────────────────────────
 
+  const httpServer = createServer(app);
   const wss = new WebSocketServer({ server: httpServer, path: "/ws" });
 
   broadcastJobUpdate = (job: JobRecord) => {
@@ -780,7 +953,6 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
           const { conversationId, senderId, senderRole } = data;
           clientRecord = { ws, conversationId, senderId, senderRole };
           clients.add(clientRecord);
-
           const history = messageHistory.get(conversationId) || [];
           ws.send(JSON.stringify({ type: "history", messages: history }));
           return;
@@ -790,20 +962,15 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
           const { conversationId, senderId, senderRole, content } = data;
           const message: ChatMessage = {
             id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-            conversationId,
-            senderId,
-            senderRole,
-            content,
+            conversationId, senderId, senderRole, content,
             timestamp: new Date().toISOString(),
           };
-
           const history = messageHistory.get(conversationId) || [];
           history.push(message);
           if (history.length > 200) history.splice(0, history.length - 200);
           messageHistory.set(conversationId, history);
 
-          const payload = JSON.stringify({ type: "message", message });
-          ws.send(payload);
+          ws.send(JSON.stringify({ type: "message", message }));
           broadcastToConversation(conversationId, { type: "message", message }, clientRecord);
 
           const peersInRoom = [...clients].filter(
@@ -823,10 +990,8 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
               const autoHistory = messageHistory.get(conversationId) || [];
               autoHistory.push(autoReply);
               messageHistory.set(conversationId, autoHistory);
-
-              const autoPayload = JSON.stringify({ type: "message", message: autoReply });
               if (ws.readyState === WebSocket.OPEN) {
-                ws.send(autoPayload);
+                ws.send(JSON.stringify({ type: "message", message: autoReply }));
               }
             }, replyDelay);
           }
