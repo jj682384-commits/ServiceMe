@@ -139,6 +139,12 @@ export default function WelcomeScreen() {
             <ThemedText type="h1" style={[styles.titleAccent, { color: theme.secondary }]}>Me</ThemedText>
           </View>
           <ThemedText type="body" style={styles.subtitle}>Help is always closer than you think</ThemedText>
+          <View style={styles.noBadge}>
+            <Feather name="check-circle" size={13} color="#00D9FF" />
+            <ThemedText type="small" style={styles.noBadgeText}>
+              No membership required — unlike AAA, pay only when you need us
+            </ThemedText>
+          </View>
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(400).duration(500).springify()} style={styles.featuresContainer}>
@@ -185,6 +191,8 @@ const styles = StyleSheet.create({
   titleMain: { color: "#FFFFFF", fontSize: 42, fontWeight: "800", letterSpacing: -1.5 },
   titleAccent: { fontSize: 42, fontWeight: "800", letterSpacing: -1.5 },
   subtitle: { color: "rgba(255,255,255,0.5)", fontSize: 16, fontWeight: "400", marginTop: 4, letterSpacing: 0.3 },
+  noBadge: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "rgba(0,217,255,0.08)", borderWidth: 1, borderColor: "rgba(0,217,255,0.2)", borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6, marginTop: 10 },
+  noBadgeText: { color: "rgba(0,217,255,0.85)", fontSize: 12, fontWeight: "500", flexShrink: 1 },
   featuresContainer: { flexDirection: "row", justifyContent: "center", gap: 8, flexWrap: "wrap" },
   featurePill: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "rgba(255,255,255,0.06)", paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" },
   featurePillDot: { width: 5, height: 5, borderRadius: 2.5 },
