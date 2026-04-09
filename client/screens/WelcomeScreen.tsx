@@ -142,7 +142,7 @@ export default function WelcomeScreen() {
           <View style={styles.noBadge}>
             <Feather name="check-circle" size={13} color="#00D9FF" />
             <ThemedText type="small" style={styles.noBadgeText}>
-              No membership required — unlike AAA, pay only when you need us
+              No membership required — pay only when you need us
             </ThemedText>
           </View>
         </Animated.View>
