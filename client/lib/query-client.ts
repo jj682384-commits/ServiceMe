@@ -18,6 +18,23 @@ export function getApiUrl(): string {
   return url.href;
 }
 
+// Module-level token store — set by AppContext on mount, login, and logout.
+let _authToken: string | null = null;
+
+export function setAuthToken(token: string | null): void {
+  _authToken = token;
+}
+
+export function getAuthToken(): string | null {
+  return _authToken;
+}
+
+function authHeaders(extra?: Record<string, string>): Record<string, string> {
+  const headers: Record<string, string> = { ...extra };
+  if (_authToken) headers["Authorization"] = `Bearer ${_authToken}`;
+  return headers;
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
@@ -35,7 +52,9 @@ export async function apiRequest(
 
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers: data
+      ? authHeaders({ "Content-Type": "application/json" })
+      : authHeaders(),
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
@@ -55,6 +74,7 @@ export const getQueryFn: <T>(options: {
 
     const res = await fetch(url, {
       credentials: "include",
+      headers: authHeaders(),
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {

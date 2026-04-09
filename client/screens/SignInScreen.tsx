@@ -18,6 +18,8 @@ import { useApp } from "@/context/AppContext";
 import { GoogleSignInButton } from "@/components/GoogleSignInButton";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
+import { apiRequest, setAuthToken } from "@/lib/query-client";
+import { saveAuthToken } from "@/lib/secureStorage";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -116,15 +118,27 @@ export default function SignInScreen() {
     }
 
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      const stableId = `user_${email.trim().toLowerCase().replace(/[^a-z0-9]/g, "_")}`;
-      const existingName = currentDriver?.name || currentProvider?.name || "User";
-      const existingPhone = currentDriver?.phone || currentProvider?.phone || "";
-      setAuthUser({ id: stableId, name: existingName, email: email.trim(), phone: existingPhone });
+    try {
+      const res = await apiRequest("POST", "/api/auth/signin", {
+        email: email.trim(),
+        password,
+      });
+      const data = await res.json() as {
+        userId: string; token: string; role: string;
+        name: string; email: string; phone: string;
+      };
+      setAuthToken(data.token);
+      await saveAuthToken(data.token);
+      setAuthUser({ id: data.userId, name: data.name, email: data.email, phone: data.phone });
       setIsAuthenticated(true);
       navigateAfterAuth();
-    }, 1000);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Sign in failed";
+      const friendly = msg.includes("401") ? "Email or password is incorrect." : "Could not sign in. Please try again.";
+      Alert.alert("Sign In Failed", friendly);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

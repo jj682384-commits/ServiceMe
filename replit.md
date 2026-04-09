@@ -15,7 +15,10 @@ The frontend is built with React Native and Expo SDK 54, targeting iOS, Android,
 The backend is an Express.js server developed with TypeScript, providing a RESTful API. It includes dynamic CORS configuration for Replit environments.
 
 ### Data Layer
-The application uses a PostgreSQL database (via the `pg` Pool in `server/db.ts`) for all persistent server-side data. Three tables are provisioned: `providers`, `jobs`, and `reports`. Zod schemas and Drizzle ORM utilities are used for type-safe validation. Common code (e.g., schema definitions) is shared between client and server via a `shared/` directory. In-memory stores remain only for ephemeral real-time state: WebSocket chat history, admin session tokens, and SmartCar OAuth tokens.
+The application uses a PostgreSQL database (via the `pg` Pool in `server/db.ts`) for all persistent server-side data. Five tables are provisioned: `auth_users` (accounts with hashed passwords), `sessions` (30-day Bearer tokens), `providers`, `jobs`, and `reports`. Zod schemas and Drizzle ORM utilities are used for type-safe validation. Common code (e.g., schema definitions) is shared between client and server via a `shared/` directory. In-memory stores remain only for ephemeral real-time state: WebSocket chat history, admin session tokens, and SmartCar OAuth tokens.
+
+### Authentication
+Real server-side auth: `POST /api/auth/signup` and `POST /api/auth/signin` hash/verify passwords with Node's built-in `crypto.scrypt` and return a 30-day Bearer token. Tokens are stored securely on device via `expo-secure-store` (native) or `AsyncStorage` (web) in `client/lib/secureStorage.ts`. The module-level token in `client/lib/query-client.ts` is injected as an `Authorization: Bearer` header on every API call. Logout clears the token from both memory and device storage.
 
 ### Key Features
 - **Smart Issue Detection**: AI-powered diagnostic flow recommending services and estimating costs.

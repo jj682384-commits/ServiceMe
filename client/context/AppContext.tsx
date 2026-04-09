@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useMemo, useEffect, ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { loadAuthToken, saveAuthToken, deleteAuthToken } from "@/lib/secureStorage";
+import { setAuthToken } from "@/lib/query-client";
 export type UserRole = "driver" | "provider" | null;
 
 export type MembershipTier = "free" | "premium";
@@ -416,6 +418,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           historyRaw,
           contactsRaw,
           bgPrefRaw,
+          savedToken,
         ] = await Promise.all([
           AsyncStorage.getItem("currentDriver"),
           AsyncStorage.getItem("currentProvider"),
@@ -425,7 +428,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
           AsyncStorage.getItem("requestHistory"),
           AsyncStorage.getItem("emergencyContacts"),
           AsyncStorage.getItem("backgroundPreferences"),
+          loadAuthToken(),
         ]);
+        if (savedToken) setAuthToken(savedToken);
         if (driverRaw) setCurrentDriver(JSON.parse(driverRaw));
         if (providerRaw) setCurrentProvider(JSON.parse(providerRaw));
         if (roleRaw) setUserRole(roleRaw as UserRole);
@@ -703,6 +708,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setPaymentMethods([]);
     setRequestHistory([]);
     setEmergencyContacts([]);
+    setAuthToken(null);
+    deleteAuthToken().catch(() => {});
     AsyncStorage.multiRemove([
       "vehicles",
       "paymentMethods",

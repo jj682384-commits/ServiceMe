@@ -6,6 +6,7 @@ import * as crypto from "crypto";
 import * as fs from "fs";
 import * as path from "path";
 import { pool, rowToProvider, rowToJob, type ProviderRow, type JobRow } from "./db";
+import { hashPassword, verifyPassword, createSession, getUserByToken, deleteSession, extractToken } from "./auth";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -204,6 +205,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (devDomain) return `https://${devDomain}:5000/api/smartcar/callback`;
     return "http://localhost:5000/api/smartcar/callback";
   }
+
+  // ── Auth ─────────────────────────────────────────────────────────────────────
+
+  app.post("/api/auth/signup", async (req: Request, res: Response) => {
+    const { email, name, phone, password } = req.body as {
+      email: string; name: string; phone?: string; password: string;
+    };
+    if (!email || !password || !name) {
+      return res.status(400).json({ error: "email, name, and password are required" });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ error: "Password must be at least 6 characters" });
+    }
+    try {
+      const existing = await pool.query("SELECT id FROM auth_users WHERE email = $1", [email.toLowerCase().trim()]);
+      if (existing.rows.length) {
+        return res.status(409).json({ error: "An account with this email already exists" });
+      }
+      const userId = `user_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
+      const passwordHash = await hashPassword(password);
+      await pool.query(
+        "INSERT INTO auth_users (id, email, password_hash, name, phone, role) VALUES ($1, $2, $3, $4, $5, 'driver')",
+        [userId, email.toLowerCase().trim(), passwordHash, name.trim(), (phone || "").trim()]
+      );
+      const token = await createSession(userId);
+      console.log(`[AUTH] signup userId=${userId} email=${email}`);
+      res.status(201).json({ userId, token, role: "driver", name: name.trim(), email: email.toLowerCase().trim(), phone: (phone || "").trim() });
+    } catch (err) {
+      console.error("[auth/signup]", err);
+      res.status(500).json({ error: "Could not create account" });
+    }
+  });
+
+  app.post("/api/auth/signin", async (req: Request, res: Response) => {
+    const { email, password } = req.body as { email: string; password: string };
+    if (!email || !password) {
+      return res.status(400).json({ error: "email and password are required" });
+    }
+    try {
+      const { rows } = await pool.query<{ id: string; email: string; name: string; phone: string; role: string; password_hash: string }>(
+        "SELECT id, email, name, phone, role, password_hash FROM auth_users WHERE email = $1",
+        [email.toLowerCase().trim()]
+      );
+      if (!rows.length) {
+        return res.status(401).json({ error: "Email or password is incorrect" });
+      }
+      const user = rows[0];
+      const valid = await verifyPassword(password, user.password_hash);
+      if (!valid) {
+        return res.status(401).json({ error: "Email or password is incorrect" });
+      }
+      const token = await createSession(user.id);
+      console.log(`[AUTH] signin userId=${user.id} email=${email}`);
+      res.json({ userId: user.id, token, role: user.role, name: user.name, email: user.email, phone: user.phone });
+    } catch (err) {
+      console.error("[auth/signin]", err);
+      res.status(500).json({ error: "Sign in failed" });
+    }
+  });
+
+  app.get("/api/auth/me", async (req: Request, res: Response) => {
+    const token = extractToken(req.headers["authorization"]);
+    if (!token) return res.status(401).json({ error: "No token" });
+    try {
+      const user = await getUserByToken(token);
+      if (!user) return res.status(401).json({ error: "Invalid or expired session" });
+      res.json(user);
+    } catch (err) {
+      console.error("[auth/me]", err);
+      res.status(500).json({ error: "Session check failed" });
+    }
+  });
+
+  app.post("/api/auth/signout", async (req: Request, res: Response) => {
+    const token = extractToken(req.headers["authorization"]);
+    if (token) {
+      try { await deleteSession(token); } catch {}
+    }
+    res.json({ success: true });
+  });
 
   // ── SmartCar ────────────────────────────────────────────────────────────────
 
