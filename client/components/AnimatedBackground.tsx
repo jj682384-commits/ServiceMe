@@ -5,8 +5,8 @@ import { useFocusEffect } from "@react-navigation/native";
 
 const { width: W, height: H } = Dimensions.get("window");
 
-const PARTICLE_COUNT = 14;
-const CONNECT_DISTANCE = 100;
+const PARTICLE_COUNT = 32;
+const CONNECT_DISTANCE = 180;
 const FPS_INTERVAL = 50;
 
 const DEFAULT_COLORS = ["#00D9FF", "#FF6B35", "#7B2FFF", "#00FFD4", "#FF006E", "#FFE000"];
