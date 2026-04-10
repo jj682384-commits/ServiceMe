@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
-import { View, StyleSheet, Pressable, TextInput, ScrollView } from "react-native";
+import { View, StyleSheet, Pressable, TextInput, ScrollView, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Feather } from "@expo/vector-icons";
@@ -12,6 +12,7 @@ import Animated, {
   withSpring,
 } from "react-native-reanimated";
 import * as Location from "expo-location";
+import { useStripe } from "@stripe/stripe-react-native";
 
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -228,9 +229,10 @@ export default function ServiceRequestScreen() {
     return scheduled;
   };
 
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
+
   const handleSubmit = () => {
     if (!canSubmit || isSubmitting) return;
-
     setIsSubmitting(true);
 
     const provider = selectedProvider || nearbyProviders[0];
@@ -271,6 +273,7 @@ export default function ServiceRequestScreen() {
     };
 
     (async () => {
+      // Scheduled requests don't need upfront payment
       if (isScheduled) {
         addToHistory(newRequest);
         if (mountedRef.current) setIsSubmitting(false);
@@ -278,14 +281,54 @@ export default function ServiceRequestScreen() {
         return;
       }
 
+      // ── Stripe payment sheet ──────────────────────────────────────────────
+      try {
+        const chargeAmount = newRequest.totalCost ?? totalCost;
+        const piRes = await fetch(
+          new URL("/api/create-payment-intent", getApiUrl()).toString(),
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              amount: chargeAmount,
+              jobId: requestId,
+              serviceType: selectedService,
+            }),
+          }
+        );
+        const piData = await piRes.json();
+        if (!piData.clientSecret) throw new Error("Payment setup failed");
+
+        const { error: initError } = await initPaymentSheet({
+          paymentIntentClientSecret: piData.clientSecret,
+          merchantDisplayName: "ServiceMe",
+          allowsDelayedPaymentMethods: false,
+        });
+        if (initError) throw new Error(initError.message);
+
+        const { error: payError } = await presentPaymentSheet();
+        if (payError) {
+          // User cancelled or card declined — don't dispatch job
+          if (mountedRef.current) setIsSubmitting(false);
+          if (payError.code !== "Canceled") {
+            Alert.alert("Payment Failed", payError.message);
+          }
+          return;
+        }
+      } catch (err: any) {
+        if (mountedRef.current) setIsSubmitting(false);
+        Alert.alert("Payment Error", err.message || "Could not process payment. Please try again.");
+        return;
+      }
+      // ─────────────────────────────────────────────────────────────────────
+
       // Register the job locally so the driver's UI works immediately
       const pendingJob: ServiceRequest = { ...newRequest, provider: undefined, status: "pending" };
       addPendingJob(pendingJob);
       setActiveRequest(pendingJob);
       addToHistory(pendingJob);
 
-      // POST to server — providers on separate devices can only see jobs that reach the
-      // server. Use a generous 15s window so Replit's dev server has time to respond.
+      // POST to server so providers on other devices see the job
       const controller = new AbortController();
       const abortTimer = setTimeout(() => controller.abort(), 15000);
       const postPromise = fetch(new URL("/api/jobs", getApiUrl()).toString(), {
@@ -295,12 +338,10 @@ export default function ServiceRequestScreen() {
         signal: controller.signal,
       }).catch(() => {});
 
-      // Always show the spinner for at least 1 second (cosmetic feedback)
       const cosmeticDelay = new Promise<void>((resolve) => {
         submitTimerRef.current = setTimeout(resolve, 1000);
       });
 
-      // Wait for both: POST done (or aborted) AND cosmetic delay elapsed
       await Promise.all([postPromise, cosmeticDelay]);
       clearTimeout(abortTimer);
 
@@ -818,13 +859,13 @@ export default function ServiceRequestScreen() {
         >
           {isSubmitting ? (
             <ThemedText type="body" style={styles.submitButtonText}>
-              {isScheduled ? "Scheduling..." : "Finding Provider..."}
+              {isScheduled ? "Scheduling..." : "Processing Payment..."}
             </ThemedText>
           ) : (
             <>
-              <Feather name={isScheduled ? "calendar" : "zap"} size={20} color="#FFFFFF" />
+              <Feather name={isScheduled ? "calendar" : "credit-card"} size={20} color="#FFFFFF" />
               <ThemedText type="body" style={styles.submitButtonText}>
-                {isScheduled ? "Schedule Service" : "Connect Nearby Provider"}
+                {isScheduled ? "Schedule Service" : `Pay $${totalCost.toFixed(2)} & Dispatch`}
               </ThemedText>
             </>
           )}

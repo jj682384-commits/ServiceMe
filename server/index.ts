@@ -3,6 +3,9 @@ import type { Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import * as fs from "fs";
 import * as path from "path";
+import { WebhookHandlers } from "./webhookHandlers";
+import { getStripeSync, getStripePublishableKey, getUncachableStripeClient } from "./stripeClient";
+import { runMigrations } from "stripe-replit-sync";
 
 const app = express();
 const log = console.log;
@@ -228,8 +231,67 @@ process.on("unhandledRejection", (reason) => {
 
 (async () => {
   setupCors(app);
+
+  // ── Stripe webhook — must come BEFORE express.json() ─────────────────────
+  app.post(
+    "/api/stripe/webhook",
+    express.raw({ type: "application/json" }),
+    async (req: Request, res: Response) => {
+      const signature = req.headers["stripe-signature"];
+      if (!signature) return res.status(400).json({ error: "Missing stripe-signature" });
+      try {
+        const sig = Array.isArray(signature) ? signature[0] : signature;
+        await WebhookHandlers.processWebhook(req.body as Buffer, sig);
+        res.status(200).json({ received: true });
+      } catch (err: any) {
+        console.error("[stripe/webhook]", err.message);
+        res.status(400).json({ error: "Webhook error" });
+      }
+    }
+  );
+
   setupBodyParsing(app);
   setupRequestLogging(app);
+
+  // ── Stripe publishable key endpoint ───────────────────────────────────────
+  app.get("/api/stripe/publishable-key", async (_req: Request, res: Response) => {
+    try {
+      const publishableKey = await getStripePublishableKey();
+      res.json({ publishableKey });
+    } catch (err: any) {
+      console.error("[stripe/publishable-key]", err.message);
+      res.status(500).json({ error: "Stripe not configured" });
+    }
+  });
+
+  // ── Create PaymentIntent for a service request ────────────────────────────
+  app.post("/api/create-payment-intent", async (req: Request, res: Response) => {
+    try {
+      const { amount, jobId, serviceType } = req.body as {
+        amount: number;
+        jobId?: string;
+        serviceType?: string;
+      };
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ error: "Valid amount required" });
+      }
+      const stripe = await getUncachableStripeClient();
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(amount * 100),
+        currency: "usd",
+        metadata: {
+          jobId: jobId || "",
+          serviceType: serviceType || "",
+          platform: "serviceme",
+        },
+        automatic_payment_methods: { enabled: true },
+      });
+      res.json({ clientSecret: paymentIntent.client_secret });
+    } catch (err: any) {
+      console.error("[stripe/create-payment-intent]", err.message);
+      res.status(500).json({ error: "Could not create payment intent" });
+    }
+  });
 
   configureExpoAndLanding(app);
 
@@ -238,7 +300,29 @@ process.on("unhandledRejection", (reason) => {
   setupErrorHandler(app);
 
   const port = parseInt(process.env.PORT || "5000", 10);
-  server.listen(port, "0.0.0.0", () => {
+  server.listen(port, "0.0.0.0", async () => {
     log(`express server serving on port ${port}`);
+
+    // Initialize Stripe schema and sync in the background
+    try {
+      const databaseUrl = process.env.DATABASE_URL;
+      if (databaseUrl) {
+        await runMigrations({ databaseUrl, schema: "stripe" });
+        const stripeSync = await getStripeSync();
+        const domain = process.env.REPLIT_DOMAINS?.split(",")[0] ||
+          process.env.REPLIT_DEV_DOMAIN;
+        if (domain) {
+          await stripeSync.findOrCreateManagedWebhook(
+            `https://${domain}/api/stripe/webhook`
+          );
+        }
+        stripeSync.syncBackfill().catch((err: any) =>
+          console.error("[stripe] syncBackfill error:", err.message)
+        );
+        log("[stripe] initialized");
+      }
+    } catch (err: any) {
+      console.error("[stripe] init error (non-fatal):", err.message);
+    }
   });
 })();

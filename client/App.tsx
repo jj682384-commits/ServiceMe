@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { StyleSheet, useColorScheme } from "react-native";
 import { NavigationContainer, DefaultTheme, DarkTheme } from "@react-navigation/native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
+import { StripeProvider } from "@stripe/stripe-react-native";
 
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/query-client";
@@ -15,6 +16,7 @@ import { Colors } from "@/constants/theme";
 import { initializeRevenueCat, SubscriptionProvider } from "@/lib/revenuecat";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { navigationRef } from "@/lib/navigationRef";
+import { getApiUrl } from "@/lib/query-client";
 
 initializeRevenueCat();
 
@@ -50,24 +52,34 @@ function NotificationSetup() {
 export default function App() {
   const colorScheme = useColorScheme();
   const navTheme = colorScheme === "dark" ? DarkNavTheme : LightNavTheme;
+  const [stripePublishableKey, setStripePublishableKey] = useState<string>("");
+
+  useEffect(() => {
+    fetch(new URL("/api/stripe/publishable-key", getApiUrl()).toString())
+      .then((r) => r.json())
+      .then((d) => { if (d.publishableKey) setStripePublishableKey(d.publishableKey); })
+      .catch(() => {});
+  }, []);
 
   return (
     <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <SubscriptionProvider>
-          <AppProvider>
-            <SafeAreaProvider>
-              <GestureHandlerRootView style={styles.root}>
-                <NavigationContainer theme={navTheme} ref={navigationRef}>
-                  <NotificationSetup />
-                  <RootStackNavigator />
-                </NavigationContainer>
-                <StatusBar style="auto" />
-              </GestureHandlerRootView>
-            </SafeAreaProvider>
-          </AppProvider>
-        </SubscriptionProvider>
-      </QueryClientProvider>
+      <StripeProvider publishableKey={stripePublishableKey} urlScheme="serviceme">
+        <QueryClientProvider client={queryClient}>
+          <SubscriptionProvider>
+            <AppProvider>
+              <SafeAreaProvider>
+                <GestureHandlerRootView style={styles.root}>
+                  <NavigationContainer theme={navTheme} ref={navigationRef}>
+                    <NotificationSetup />
+                    <RootStackNavigator />
+                  </NavigationContainer>
+                  <StatusBar style="auto" />
+                </GestureHandlerRootView>
+              </SafeAreaProvider>
+            </AppProvider>
+          </SubscriptionProvider>
+        </QueryClientProvider>
+      </StripeProvider>
     </ErrorBoundary>
   );
 }
