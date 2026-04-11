@@ -19,7 +19,7 @@ import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollV
 import AnimatedBackground, { DARK_BG } from "@/components/AnimatedBackground";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceType } from "@/context/AppContext";
-import { getApiUrl, setAuthToken } from "@/lib/query-client";
+import { apiRequest, setAuthToken } from "@/lib/query-client";
 import { saveAuthToken } from "@/lib/secureStorage";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
@@ -339,24 +339,24 @@ export default function ProviderSignUpScreen() {
   const handleSubmit = async () => {
     setIsLoading(true);
     try {
-      const baseUrl = getApiUrl();
-
       // 1. Create auth account with provider role
-      const signupRes = await fetch(new URL("/api/auth/signup", baseUrl).toString(), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      let signupData: { userId: string; token: string; role: string; name: string; email: string; phone: string };
+      try {
+        const signupRes = await apiRequest("POST", "/api/auth/signup", {
           email: email.trim(),
           name: fullName.trim(),
           phone: phone.trim(),
           password,
           role: "provider",
-        }),
-      });
-      const signupData = await signupRes.json();
-      if (!signupRes.ok) {
-        Alert.alert("Sign Up Failed", signupData.error || "Could not create account.");
-        setIsLoading(false);
+        });
+        signupData = await signupRes.json();
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "";
+        if (msg.includes("409")) {
+          Alert.alert("Account Exists", "An account with this email already exists. Please sign in instead.");
+        } else {
+          Alert.alert("Sign Up Failed", "Could not create account. Please check your connection and try again.");
+        }
         return;
       }
 
@@ -385,13 +385,9 @@ export default function ProviderSignUpScreen() {
         verificationStatus: "pending",
         location: { latitude: 0, longitude: 0 },
       };
-      await fetch(new URL("/api/providers/register", baseUrl).toString(), {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(providerProfile),
-      }).catch(() => {});
+      apiRequest("POST", "/api/providers/register", providerProfile).catch(() => {});
 
-      // 4. Update local AppContext
+      // 4. Update local AppContext and navigate
       setAuthUser({ id: userId, name: fullName.trim(), email: email.trim(), phone: phone.trim() });
       setIsAuthenticated(true);
       setUserRole("provider");
@@ -745,7 +741,7 @@ export default function ProviderSignUpScreen() {
             disabled={isLoading || !canProceed}
           >
             <LinearGradient
-              colors={canProceed ? gradientColors : ["rgba(255,255,255,0.1)", "rgba(255,255,255,0.05)"]}
+              colors={(canProceed ? gradientColors : ["rgba(255,255,255,0.1)", "rgba(255,255,255,0.05)"]) as [string, string]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
