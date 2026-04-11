@@ -19,6 +19,8 @@ import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollV
 import AnimatedBackground, { DARK_BG } from "@/components/AnimatedBackground";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceType } from "@/context/AppContext";
+import { getApiUrl, setAuthToken } from "@/lib/query-client";
+import { saveAuthToken } from "@/lib/secureStorage";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import {
@@ -334,32 +336,73 @@ export default function ProviderSignUpScreen() {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      const userId = `provider_${Date.now()}`;
-      setAuthUser({ id: userId, name: fullName.trim(), email: email.trim(), phone: phone.trim() });
-      setIsAuthenticated(true);
-      setUserRole("provider");
-      setCurrentProvider({
+    try {
+      const baseUrl = getApiUrl();
+
+      // 1. Create auth account with provider role
+      const signupRes = await fetch(new URL("/api/auth/signup", baseUrl).toString(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim(),
+          name: fullName.trim(),
+          phone: phone.trim(),
+          password,
+          role: "provider",
+        }),
+      });
+      const signupData = await signupRes.json();
+      if (!signupRes.ok) {
+        Alert.alert("Sign Up Failed", signupData.error || "Could not create account.");
+        setIsLoading(false);
+        return;
+      }
+
+      const userId: string = signupData.userId;
+      const token: string = signupData.token;
+
+      // 2. Save auth token
+      setAuthToken(token);
+      await saveAuthToken(token);
+
+      // 3. Register provider profile
+      const providerProfile = {
         id: userId,
         name: isIndependent ? fullName.trim() : companyName.trim(),
         phone: isIndependent ? phone.trim() : businessPhone.trim() || phone.trim(),
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
         rating: 5.0,
         reviewCount: 0,
-        vehicleType: vehicleType,
+        vehicleType,
         vehicleMake: vehicleMake.trim() || "TBD",
         vehicleModel: vehicleModel.trim() || "TBD",
         licensePlate: "NEW-001",
         servicesOffered: selectedServices,
         isAvailable: true,
-        providerType: providerType,
+        providerType,
         verificationStatus: "pending",
-      });
+        location: { latitude: 0, longitude: 0 },
+      };
+      await fetch(new URL("/api/providers/register", baseUrl).toString(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(providerProfile),
+      }).catch(() => {});
+
+      // 4. Update local AppContext
+      setAuthUser({ id: userId, name: fullName.trim(), email: email.trim(), phone: phone.trim() });
+      setIsAuthenticated(true);
+      setUserRole("provider");
+      setCurrentProvider(providerProfile as any);
+
       navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "ProviderTabs" }] }));
-    }, 1200);
+    } catch {
+      Alert.alert("Sign Up Failed", "Something went wrong. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const renderStep0 = () => (

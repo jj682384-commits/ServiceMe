@@ -74,7 +74,7 @@ function InputField({
 export default function SignInScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
-  const { setIsAuthenticated, setAuthUser, userRole, currentDriver, currentProvider } = useApp();
+  const { setIsAuthenticated, setAuthUser, userRole, currentDriver, currentProvider, setUserRole, setCurrentProvider } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const [email, setEmail] = useState("");
@@ -131,7 +131,20 @@ export default function SignInScreen() {
       await saveAuthToken(data.token);
       setAuthUser({ id: data.userId, name: data.name, email: data.email, phone: data.phone });
       setIsAuthenticated(true);
-      navigateAfterAuth();
+
+      if (data.role === "provider") {
+        setUserRole("provider");
+        try {
+          const provRes = await apiRequest("GET", `/api/providers/by-email/${encodeURIComponent(data.email)}`);
+          if (provRes.ok) {
+            const provData = await provRes.json();
+            setCurrentProvider(provData);
+          }
+        } catch {}
+        navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "ProviderTabs" }] }));
+      } else {
+        navigateAfterAuth();
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Sign in failed";
       const friendly = msg.includes("401") ? "Email or password is incorrect." : "Could not sign in. Please try again.";

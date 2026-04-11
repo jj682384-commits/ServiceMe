@@ -209,8 +209,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ── Auth ─────────────────────────────────────────────────────────────────────
 
   app.post("/api/auth/signup", async (req: Request, res: Response) => {
-    const { email, name, phone, password } = req.body as {
-      email: string; name: string; phone?: string; password: string;
+    const { email, name, phone, password, role } = req.body as {
+      email: string; name: string; phone?: string; password: string; role?: string;
     };
     if (!email || !password || !name) {
       return res.status(400).json({ error: "email, name, and password are required" });
@@ -218,6 +218,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (password.length < 6) {
       return res.status(400).json({ error: "Password must be at least 6 characters" });
     }
+    const userRole = role === "provider" ? "provider" : "driver";
     try {
       const existing = await pool.query("SELECT id FROM auth_users WHERE email = $1", [email.toLowerCase().trim()]);
       if (existing.rows.length) {
@@ -226,12 +227,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = `user_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
       const passwordHash = await hashPassword(password);
       await pool.query(
-        "INSERT INTO auth_users (id, email, password_hash, name, phone, role) VALUES ($1, $2, $3, $4, $5, 'driver')",
-        [userId, email.toLowerCase().trim(), passwordHash, name.trim(), (phone || "").trim()]
+        "INSERT INTO auth_users (id, email, password_hash, name, phone, role) VALUES ($1, $2, $3, $4, $5, $6)",
+        [userId, email.toLowerCase().trim(), passwordHash, name.trim(), (phone || "").trim(), userRole]
       );
       const token = await createSession(userId);
-      console.log(`[AUTH] signup userId=${userId} email=${email}`);
-      res.status(201).json({ userId, token, role: "driver", name: name.trim(), email: email.toLowerCase().trim(), phone: (phone || "").trim() });
+      console.log(`[AUTH] signup userId=${userId} email=${email} role=${userRole}`);
+      res.status(201).json({ userId, token, role: userRole, name: name.trim(), email: email.toLowerCase().trim(), phone: (phone || "").trim() });
     } catch (err) {
       console.error("[auth/signup]", err);
       res.status(500).json({ error: "Could not create account" });
@@ -621,6 +622,20 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
       res.json(result);
     } catch (err) {
       console.error("[providers/nearby]", err);
+      res.status(500).json({ error: "Database error" });
+    }
+  });
+
+  app.get("/api/providers/by-email/:email", async (req: Request, res: Response) => {
+    try {
+      const { rows } = await pool.query<ProviderRow>(
+        "SELECT * FROM providers WHERE email = $1",
+        [decodeURIComponent(req.params.email).toLowerCase().trim()]
+      );
+      if (!rows.length) return res.status(404).json({ error: "Provider not found" });
+      res.json(rowToProvider(rows[0]));
+    } catch (err) {
+      console.error("[providers/by-email]", err);
       res.status(500).json({ error: "Database error" });
     }
   });
