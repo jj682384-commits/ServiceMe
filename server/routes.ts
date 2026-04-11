@@ -813,7 +813,9 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
       const { rows } = await pool.query<JobRow>(
         "SELECT * FROM jobs WHERE status = 'pending' ORDER BY created_at ASC"
       );
-      res.set("Cache-Control", "no-store");
+      res.set("Cache-Control", "no-store, no-cache, must-revalidate");
+      res.set("Pragma", "no-cache");
+      res.removeHeader("ETag");
       res.json(rows.map(rowToJob));
     } catch (err) {
       console.error("[jobs/pending]", err);

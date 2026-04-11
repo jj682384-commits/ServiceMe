@@ -280,9 +280,10 @@ export default function ProviderJobsScreen() {
     queryFn: async () => {
       const baseUrl = getApiUrl();
       const url = new URL("/api/jobs/pending", baseUrl);
+      url.searchParams.set("_t", Date.now().toString());
       let res: Response;
       try {
-        res = await fetch(url.toString());
+        res = await fetch(url.toString(), { cache: "no-store" });
       } catch {
         return [];
       }
@@ -293,7 +294,7 @@ export default function ProviderJobsScreen() {
         createdAt: new Date(j.createdAt as string),
       })) as ServiceRequest[];
     },
-    refetchInterval: 2000,
+    refetchInterval: 1000,
     enabled: true,
   });
 

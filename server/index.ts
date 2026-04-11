@@ -8,6 +8,7 @@ import { getStripeSync, getStripePublishableKey, getUncachableStripeClient } fro
 import { runMigrations } from "stripe-replit-sync";
 
 const app = express();
+app.disable("etag");
 const log = console.log;
 
 declare module "http" {
