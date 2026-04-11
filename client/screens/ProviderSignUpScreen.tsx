@@ -634,47 +634,75 @@ export default function ProviderSignUpScreen() {
     </Animated.View>
   );
 
-  const renderStep3 = () => (
-    <Animated.View entering={FadeInDown.duration(400)} key="step3" style={styles.stepContent}>
-      <View style={styles.stepHeader}>
-        <View style={[styles.stepHeaderIcon, { backgroundColor: "rgba(16,185,129,0.15)" }]}>
-          <Feather name="file-text" size={24} color="#10B981" />
+  const renderStep3 = () => {
+    const acceptedCount = Object.values(acceptedDocs).filter(Boolean).length;
+    return (
+      <Animated.View entering={FadeInDown.duration(400)} key="step3" style={styles.stepContent}>
+        <View style={styles.stepHeader}>
+          <View style={[styles.stepHeaderIcon, { backgroundColor: "rgba(16,185,129,0.15)" }]}>
+            <Feather name="file-text" size={24} color="#10B981" />
+          </View>
+          <ThemedText type="h3" style={styles.stepTitle}>Legal Agreements</ThemedText>
+          <ThemedText type="small" style={styles.stepSubtitle}>Tap each agreement to read and accept</ThemedText>
         </View>
-        <ThemedText type="h3" style={styles.stepTitle}>Legal Agreements</ThemedText>
-        <ThemedText type="small" style={styles.stepSubtitle}>Review and accept to complete registration</ThemedText>
-      </View>
 
-      <View style={styles.legalSection}>
-        {LEGAL_DOCUMENTS.map((doc) => {
-          const isExpanded = expandedDoc === doc.key;
-          const iconColor = doc.key === "liability" ? "#F59E0B" : "#00D9FF";
+        <View style={styles.legalProgressRow}>
+          <Feather name="check-circle" size={16} color={allAccepted ? "#00E676" : "rgba(255,255,255,0.3)"} />
+          <ThemedText type="small" style={[styles.legalProgressText, { color: allAccepted ? "#00E676" : "rgba(255,255,255,0.5)" }]}>
+            {acceptedCount} of {LEGAL_DOCUMENTS.length} accepted
+          </ThemedText>
+          {!allAccepted ? (
+            <Pressable onPress={() => setAcceptedDocs({ privacy: true, terms: true, liability: true })} style={styles.acceptAllBtn}>
+              <ThemedText type="small" style={styles.acceptAllText}>Accept All</ThemedText>
+            </Pressable>
+          ) : null}
+        </View>
 
-          return (
-            <View key={doc.key} style={styles.legalCard}>
-              <Pressable onPress={() => setExpandedDoc(isExpanded ? null : doc.key)} style={styles.legalCardHeader}>
-                <Feather name={doc.icon} size={18} color={iconColor} />
-                <ThemedText type="body" style={styles.legalCardTitle}>{doc.title}</ThemedText>
-                <Feather name={isExpanded ? "chevron-up" : "chevron-down"} size={18} color="rgba(255,255,255,0.4)" />
-              </Pressable>
+        <View style={styles.legalSection}>
+          {LEGAL_DOCUMENTS.map((doc) => {
+            const isExpanded = expandedDoc === doc.key;
+            const isAccepted = !!acceptedDocs[doc.key];
+            const iconColor = isAccepted ? "#00E676" : (doc.key === "liability" ? "#F59E0B" : "#00D9FF");
 
-              {isExpanded ? (
-                <View style={styles.legalCardBody}>
-                  <ThemedText type="small" style={styles.legalSummary}>{doc.summary}</ThemedText>
+            return (
+              <Pressable
+                key={doc.key}
+                onPress={() => toggleAccept(doc.key)}
+                style={[styles.legalCard, isAccepted ? styles.legalCardAccepted : null]}
+              >
+                <View style={styles.legalCardHeader}>
+                  <View style={[styles.legalIconWrap, isAccepted ? styles.legalIconWrapAccepted : null]}>
+                    <Feather name={isAccepted ? "check" : doc.icon} size={18} color={iconColor} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <ThemedText type="body" style={[styles.legalCardTitle, isAccepted ? { color: "#00E676" } : null]}>
+                      {doc.title}
+                    </ThemedText>
+                    <ThemedText type="small" style={{ color: isAccepted ? "rgba(0,230,118,0.7)" : "rgba(255,255,255,0.4)", fontSize: 11 }}>
+                      {isAccepted ? "Accepted" : "Tap to read and accept"}
+                    </ThemedText>
+                  </View>
+                  <Pressable
+                    onPress={() => setExpandedDoc(isExpanded ? null : doc.key)}
+                    hitSlop={12}
+                    style={styles.expandBtn}
+                  >
+                    <Feather name={isExpanded ? "chevron-up" : "chevron-down"} size={18} color="rgba(255,255,255,0.4)" />
+                  </Pressable>
                 </View>
-              ) : null}
 
-              <Pressable onPress={() => toggleAccept(doc.key)} style={styles.acceptRow}>
-                <View style={[styles.checkbox, acceptedDocs[doc.key] ? styles.checkboxChecked : null]}>
-                  {acceptedDocs[doc.key] ? <Feather name="check" size={14} color="#FFF" /> : null}
-                </View>
-                <ThemedText type="small" style={styles.acceptText}>I have read and accept the {doc.title}</ThemedText>
+                {isExpanded ? (
+                  <View style={styles.legalCardBody}>
+                    <ThemedText type="small" style={styles.legalSummary}>{doc.summary}</ThemedText>
+                  </View>
+                ) : null}
               </Pressable>
-            </View>
-          );
-        })}
-      </View>
-    </Animated.View>
-  );
+            );
+          })}
+        </View>
+      </Animated.View>
+    );
+  };
 
   const accentColor = isIndependent ? "#00A8CC" : "#FF6B35";
   const gradientColors = isIndependent ? ["#00A8CC", "#0077B6"] : ["#FF6B35", "#FF3D00"];
@@ -871,16 +899,20 @@ const styles = StyleSheet.create({
   verificationInfoText: { flex: 1, color: "rgba(255,255,255,0.6)", lineHeight: 18 },
   verificationStatus: { marginTop: Spacing.lg },
   verificationBadge: { flexDirection: "row", alignItems: "center", gap: 8, padding: 12, borderRadius: 10, backgroundColor: "rgba(245,158,11,0.08)" },
+  legalProgressRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12, paddingHorizontal: 2 },
+  legalProgressText: { flex: 1 },
+  acceptAllBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, backgroundColor: "rgba(0,217,255,0.12)", borderWidth: 1, borderColor: "rgba(0,217,255,0.3)" },
+  acceptAllText: { color: "#00D9FF", fontWeight: "600", fontSize: 12 },
   legalSection: { gap: 10 },
-  legalCard: { borderRadius: 14, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", backgroundColor: "rgba(255,255,255,0.04)", overflow: "hidden" },
-  legalCardHeader: { flexDirection: "row", alignItems: "center", padding: 14, gap: 10 },
-  legalCardTitle: { fontWeight: "600", flex: 1, color: "#FFF", fontSize: 15 },
+  legalCard: { borderRadius: 14, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.1)", backgroundColor: "rgba(255,255,255,0.04)", overflow: "hidden" },
+  legalCardAccepted: { borderColor: "rgba(0,230,118,0.4)", backgroundColor: "rgba(0,230,118,0.05)" },
+  legalCardHeader: { flexDirection: "row", alignItems: "center", padding: 14, gap: 12 },
+  legalIconWrap: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.06)" },
+  legalIconWrapAccepted: { backgroundColor: "rgba(0,230,118,0.12)" },
+  legalCardTitle: { fontWeight: "600", color: "#FFF", fontSize: 15 },
+  expandBtn: { padding: 4 },
   legalCardBody: { paddingHorizontal: 14, paddingBottom: 14 },
   legalSummary: { lineHeight: 20, color: "rgba(255,255,255,0.5)" },
-  acceptRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 10, gap: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "rgba(255,255,255,0.08)" },
-  acceptText: { flex: 1, color: "rgba(255,255,255,0.5)" },
-  checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
-  checkboxChecked: { borderColor: "#00E676", backgroundColor: "#00E676" },
   footer: { marginTop: "auto", gap: Spacing.md, paddingTop: Spacing.lg },
   nextButton: { flexDirection: "row", paddingVertical: 16, borderRadius: 16, alignItems: "center", justifyContent: "center", gap: 8, overflow: "hidden" },
   nextButtonText: { fontWeight: "700", fontSize: 16 },
