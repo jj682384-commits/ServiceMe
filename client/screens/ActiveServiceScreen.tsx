@@ -271,7 +271,7 @@ export default function ActiveServiceScreen() {
       initialPollFiredRef.current = activeRequest.id;
       poll();
     }
-    pollRef.current = setInterval(poll, 5000);
+    pollRef.current = setInterval(poll, 2000);
 
     return () => {
       if (pollRef.current) {

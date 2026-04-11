@@ -328,26 +328,20 @@ export default function ServiceRequestScreen() {
       setActiveRequest(pendingJob);
       addToHistory(pendingJob);
 
-      // POST to server so providers on other devices see the job
+      // Navigate immediately — don't block on the server POST
+      if (!mountedRef.current) return;
+      setIsSubmitting(false);
+      navigation.replace("ActiveService");
+
+      // POST to server in background so providers on other devices see the job
       const controller = new AbortController();
       const abortTimer = setTimeout(() => controller.abort(), 15000);
-      const postPromise = fetch(new URL("/api/jobs", getApiUrl()).toString(), {
+      fetch(new URL("/api/jobs", getApiUrl()).toString(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...pendingJob, createdAt: pendingJob.createdAt.toISOString() }),
         signal: controller.signal,
-      }).catch(() => {});
-
-      const cosmeticDelay = new Promise<void>((resolve) => {
-        submitTimerRef.current = setTimeout(resolve, 1000);
-      });
-
-      await Promise.all([postPromise, cosmeticDelay]);
-      clearTimeout(abortTimer);
-
-      if (!mountedRef.current) return;
-      setIsSubmitting(false);
-      navigation.replace("ActiveService");
+      }).catch(() => {}).finally(() => clearTimeout(abortTimer));
     })();
   };
 

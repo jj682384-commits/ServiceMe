@@ -773,6 +773,9 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
       );
       const job = rows.length ? rowToJob(rows[0]) : { ...data, status: "pending", createdAt: new Date().toISOString() } as JobRecord;
 
+      // Instantly notify all connected provider WebSocket clients about the new job
+      broadcastJobUpdate(job as JobRecord);
+
       // Push notifications to available providers
       const { rows: providers } = await pool.query<ProviderRow>(
         "SELECT push_token FROM providers WHERE is_available = true AND push_token IS NOT NULL"

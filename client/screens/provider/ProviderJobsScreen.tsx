@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import {
   View,
   StyleSheet,
@@ -293,9 +293,38 @@ export default function ProviderJobsScreen() {
         createdAt: new Date(j.createdAt as string),
       })) as ServiceRequest[];
     },
-    refetchInterval: 5000,
+    refetchInterval: 2000,
     enabled: true,
   });
+
+  // WebSocket: instantly receive new job broadcasts instead of waiting for next poll
+  const wsRef = useRef<WebSocket | null>(null);
+  useEffect(() => {
+    const apiUrl = getApiUrl();
+    const wsBase = apiUrl.replace(/^https/, "wss").replace(/^http/, "ws").replace(/\/$/, "");
+    let cancelled = false;
+    const connect = () => {
+      if (cancelled) return;
+      const ws = new WebSocket(`${wsBase}/ws`);
+      wsRef.current = ws;
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data as string);
+          if (data.type === "job_status_update" && data.job?.status === "pending") {
+            queryClient.invalidateQueries({ queryKey: ["/api/jobs/pending"] });
+          }
+        } catch {}
+      };
+      ws.onerror = () => {};
+      ws.onclose = () => { if (!cancelled) setTimeout(connect, 3000); };
+    };
+    connect();
+    return () => {
+      cancelled = true;
+      wsRef.current?.close();
+      wsRef.current = null;
+    };
+  }, []);
 
   const merged = React.useMemo(() => {
     const map = new Map<string, ServiceRequest>();
