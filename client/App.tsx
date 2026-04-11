@@ -4,7 +4,7 @@ import { NavigationContainer, DefaultTheme, DarkTheme } from "@react-navigation/
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { StripeProvider } from "@stripe/stripe-react-native";
+import StripeWrapper from "@/components/StripeWrapper";
 
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/query-client";
@@ -63,7 +63,7 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <StripeProvider publishableKey={stripePublishableKey} urlScheme="serviceme">
+      <StripeWrapper publishableKey={stripePublishableKey}>
         <QueryClientProvider client={queryClient}>
           <SubscriptionProvider>
             <AppProvider>
@@ -79,7 +79,7 @@ export default function App() {
             </AppProvider>
           </SubscriptionProvider>
         </QueryClientProvider>
-      </StripeProvider>
+      </StripeWrapper>
     </ErrorBoundary>
   );
 }
