@@ -247,7 +247,7 @@ export default function ActiveServiceScreen() {
         try { const d = JSON.parse(event.data as string); if (d.type === "job_status_update") applyJobUpdate(d.job); } catch {}
       };
       ws.onerror  = () => {};
-      ws.onclose  = () => { if (!cancelled) setTimeout(connect, 3000); };
+      ws.onclose  = () => { if (!cancelled) setTimeout(connect, 1000); };
     };
     connect();
     return () => { cancelled = true; wsRef.current?.close(); wsRef.current = null; };
@@ -304,7 +304,7 @@ export default function ActiveServiceScreen() {
     };
 
     poll(); // immediate poll on mount / job change
-    pollRef.current = setInterval(poll, 2000);
+    pollRef.current = setInterval(poll, 1000);
     return () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } };
   }, [activeRequest?.id]);
 
