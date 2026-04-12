@@ -534,7 +534,6 @@ export default function DriverMapScreen() {
               {
                 backgroundColor: theme.backgroundDefault,
                 borderColor: theme.secondary,
-                ...Shadows.md,
               },
             ]}
           >
