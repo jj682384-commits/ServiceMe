@@ -79,7 +79,7 @@ export default function ProviderActiveJobScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const safeGoBack = () => {
     if (navigation.canGoBack()) navigation.goBack();
-    else navigation.navigate("Home");
+    else navigation.navigate("ProviderTabs");
   };
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);

@@ -112,7 +112,7 @@ export default function ActiveServiceScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const safeGoBack = () => {
     if (navigation.canGoBack()) navigation.goBack();
-    else navigation.navigate("Home");
+    else navigation.navigate("DriverTabs");
   };
 
   const [eta, setEta] = useState(activeRequest?.eta || 8);
