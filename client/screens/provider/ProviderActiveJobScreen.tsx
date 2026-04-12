@@ -411,11 +411,12 @@ function StatusTimeline({ currentStatus, theme }: { currentStatus: ServiceStatus
 const styles = StyleSheet.create({
   container: { flex: 1 },
   mapSection: {
-    flex: 0.55,
+    flex: 3,
     width: "100%",
+    minHeight: 280,
   },
   detailsPanel: {
-    flex: 0.45,
+    flex: 2,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     marginTop: -20,
