@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import {
   View,
   StyleSheet,
@@ -6,6 +6,7 @@ import {
   Pressable,
   Modal,
   ScrollView,
+  RefreshControl,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -358,6 +359,7 @@ export default function ProviderJobsScreen() {
 
   const [selectedJob, setSelectedJob] = React.useState<ServiceRequest | null>(null);
   const [accepting, setAccepting] = React.useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const { data: serverJobs } = useQuery<ServiceRequest[]>({
     queryKey: ["/api/jobs/pending"],
@@ -466,6 +468,12 @@ export default function ProviderJobsScreen() {
     navigation.navigate("ProviderActiveJob");
   };
 
+  const onRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    await queryClient.invalidateQueries({ queryKey: ["/api/jobs/pending"] });
+    setIsRefreshing(false);
+  }, [queryClient]);
+
   return (
     <ThemedView style={styles.container}>
       <ScreenDecoration />
@@ -485,6 +493,27 @@ export default function ProviderJobsScreen() {
           gap: Spacing.lg,
         }}
         scrollIndicatorInsets={{ bottom: insets.bottom }}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.primary}
+            colors={[theme.primary]}
+            title="Checking for new jobs..."
+            titleColor={theme.textSecondary}
+          />
+        }
+        ListHeaderComponent={
+          <View style={styles.listHeader}>
+            <ThemedText type="h2">Available Jobs</ThemedText>
+            <View style={styles.refreshHintInline}>
+              <Feather name="refresh-cw" size={12} color={theme.textSecondary} />
+              <ThemedText type="small" style={{ color: theme.textSecondary, marginLeft: 4 }}>
+                Pull down to refresh
+              </ThemedText>
+            </View>
+          </View>
+        }
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Feather name="heart" size={48} color={theme.textSecondary} />
@@ -613,6 +642,17 @@ const sheetStyles = StyleSheet.create({
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  listHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: Spacing.md,
+  },
+  refreshHintInline: {
+    flexDirection: "row",
+    alignItems: "center",
+    opacity: 0.7,
+  },
   jobCard: {
     borderRadius: BorderRadius.md,
     padding: Spacing.lg,
