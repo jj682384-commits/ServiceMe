@@ -64,6 +64,10 @@ export default function ProviderActiveJobScreen() {
   const { theme } = useTheme();
   const { activeRequest, setActiveRequest, updateHistoryEntry } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const safeGoBack = () => {
+    if (navigation.canGoBack()) navigation.goBack();
+    else navigation.navigate("Home");
+  };
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const gpsRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [advancing, setAdvancing] = useState(false);
@@ -99,7 +103,7 @@ export default function ProviderActiveJobScreen() {
 
   useEffect(() => {
     if (!activeRequest) {
-      navigation.goBack();
+      safeGoBack();
       return;
     }
 
@@ -124,7 +128,7 @@ export default function ProviderActiveJobScreen() {
         if (job.status === "cancelled") {
           if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
           setActiveRequest(null);
-          navigation.goBack();
+          safeGoBack();
         }
       } catch {
       }
@@ -192,7 +196,7 @@ export default function ProviderActiveJobScreen() {
     setAdvancing(false);
 
     if (nextStatus === "completed") {
-      navigation.goBack();
+      safeGoBack();
     }
   };
 

@@ -110,6 +110,10 @@ export default function ActiveServiceScreen() {
   const { theme } = useTheme();
   const { activeRequest, setActiveRequest, updateHistoryEntry, userRole } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const safeGoBack = () => {
+    if (navigation.canGoBack()) navigation.goBack();
+    else navigation.navigate("Home");
+  };
 
   const [eta, setEta] = useState(activeRequest?.eta || 8);
   const [providerLocation, setProviderLocation] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -126,7 +130,7 @@ export default function ActiveServiceScreen() {
 
   useEffect(() => {
     if (!activeRequest) {
-      if (isFocused) navigation.goBack();
+      if (isFocused) safeGoBack();
       return;
     }
 
@@ -232,7 +236,7 @@ export default function ActiveServiceScreen() {
         if (job.status === "cancelled") {
           if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
           setActiveRequest(null);
-          navigation.goBack();
+          safeGoBack();
           return;
         }
 
@@ -316,7 +320,7 @@ export default function ActiveServiceScreen() {
             }
             updateHistoryEntry(activeRequest.id, { status: "cancelled" });
             setActiveRequest(null);
-            navigation.goBack();
+            safeGoBack();
           },
         },
       ]
@@ -381,7 +385,7 @@ export default function ActiveServiceScreen() {
     if (userRole === "driver") {
       navigation.navigate("ServiceCompletion");
     } else {
-      navigation.goBack();
+      safeGoBack();
     }
   };
 
