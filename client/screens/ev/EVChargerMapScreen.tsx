@@ -411,8 +411,7 @@ export default function EVChargerMapScreen() {
         </Pressable>
       </View>
 
-      {viewMode === "map" ? (
-        <View style={styles.mapContainer}>
+      <View style={[styles.mapContainer, viewMode !== "map" && { display: "none" }]}>
           {Platform.OS !== "web" ? (
             locationDenied ? (
               <View style={[styles.fullStateBox, { backgroundColor: ev.bg }]}>
@@ -551,9 +550,9 @@ export default function EVChargerMapScreen() {
               </Pressable>
             </RNAnimated.View>
           ) : null}
-        </View>
-      ) : (
-        <View style={styles.listContainer}>
+      </View>
+
+      <View style={[styles.listContainer, viewMode !== "list" && { display: "none" }]}>
           <View style={styles.filterRow}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
               {filters.map((f) => (
@@ -667,8 +666,7 @@ export default function EVChargerMapScreen() {
               }
             />
           )}
-        </View>
-      )}
+      </View>
     </View>
   );
 }
