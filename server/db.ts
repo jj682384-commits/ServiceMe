@@ -27,6 +27,8 @@ export interface ProviderRow {
   location: { latitude: number; longitude: number };
   last_location_update: string | null;
   push_token: string | null;
+  ev_capable: boolean;
+  ev_services: string[];
 }
 
 export interface JobRow {
@@ -50,6 +52,7 @@ export interface JobRow {
   time_saved: number | null;
   scheduled_date: string | null;
   is_emergency: boolean | null;
+  is_ev: boolean;
   created_at: string;
 }
 
@@ -76,6 +79,8 @@ export function rowToProvider(r: ProviderRow) {
     location: r.location,
     lastLocationUpdate: r.last_location_update ?? undefined,
     pushToken: r.push_token ?? undefined,
+    evCapable: r.ev_capable ?? false,
+    evServices: r.ev_services ?? [],
   };
 }
 
@@ -101,6 +106,7 @@ export function rowToJob(r: JobRow) {
     timeSaved: r.time_saved ?? undefined,
     scheduledDate: r.scheduled_date ?? undefined,
     isEmergency: r.is_emergency ?? undefined,
+    isEV: r.is_ev ?? false,
     createdAt: r.created_at,
   };
 }

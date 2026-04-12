@@ -25,25 +25,68 @@ import { getApiUrl, apiRequest } from "@/lib/query-client";
 import * as Location from "expo-location";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
-const serviceTypeLabels: Record<ServiceType, string> = {
+const EV_CYAN = "#00D4FF";
+
+const serviceTypeLabels: Record<string, string> = {
   flat_tire: "Flat Tire",
   jump_start: "Jump Start",
   tow: "Tow Service",
   fuel: "Fuel Delivery",
   lockout: "Lockout",
   obd_diagnostic: "OBD Diagnostic",
-  other: "Other",
 };
 
-const serviceTypeIcons: Record<ServiceType, keyof typeof Feather.glyphMap> = {
+const serviceTypeIcons: Record<string, keyof typeof Feather.glyphMap> = {
   flat_tire: "disc",
   jump_start: "battery-charging",
   tow: "truck",
   fuel: "droplet",
   lockout: "key",
   obd_diagnostic: "cpu",
-  other: "more-horizontal",
 };
+
+function jobLabel(job: ServiceRequest): string {
+  if (job.isEV) {
+    if (job.serviceType === "fuel") return "EV Mobile Charging";
+    if (job.serviceType === "tow") return "EV-Safe Towing";
+  }
+  return serviceTypeLabels[job.serviceType] ?? job.serviceType;
+}
+
+function jobIcon(job: ServiceRequest): keyof typeof Feather.glyphMap {
+  if (job.isEV) return "zap";
+  return serviceTypeIcons[job.serviceType] ?? "tool";
+}
+
+function EVBadge() {
+  return (
+    <View style={evBadgeStyle.badge}>
+      <Feather name="zap" size={10} color={EV_CYAN} />
+      <ThemedText type="small" style={evBadgeStyle.text}>
+        EV
+      </ThemedText>
+    </View>
+  );
+}
+
+const evBadgeStyle = StyleSheet.create({
+  badge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    backgroundColor: EV_CYAN + "20",
+    borderWidth: 1,
+    borderColor: EV_CYAN + "50",
+  },
+  text: {
+    color: EV_CYAN,
+    fontSize: 10,
+    fontWeight: "700",
+  },
+});
 
 function JobDetailSheet({
   job,
@@ -52,6 +95,7 @@ function JobDetailSheet({
   onAccept,
   accepting,
   canAccept,
+  isEvCapable,
 }: {
   job: ServiceRequest;
   visible: boolean;
@@ -59,6 +103,7 @@ function JobDetailSheet({
   onAccept: () => void;
   accepting: boolean;
   canAccept: boolean;
+  isEvCapable: boolean;
 }) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -69,6 +114,9 @@ function JobDetailSheet({
     if (minutes < 60) return `${minutes}m ago`;
     return `${Math.floor(minutes / 60)}h ago`;
   };
+
+  const iconColor = job.isEV ? EV_CYAN : theme.primary;
+  const iconBg = job.isEV ? EV_CYAN + "20" : theme.primary + "20";
 
   return (
     <Modal
@@ -83,13 +131,16 @@ function JobDetailSheet({
           <View style={sheetStyles.handle} />
 
           <View style={sheetStyles.sheetHeader}>
-            <View style={[sheetStyles.sheetIcon, { backgroundColor: theme.primary + "20" }]}>
-              <Feather name={serviceTypeIcons[job.serviceType]} size={28} color={theme.primary} />
+            <View style={[sheetStyles.sheetIcon, { backgroundColor: iconBg }]}>
+              <Feather name={jobIcon(job)} size={28} color={iconColor} />
             </View>
             <View style={{ flex: 1 }}>
-              <ThemedText type="h3" style={{ fontWeight: "700" }}>
-                {serviceTypeLabels[job.serviceType]}
-              </ThemedText>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: Spacing.sm }}>
+                <ThemedText type="h3" style={{ fontWeight: "700" }}>
+                  {jobLabel(job)}
+                </ThemedText>
+                {job.isEV ? <EVBadge /> : null}
+              </View>
               <ThemedText type="small" style={{ color: theme.textSecondary }}>
                 Posted {getTimeAgo(job.createdAt)}
               </ThemedText>
@@ -125,7 +176,7 @@ function JobDetailSheet({
                   <Feather name="user" size={16} color={theme.textSecondary} />
                   <View style={{ flex: 1, marginLeft: Spacing.sm }}>
                     <ThemedText type="small" style={{ color: theme.textSecondary }}>Driver</ThemedText>
-                    <ThemedText type="body" style={{ fontWeight: "600" }}>{job.driver.name}</ThemedText>
+                    <ThemedText type="body" style={{ fontWeight: "600" }}>{job.driver.name as string}</ThemedText>
                   </View>
                 </View>
               ) : null}
@@ -150,6 +201,15 @@ function JobDetailSheet({
             </View>
           </ScrollView>
 
+          {job.isEV && !isEvCapable ? (
+            <View style={[sheetStyles.evBlockedBanner, { backgroundColor: EV_CYAN + "15", borderColor: EV_CYAN + "40" }]}>
+              <Feather name="zap" size={16} color={EV_CYAN} />
+              <ThemedText type="small" style={{ color: EV_CYAN, fontWeight: "600", marginLeft: Spacing.sm, flex: 1 }}>
+                EV certification required to accept this job. Enable EV services in your profile to unlock these requests.
+              </ThemedText>
+            </View>
+          ) : null}
+
           <View style={sheetStyles.actions}>
             <Pressable
               onPress={onClose}
@@ -164,7 +224,14 @@ function JobDetailSheet({
               </ThemedText>
             </Pressable>
 
-            {canAccept ? (
+            {job.isEV && !isEvCapable ? (
+              <View style={[sheetStyles.acceptButton, { backgroundColor: EV_CYAN + "20", borderWidth: 1, borderColor: EV_CYAN + "40" }]}>
+                <Feather name="lock" size={18} color={EV_CYAN} />
+                <ThemedText type="small" style={{ color: EV_CYAN, marginLeft: Spacing.sm, fontWeight: "600" }}>
+                  EV Capability Required
+                </ThemedText>
+              </View>
+            ) : canAccept ? (
               <Pressable
                 onPress={onAccept}
                 disabled={accepting}
@@ -203,20 +270,32 @@ function JobCard({ job, onPress }: { job: ServiceRequest; onPress: () => void })
     return `${Math.floor(minutes / 60)}h ago`;
   };
 
+  const iconColor = job.isEV ? EV_CYAN : theme.primary;
+  const iconBg = job.isEV ? EV_CYAN + "15" : theme.primary + "15";
+  const cardBorderColor = job.isEV ? EV_CYAN + "30" : "transparent";
+
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [
         styles.jobCard,
-        { backgroundColor: theme.backgroundDefault, opacity: pressed ? 0.92 : 1 },
+        {
+          backgroundColor: theme.backgroundDefault,
+          borderWidth: job.isEV ? 1 : 0,
+          borderColor: cardBorderColor,
+          opacity: pressed ? 0.92 : 1,
+        },
       ]}
     >
       <View style={styles.jobHeader}>
-        <View style={[styles.serviceIcon, { backgroundColor: theme.primary + "15" }]}>
-          <Feather name={serviceTypeIcons[job.serviceType]} size={24} color={theme.primary} />
+        <View style={[styles.serviceIcon, { backgroundColor: iconBg }]}>
+          <Feather name={jobIcon(job)} size={24} color={iconColor} />
         </View>
         <View style={styles.jobHeaderInfo}>
-          <ThemedText type="h4">{serviceTypeLabels[job.serviceType]}</ThemedText>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: Spacing.xs }}>
+            <ThemedText type="h4">{jobLabel(job)}</ThemedText>
+            {job.isEV ? <EVBadge /> : null}
+          </View>
           <ThemedText type="small" style={{ color: theme.textSecondary }}>
             {getTimeAgo(job.createdAt)}
           </ThemedText>
@@ -238,7 +317,7 @@ function JobCard({ job, onPress }: { job: ServiceRequest; onPress: () => void })
           <View style={styles.detailRow}>
             <Feather name="user" size={14} color={theme.textSecondary} />
             <ThemedText type="small" style={{ marginLeft: Spacing.xs, color: theme.textSecondary }}>
-              {job.driver.name}
+              {job.driver.name as string}
             </ThemedText>
           </View>
         ) : null}
@@ -328,6 +407,8 @@ export default function ProviderJobsScreen() {
     };
   }, []);
 
+  const isEvCapable = currentProvider?.evCapable ?? false;
+
   const merged = React.useMemo(() => {
     const map = new Map<string, ServiceRequest>();
     (pendingJobs ?? []).forEach((j) => map.set(j.id, j));
@@ -339,7 +420,6 @@ export default function ProviderJobsScreen() {
     if (!selectedJob || accepting) return;
     setAccepting(true);
 
-    // Try to get the provider's real GPS so the driver map shows the correct location
     let providerLocation: { latitude: number; longitude: number } | undefined;
     try {
       const { status } = await Location.getForegroundPermissionsAsync();
@@ -427,6 +507,7 @@ export default function ProviderJobsScreen() {
           onAccept={handleAccept}
           accepting={accepting}
           canAccept={currentProvider?.isAvailable ?? false}
+          isEvCapable={isEvCapable}
         />
       ) : null}
     </ThemedView>
@@ -495,6 +576,14 @@ const sheetStyles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     padding: Spacing.md,
+  },
+  evBlockedBanner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    marginBottom: Spacing.md,
   },
   actions: {
     flexDirection: "row",

@@ -70,6 +70,7 @@ export default function EVMobileChargeScreen() {
       status: "pending",
       estimatedCost: cost,
       createdAt: new Date(),
+      isEV: true,
       driver: currentDriver ? { id: currentDriver.id, name: currentDriver.name, phone: currentDriver.phone, email: currentDriver.email } : undefined,
     };
 
@@ -88,6 +89,7 @@ export default function EVMobileChargeScreen() {
         location: pendingJob.location,
         estimatedCost: cost,
         driver: pendingJob.driver,
+        isEV: true,
       });
     } catch { /* silent — local state already set */ }
   };

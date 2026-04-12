@@ -37,6 +37,8 @@ interface ProviderRecord {
   location: { latitude: number; longitude: number };
   lastLocationUpdate?: string;
   pushToken?: string;
+  evCapable?: boolean;
+  evServices?: string[];
 }
 
 interface JobRecord {
@@ -61,6 +63,7 @@ interface JobRecord {
   createdAt: string;
   scheduledDate?: string;
   isEmergency?: boolean;
+  isEV?: boolean;
 }
 
 interface ChatMessage {
@@ -650,8 +653,9 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
            vehicle_type, vehicle_make, vehicle_model, license_plate,
            services_offered, is_available, provider_type,
            verification_status, verification_documents, verification_submitted_at,
-           verification_notes, badges, location, last_location_update, push_token
-         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
+           verification_notes, badges, location, last_location_update, push_token,
+           ev_capable, ev_services
+         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)
          ON CONFLICT (id) DO UPDATE SET
            name = EXCLUDED.name,
            phone = EXCLUDED.phone,
@@ -667,6 +671,8 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
            location = EXCLUDED.location,
            last_location_update = EXCLUDED.last_location_update,
            push_token = EXCLUDED.push_token,
+           ev_capable = EXCLUDED.ev_capable,
+           ev_services = EXCLUDED.ev_services,
            updated_at = NOW()
          RETURNING *`,
         [
@@ -682,6 +688,8 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
           data.badges ? JSON.stringify(data.badges) : null,
           JSON.stringify(data.location || { latitude: 0, longitude: 0 }),
           new Date().toISOString(), data.pushToken || null,
+          data.evCapable ?? false,
+          JSON.stringify(data.evServices || []),
         ]
       );
       res.json(rowToProvider(rows[0]));
@@ -764,13 +772,15 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
   app.post("/api/jobs", async (req: Request, res: Response) => {
     const data = req.body as Partial<JobRecord>;
     if (!data.id || !data.serviceType) return res.status(400).json({ error: "id and serviceType required" });
+    // Detect EV job: explicit flag or notes convention ("EV " prefix)
+    const isEV = data.isEV ?? (typeof data.notes === "string" && data.notes.startsWith("EV "));
     try {
       const { rows } = await pool.query<JobRow>(
         `INSERT INTO jobs (
            id, service_type, location, notes, status, estimated_cost,
            driver, eta, is_express, express_fee, service_fee, total_cost,
-           receipt_number, time_saved, created_at, is_emergency
-         ) VALUES ($1,$2,$3,$4,'pending',$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+           receipt_number, time_saved, created_at, is_emergency, is_ev
+         ) VALUES ($1,$2,$3,$4,'pending',$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
          ON CONFLICT (id) DO NOTHING
          RETURNING *`,
         [
@@ -784,25 +794,30 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
           data.timeSaved ?? null,
           data.createdAt ?? new Date().toISOString(),
           data.isEmergency ?? null,
+          isEV,
         ]
       );
-      const job = rows.length ? rowToJob(rows[0]) : { ...data, status: "pending", createdAt: new Date().toISOString() } as JobRecord;
+      const job = rows.length ? rowToJob(rows[0]) : { ...data, status: "pending", isEV, createdAt: new Date().toISOString() } as JobRecord;
 
       // Instantly notify all connected provider WebSocket clients about the new job
       broadcastJobUpdate(job as JobRecord);
 
-      // Push notifications to available providers
-      const { rows: providers } = await pool.query<ProviderRow>(
-        "SELECT push_token FROM providers WHERE is_available = true AND push_token IS NOT NULL"
-      );
+      // Push notifications — EV jobs only go to EV-capable providers
+      const providerQuery = isEV
+        ? "SELECT push_token FROM providers WHERE is_available = true AND ev_capable = true AND push_token IS NOT NULL"
+        : "SELECT push_token FROM providers WHERE is_available = true AND push_token IS NOT NULL";
+      const { rows: providers } = await pool.query<ProviderRow>(providerQuery);
       const tokens = providers.map((p) => p.push_token as string).filter(Boolean);
       if (tokens.length > 0) {
         const serviceLabels: Record<string, string> = {
           flat_tire: "Flat Tire", jump_start: "Jump Start", tow: "Tow Service",
           fuel: "Fuel Delivery", lockout: "Lockout", obd_diagnostic: "OBD Diagnostic",
         };
-        const serviceLabel = serviceLabels[job.serviceType] || "Roadside Assistance";
-        const urgency = job.isEmergency ? "EMERGENCY: " : "";
+        const baseLabel = serviceLabels[job.serviceType] || "Roadside Assistance";
+        const serviceLabel = isEV
+          ? (job.serviceType === "fuel" ? "EV Mobile Charging" : "EV-Safe Towing")
+          : baseLabel;
+        const urgency = job.isEmergency ? "EMERGENCY: " : (isEV ? "EV Job: " : "");
         const messages = tokens.map((to) => ({
           to, title: `${urgency}New Job Request`,
           body: `${serviceLabel} needed nearby — $${job.estimatedCost} estimated. Tap to accept.`,

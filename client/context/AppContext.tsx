@@ -69,6 +69,7 @@ export interface ServiceRequest {
   receiptNumber?: string;
   timeSaved?: number;
   scheduledDate?: Date;
+  isEV?: boolean;
 }
 
 export type BillingCycle = "monthly" | "yearly";
