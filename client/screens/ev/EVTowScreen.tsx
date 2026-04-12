@@ -96,13 +96,7 @@ export default function EVTowScreen() {
       driver: currentDriver ? { id: currentDriver.id, name: currentDriver.name, phone: currentDriver.phone, email: currentDriver.email } : undefined,
     };
 
-    addPendingJob(pendingJob);
-    setActiveRequest(pendingJob);
-    addToHistory(pendingJob);
-    setIsRequesting(false);
-    navigation.replace("ActiveService");
-
-    // POST to server in background
+    // POST to server first so the job exists before polling starts
     try {
       await apiRequest("POST", "/api/jobs", {
         id: jobId,
@@ -113,7 +107,13 @@ export default function EVTowScreen() {
         driver: pendingJob.driver,
         isEV: true,
       });
-    } catch { /* silent — local state already set */ }
+    } catch { /* proceed — server may already have it or will catch up */ }
+
+    addPendingJob(pendingJob);
+    setActiveRequest(pendingJob);
+    addToHistory(pendingJob);
+    setIsRequesting(false);
+    navigation.replace("ActiveService");
   };
 
   return (
