@@ -1,6 +1,6 @@
 import React from "react";
-import { View, StyleSheet } from "react-native";
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from "react-native-maps";
+import { Platform, StyleSheet } from "react-native";
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE, PROVIDER_DEFAULT } from "react-native-maps";
 
 export interface MapMarker {
   id: string;
@@ -39,6 +39,10 @@ const DARK_MAP_STYLE = [
   { featureType: "transit", elementType: "geometry", stylers: [{ color: "#2a2a4e" }] },
 ];
 
+// Use Google Maps on Android; Apple Maps (default) on iOS so the map works
+// in Expo Go without requiring a native build or embedded API key.
+const MAP_PROVIDER = Platform.OS === "android" ? PROVIDER_GOOGLE : PROVIDER_DEFAULT;
+
 export function GoogleMapView({
   latitude,
   longitude,
@@ -54,7 +58,7 @@ export function GoogleMapView({
 }: GoogleMapViewProps) {
   return (
     <MapView
-      provider={PROVIDER_GOOGLE}
+      provider={MAP_PROVIDER}
       style={[styles.map, style]}
       initialRegion={{
         latitude,
@@ -64,7 +68,7 @@ export function GoogleMapView({
       }}
       showsUserLocation={showsUserLocation}
       showsMyLocationButton={false}
-      customMapStyle={mapStyle === "dark" ? DARK_MAP_STYLE : []}
+      customMapStyle={mapStyle === "dark" && Platform.OS === "android" ? DARK_MAP_STYLE : []}
     >
       {markers.map((marker) => (
         <Marker
