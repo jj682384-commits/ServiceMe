@@ -82,9 +82,12 @@ export default function ProviderActiveJobScreen() {
     else navigation.navigate("ProviderTabs");
   };
 
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const gpsRef  = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollRef          = useRef<ReturnType<typeof setInterval> | null>(null);
+  const gpsRef           = useRef<ReturnType<typeof setInterval> | null>(null);
+  const activeRequestRef = useRef(activeRequest);
   const [advancing, setAdvancing] = useState(false);
+
+  useEffect(() => { activeRequestRef.current = activeRequest; }, [activeRequest]);
 
   // ── Bottom-sheet state ──────────────────────────────────────────────────────
   const translateY = useRef(new Animated.Value(CLOSED_Y)).current;
@@ -156,16 +159,18 @@ export default function ProviderActiveJobScreen() {
   }, [activeRequest?.id, activeRequest?.status]);
 
   // ── Cancel polling ──────────────────────────────────────────────────────────
+  // deps: [activeRequest?.id] only — reads live state via ref to avoid stale closures
   useEffect(() => {
-    if (!activeRequest) { safeGoBack(); return; }
-    const terminal = activeRequest.status === "completed" || activeRequest.status === "cancelled";
-    if (terminal) {
-      if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
-      return;
-    }
+    if (!activeRequest?.id) { safeGoBack(); return; }
     const poll = async () => {
+      const cur = activeRequestRef.current;
+      if (!cur) return;
+      if (cur.status === "completed" || cur.status === "cancelled") {
+        if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+        return;
+      }
       try {
-        const res = await fetch(new URL(`/api/jobs/${activeRequest.id}`, getApiUrl()).toString(), {
+        const res = await fetch(new URL(`/api/jobs/${cur.id}`, getApiUrl()).toString(), {
           headers: { "Cache-Control": "no-cache" },
         });
         if (!res.ok) return;
@@ -179,7 +184,7 @@ export default function ProviderActiveJobScreen() {
     };
     pollRef.current = setInterval(poll, 5000);
     return () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } };
-  }, [activeRequest?.id, activeRequest?.status]);
+  }, [activeRequest?.id]);
 
   if (!activeRequest) return null;
 

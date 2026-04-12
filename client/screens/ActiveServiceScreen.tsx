@@ -141,10 +141,9 @@ export default function ActiveServiceScreen() {
 
   const [eta, setEta]                   = useState(activeRequest?.eta || 8);
   const [providerLocation, setProviderLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-  const pollRef              = useRef<ReturnType<typeof setInterval> | null>(null);
-  const wsRef                = useRef<WebSocket | null>(null);
-  const activeRequestRef     = useRef(activeRequest);
-  const initialPollFiredRef  = useRef<string | null>(null);
+  const pollRef          = useRef<ReturnType<typeof setInterval> | null>(null);
+  const wsRef            = useRef<WebSocket | null>(null);
+  const activeRequestRef = useRef(activeRequest);
 
   useEffect(() => { activeRequestRef.current = activeRequest; }, [activeRequest]);
 
@@ -262,13 +261,21 @@ export default function ActiveServiceScreen() {
   }, [activeRequest?.status]);
 
   // ── Polling ──────────────────────────────────────────────────────────────────
+  // NOTE: deps are [activeRequest?.id] only — the poll reads the LIVE status via
+  // activeRequestRef so stale closures never silently stop updates on mid-job status changes.
   useEffect(() => {
-    if (!activeRequest) return;
-    if (activeRequest.status === "cancelled" || activeRequest.status === "completed") return;
+    if (!activeRequest?.id) return;
 
     const poll = async () => {
+      // Always read the latest request from the ref, never the stale closure
+      const cur = activeRequestRef.current;
+      if (!cur) return;
+      if (cur.status === "cancelled" || cur.status === "completed") {
+        if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+        return;
+      }
       try {
-        const url = new URL(`/api/jobs/${activeRequest.id}`, getApiUrl());
+        const url = new URL(`/api/jobs/${cur.id}`, getApiUrl());
         const res = await fetch(url.toString(), { headers: { "Cache-Control": "no-cache", "Pragma": "no-cache" } });
         if (!res.ok) return;
         const job = await res.json();
@@ -282,26 +289,24 @@ export default function ActiveServiceScreen() {
           const lng = loc.longitude ?? loc.lng;
           if (lat && lng && (lat !== 0 || lng !== 0)) setProviderLocation({ latitude: lat, longitude: lng });
         }
+        // Compare server vs current live status (not stale closure)
         const serverIdx = STATUS_ORDER.indexOf(job.status as ServiceStatus);
-        const localIdx  = STATUS_ORDER.indexOf(activeRequest.status);
-        if (serverIdx > localIdx || job.status === "completed" || (job.provider && !activeRequest.provider)) {
+        const localIdx  = STATUS_ORDER.indexOf(cur.status);
+        if (serverIdx > localIdx || job.status === "completed" || (job.provider && !cur.provider)) {
           const newStatus   = job.status as ServiceStatus;
-          const newProvider = job.provider ? (job.provider as Provider) : activeRequest.provider;
-          setActiveRequest({ ...activeRequest, status: newStatus, provider: newProvider, eta: job.eta ?? activeRequest.eta });
-          setEta(job.eta ?? activeRequest.eta ?? 8);
-          updateHistoryEntry(activeRequest.id, { status: newStatus, provider: newProvider });
+          const newProvider = job.provider ? (job.provider as Provider) : cur.provider;
+          setActiveRequest({ ...cur, status: newStatus, provider: newProvider, eta: job.eta ?? cur.eta });
+          setEta(job.eta ?? cur.eta ?? 8);
+          updateHistoryEntry(cur.id, { status: newStatus, provider: newProvider });
           if (newStatus === "completed" && pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
         }
       } catch {}
     };
 
-    if (initialPollFiredRef.current !== activeRequest.id) {
-      initialPollFiredRef.current = activeRequest.id;
-      poll();
-    }
+    poll(); // immediate poll on mount / job change
     pollRef.current = setInterval(poll, 2000);
     return () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } };
-  }, [activeRequest?.id, activeRequest?.status]);
+  }, [activeRequest?.id]);
 
   // ── Notifications ────────────────────────────────────────────────────────────
   useEffect(() => {
