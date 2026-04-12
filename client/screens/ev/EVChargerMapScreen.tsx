@@ -32,6 +32,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "@/hooks/useTheme";
 import { getEVColors } from "@/constants/evColors";
 import { GoogleMapView } from "@/components/GoogleMapView";
+import { getApiUrl } from "@/lib/query-client";
 
 const { height: SH, width: SW } = Dimensions.get("window");
 
@@ -251,12 +252,11 @@ export default function EVChargerMapScreen() {
   const fetchChargers = useCallback(async (lat: number, lon: number) => {
     try {
       setFetchError(false);
-      const url =
-        `https://api.openchargemap.io/v3/poi/?output=json` +
-        `&latitude=${lat}&longitude=${lon}` +
-        `&distance=20&distanceunit=Miles` +
-        `&maxresults=30&compact=true&verbose=false`;
-      const res = await fetch(url);
+      const base = getApiUrl();
+      const url = new URL("/api/ev/chargers", base);
+      url.searchParams.set("lat", String(lat));
+      url.searchParams.set("lon", String(lon));
+      const res = await fetch(url.toString());
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = (await res.json()) as Record<string, unknown>[];
       const mapped = data
@@ -418,62 +418,67 @@ export default function EVChargerMapScreen() {
       {viewMode === "map" ? (
         <View style={styles.mapContainer}>
           {Platform.OS !== "web" ? (
-            loading ? (
-              <View style={[styles.loadingOverlay, { backgroundColor: ev.bg }]}>
-                <ActivityIndicator size="large" color={ev.neonGreen} />
-                <Animated.Text style={[styles.stateText, { color: ev.whiteDim }]}>
-                  Finding chargers near you...
-                </Animated.Text>
-              </View>
-            ) : locationDenied ? (
+            locationDenied ? (
               <View style={[styles.fullStateBox, { backgroundColor: ev.bg }]}>
                 <Feather name="map-pin" size={48} color={ev.whiteDim} />
                 <Animated.Text style={[styles.emptyTitle, { color: ev.white }]}>Location Required</Animated.Text>
                 <Animated.Text style={[styles.emptySubtext, { color: ev.whiteDim }]}>
-                  Enable location access to find nearby EV chargers
+                  Enable location access to see the map and find nearby EV chargers
                 </Animated.Text>
                 <Pressable
-                  onPress={() => {
-                    try { Linking.openSettings(); } catch {}
-                  }}
+                  onPress={() => { try { Linking.openSettings(); } catch {} }}
                   style={[styles.retryButton, { backgroundColor: ev.neonGreen + "20", borderColor: ev.neonGreen + "50" }]}
                 >
                   <Animated.Text style={[styles.retryText, { color: ev.neonGreen }]}>Open Settings</Animated.Text>
                 </Pressable>
               </View>
-            ) : fetchError ? (
-              <View style={[styles.fullStateBox, { backgroundColor: ev.bg }]}>
-                <Feather name="wifi-off" size={48} color={ev.whiteDim} />
-                <Animated.Text style={[styles.emptyTitle, { color: ev.white }]}>Couldn't Load Chargers</Animated.Text>
-                <Animated.Text style={[styles.emptySubtext, { color: ev.whiteDim }]}>
-                  Check your connection and try again
-                </Animated.Text>
-                <Pressable
-                  onPress={() => {
-                    if (userCoords) { setLoading(true); fetchChargers(userCoords.latitude, userCoords.longitude); }
-                  }}
-                  style={[styles.retryButton, { backgroundColor: ev.neonCyan + "20", borderColor: ev.neonCyan + "50" }]}
-                >
-                  <Animated.Text style={[styles.retryText, { color: ev.neonCyan }]}>Retry</Animated.Text>
-                </Pressable>
-              </View>
             ) : (
-              <GoogleMapView
-                latitude={mapCenter.latitude}
-                longitude={mapCenter.longitude}
-                showsUserLocation
-                markers={filteredChargers.map((c) => ({
-                  id: c.id,
-                  latitude: c.latitude,
-                  longitude: c.longitude,
-                  title: c.name,
-                  description: `${c.available > 0 ? "Open" : "Offline"} · ${c.speed} · ${c.distance}`,
-                  color: c.available === 0 ? "#FF3D00" : c.id === selectedCharger ? "#00FF88" : "#00D4FF",
-                }))}
-                onMarkerPress={(m) => handleMarkerPress(m.id)}
-                mapStyle="dark"
-                style={StyleSheet.absoluteFill}
-              />
+              <>
+                <GoogleMapView
+                  latitude={mapCenter.latitude}
+                  longitude={mapCenter.longitude}
+                  showsUserLocation
+                  markers={filteredChargers.map((c) => ({
+                    id: c.id,
+                    latitude: c.latitude,
+                    longitude: c.longitude,
+                    title: c.name,
+                    description: `${c.available > 0 ? "Open" : "Offline"} · ${c.speed} · ${c.distance}`,
+                    color: c.available === 0 ? "#FF3D00" : c.id === selectedCharger ? "#00FF88" : "#00D4FF",
+                  }))}
+                  onMarkerPress={(m) => handleMarkerPress(m.id)}
+                  mapStyle="dark"
+                  style={StyleSheet.absoluteFill}
+                />
+
+                {loading ? (
+                  <View style={styles.mapLoadingBanner} pointerEvents="none">
+                    <View style={[styles.mapBannerInner, { backgroundColor: ev.bg + "E8" }]}>
+                      <ActivityIndicator size="small" color={ev.neonGreen} />
+                      <Animated.Text style={[styles.mapBannerText, { color: ev.whiteDim }]}>
+                        Finding chargers near you...
+                      </Animated.Text>
+                    </View>
+                  </View>
+                ) : fetchError ? (
+                  <View style={styles.mapLoadingBanner} pointerEvents="box-none">
+                    <View style={[styles.mapBannerInner, { backgroundColor: ev.bg + "EE" }]}>
+                      <Feather name="wifi-off" size={14} color={ev.neonPink} />
+                      <Animated.Text style={[styles.mapBannerText, { color: ev.whiteDim }]}>
+                        Couldn't load chargers
+                      </Animated.Text>
+                      <Pressable
+                        onPress={() => {
+                          if (userCoords) { setLoading(true); fetchChargers(userCoords.latitude, userCoords.longitude); }
+                        }}
+                        style={[styles.bannerRetry, { backgroundColor: ev.neonCyan + "25" }]}
+                      >
+                        <Animated.Text style={[styles.bannerRetryText, { color: ev.neonCyan }]}>Retry</Animated.Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                ) : null}
+              </>
             )
           ) : (
             <View style={[styles.fullStateBox, { backgroundColor: ev.bg }]}>
@@ -724,12 +729,31 @@ const styles = StyleSheet.create({
 
   mapContainer: { flex: 1 },
 
-  loadingOverlay: {
-    flex: 1,
+  mapLoadingBanner: {
+    position: "absolute",
+    top: 12,
+    left: 16,
+    right: 16,
     alignItems: "center",
-    justifyContent: "center",
-    gap: 16,
+    zIndex: 10,
   },
+  mapBannerInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    gap: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 8,
+  },
+  mapBannerText: { fontSize: 13, fontWeight: "500" },
+  bannerRetry: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
+  bannerRetryText: { fontSize: 12, fontWeight: "600" },
+
   fullStateBox: {
     flex: 1,
     alignItems: "center",

@@ -997,6 +997,30 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
     }
   });
 
+  // ── EV Chargers Proxy ─────────────────────────────────────────────────────────
+
+  app.get("/api/ev/chargers", async (req: Request, res: Response) => {
+    const { lat, lon } = req.query as { lat?: string; lon?: string };
+    if (!lat || !lon) return res.status(400).json({ error: "lat and lon required" });
+    try {
+      const url =
+        `https://api.openchargemap.io/v3/poi/?output=json` +
+        `&latitude=${lat}&longitude=${lon}` +
+        `&distance=20&distanceunit=Miles` +
+        `&maxresults=30&compact=true&verbose=false`;
+      const response = await fetch(url, {
+        headers: { "Accept": "application/json" },
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!response.ok) throw new Error(`OpenChargeMap responded ${response.status}`);
+      const data = await response.json();
+      res.json(data);
+    } catch (err) {
+      console.error("[ev/chargers]", err);
+      res.status(502).json({ error: "Failed to fetch charger data" });
+    }
+  });
+
   // ── Report a Problem ──────────────────────────────────────────────────────────
 
   app.post("/api/reports", async (req: Request, res: Response) => {
