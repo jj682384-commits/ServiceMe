@@ -428,52 +428,22 @@ export default function EVChargerMapScreen() {
                 </Pressable>
               </View>
             ) : (
-              <>
-                <GoogleMapView
-                  latitude={mapCenter.latitude}
-                  longitude={mapCenter.longitude}
-                  showsUserLocation
-                  markers={filteredChargers.map((c) => ({
-                    id: c.id,
-                    latitude: c.latitude,
-                    longitude: c.longitude,
-                    title: c.name,
-                    description: `${c.available > 0 ? "Open" : "Offline"} · ${c.speed} · ${c.distance}`,
-                    color: c.available === 0 ? "#FF3D00" : c.id === selectedCharger ? "#00FF88" : "#00D4FF",
-                  }))}
-                  onMarkerPress={(m) => handleMarkerPress(m.id)}
-                  mapStyle="dark"
-                  style={StyleSheet.absoluteFill}
-                />
-
-                {loading ? (
-                  <View style={styles.mapLoadingBanner} pointerEvents="none">
-                    <View style={[styles.mapBannerInner, { backgroundColor: ev.bg + "E8" }]}>
-                      <ActivityIndicator size="small" color={ev.neonGreen} />
-                      <Animated.Text style={[styles.mapBannerText, { color: ev.whiteDim }]}>
-                        Finding chargers near you...
-                      </Animated.Text>
-                    </View>
-                  </View>
-                ) : fetchError ? (
-                  <View style={styles.mapLoadingBanner} pointerEvents="box-none">
-                    <View style={[styles.mapBannerInner, { backgroundColor: ev.bg + "EE" }]}>
-                      <Feather name="wifi-off" size={14} color={ev.neonPink} />
-                      <Animated.Text style={[styles.mapBannerText, { color: ev.whiteDim }]}>
-                        Couldn't load chargers
-                      </Animated.Text>
-                      <Pressable
-                        onPress={() => {
-                          if (userCoords) { setLoading(true); fetchChargers(userCoords.latitude, userCoords.longitude); }
-                        }}
-                        style={[styles.bannerRetry, { backgroundColor: ev.neonCyan + "25" }]}
-                      >
-                        <Animated.Text style={[styles.bannerRetryText, { color: ev.neonCyan }]}>Retry</Animated.Text>
-                      </Pressable>
-                    </View>
-                  </View>
-                ) : null}
-              </>
+              <GoogleMapView
+                latitude={mapCenter.latitude}
+                longitude={mapCenter.longitude}
+                showsUserLocation
+                markers={filteredChargers.map((c) => ({
+                  id: c.id,
+                  latitude: c.latitude,
+                  longitude: c.longitude,
+                  title: c.name,
+                  description: `${c.available > 0 ? "Open" : "Offline"} · ${c.speed} · ${c.distance}`,
+                  color: c.available === 0 ? "#FF3D00" : c.id === selectedCharger ? "#00FF88" : "#00D4FF",
+                }))}
+                onMarkerPress={(m) => handleMarkerPress(m.id)}
+                mapStyle="dark"
+                style={StyleSheet.absoluteFill}
+              />
             )
           ) : (
             <View style={[styles.fullStateBox, { backgroundColor: ev.bg }]}>
@@ -484,6 +454,36 @@ export default function EVChargerMapScreen() {
               </Animated.Text>
             </View>
           )}
+
+          {Platform.OS !== "web" && !locationDenied ? (
+            loading ? (
+              <View style={styles.mapLoadingBanner} pointerEvents="none">
+                <View style={[styles.mapBannerInner, { backgroundColor: ev.bg + "E8" }]}>
+                  <ActivityIndicator size="small" color={ev.neonGreen} />
+                  <Animated.Text style={[styles.mapBannerText, { color: ev.whiteDim }]}>
+                    Finding chargers near you...
+                  </Animated.Text>
+                </View>
+              </View>
+            ) : fetchError ? (
+              <View style={styles.mapLoadingBanner} pointerEvents="box-none">
+                <View style={[styles.mapBannerInner, { backgroundColor: ev.bg + "EE" }]}>
+                  <Feather name="wifi-off" size={14} color={ev.neonPink} />
+                  <Animated.Text style={[styles.mapBannerText, { color: ev.whiteDim }]}>
+                    Couldn't load chargers
+                  </Animated.Text>
+                  <Pressable
+                    onPress={() => {
+                      if (userCoords) { setLoading(true); fetchChargers(userCoords.latitude, userCoords.longitude); }
+                    }}
+                    style={[styles.bannerRetry, { backgroundColor: ev.neonCyan + "25" }]}
+                  >
+                    <Animated.Text style={[styles.bannerRetryText, { color: ev.neonCyan }]}>Retry</Animated.Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : null
+          ) : null}
 
           {selectedChargerData ? (
             <RNAnimated.View
