@@ -5,6 +5,9 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
+  Animated,
+  PanResponder,
+  Dimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Location from "expo-location";
@@ -22,6 +25,16 @@ import { useApp, ServiceStatus, ServiceType } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { getApiUrl } from "@/lib/query-client";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
+
+const { height: SCREEN_H } = Dimensions.get("window");
+
+// Snap positions (how much of the panel is visible from the bottom)
+const PEEK_H = 160;                              // minimised — shows handle + status + action
+const EXPANDED_H = Math.round(SCREEN_H * 0.58); // expanded — shows all detail cards
+
+// The panel DOM height is always EXPANDED_H.
+// We animate its translateY: 0 = expanded, CLOSED_Y = peeked.
+const CLOSED_Y = EXPANDED_H - PEEK_H;
 
 const STATUS_ORDER: ServiceStatus[] = [
   "pending", "accepted", "en_route", "arrived", "in_progress", "completed", "cancelled",
@@ -72,6 +85,45 @@ export default function ProviderActiveJobScreen() {
   const gpsRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [advancing, setAdvancing] = useState(false);
 
+  // Bottom-sheet animation
+  const translateY = useRef(new Animated.Value(CLOSED_Y)).current;
+  const dragStart = useRef(CLOSED_Y);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const snapTo = (y: number, expanded: boolean) => {
+    setIsExpanded(expanded);
+    Animated.spring(translateY, {
+      toValue: y,
+      useNativeDriver: true,
+      bounciness: 4,
+    }).start();
+  };
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 5,
+      onPanResponderGrant: () => {
+        dragStart.current = (translateY as any)._value;
+        translateY.stopAnimation();
+      },
+      onPanResponderMove: (_, g) => {
+        const next = Math.max(0, Math.min(CLOSED_Y, dragStart.current + g.dy));
+        translateY.setValue(next);
+      },
+      onPanResponderRelease: (_, g) => {
+        const current = (translateY as any)._value;
+        const midPoint = CLOSED_Y / 2;
+        // Flick velocity overrides position
+        if (g.vy < -0.3 || current < midPoint) {
+          snapTo(0, true);
+        } else {
+          snapTo(CLOSED_Y, false);
+        }
+      },
+    })
+  ).current;
+
   useEffect(() => {
     if (!activeRequest?.id) return;
     const activeStatuses: ServiceStatus[] = ["accepted", "en_route", "arrived", "in_progress"];
@@ -92,7 +144,7 @@ export default function ProviderActiveJobScreen() {
           body: JSON.stringify({ latitude: loc.coords.latitude, longitude: loc.coords.longitude }),
         });
       } catch {
-        // silent — GPS or network failure
+        // silent
       }
     };
 
@@ -107,13 +159,9 @@ export default function ProviderActiveJobScreen() {
       return;
     }
 
-    const terminal =
-      activeRequest.status === "completed" || activeRequest.status === "cancelled";
+    const terminal = activeRequest.status === "completed" || activeRequest.status === "cancelled";
     if (terminal) {
-      if (pollRef.current) {
-        clearInterval(pollRef.current);
-        pollRef.current = null;
-      }
+      if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
       return;
     }
 
@@ -145,8 +193,8 @@ export default function ProviderActiveJobScreen() {
   const config = statusConfig[activeRequest.status] ?? statusConfig.accepted;
   const canAdvance = ADVANCE_STATUSES.includes(activeRequest.status);
 
-  const customerLat = activeRequest.location.latitude ?? 37.7849;
-  const customerLng = activeRequest.location.longitude ?? -122.4094;
+  const customerLat = activeRequest.location.latitude || 37.7849;
+  const customerLng = activeRequest.location.longitude || -122.4094;
 
   const mapMarkers = [
     {
@@ -171,30 +219,20 @@ export default function ProviderActiveJobScreen() {
 
   const handleAdvance = () => {
     if (advancing) return;
-
     const statuses: ServiceStatus[] = ["accepted", "en_route", "arrived", "in_progress", "completed"];
     const currentIndex = statuses.indexOf(activeRequest.status);
     if (currentIndex < 0 || currentIndex >= statuses.length - 1) return;
-
     const nextStatus = statuses[currentIndex + 1];
     setAdvancing(true);
-
-    // Update local state immediately — don't make the user wait for the server
     const updated = { ...activeRequest, status: nextStatus };
     setActiveRequest(updated);
     updateHistoryEntry(activeRequest.id, { status: nextStatus });
-
-    // PATCH server in background (fire-and-forget). The WebSocket broadcast will
-    // notify the driver's screen when this lands. Even if it fails, local state is
-    // already correct and the driver's polling will reconcile.
     fetch(new URL(`/api/jobs/${activeRequest.id}/status`, getApiUrl()).toString(), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: nextStatus }),
     }).catch(() => {});
-
     setAdvancing(false);
-
     if (nextStatus === "completed") {
       safeGoBack();
     }
@@ -219,7 +257,8 @@ export default function ProviderActiveJobScreen() {
     <ThemedView style={styles.container}>
       <ScreenDecoration />
 
-      <View style={styles.mapSection}>
+      {/* Map fills the entire screen */}
+      <View style={StyleSheet.absoluteFill}>
         <GoogleMapView
           latitude={customerLat}
           longitude={customerLng}
@@ -229,131 +268,150 @@ export default function ProviderActiveJobScreen() {
         />
       </View>
 
-      <ScrollView
-        style={[styles.detailsPanel, { backgroundColor: theme.backgroundDefault }]}
-        contentContainerStyle={{
-          paddingBottom: insets.bottom + Spacing.xl * 2,
-          paddingHorizontal: Spacing.lg,
-          gap: Spacing.lg,
-        }}
-        scrollIndicatorInsets={{ bottom: insets.bottom }}
+      {/* Draggable bottom sheet */}
+      <Animated.View
+        style={[
+          styles.sheet,
+          { backgroundColor: theme.backgroundDefault, transform: [{ translateY }] },
+          { paddingBottom: insets.bottom },
+        ]}
       >
-        <View style={styles.panelHandle} />
-        <View style={[styles.statusBanner, { backgroundColor: config.color + "20", borderColor: config.color + "40" }]}>
-          <View style={[styles.statusDot, { backgroundColor: config.color }]} />
-          <ThemedText type="body" style={{ color: config.color, fontWeight: "700", flex: 1 }}>
-            {config.label}
-          </ThemedText>
-          <ThemedText type="small" style={{ color: theme.textSecondary }}>
-            {timeAgo()}
-          </ThemedText>
+        {/* Drag handle — touch target for the entire handle area */}
+        <View style={styles.handleArea} {...panResponder.panHandlers}>
+          <View style={styles.handle} />
+          {/* Status banner stays always visible in peek mode */}
+          <View style={[styles.statusBanner, { backgroundColor: config.color + "20", borderColor: config.color + "40" }]}>
+            <View style={[styles.statusDot, { backgroundColor: config.color }]} />
+            <ThemedText type="body" style={{ color: config.color, fontWeight: "700", flex: 1 }}>
+              {config.label}
+            </ThemedText>
+            <ThemedText type="small" style={{ color: theme.textSecondary }}>
+              {timeAgo()}
+            </ThemedText>
+            <Feather
+              name={isExpanded ? "chevron-down" : "chevron-up"}
+              size={18}
+              color={theme.textSecondary}
+            />
+          </View>
         </View>
 
-        <View style={[styles.card, { backgroundColor: theme.backgroundDefault }]}>
-          <View style={styles.cardHeader}>
-            <View style={[styles.iconBox, { backgroundColor: theme.primary + "15" }]}>
-              <Feather
-                name={serviceTypeIcons[activeRequest.serviceType]}
-                size={24}
-                color={theme.primary}
-              />
-            </View>
-            <View style={{ flex: 1, marginLeft: Spacing.md }}>
-              <ThemedText type="h4">{serviceTypeLabels[activeRequest.serviceType]}</ThemedText>
-              <ThemedText type="small" style={{ color: theme.textSecondary }}>
-                Service Request
+        {/* Scrollable detail content (only scrolls when expanded) */}
+        <ScrollView
+          scrollEnabled={isExpanded}
+          contentContainerStyle={{
+            paddingHorizontal: Spacing.lg,
+            paddingTop: Spacing.sm,
+            paddingBottom: Spacing.xl,
+            gap: Spacing.lg,
+          }}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={[styles.card, { backgroundColor: theme.backgroundDefault }]}>
+            <View style={styles.cardHeader}>
+              <View style={[styles.iconBox, { backgroundColor: theme.primary + "15" }]}>
+                <Feather name={serviceTypeIcons[activeRequest.serviceType]} size={24} color={theme.primary} />
+              </View>
+              <View style={{ flex: 1, marginLeft: Spacing.md }}>
+                <ThemedText type="h4">{serviceTypeLabels[activeRequest.serviceType]}</ThemedText>
+                <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                  Service Request
+                </ThemedText>
+              </View>
+              <ThemedText type="h4" style={{ color: theme.success }}>
+                ${activeRequest.estimatedCost}
               </ThemedText>
             </View>
-            <ThemedText type="h4" style={{ color: theme.success }}>
-              ${activeRequest.estimatedCost}
-            </ThemedText>
+
+            <View style={[styles.divider, { backgroundColor: theme.border }]} />
+
+            <View style={styles.detailRow}>
+              <Feather name="map-pin" size={16} color={theme.primary} />
+              <ThemedText type="body" style={{ marginLeft: Spacing.sm, flex: 1 }}>
+                {activeRequest.location.address}
+              </ThemedText>
+            </View>
+
+            {activeRequest.notes ? (
+              <View style={[styles.detailRow, { marginTop: Spacing.sm }]}>
+                <Feather name="file-text" size={16} color={theme.textSecondary} />
+                <ThemedText type="small" style={{ marginLeft: Spacing.sm, flex: 1, color: theme.textSecondary }}>
+                  {activeRequest.notes}
+                </ThemedText>
+              </View>
+            ) : null}
           </View>
 
-          <View style={[styles.divider, { backgroundColor: theme.border }]} />
+          {activeRequest.driver ? (
+            <View style={[styles.card, { backgroundColor: theme.backgroundDefault }]}>
+              <ThemedText type="small" style={{ color: theme.textSecondary, marginBottom: Spacing.sm }}>
+                CUSTOMER
+              </ThemedText>
+              <View style={styles.detailRow}>
+                <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
+                  <Feather name="user" size={18} color="#FFFFFF" />
+                </View>
+                <View style={{ marginLeft: Spacing.md, flex: 1 }}>
+                  <ThemedText type="h4">{activeRequest.driver.name}</ThemedText>
+                </View>
+                <Pressable
+                  onPress={handleChat}
+                  style={[styles.chatBtn, { backgroundColor: theme.primary + "15" }]}
+                >
+                  <Feather name="message-circle" size={20} color={theme.primary} />
+                </Pressable>
+              </View>
+            </View>
+          ) : null}
 
-          <View style={styles.detailRow}>
-            <Feather name="map-pin" size={16} color={theme.primary} />
-            <ThemedText type="body" style={{ marginLeft: Spacing.sm, flex: 1 }}>
-              {activeRequest.location.address}
+          <View style={[styles.card, { backgroundColor: theme.backgroundDefault }]}>
+            <ThemedText type="small" style={{ color: theme.textSecondary, marginBottom: Spacing.md }}>
+              JOB PROGRESS
             </ThemedText>
+            <StatusTimeline currentStatus={activeRequest.status} theme={theme} />
           </View>
 
-          {activeRequest.notes ? (
-            <View style={[styles.detailRow, { marginTop: Spacing.sm }]}>
-              <Feather name="file-text" size={16} color={theme.textSecondary} />
-              <ThemedText type="small" style={{ marginLeft: Spacing.sm, flex: 1, color: theme.textSecondary }}>
-                {activeRequest.notes}
+          {activeRequest.status === "completed" ? (
+            <View style={[styles.completedBox, { backgroundColor: "#16A34A20", borderColor: "#16A34A40" }]}>
+              <Feather name="check-circle" size={24} color="#16A34A" />
+              <ThemedText type="h4" style={{ color: "#16A34A", marginTop: Spacing.sm }}>
+                Service Completed
+              </ThemedText>
+              <ThemedText type="body" style={{ color: theme.textSecondary, textAlign: "center", marginTop: Spacing.xs }}>
+                Great work! Payment will be processed automatically.
               </ThemedText>
             </View>
           ) : null}
-        </View>
+        </ScrollView>
 
-        {activeRequest.driver ? (
-          <View style={[styles.card, { backgroundColor: theme.backgroundDefault }]}>
-            <ThemedText type="small" style={{ color: theme.textSecondary, marginBottom: Spacing.sm }}>
-              CUSTOMER
-            </ThemedText>
-            <View style={styles.detailRow}>
-              <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
-                <Feather name="user" size={18} color="#FFFFFF" />
-              </View>
-              <View style={{ marginLeft: Spacing.md, flex: 1 }}>
-                <ThemedText type="h4">{activeRequest.driver.name}</ThemedText>
-              </View>
-              <Pressable
-                onPress={handleChat}
-                style={[styles.chatBtn, { backgroundColor: theme.primary + "15" }]}
-              >
-                <Feather name="message-circle" size={20} color={theme.primary} />
-              </Pressable>
-            </View>
-          </View>
-        ) : null}
-
-        <View style={[styles.card, { backgroundColor: theme.backgroundDefault }]}>
-          <ThemedText type="small" style={{ color: theme.textSecondary, marginBottom: Spacing.md }}>
-            JOB PROGRESS
-          </ThemedText>
-          <StatusTimeline currentStatus={activeRequest.status} theme={theme} />
-        </View>
-
+        {/* Advance button pinned above safe area inside the sheet */}
         {canAdvance ? (
-          <Pressable
-            onPress={handleAdvance}
-            disabled={advancing}
-            style={({ pressed }) => [
-              styles.advanceBtn,
-              {
-                backgroundColor: advancing ? theme.textSecondary : theme.primary,
-                opacity: pressed ? 0.85 : 1,
-              },
-            ]}
-          >
-            {advancing ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <>
-                <Feather name="chevrons-right" size={20} color="#FFFFFF" />
-                <ThemedText type="body" style={{ color: "#FFFFFF", fontWeight: "700", marginLeft: Spacing.sm }}>
-                  {config.nextLabel}
-                </ThemedText>
-              </>
-            )}
-          </Pressable>
-        ) : null}
-
-        {activeRequest.status === "completed" ? (
-          <View style={[styles.completedBox, { backgroundColor: "#16A34A20", borderColor: "#16A34A40" }]}>
-            <Feather name="check-circle" size={24} color="#16A34A" />
-            <ThemedText type="h4" style={{ color: "#16A34A", marginTop: Spacing.sm }}>
-              Service Completed
-            </ThemedText>
-            <ThemedText type="body" style={{ color: theme.textSecondary, textAlign: "center", marginTop: Spacing.xs }}>
-              Great work! Payment will be processed automatically.
-            </ThemedText>
+          <View style={{ paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm }}>
+            <Pressable
+              onPress={handleAdvance}
+              disabled={advancing}
+              style={({ pressed }) => [
+                styles.advanceBtn,
+                {
+                  backgroundColor: advancing ? theme.textSecondary : theme.primary,
+                  opacity: pressed ? 0.85 : 1,
+                },
+              ]}
+            >
+              {advancing ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <>
+                  <Feather name="chevrons-right" size={20} color="#FFFFFF" />
+                  <ThemedText type="body" style={{ color: "#FFFFFF", fontWeight: "700", marginLeft: Spacing.sm }}>
+                    {config.nextLabel}
+                  </ThemedText>
+                </>
+              )}
+            </Pressable>
           </View>
         ) : null}
-      </ScrollView>
+      </Animated.View>
     </ThemedView>
   );
 }
@@ -410,25 +468,6 @@ function StatusTimeline({ currentStatus, theme }: { currentStatus: ServiceStatus
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  mapSection: {
-    flex: 3,
-    width: "100%",
-    minHeight: 280,
-  },
-  detailsPanel: {
-    flex: 2,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    marginTop: -20,
-  },
-  panelHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "#D1D5DB",
-    alignSelf: "center",
-    marginVertical: Spacing.md,
-  },
   mapFallback: {
     flex: 1,
     alignItems: "center",
@@ -442,6 +481,36 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+
+  // Bottom sheet
+  sheet: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: EXPANDED_H,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 16,
+  },
+  handleArea: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.sm,
+  },
+  handle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#D1D5DB",
+    alignSelf: "center",
+    marginTop: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+
   statusBanner: {
     flexDirection: "row",
     alignItems: "center",
@@ -499,6 +568,7 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
     borderRadius: BorderRadius.md,
     gap: Spacing.sm,
+    marginBottom: Spacing.md,
   },
   completedBox: {
     borderRadius: BorderRadius.md,
