@@ -29,7 +29,6 @@ const serviceTypeLabels: Record<ServiceType, string> = {
   fuel: "Fuel Delivery",
   lockout: "Lockout",
   obd_diagnostic: "OBD Diagnostic",
-  other: "Other",
 };
 
 interface InputFieldProps {
@@ -210,7 +209,7 @@ export default function EditProfileScreen() {
     transform: [{ scale: scale.value }],
   }));
 
-  const allServices: ServiceType[] = ["flat_tire", "jump_start", "tow", "fuel", "lockout", "obd_diagnostic", "other"];
+  const allServices: ServiceType[] = ["flat_tire", "jump_start", "tow", "fuel", "lockout", "obd_diagnostic"];
 
   const handleAddContact = () => {
     if (!newContactName.trim() || !newContactPhone.trim()) {

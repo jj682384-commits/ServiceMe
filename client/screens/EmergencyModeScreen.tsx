@@ -118,7 +118,7 @@ export default function EmergencyModeScreen() {
     const driverName = currentDriver?.name || authUser?.name || "Driver";
     const job = {
       id: jobId,
-      serviceType: "other",
+      serviceType: "tow",
       notes: `EMERGENCY SOS — Priority dispatch. Driver: ${driverName}. Arrival PIN: ${arrivalPin}`,
       location: {
         address: location ? `${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}` : "Location not available",
@@ -134,7 +134,7 @@ export default function EmergencyModeScreen() {
 
     const serviceRequest = {
       id: jobId,
-      serviceType: "other" as const,
+      serviceType: "tow" as const,
       notes: job.notes,
       location: job.location,
       estimatedCost: 0,

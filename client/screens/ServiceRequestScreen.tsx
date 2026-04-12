@@ -34,7 +34,6 @@ const serviceTypes: { type: ServiceType; label: string; icon: keyof typeof Feath
   { type: "fuel", label: "Fuel Delivery", icon: "droplet", price: 0 },
   { type: "lockout", label: "Lockout", icon: "key", price: 55 },
   { type: "obd_diagnostic", label: "OBD Diagnostic", icon: "cpu", price: 21 },
-  { type: "other", label: "Other", icon: "more-horizontal", price: 55 },
 ];
 
 const FUEL_AMOUNTS: { label: string; desc: string; price: number }[] = [

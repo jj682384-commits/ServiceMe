@@ -44,7 +44,6 @@ const SERVICE_OPTIONS: { key: ServiceType; label: string; icon: keyof typeof Fea
   { key: "fuel", label: "Fuel Delivery", icon: "droplet" },
   { key: "lockout", label: "Lockout", icon: "key" },
   { key: "obd_diagnostic", label: "OBD Diagnostic", icon: "cpu" },
-  { key: "other", label: "Other", icon: "more-horizontal" },
 ];
 
 const LEGAL_DOCUMENTS = [

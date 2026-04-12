@@ -27,7 +27,6 @@ const SERVICE_ICONS: Record<string, keyof typeof Feather.glyphMap> = {
   lockout: "key",
   tow: "truck",
   obd_diagnostic: "cpu",
-  other: "more-horizontal",
 };
 
 function StarRating({ rating }: { rating: number }) {

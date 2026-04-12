@@ -22,7 +22,6 @@ const serviceTypeLabels: Record<ServiceType, string> = {
   fuel: "Fuel Delivery",
   lockout: "Lockout",
   obd_diagnostic: "OBD Diagnostic",
-  other: "Other",
 };
 
 const serviceTypeIcons: Record<ServiceType, keyof typeof Feather.glyphMap> = {
@@ -32,7 +31,6 @@ const serviceTypeIcons: Record<ServiceType, keyof typeof Feather.glyphMap> = {
   fuel: "droplet",
   lockout: "key",
   obd_diagnostic: "cpu",
-  other: "more-horizontal",
 };
 
 export default function ServiceDetailScreen() {

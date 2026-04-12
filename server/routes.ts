@@ -573,7 +573,7 @@ Based on these symptoms, provide a diagnosis and service recommendation. You MUS
   "likelyIssue": "short issue name (e.g. Dead Battery)",
   "description": "2-3 sentence explanation of the issue and what to expect",
   "costRange": "price range as string (e.g. $35 - $55)",
-  "serviceType": one of: "jump_start" | "flat_tire" | "fuel" | "lockout" | "towing" | "obd_diagnostic" | "other",
+  "serviceType": one of: "jump_start" | "flat_tire" | "fuel" | "lockout" | "towing" | "obd_diagnostic",
   "serviceLabel": "human-friendly service name",
   "confidence": integer 0-100,
   "tips": ["tip 1", "tip 2", "tip 3"]
@@ -799,7 +799,7 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
       if (tokens.length > 0) {
         const serviceLabels: Record<string, string> = {
           flat_tire: "Flat Tire", jump_start: "Jump Start", tow: "Tow Service",
-          fuel: "Fuel Delivery", lockout: "Lockout", obd_diagnostic: "OBD Diagnostic", other: "Roadside Assistance",
+          fuel: "Fuel Delivery", lockout: "Lockout", obd_diagnostic: "OBD Diagnostic",
         };
         const serviceLabel = serviceLabels[job.serviceType] || "Roadside Assistance";
         const urgency = job.isEmergency ? "EMERGENCY: " : "";
