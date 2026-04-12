@@ -1002,19 +1002,109 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
   app.get("/api/ev/chargers", async (req: Request, res: Response) => {
     const { lat, lon } = req.query as { lat?: string; lon?: string };
     if (!lat || !lon) return res.status(400).json({ error: "lat and lon required" });
+
+    const latNum = parseFloat(lat);
+    const lonNum = parseFloat(lon);
+
+    // Overpass API (OpenStreetMap) – free, no key, global coverage
+    const radiusMeters = 32000; // ~20 miles
+    const query =
+      `[out:json][timeout:20];` +
+      `(node["amenity"="charging_station"](around:${radiusMeters},${lat},${lon});` +
+      `way["amenity"="charging_station"](around:${radiusMeters},${lat},${lon}););` +
+      `out body center;`;
+
     try {
-      const url =
-        `https://api.openchargemap.io/v3/poi/?output=json` +
-        `&latitude=${lat}&longitude=${lon}` +
-        `&distance=20&distanceunit=Miles` +
-        `&maxresults=30&compact=true&verbose=false`;
-      const response = await fetch(url, {
-        headers: { "Accept": "application/json" },
-        signal: AbortSignal.timeout(10000),
+      const response = await fetch("https://overpass-api.de/api/interpreter", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: `data=${encodeURIComponent(query)}`,
+        signal: AbortSignal.timeout(20000),
       });
-      if (!response.ok) throw new Error(`OpenChargeMap responded ${response.status}`);
-      const data = await response.json();
-      res.json(data);
+
+      if (!response.ok) throw new Error(`Overpass responded ${response.status}`);
+
+      const json = await response.json() as { elements: Record<string, unknown>[] };
+
+      type OverpassEl = {
+        id: number;
+        lat?: number;
+        lon?: number;
+        center?: { lat: number; lon: number };
+        tags?: Record<string, string>;
+      };
+
+      const chargers = (json.elements as OverpassEl[])
+        .map((el) => {
+          const tags = el.tags ?? {};
+          const eLat = el.lat ?? el.center?.lat;
+          const eLon = el.lon ?? el.center?.lon;
+          if (!eLat || !eLon) return null;
+
+          // DC Fast detection via socket tags or maxpower
+          const hasDCFast =
+            !!tags["socket:chademo"] ||
+            !!tags["socket:ccs"] ||
+            !!tags["socket:type2_cable"] ||
+            !!tags["socket:tesla_supercharger"] ||
+            !!tags["socket:tesla_ccs"] ||
+            (!!tags["maxpower"] && parseInt(tags["maxpower"]) >= 50);
+
+          const capacity = Math.max(
+            parseInt(tags["capacity"] ?? "0") ||
+            parseInt(tags["capacity:charging"] ?? "0") ||
+            1,
+            1
+          );
+
+          const dLat = (eLat - latNum) * Math.PI / 180;
+          const dLon = (eLon - lonNum) * Math.PI / 180;
+          const a =
+            Math.sin(dLat / 2) ** 2 +
+            Math.cos(latNum * Math.PI / 180) * Math.cos(eLat * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+          const distMi = 3959 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+          const addrParts = [tags["addr:housenumber"], tags["addr:street"]].filter(Boolean);
+          const address =
+            addrParts.length > 0
+              ? addrParts.join(" ")
+              : tags["addr:city"] || tags["addr:suburb"] || "";
+
+          const name =
+            tags["name"] ||
+            tags["operator"] ||
+            tags["brand"] ||
+            "Charging Station";
+
+          const price =
+            tags["fee"] === "no"
+              ? "Free"
+              : tags["charge"] || tags["fee:conditional"] || "Varies";
+
+          const isOffline = tags["operational_status"] === "closed" ||
+            tags["disused:amenity"] === "charging_station";
+
+          return {
+            id: String(el.id),
+            name,
+            address,
+            latitude: eLat,
+            longitude: eLon,
+            distanceMi: distMi,
+            distance: distMi < 0.1 ? "< 0.1 mi" : `${distMi.toFixed(1)} mi`,
+            chargerCount: capacity,
+            available: isOffline ? 0 : capacity,
+            speed: hasDCFast ? "DC Fast" : "Level 2",
+            network: tags["operator"] || tags["brand"] || tags["network"] || "Unknown",
+            pricePerKwh: price,
+          };
+        })
+        .filter(Boolean)
+        .sort((a: any, b: any) => a.distanceMi - b.distanceMi)
+        .slice(0, 40);
+
+      console.log(`[ev/chargers] lat=${lat} lon=${lon} → ${chargers.length} stations`);
+      res.json(chargers);
     } catch (err) {
       console.error("[ev/chargers]", err);
       res.status(502).json({ error: "Failed to fetch charger data" });

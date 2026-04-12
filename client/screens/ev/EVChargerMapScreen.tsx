@@ -258,12 +258,8 @@ export default function EVChargerMapScreen() {
       url.searchParams.set("lon", String(lon));
       const res = await fetch(url.toString());
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = (await res.json()) as Record<string, unknown>[];
-      const mapped = data
-        .map((item) => mapApiToCharger(item, lat, lon))
-        .filter((c): c is ChargerStation => c !== null)
-        .sort((a, b) => a.distanceMi - b.distanceMi);
-      setChargers(mapped);
+      const data = (await res.json()) as ChargerStation[];
+      setChargers(data);
     } catch {
       setFetchError(true);
     } finally {
