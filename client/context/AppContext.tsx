@@ -86,6 +86,8 @@ export interface Driver {
   billingCycle?: BillingCycle;
 }
 
+export type EVService = "ev_charging" | "ev_towing" | "hv_certified";
+
 export interface Provider {
   id: string;
   name: string;
@@ -104,6 +106,8 @@ export interface Provider {
   verificationDocuments?: Record<string, boolean>;
   verificationSubmittedAt?: string;
   badges?: ProviderBadge[];
+  evCapable?: boolean;
+  evServices?: EVService[];
   location?: {
     latitude: number;
     longitude: number;

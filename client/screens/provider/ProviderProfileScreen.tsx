@@ -14,14 +14,19 @@ import { useApp, ServiceType, BACKGROUND_SCHEMES } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
-const serviceTypeLabels: Record<ServiceType, string> = {
+const serviceTypeLabels: Partial<Record<ServiceType, string>> = {
   flat_tire: "Flat Tire",
   jump_start: "Jump Start",
   tow: "Tow Service",
   fuel: "Fuel Delivery",
   lockout: "Lockout",
   obd_diagnostic: "OBD Diagnostic",
-  other: "Other",
+};
+
+const evServiceLabels: Record<string, { label: string; icon: keyof typeof Feather.glyphMap }> = {
+  ev_charging: { label: "Mobile EV Charging", icon: "zap" },
+  ev_towing: { label: "EV-Safe Towing", icon: "truck" },
+  hv_certified: { label: "High-Voltage Certified", icon: "shield" },
 };
 
 interface MenuItemProps {
@@ -202,6 +207,57 @@ export default function ProviderProfileScreen() {
 
         <View style={[styles.section, { backgroundColor: sectionBg }]}>
           <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
+            EV CAPABILITIES
+          </ThemedText>
+          {currentProvider?.evCapable ? (
+            <View>
+              <View style={styles.evBadgeRow}>
+                <View style={[styles.evActiveBadge, { backgroundColor: "#00C85318" }]}>
+                  <Feather name="zap" size={14} color="#00C853" />
+                  <ThemedText type="small" style={{ color: "#00C853", fontWeight: "700", marginLeft: 6 }}>
+                    EV Certified Provider
+                  </ThemedText>
+                </View>
+              </View>
+              {(currentProvider.evServices || []).map((key) => {
+                const info = evServiceLabels[key];
+                if (!info) return null;
+                return (
+                  <View key={key} style={styles.evServiceItemProfile}>
+                    <View style={[styles.evServiceIconProfile, { backgroundColor: "#00C85315" }]}>
+                      <Feather name={info.icon} size={16} color="#00C853" />
+                    </View>
+                    <ThemedText type="body">{info.label}</ThemedText>
+                  </View>
+                );
+              })}
+              {(currentProvider.evServices || []).length === 0 ? (
+                <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: Spacing.xs }}>
+                  No specific EV services selected yet. Tap Edit Profile to add them.
+                </ThemedText>
+              ) : null}
+              <MenuItem icon="edit" label="Update EV Services" onPress={() => navigation.navigate("EditProfile")} />
+            </View>
+          ) : (
+            <View style={styles.evOffRow}>
+              <Feather name="zap-off" size={18} color={theme.textSecondary} />
+              <View style={{ flex: 1 }}>
+                <ThemedText type="body" style={{ color: theme.textSecondary }}>
+                  Not offering EV services
+                </ThemedText>
+                <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: 2 }}>
+                  Enable in Edit Profile to accept EV job requests
+                </ThemedText>
+              </View>
+              <Pressable onPress={() => navigation.navigate("EditProfile")} style={[styles.evEnableBtn, { borderColor: theme.primary }]}>
+                <ThemedText type="small" style={{ color: theme.primary, fontWeight: "600" }}>Enable</ThemedText>
+              </Pressable>
+            </View>
+          )}
+        </View>
+
+        <View style={[styles.section, { backgroundColor: sectionBg }]}>
+          <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
             VERIFICATION
           </ThemedText>
           <MenuItem
@@ -344,4 +400,10 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.xs,
   },
+  evBadgeRow: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.xs, paddingBottom: Spacing.sm },
+  evActiveBadge: { flexDirection: "row", alignItems: "center", paddingHorizontal: Spacing.md, paddingVertical: 6, borderRadius: BorderRadius.xl, alignSelf: "flex-start" },
+  evServiceItemProfile: { flexDirection: "row", alignItems: "center", paddingVertical: Spacing.sm, paddingHorizontal: Spacing.lg, gap: Spacing.md },
+  evServiceIconProfile: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
+  evOffRow: { flexDirection: "row", alignItems: "center", paddingVertical: Spacing.md, paddingHorizontal: Spacing.lg, gap: Spacing.md },
+  evEnableBtn: { paddingHorizontal: Spacing.md, paddingVertical: 6, borderRadius: BorderRadius.md, borderWidth: 1.5 },
 });

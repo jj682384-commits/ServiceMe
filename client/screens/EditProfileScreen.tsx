@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, StyleSheet, Pressable, TextInput, Alert, ActivityIndicator, Keyboard } from "react-native";
+import { View, StyleSheet, Pressable, TextInput, Alert, ActivityIndicator, Keyboard, Switch } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Feather } from "@expo/vector-icons";
@@ -14,7 +14,7 @@ import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { useTheme } from "@/hooks/useTheme";
-import { useApp, ServiceType, EmergencyContact } from "@/context/AppContext";
+import { useApp, ServiceType, EVService, EmergencyContact } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { getApiUrl } from "@/lib/query-client";
 
@@ -195,6 +195,8 @@ export default function EditProfileScreen() {
   const [vehicleModel, setVehicleModel] = useState(currentProvider?.vehicleModel || "");
   const [licensePlate, setLicensePlate] = useState(currentProvider?.licensePlate || "");
   const [servicesOffered, setServicesOffered] = useState<ServiceType[]>(currentProvider?.servicesOffered || []);
+  const [evCapable, setEvCapable] = useState<boolean>(currentProvider?.evCapable ?? false);
+  const [evServices, setEvServices] = useState<EVService[]>(currentProvider?.evServices || []);
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -276,6 +278,8 @@ export default function EditProfileScreen() {
         vehicleModel: vehicleModel.trim(),
         licensePlate: licensePlate.trim().toUpperCase(),
         servicesOffered,
+        evCapable,
+        evServices: evCapable ? evServices : [],
       };
       setCurrentProvider(updatedProvider);
       try {
@@ -531,6 +535,56 @@ export default function EditProfileScreen() {
                 onToggle={handleToggleService}
               />
             </View>
+
+            <View style={styles.section}>
+              <ThemedText type="h4" style={styles.sectionTitle}>EV Services</ThemedText>
+              <View style={[styles.evCard, { backgroundColor: theme.backgroundDefault, borderColor: evCapable ? "#00C853" : theme.border }]}>
+                <View style={styles.evCardRow}>
+                  <View style={{ flex: 1 }}>
+                    <ThemedText type="body" style={{ fontWeight: "600" }}>Electric Vehicle Capable</ThemedText>
+                    <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: 2 }}>
+                      Accept EV-specific service requests from EV Mode
+                    </ThemedText>
+                  </View>
+                  <Switch
+                    value={evCapable}
+                    onValueChange={setEvCapable}
+                    trackColor={{ false: theme.border, true: "#00C853" }}
+                    thumbColor="#FFFFFF"
+                  />
+                </View>
+                {evCapable ? (
+                  <View style={styles.evServiceList}>
+                    <View style={[styles.evDividerEdit, { backgroundColor: theme.border }]} />
+                    <ThemedText type="small" style={[styles.evServicesLabelEdit, { color: theme.textSecondary }]}>
+                      Which EV services can you provide?
+                    </ThemedText>
+                    {([
+                      { key: "ev_charging" as EVService, label: "Mobile EV Charging", sub: "Portable DC fast charge or Level 2 unit" },
+                      { key: "ev_towing" as EVService, label: "EV-Safe Towing", sub: "Flatbed only, no drivetrain contact" },
+                      { key: "hv_certified" as EVService, label: "High-Voltage Certified", sub: "Trained to work around EV battery packs" },
+                    ]).map((s) => {
+                      const active = evServices.includes(s.key);
+                      return (
+                        <Pressable
+                          key={s.key}
+                          onPress={() => setEvServices((prev) => active ? prev.filter((x) => x !== s.key) : [...prev, s.key])}
+                          style={({ pressed }) => [styles.evServiceItem, { opacity: pressed ? 0.7 : 1, backgroundColor: active ? "#00C85310" : "transparent" }]}
+                        >
+                          <View style={{ flex: 1 }}>
+                            <ThemedText type="body" style={{ fontWeight: active ? "600" : "400" }}>{s.label}</ThemedText>
+                            <ThemedText type="small" style={{ color: theme.textSecondary }}>{s.sub}</ThemedText>
+                          </View>
+                          <View style={[styles.evCheckEdit, { borderColor: active ? "#00C853" : theme.border, backgroundColor: active ? "#00C853" : "transparent" }]}>
+                            {active ? <Feather name="check" size={12} color="#FFF" /> : null}
+                          </View>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                ) : null}
+              </View>
+            </View>
           </>
         ) : null}
 
@@ -740,4 +794,11 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
     marginTop: Spacing.xs,
   },
+  evCard: { borderWidth: 1.5, borderRadius: BorderRadius.lg, overflow: "hidden" },
+  evCardRow: { flexDirection: "row", alignItems: "center", padding: Spacing.md, gap: Spacing.md },
+  evServiceList: { paddingHorizontal: Spacing.md, paddingBottom: Spacing.sm },
+  evDividerEdit: { height: StyleSheet.hairlineWidth, marginBottom: Spacing.sm },
+  evServicesLabelEdit: { marginBottom: Spacing.sm, fontSize: 12 },
+  evServiceItem: { flexDirection: "row", alignItems: "center", paddingVertical: Spacing.sm, paddingHorizontal: Spacing.xs, borderRadius: BorderRadius.sm, gap: Spacing.md },
+  evCheckEdit: { width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, alignItems: "center", justifyContent: "center" },
 });

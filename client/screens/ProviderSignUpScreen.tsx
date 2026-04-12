@@ -18,7 +18,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import AnimatedBackground, { DARK_BG } from "@/components/AnimatedBackground";
 import { useTheme } from "@/hooks/useTheme";
-import { useApp, ServiceType } from "@/context/AppContext";
+import { useApp, ServiceType, EVService } from "@/context/AppContext";
 import { apiRequest, setAuthToken } from "@/lib/query-client";
 import { saveAuthToken } from "@/lib/secureStorage";
 import { Spacing, BorderRadius } from "@/constants/theme";
@@ -191,6 +191,80 @@ function ServiceSelector({ selected, onToggle }: { selected: ServiceType[]; onTo
   );
 }
 
+const EV_SERVICES: { key: EVService; label: string; desc: string; icon: keyof typeof Feather.glyphMap }[] = [
+  { key: "ev_charging", label: "Mobile EV Charging", desc: "You carry portable DC fast charge or Level 2 equipment", icon: "zap" },
+  { key: "ev_towing", label: "EV-Safe Towing", desc: "Flatbed only — no drivetrain contact, dolly not acceptable", icon: "truck" },
+  { key: "hv_certified", label: "High-Voltage Certified", desc: "Trained to work safely around EV battery packs", icon: "shield" },
+];
+
+function EVCapabilitySection({
+  evCapable,
+  setEvCapable,
+  evServices,
+  toggleEvService,
+}: {
+  evCapable: boolean;
+  setEvCapable: (v: boolean) => void;
+  evServices: EVService[];
+  toggleEvService: (s: EVService) => void;
+}) {
+  return (
+    <View style={styles.inputContainer}>
+      <View style={styles.evSectionHeader}>
+        <View style={styles.evSectionIconWrap}>
+          <Feather name="zap" size={16} color="#00E676" />
+        </View>
+        <ThemedText type="small" style={styles.inputLabel}>EV Services</ThemedText>
+      </View>
+
+      <View style={styles.evPromptCard}>
+        <View style={styles.evPromptRow}>
+          <View style={{ flex: 1 }}>
+            <ThemedText type="body" style={styles.evPromptTitle}>Can you service electric vehicles?</ThemedText>
+            <ThemedText type="small" style={styles.evPromptSub}>
+              Unlock EV job requests from drivers using EV Mode
+            </ThemedText>
+          </View>
+          <Pressable
+            onPress={() => setEvCapable(!evCapable)}
+            style={[styles.evToggle, evCapable ? styles.evToggleOn : styles.evToggleOff]}
+          >
+            <View style={[styles.evToggleThumb, evCapable ? styles.evToggleThumbOn : styles.evToggleThumbOff]} />
+          </Pressable>
+        </View>
+
+        {evCapable ? (
+          <View style={styles.evServicesWrap}>
+            <View style={[styles.evDivider]} />
+            <ThemedText type="small" style={styles.evServicesLabel}>Select the EV services you can provide:</ThemedText>
+            {EV_SERVICES.map((s) => {
+              const active = evServices.includes(s.key);
+              return (
+                <Pressable key={s.key} onPress={() => toggleEvService(s.key)} style={[styles.evServiceRow, active ? styles.evServiceRowActive : null]}>
+                  <View style={[styles.evServiceIcon, active ? styles.evServiceIconActive : null]}>
+                    <Feather name={s.icon} size={14} color={active ? "#00E676" : "rgba(255,255,255,0.4)"} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <ThemedText type="small" style={{ color: active ? "#FFF" : "rgba(255,255,255,0.7)", fontWeight: active ? "600" : "400", fontSize: 13 }}>
+                      {s.label}
+                    </ThemedText>
+                    <ThemedText type="small" style={{ color: active ? "rgba(0,230,118,0.7)" : "rgba(255,255,255,0.35)", fontSize: 11, marginTop: 1 }}>
+                      {s.desc}
+                    </ThemedText>
+                  </View>
+                  <View style={[styles.evCheckbox, active ? styles.evCheckboxActive : null]}>
+                    {active ? <Feather name="check" size={12} color="#FFF" /> : null}
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
 export default function ProviderSignUpScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
@@ -219,6 +293,12 @@ export default function ProviderSignUpScreen() {
   const [yearsExperience, setYearsExperience] = useState("");
   const [bio, setBio] = useState("");
   const [selectedServices, setSelectedServices] = useState<ServiceType[]>([]);
+  const [evCapable, setEvCapable] = useState(false);
+  const [evServices, setEvServices] = useState<EVService[]>([]);
+
+  const toggleEvService = useCallback((service: EVService) => {
+    setEvServices((prev) => prev.includes(service) ? prev.filter((s) => s !== service) : [...prev, service]);
+  }, []);
 
   const [companyName, setCompanyName] = useState("");
   const [businessAddress, setBusinessAddress] = useState("");
@@ -382,6 +462,8 @@ export default function ProviderSignUpScreen() {
         isAvailable: true,
         providerType,
         verificationStatus: "pending",
+        evCapable,
+        evServices: evCapable ? evServices : [],
         location: { latitude: 0, longitude: 0 },
       };
       apiRequest("POST", "/api/providers/register", providerProfile).catch(() => {});
@@ -511,6 +593,8 @@ export default function ProviderSignUpScreen() {
           <ServiceSelector selected={selectedServices} onToggle={toggleService} />
         </View>
 
+        <EVCapabilitySection evCapable={evCapable} setEvCapable={setEvCapable} evServices={evServices} toggleEvService={toggleEvService} />
+
         <InputField label="Brief Bio (optional)" value={bio} onChangeText={setBio} placeholder="Tell drivers about yourself..." icon="edit-3" multiline />
       </View>
     </Animated.View>
@@ -538,6 +622,8 @@ export default function ProviderSignUpScreen() {
           <ThemedText type="small" style={styles.inputLabel}>Services Offered</ThemedText>
           <ServiceSelector selected={selectedServices} onToggle={toggleService} />
         </View>
+
+        <EVCapabilitySection evCapable={evCapable} setEvCapable={setEvCapable} evServices={evServices} toggleEvService={toggleEvService} />
 
         <InputField label="Company Description (optional)" value={companyDescription} onChangeText={setCompanyDescription} placeholder="Describe your business..." icon="edit-3" multiline />
       </View>
@@ -973,4 +1059,25 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.07)",
     marginHorizontal: Spacing.lg,
   },
+  evSectionHeader: { flexDirection: "row", alignItems: "center", gap: 8 },
+  evSectionIconWrap: { width: 24, height: 24, borderRadius: 12, backgroundColor: "rgba(0,230,118,0.15)", alignItems: "center", justifyContent: "center" },
+  evPromptCard: { backgroundColor: "rgba(0,230,118,0.06)", borderWidth: 1, borderColor: "rgba(0,230,118,0.2)", borderRadius: 14, padding: 16 },
+  evPromptRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  evPromptTitle: { color: "#FFF", fontWeight: "600", fontSize: 14 },
+  evPromptSub: { color: "rgba(0,230,118,0.7)", fontSize: 12, marginTop: 2 },
+  evToggle: { width: 48, height: 28, borderRadius: 14, justifyContent: "center", paddingHorizontal: 2 },
+  evToggleOn: { backgroundColor: "#00E676" },
+  evToggleOff: { backgroundColor: "rgba(255,255,255,0.12)" },
+  evToggleThumb: { width: 22, height: 22, borderRadius: 11, backgroundColor: "#FFF" },
+  evToggleThumbOn: { alignSelf: "flex-end" },
+  evToggleThumbOff: { alignSelf: "flex-start" },
+  evServicesWrap: { marginTop: 4 },
+  evDivider: { height: StyleSheet.hairlineWidth, backgroundColor: "rgba(0,230,118,0.15)", marginVertical: 12 },
+  evServicesLabel: { color: "rgba(255,255,255,0.5)", fontSize: 12, marginBottom: 10 },
+  evServiceRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 10, paddingHorizontal: 10, borderRadius: 10, marginBottom: 6, backgroundColor: "rgba(255,255,255,0.03)", borderWidth: 1, borderColor: "rgba(255,255,255,0.05)" },
+  evServiceRowActive: { borderColor: "rgba(0,230,118,0.3)", backgroundColor: "rgba(0,230,118,0.06)" },
+  evServiceIcon: { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.06)" },
+  evServiceIconActive: { backgroundColor: "rgba(0,230,118,0.15)" },
+  evCheckbox: { width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
+  evCheckboxActive: { backgroundColor: "#00E676", borderColor: "#00E676" },
 });
