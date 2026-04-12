@@ -125,57 +125,71 @@ export default function ProviderDashboardScreen() {
     [requestHistory, currentProvider?.id]
   );
 
-  // Sync tips + ratings from server
+  // Sync tips + ratings from server — caps at 10 most recent jobs with a 5s timeout
   const syncFromServer = useCallback(async () => {
     let newTipTotal = 0;
     let newTipJobs = 0;
     let newReviewRating = 0;
     let newReviews = 0;
 
-    if (myJobs.length > 0) {
-      await Promise.all(
-        myJobs.map(async (r) => {
-          try {
-            const url = new URL(`/api/jobs/${r.id}`, getApiUrl());
-            const res = await fetch(url.toString(), {
-              headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
-            });
-            if (!res.ok) return;
-            const job = await res.json() as { tip?: number; totalCost?: number; driverRating?: number };
-            const updates: Record<string, unknown> = {};
-            if (typeof job.tip === "number" && job.tip > 0) {
-              const prevTip = r.tip ?? 0;
-              if (job.tip > prevTip) {
-                newTipTotal += job.tip - prevTip;
-                newTipJobs += 1;
-              }
-              updates.tip = job.tip;
-              updates.totalCost = job.totalCost;
+    // Only sync the 10 most recently completed jobs to keep refresh snappy
+    const recentJobs = [...myJobs]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 10);
+
+    if (recentJobs.length > 0) {
+      const fetchJob = async (r: typeof recentJobs[0]) => {
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 4000);
+          const url = new URL(`/api/jobs/${r.id}`, getApiUrl());
+          const res = await fetch(url.toString(), {
+            headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
+            signal: controller.signal,
+          });
+          clearTimeout(timer);
+          if (!res.ok) return;
+          const job = await res.json() as { tip?: number; totalCost?: number; driverRating?: number };
+          const updates: Record<string, unknown> = {};
+          if (typeof job.tip === "number" && job.tip > 0) {
+            const prevTip = r.tip ?? 0;
+            if (job.tip > prevTip) {
+              newTipTotal += job.tip - prevTip;
+              newTipJobs += 1;
             }
-            if (typeof job.driverRating === "number" && job.driverRating > 0) {
-              const prevRating = r.driverRating ?? 0;
-              if (prevRating === 0) {
-                newReviewRating = job.driverRating;
-                newReviews += 1;
-              }
-              updates.driverRating = job.driverRating;
-            }
-            if (Object.keys(updates).length > 0) {
-              updateHistoryEntry(r.id, updates as Partial<import("@/context/AppContext").ServiceRequest>);
-            }
-          } catch {
-            // silent — offline or server restarted
+            updates.tip = job.tip;
+            updates.totalCost = job.totalCost;
           }
-        })
-      );
+          if (typeof job.driverRating === "number" && job.driverRating > 0) {
+            const prevRating = r.driverRating ?? 0;
+            if (prevRating === 0) {
+              newReviewRating = job.driverRating;
+              newReviews += 1;
+            }
+            updates.driverRating = job.driverRating;
+          }
+          if (Object.keys(updates).length > 0) {
+            updateHistoryEntry(r.id, updates as Partial<import("@/context/AppContext").ServiceRequest>);
+          }
+        } catch {
+          // silent — aborted, offline, or server restarted
+        }
+      };
+
+      // Race all fetches against an overall 5s wall-clock timeout
+      const globalTimeout = new Promise<void>((resolve) => setTimeout(resolve, 5000));
+      await Promise.race([Promise.all(recentJobs.map(fetchJob)), globalTimeout]);
     }
 
     // Refresh provider's overall rating/reviewCount from server
     if (currentProvider?.id) {
       try {
+        const controller = new AbortController();
+        setTimeout(() => controller.abort(), 4000);
         const provUrl = new URL(`/api/providers/${currentProvider.id}`, getApiUrl());
         const provRes = await fetch(provUrl.toString(), {
           headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
+          signal: controller.signal,
         });
         if (provRes.ok) {
           const provData = await provRes.json() as { rating: number; reviewCount: number };
@@ -301,7 +315,15 @@ export default function ProviderDashboardScreen() {
           />
         }
       >
-        <ThemedText type="h2" style={{ marginBottom: Spacing.lg }}>Dashboard</ThemedText>
+        <View style={styles.dashboardTitleRow}>
+          <ThemedText type="h2">Dashboard</ThemedText>
+          <View style={styles.refreshHintInline}>
+            <Feather name="refresh-cw" size={12} color={theme.textSecondary} />
+            <ThemedText type="small" style={{ color: theme.textSecondary, marginLeft: 4 }}>
+              Pull down to sync tips & reviews
+            </ThemedText>
+          </View>
+        </View>
 
         <View style={[styles.welcomeBanner, { backgroundColor: theme.secondary + "15" }]}>
           <Feather name="heart" size={20} color={theme.secondary} />
@@ -441,13 +463,6 @@ export default function ProviderDashboardScreen() {
               </ThemedText>
             </View>
           </View>
-        </View>
-
-        <View style={[styles.refreshHint, { backgroundColor: cardBg }]}>
-          <Feather name="refresh-cw" size={14} color={theme.textSecondary} />
-          <ThemedText type="small" style={{ color: theme.textSecondary, marginLeft: Spacing.xs }}>
-            Pull down to sync tips, earnings and reviews
-          </ThemedText>
         </View>
 
         {myJobs.filter((r) => typeof r.driverRating === "number").length > 0 ? (
@@ -618,13 +633,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
-  refreshHint: {
+  dashboardTitleRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    padding: Spacing.sm,
-    borderRadius: BorderRadius.sm,
-    marginBottom: Spacing["2xl"],
+    justifyContent: "space-between",
+    marginBottom: Spacing.lg,
+  },
+  refreshHintInline: {
+    flexDirection: "row",
+    alignItems: "center",
+    opacity: 0.7,
   },
   emptyState: {
     alignItems: "center",
