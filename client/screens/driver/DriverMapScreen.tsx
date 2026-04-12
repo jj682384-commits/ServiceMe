@@ -462,7 +462,7 @@ export default function DriverMapScreen() {
           style={[
             styles.listContainer,
             {
-              bottom: activeRequest ? tabBarHeight + 100 : tabBarHeight + 80,
+              bottom: activeRequest ? tabBarHeight + 100 : tabBarHeight + 200,
               backgroundColor: theme.backgroundDefault,
               ...Shadows.lg,
             },
