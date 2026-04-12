@@ -226,14 +226,15 @@ export default function ProviderActiveJobScreen() {
       </View>
 
       <ScrollView
+        style={[styles.detailsPanel, { backgroundColor: theme.backgroundDefault }]}
         contentContainerStyle={{
-          paddingTop: Spacing.lg,
           paddingBottom: insets.bottom + Spacing.xl * 2,
           paddingHorizontal: Spacing.lg,
           gap: Spacing.lg,
         }}
         scrollIndicatorInsets={{ bottom: insets.bottom }}
       >
+        <View style={styles.panelHandle} />
         <View style={[styles.statusBanner, { backgroundColor: config.color + "20", borderColor: config.color + "40" }]}>
           <View style={[styles.statusDot, { backgroundColor: config.color }]} />
           <ThemedText type="body" style={{ color: config.color, fontWeight: "700", flex: 1 }}>
@@ -406,8 +407,22 @@ function StatusTimeline({ currentStatus, theme }: { currentStatus: ServiceStatus
 const styles = StyleSheet.create({
   container: { flex: 1 },
   mapSection: {
-    height: 220,
+    flex: 0.55,
     width: "100%",
+  },
+  detailsPanel: {
+    flex: 0.45,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    marginTop: -20,
+  },
+  panelHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#D1D5DB",
+    alignSelf: "center",
+    marginVertical: Spacing.md,
   },
   mapFallback: {
     flex: 1,
