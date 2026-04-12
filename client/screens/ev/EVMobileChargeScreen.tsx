@@ -1,12 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   StyleSheet,
   Pressable,
   ScrollView,
-  Modal,
-  Animated as RNAnimated,
-  Dimensions,
+  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
@@ -21,56 +19,32 @@ import Animated, {
 } from "react-native-reanimated";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useApp, ServiceRequest, PaymentMethod } from "@/context/AppContext";
+import { useApp, ServiceRequest } from "@/context/AppContext";
 import { useTheme } from "@/hooks/useTheme";
 import { getEVColors } from "@/constants/evColors";
-import { apiRequest } from "@/lib/query-client";
+import { useStripe } from "@/lib/stripe";
+import { getApiUrl } from "@/lib/query-client";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
-const { height: SCREEN_H } = Dimensions.get("window");
-
 const CHARGE_LEVELS = [
-  { label: "Quick Boost", kwh: "10 kWh", time: "~15 min", price: "$10", desc: "Get enough charge to reach the nearest station" },
-  { label: "Half Charge", kwh: "25 kWh", time: "~35 min", price: "$24", desc: "Enough for about 80 miles of range" },
-  { label: "Full Charge", kwh: "50 kWh", time: "~60 min", price: "$44", desc: "Top off your battery to near full capacity" },
+  { label: "Quick Boost", kwh: "10 kWh", time: "~15 min", price: 10, desc: "Get enough charge to reach the nearest station" },
+  { label: "Half Charge", kwh: "25 kWh", time: "~35 min", price: 24, desc: "Enough for about 80 miles of range" },
+  { label: "Full Charge", kwh: "50 kWh", time: "~60 min", price: 44, desc: "Top off your battery to near full capacity" },
 ];
 
 const SERVICE_FEE = 2.99;
 
-function cardIcon(type: PaymentMethod["type"]) {
-  const icons: Record<PaymentMethod["type"], "credit-card"> = {
-    visa: "credit-card",
-    mastercard: "credit-card",
-    amex: "credit-card",
-    discover: "credit-card",
-  };
-  return icons[type];
-}
-
-function cardLabel(type: PaymentMethod["type"]) {
-  const labels: Record<PaymentMethod["type"], string> = {
-    visa: "Visa",
-    mastercard: "Mastercard",
-    amex: "Amex",
-    discover: "Discover",
-  };
-  return labels[type];
-}
-
 export default function EVMobileChargeScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { getDefaultVehicle, userLocation, currentDriver, setActiveRequest, addToHistory, addPendingJob, paymentMethods } = useApp();
+  const { getDefaultVehicle, userLocation, currentDriver, setActiveRequest, addToHistory, addPendingJob } = useApp();
   const { isDark } = useTheme();
   const EV = getEVColors(isDark);
   const defaultVehicle = getDefaultVehicle();
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
 
   const [selectedLevel, setSelectedLevel] = useState(0);
-  const [showPayment, setShowPayment] = useState(false);
-  const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-
-  const sheetAnim = useRef(new RNAnimated.Value(SCREEN_H)).current;
 
   const pulseAnim = useSharedValue(0.6);
   useEffect(() => {
@@ -86,42 +60,62 @@ export default function EVMobileChargeScreen() {
     opacity: pulseAnim.value,
   }));
 
-  // Auto-select default payment method when modal opens
-  useEffect(() => {
-    if (showPayment) {
-      const def = paymentMethods.find((p) => p.isDefault) ?? paymentMethods[0] ?? null;
-      setSelectedPaymentId(def?.id ?? null);
-      RNAnimated.spring(sheetAnim, {
-        toValue: 0,
-        useNativeDriver: true,
-        friction: 8,
-        tension: 60,
-      }).start();
-    } else {
-      RNAnimated.timing(sheetAnim, {
-        toValue: SCREEN_H,
-        duration: 250,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [showPayment]);
-
   const level = CHARGE_LEVELS[selectedLevel];
-  const cost = parseFloat(level.price.replace("$", ""));
-  const total = cost + SERVICE_FEE;
+  const total = level.price + SERVICE_FEE;
 
-  const handleDispatch = async () => {
+  const handleReviewAndPay = async () => {
+    if (isProcessing) return;
     setIsProcessing(true);
+
     const jobId = `req-${Date.now()}`;
     const coords = userLocation ?? { latitude: 37.7849, longitude: -122.4094 };
 
+    // Step 1 — Create payment intent on server
+    try {
+      const piRes = await fetch(
+        new URL("/api/create-payment-intent", getApiUrl()).toString(),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ amount: total, jobId, serviceType: "fuel" }),
+        }
+      );
+      const piData = await piRes.json();
+      if (!piData.clientSecret) throw new Error("Payment setup failed");
+
+      // Step 2 — Init Stripe PaymentSheet
+      const { error: initError } = await initPaymentSheet({
+        paymentIntentClientSecret: piData.clientSecret,
+        merchantDisplayName: "ServiceMe",
+        allowsDelayedPaymentMethods: false,
+      });
+      if (initError) throw new Error(initError.message);
+
+      // Step 3 — Present the native Stripe payment sheet
+      const { error: payError } = await presentPaymentSheet();
+      if (payError) {
+        setIsProcessing(false);
+        if (payError.code !== "Canceled") {
+          Alert.alert("Payment Failed", payError.message);
+        }
+        return;
+      }
+    } catch (err: any) {
+      setIsProcessing(false);
+      Alert.alert("Payment Error", err.message || "Could not process payment. Please try again.");
+      return;
+    }
+
+    // Step 4 — Payment succeeded — dispatch the job
     const pendingJob: ServiceRequest = {
       id: jobId,
       serviceType: "fuel",
       notes: `EV Mobile Charge — ${level.label} (${level.kwh}, ${level.time})`,
       location: { address: "Current Location", latitude: coords.latitude, longitude: coords.longitude },
       status: "pending",
-      estimatedCost: total,
+      estimatedCost: level.price,
+      serviceFee: SERVICE_FEE,
+      totalCost: total,
       createdAt: new Date(),
       isEV: true,
       driver: currentDriver
@@ -129,27 +123,19 @@ export default function EVMobileChargeScreen() {
         : undefined,
     };
 
-    try {
-      await apiRequest("POST", "/api/jobs", {
-        id: jobId,
-        serviceType: "fuel",
-        notes: pendingJob.notes,
-        location: pendingJob.location,
-        estimatedCost: total,
-        driver: pendingJob.driver,
-        isEV: true,
-      });
-    } catch { /* proceed */ }
+    // POST to server in background so providers see the job
+    fetch(new URL("/api/jobs", getApiUrl()).toString(), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...pendingJob, createdAt: pendingJob.createdAt.toISOString() }),
+    }).catch(() => {});
 
     addPendingJob(pendingJob);
     setActiveRequest(pendingJob);
     addToHistory(pendingJob);
     setIsProcessing(false);
-    setShowPayment(false);
     navigation.replace("ActiveService");
   };
-
-  const selectedCard = paymentMethods.find((p) => p.id === selectedPaymentId) ?? null;
 
   return (
     <View style={[styles.container, { backgroundColor: EV.bg }]}>
@@ -221,7 +207,7 @@ export default function EVMobileChargeScreen() {
                 <Animated.Text style={[styles.levelName, { color: isSelected ? color : EV.white }]}>
                   {lv.label}
                 </Animated.Text>
-                <Animated.Text style={[styles.levelPrice, { color }]}>{lv.price}</Animated.Text>
+                <Animated.Text style={[styles.levelPrice, { color }]}>${lv.price}</Animated.Text>
               </View>
               <Animated.Text style={[styles.levelDesc, { color: EV.whiteDim }]}>{lv.desc}</Animated.Text>
               <View style={styles.levelMeta}>
@@ -249,6 +235,28 @@ export default function EVMobileChargeScreen() {
           <Feather name="navigation" size={16} color={EV.neonGreen} />
         </View>
 
+        {/* Price summary */}
+        <View style={[styles.priceSummary, { backgroundColor: EV.bgCard, borderColor: EV.border }]}>
+          <View style={styles.priceRow}>
+            <Animated.Text style={[styles.priceLabel, { color: EV.whiteDim }]}>
+              {level.label} ({level.kwh})
+            </Animated.Text>
+            <Animated.Text style={[styles.priceValue, { color: EV.white }]}>${level.price.toFixed(2)}</Animated.Text>
+          </View>
+          <View style={[styles.priceDivider, { backgroundColor: EV.border }]} />
+          <View style={styles.priceRow}>
+            <Animated.Text style={[styles.priceLabel, { color: EV.whiteDim }]}>Service fee</Animated.Text>
+            <Animated.Text style={[styles.priceValue, { color: EV.whiteDim }]}>${SERVICE_FEE.toFixed(2)}</Animated.Text>
+          </View>
+          <View style={[styles.priceDivider, { backgroundColor: EV.border }]} />
+          <View style={styles.priceRow}>
+            <Animated.Text style={[styles.priceLabel, { color: EV.neonGreen, fontWeight: "700" }]}>Total</Animated.Text>
+            <Animated.Text style={[styles.priceValue, { color: EV.neonGreen, fontWeight: "800", fontSize: 18 }]}>
+              ${total.toFixed(2)}
+            </Animated.Text>
+          </View>
+        </View>
+
         <View style={styles.infoRow}>
           <Feather name="shield" size={14} color={EV.neonGreen} />
           <Animated.Text style={[styles.infoText, { color: EV.whiteGhost }]}>
@@ -257,8 +265,12 @@ export default function EVMobileChargeScreen() {
         </View>
 
         <Pressable
-          onPress={() => setShowPayment(true)}
-          style={({ pressed }) => [styles.requestButton, { opacity: pressed ? 0.7 : 1 }]}
+          onPress={handleReviewAndPay}
+          disabled={isProcessing}
+          style={({ pressed }) => [
+            styles.requestButton,
+            { opacity: pressed || isProcessing ? 0.7 : 1 },
+          ]}
         >
           <LinearGradient
             colors={[EV.neonCyan, EV.neonBlue]}
@@ -266,161 +278,23 @@ export default function EVMobileChargeScreen() {
             end={{ x: 1, y: 0 }}
             style={styles.requestButtonGradient}
           >
-            <Feather name="zap" size={20} color="#000" />
-            <Animated.Text style={styles.requestButtonText}>Review & Pay</Animated.Text>
-            <Animated.Text style={[styles.requestButtonPrice, { color: "#000" }]}>{level.price}</Animated.Text>
+            <Feather name={isProcessing ? "loader" : "lock"} size={20} color="#000" />
+            <Animated.Text style={styles.requestButtonText}>
+              {isProcessing ? "Processing..." : "Pay & Request Charge"}
+            </Animated.Text>
+            <View style={styles.requestButtonBadge}>
+              <Animated.Text style={styles.requestButtonBadgeText}>${total.toFixed(2)}</Animated.Text>
+            </View>
           </LinearGradient>
         </Pressable>
+
+        <View style={styles.secureRow}>
+          <Feather name="lock" size={11} color={EV.whiteGhost} />
+          <Animated.Text style={[styles.secureText, { color: EV.whiteGhost }]}>
+            Secured by Stripe — charged only when a provider is dispatched
+          </Animated.Text>
+        </View>
       </ScrollView>
-
-      {/* Payment checkout sheet */}
-      <Modal
-        visible={showPayment}
-        transparent
-        animationType="none"
-        onRequestClose={() => setShowPayment(false)}
-      >
-        <Pressable style={styles.modalOverlay} onPress={() => setShowPayment(false)}>
-          <RNAnimated.View
-            style={[
-              styles.sheet,
-              { backgroundColor: EV.bgCard, paddingBottom: insets.bottom + 12 },
-              { transform: [{ translateY: sheetAnim }] },
-            ]}
-          >
-            <Pressable onPress={() => {}}>
-              {/* drag handle */}
-              <View style={[styles.sheetHandle, { backgroundColor: EV.border }]} />
-
-              <View style={styles.sheetHeader}>
-                <Animated.Text style={[styles.sheetTitle, { color: EV.white }]}>Order Summary</Animated.Text>
-                <Pressable onPress={() => setShowPayment(false)} hitSlop={12}>
-                  <Feather name="x" size={22} color={EV.whiteDim} />
-                </Pressable>
-              </View>
-
-              {/* Service details */}
-              <View style={[styles.summaryCard, { backgroundColor: EV.bg, borderColor: EV.border }]}>
-                <View style={styles.summaryRow}>
-                  <Feather name="zap" size={16} color={EV.neonCyan} />
-                  <Animated.Text style={[styles.summaryLabel, { color: EV.white }]}>
-                    Mobile Charge — {level.label}
-                  </Animated.Text>
-                  <Animated.Text style={[styles.summaryValue, { color: EV.white }]}>{level.price}</Animated.Text>
-                </View>
-                <View style={[styles.summaryDivider, { backgroundColor: EV.border }]} />
-                <View style={styles.summaryRow}>
-                  <Feather name="server" size={16} color={EV.whiteDim} />
-                  <Animated.Text style={[styles.summaryLabel, { color: EV.whiteDim }]}>Service fee</Animated.Text>
-                  <Animated.Text style={[styles.summaryValue, { color: EV.whiteDim }]}>
-                    ${SERVICE_FEE.toFixed(2)}
-                  </Animated.Text>
-                </View>
-                <View style={[styles.summaryDivider, { backgroundColor: EV.border }]} />
-                <View style={styles.summaryRow}>
-                  <Feather name="check-circle" size={16} color={EV.neonGreen} />
-                  <Animated.Text style={[styles.summaryLabel, { color: EV.neonGreen, fontWeight: "700" }]}>
-                    Total
-                  </Animated.Text>
-                  <Animated.Text style={[styles.summaryValue, { color: EV.neonGreen, fontWeight: "800", fontSize: 17 }]}>
-                    ${total.toFixed(2)}
-                  </Animated.Text>
-                </View>
-              </View>
-
-              {/* Payment method */}
-              <Animated.Text style={[styles.sheetSection, { color: EV.whiteDim }]}>Payment Method</Animated.Text>
-
-              {paymentMethods.length === 0 ? (
-                <View style={[styles.noCardBox, { borderColor: EV.border, backgroundColor: EV.bg }]}>
-                  <Feather name="credit-card" size={22} color={EV.whiteDim} />
-                  <Animated.Text style={[styles.noCardText, { color: EV.whiteDim }]}>
-                    No saved payment methods
-                  </Animated.Text>
-                  <Pressable
-                    onPress={() => {
-                      setShowPayment(false);
-                      navigation.navigate("PaymentMethods" as any);
-                    }}
-                    style={[styles.addCardBtn, { borderColor: EV.neonCyan + "50", backgroundColor: EV.neonCyan + "10" }]}
-                  >
-                    <Animated.Text style={[styles.addCardText, { color: EV.neonCyan }]}>Add Payment Method</Animated.Text>
-                  </Pressable>
-                </View>
-              ) : (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.cardScroll}
-                >
-                  {paymentMethods.map((pm) => {
-                    const isChosen = selectedPaymentId === pm.id;
-                    return (
-                      <Pressable
-                        key={pm.id}
-                        onPress={() => setSelectedPaymentId(pm.id)}
-                        style={[
-                          styles.cardChip,
-                          {
-                            borderColor: isChosen ? EV.neonCyan + "80" : EV.border,
-                            backgroundColor: isChosen ? EV.neonCyan + "12" : EV.bg,
-                          },
-                        ]}
-                      >
-                        <Feather name={cardIcon(pm.type)} size={18} color={isChosen ? EV.neonCyan : EV.whiteDim} />
-                        <View style={{ marginLeft: 8 }}>
-                          <Animated.Text style={[styles.cardChipLabel, { color: isChosen ? EV.white : EV.whiteDim }]}>
-                            {cardLabel(pm.type)} •••• {pm.last4}
-                          </Animated.Text>
-                          <Animated.Text style={[styles.cardChipSub, { color: EV.whiteGhost }]}>
-                            {pm.expiryMonth}/{pm.expiryYear}
-                          </Animated.Text>
-                        </View>
-                        {isChosen ? (
-                          <View style={[styles.cardChosen, { backgroundColor: EV.neonCyan }]}>
-                            <Feather name="check" size={10} color="#000" />
-                          </View>
-                        ) : null}
-                      </Pressable>
-                    );
-                  })}
-                </ScrollView>
-              )}
-
-              <Pressable
-                onPress={handleDispatch}
-                disabled={isProcessing || (paymentMethods.length > 0 && !selectedPaymentId)}
-                style={({ pressed }) => [
-                  styles.payButton,
-                  {
-                    opacity:
-                      pressed || isProcessing || (paymentMethods.length > 0 && !selectedPaymentId) ? 0.6 : 1,
-                  },
-                ]}
-              >
-                <LinearGradient
-                  colors={[EV.neonCyan, EV.neonBlue]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.payButtonGradient}
-                >
-                  <Feather name={isProcessing ? "loader" : "lock"} size={18} color="#000" />
-                  <Animated.Text style={styles.payButtonText}>
-                    {isProcessing ? "Processing..." : `Pay $${total.toFixed(2)} & Request`}
-                  </Animated.Text>
-                </LinearGradient>
-              </Pressable>
-
-              <View style={styles.secureRow}>
-                <Feather name="shield" size={12} color={EV.whiteGhost} />
-                <Animated.Text style={[styles.secureText, { color: EV.whiteGhost }]}>
-                  Secured payment — charged only when a provider is dispatched
-                </Animated.Text>
-              </View>
-            </Pressable>
-          </RNAnimated.View>
-        </Pressable>
-      </Modal>
     </View>
   );
 }
@@ -453,73 +327,30 @@ const styles = StyleSheet.create({
   levelMetaText: { fontSize: 12 },
   locationCard: {
     flexDirection: "row", alignItems: "center",
-    borderRadius: 14, borderWidth: 1, padding: 14, marginTop: 12, marginBottom: 16,
+    borderRadius: 14, borderWidth: 1, padding: 14, marginTop: 12, marginBottom: 20,
   },
   locationTitle: { fontSize: 14, fontWeight: "600" },
   locationAddr: { fontSize: 12, marginTop: 2 },
-  infoRow: { flexDirection: "row", alignItems: "flex-start", gap: 8, marginBottom: 24, paddingHorizontal: 4 },
+  priceSummary: {
+    borderRadius: 16, borderWidth: 1, padding: 16, marginBottom: 16,
+  },
+  priceRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 8 },
+  priceLabel: { fontSize: 14 },
+  priceValue: { fontSize: 14, fontWeight: "600" },
+  priceDivider: { height: StyleSheet.hairlineWidth, marginVertical: 2 },
+  infoRow: { flexDirection: "row", alignItems: "flex-start", gap: 8, marginBottom: 20, paddingHorizontal: 4 },
   infoText: { fontSize: 12, flex: 1, lineHeight: 17 },
-  requestButton: { borderRadius: 16, overflow: "hidden", marginBottom: 16 },
+  requestButton: { borderRadius: 16, overflow: "hidden", marginBottom: 10 },
   requestButtonGradient: {
-    flexDirection: "row", alignItems: "center", justifyContent: "center",
-    gap: 10, paddingVertical: 18, borderRadius: 16,
+    flexDirection: "row", alignItems: "center",
+    paddingVertical: 18, paddingHorizontal: 20, borderRadius: 16, gap: 10,
   },
   requestButtonText: { color: "#000", fontSize: 17, fontWeight: "800", letterSpacing: 0.3, flex: 1 },
-  requestButtonPrice: { fontSize: 17, fontWeight: "800" },
-
-  // Modal / sheet
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.55)",
-    justifyContent: "flex-end",
+  requestButtonBadge: {
+    backgroundColor: "rgba(0,0,0,0.18)", borderRadius: 10,
+    paddingHorizontal: 10, paddingVertical: 4,
   },
-  sheet: {
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 20,
-  },
-  sheetHandle: { width: 40, height: 4, borderRadius: 2, alignSelf: "center", marginBottom: 20 },
-  sheetHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 18 },
-  sheetTitle: { fontSize: 20, fontWeight: "800", letterSpacing: -0.3 },
-  summaryCard: { borderRadius: 16, borderWidth: 1, padding: 16, marginBottom: 20 },
-  summaryRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8 },
-  summaryLabel: { flex: 1, fontSize: 14 },
-  summaryValue: { fontSize: 14, fontWeight: "600" },
-  summaryDivider: { height: StyleSheet.hairlineWidth, marginVertical: 2 },
-  sheetSection: { fontSize: 12, fontWeight: "700", letterSpacing: 1.5, marginBottom: 12, textTransform: "uppercase" },
-  noCardBox: {
-    borderRadius: 16, borderWidth: 1, padding: 20,
-    alignItems: "center", gap: 10, marginBottom: 20,
-  },
-  noCardText: { fontSize: 14 },
-  addCardBtn: { borderRadius: 12, borderWidth: 1, paddingHorizontal: 20, paddingVertical: 10, marginTop: 4 },
-  addCardText: { fontSize: 14, fontWeight: "700" },
-  cardScroll: { paddingBottom: 16, gap: 10 },
-  cardChip: {
-    flexDirection: "row", alignItems: "center",
-    borderRadius: 14, borderWidth: 1.5,
-    paddingHorizontal: 14, paddingVertical: 12,
-    minWidth: 180,
-  },
-  cardChipLabel: { fontSize: 14, fontWeight: "600" },
-  cardChipSub: { fontSize: 11, marginTop: 2 },
-  cardChosen: {
-    width: 18, height: 18, borderRadius: 9,
-    alignItems: "center", justifyContent: "center",
-    marginLeft: "auto",
-  },
-  payButton: { borderRadius: 16, overflow: "hidden", marginTop: 8, marginBottom: 10 },
-  payButtonGradient: {
-    flexDirection: "row", alignItems: "center", justifyContent: "center",
-    gap: 10, paddingVertical: 18, borderRadius: 16,
-  },
-  payButtonText: { color: "#000", fontSize: 17, fontWeight: "800", letterSpacing: 0.3 },
-  secureRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 4 },
-  secureText: { fontSize: 11, textAlign: "center" },
+  requestButtonBadgeText: { color: "#000", fontSize: 15, fontWeight: "800" },
+  secureRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, marginBottom: 20 },
+  secureText: { fontSize: 11 },
 });
