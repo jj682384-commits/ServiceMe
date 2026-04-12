@@ -4,7 +4,6 @@ import {
   StyleSheet,
   Pressable,
   ScrollView,
-  Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
@@ -12,16 +11,18 @@ import { LinearGradient } from "expo-linear-gradient";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
   withRepeat,
   withTiming,
   Easing,
   cancelAnimation,
 } from "react-native-reanimated";
 import { useNavigation } from "@react-navigation/native";
-import { useApp } from "@/context/AppContext";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useApp, ServiceRequest } from "@/context/AppContext";
 import { useTheme } from "@/hooks/useTheme";
 import { getEVColors } from "@/constants/evColors";
+import { apiRequest } from "@/lib/query-client";
+import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 const CHARGE_LEVELS = [
   { label: "Quick Boost", kwh: "10 kWh", time: "~15 min", price: "$10", desc: "Get enough charge to reach the nearest station" },
@@ -31,15 +32,14 @@ const CHARGE_LEVELS = [
 
 export default function EVMobileChargeScreen() {
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation();
-  const { getDefaultVehicle, userLocation } = useApp();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { getDefaultVehicle, userLocation, currentDriver, setActiveRequest, addToHistory, addPendingJob } = useApp();
   const { isDark } = useTheme();
   const EV = getEVColors(isDark);
   const defaultVehicle = getDefaultVehicle();
 
   const [selectedLevel, setSelectedLevel] = useState(0);
   const [isRequesting, setIsRequesting] = useState(false);
-  const [requested, setRequested] = useState(false);
 
   const pulseAnim = useSharedValue(0.6);
   useEffect(() => {
@@ -55,70 +55,42 @@ export default function EVMobileChargeScreen() {
     opacity: pulseAnim.value,
   }));
 
-  const handleRequest = () => {
+  const handleRequest = async () => {
     setIsRequesting(true);
-    setTimeout(() => {
-      setIsRequesting(false);
-      setRequested(true);
-    }, 2000);
-  };
+    const level = CHARGE_LEVELS[selectedLevel];
+    const cost = parseFloat(level.price.replace("$", ""));
+    const jobId = `req-${Date.now()}`;
+    const coords = userLocation ?? { latitude: 37.7849, longitude: -122.4094 };
 
-  if (requested) {
-    return (
-      <View style={[styles.container, { backgroundColor: EV.bg }]}>
-        <LinearGradient
-          colors={[EV.neonGreen + "10", EV.neonCyan + "08", "transparent"]}
-          start={{ x: 0.5, y: 0 }}
-          end={{ x: 0.5, y: 0.5 }}
-          style={StyleSheet.absoluteFill}
-        />
-        <View style={[styles.confirmedContainer, { paddingTop: insets.top + 60, paddingBottom: insets.bottom + 20 }]}>
-          <View style={styles.confirmedIconWrap}>
-            <LinearGradient
-              colors={[EV.neonGreen + "30", EV.bgCard]}
-              style={styles.confirmedIconBg}
-            >
-              <Feather name="check-circle" size={56} color={EV.neonGreen} />
-            </LinearGradient>
-          </View>
-          <Animated.Text style={[styles.confirmedTitle, { color: EV.white }]}>Charge Unit Dispatched</Animated.Text>
-          <Animated.Text style={[styles.confirmedSub, { color: EV.whiteDim }]}>
-            A mobile charging unit is heading to your location. Estimated arrival in 12-18 minutes.
-          </Animated.Text>
-          <View style={[styles.confirmedCard, { borderColor: EV.neonGreen + "20", backgroundColor: EV.bgCard }]}>
-            <View style={styles.confirmedRow}>
-              <Animated.Text style={[styles.confirmedLabel, { color: EV.whiteDim }]}>Charge Level</Animated.Text>
-              <Animated.Text style={[styles.confirmedValue, { color: EV.white }]}>{CHARGE_LEVELS[selectedLevel].label}</Animated.Text>
-            </View>
-            <View style={[styles.confirmedDivider, { backgroundColor: EV.border }]} />
-            <View style={styles.confirmedRow}>
-              <Animated.Text style={[styles.confirmedLabel, { color: EV.whiteDim }]}>Energy</Animated.Text>
-              <Animated.Text style={[styles.confirmedValue, { color: EV.white }]}>{CHARGE_LEVELS[selectedLevel].kwh}</Animated.Text>
-            </View>
-            <View style={[styles.confirmedDivider, { backgroundColor: EV.border }]} />
-            <View style={styles.confirmedRow}>
-              <Animated.Text style={[styles.confirmedLabel, { color: EV.whiteDim }]}>Est. Time</Animated.Text>
-              <Animated.Text style={[styles.confirmedValue, { color: EV.white }]}>{CHARGE_LEVELS[selectedLevel].time}</Animated.Text>
-            </View>
-            <View style={[styles.confirmedDivider, { backgroundColor: EV.border }]} />
-            <View style={styles.confirmedRow}>
-              <Animated.Text style={[styles.confirmedLabel, { color: EV.whiteDim }]}>Cost</Animated.Text>
-              <Animated.Text style={[styles.confirmedValue, { color: EV.neonGreen }]}>{CHARGE_LEVELS[selectedLevel].price}</Animated.Text>
-            </View>
-          </View>
-          <Animated.Text style={[styles.confirmedPin, { color: EV.neonGreen }]}>
-            Verification PIN: 8472
-          </Animated.Text>
-          <Pressable
-            onPress={() => navigation.goBack()}
-            style={[styles.backToEvButton, { borderColor: EV.neonCyan + "40" }]}
-          >
-            <Animated.Text style={[styles.backToEvText, { color: EV.neonCyan }]}>Back to EV Hub</Animated.Text>
-          </Pressable>
-        </View>
-      </View>
-    );
-  }
+    const pendingJob: ServiceRequest = {
+      id: jobId,
+      serviceType: "fuel",
+      notes: `EV Mobile Charge — ${level.label} (${level.kwh}, ${level.time})`,
+      location: { address: "Current Location", latitude: coords.latitude, longitude: coords.longitude },
+      status: "pending",
+      estimatedCost: cost,
+      createdAt: new Date(),
+      driver: currentDriver ? { id: currentDriver.id, name: currentDriver.name, phone: currentDriver.phone, email: currentDriver.email } : undefined,
+    };
+
+    addPendingJob(pendingJob);
+    setActiveRequest(pendingJob);
+    addToHistory(pendingJob);
+    setIsRequesting(false);
+    navigation.replace("ActiveService");
+
+    // POST to server in background
+    try {
+      await apiRequest("POST", "/api/jobs", {
+        id: jobId,
+        serviceType: "fuel",
+        notes: pendingJob.notes,
+        location: pendingJob.location,
+        estimatedCost: cost,
+        driver: pendingJob.driver,
+      });
+    } catch { /* silent — local state already set */ }
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: EV.bg }]}>

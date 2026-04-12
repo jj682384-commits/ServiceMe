@@ -17,9 +17,12 @@ import Animated, {
   cancelAnimation,
 } from "react-native-reanimated";
 import { useNavigation } from "@react-navigation/native";
-import { useApp } from "@/context/AppContext";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useApp, ServiceRequest } from "@/context/AppContext";
 import { useTheme } from "@/hooks/useTheme";
 import { getEVColors } from "@/constants/evColors";
+import { apiRequest } from "@/lib/query-client";
+import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 const TOW_OPTIONS = [
   {
@@ -49,8 +52,8 @@ const DESTINATIONS = [
 
 export default function EVTowScreen() {
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation();
-  const { getDefaultVehicle, userLocation } = useApp();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { getDefaultVehicle, userLocation, currentDriver, setActiveRequest, addToHistory, addPendingJob } = useApp();
   const { isDark } = useTheme();
   const EV = getEVColors(isDark);
   const defaultVehicle = getDefaultVehicle();
@@ -58,7 +61,6 @@ export default function EVTowScreen() {
   const [selectedTow, setSelectedTow] = useState(0);
   const [selectedDest, setSelectedDest] = useState(0);
   const [isRequesting, setIsRequesting] = useState(false);
-  const [requested, setRequested] = useState(false);
 
   const pulseAnim = useSharedValue(0.5);
   useEffect(() => {
@@ -74,67 +76,43 @@ export default function EVTowScreen() {
     opacity: pulseAnim.value,
   }));
 
-  const handleRequest = () => {
+  const handleRequest = async () => {
     setIsRequesting(true);
-    setTimeout(() => {
-      setIsRequesting(false);
-      setRequested(true);
-    }, 2000);
-  };
+    const towOpt = TOW_OPTIONS[selectedTow];
+    const dest   = DESTINATIONS[selectedDest];
+    const cost   = parseFloat(towOpt.price.replace("$", ""));
+    const jobId  = `req-${Date.now()}`;
+    const coords = userLocation ?? { latitude: 37.7849, longitude: -122.4094 };
 
-  if (requested) {
-    return (
-      <View style={[styles.container, { backgroundColor: EV.bg }]}>
-        <LinearGradient
-          colors={[EV.neonPurple + "10", EV.neonBlue + "08", "transparent"]}
-          start={{ x: 0.5, y: 0 }}
-          end={{ x: 0.5, y: 0.5 }}
-          style={StyleSheet.absoluteFill}
-        />
-        <View style={[styles.confirmedContainer, { paddingTop: insets.top + 60, paddingBottom: insets.bottom + 20 }]}>
-          <View style={styles.confirmedIconWrap}>
-            <LinearGradient
-              colors={[EV.neonPurple + "30", EV.bgCard]}
-              style={styles.confirmedIconBg}
-            >
-              <Feather name="truck" size={48} color={EV.neonPurple} />
-            </LinearGradient>
-          </View>
-          <Animated.Text style={[styles.confirmedTitle, { color: EV.white }]}>Flatbed Dispatched</Animated.Text>
-          <Animated.Text style={[styles.confirmedSub, { color: EV.whiteDim }]}>
-            An EV-certified flatbed tow truck is on the way. Your vehicle will be safely transported.
-          </Animated.Text>
-          <View style={[styles.confirmedCard, { borderColor: EV.neonPurple + "20", backgroundColor: EV.bgCard }]}>
-            <View style={styles.confirmedRow}>
-              <Animated.Text style={[styles.confirmedLabel, { color: EV.whiteDim }]}>Tow Type</Animated.Text>
-              <Animated.Text style={[styles.confirmedValue, { color: EV.white }]}>{TOW_OPTIONS[selectedTow].label}</Animated.Text>
-            </View>
-            <View style={[styles.confirmedDivider, { backgroundColor: EV.border }]} />
-            <View style={styles.confirmedRow}>
-              <Animated.Text style={[styles.confirmedLabel, { color: EV.whiteDim }]}>Destination</Animated.Text>
-              <Animated.Text style={[styles.confirmedValue, { color: EV.white }]}>{DESTINATIONS[selectedDest].label}</Animated.Text>
-            </View>
-            <View style={[styles.confirmedDivider, { backgroundColor: EV.border }]} />
-            <View style={styles.confirmedRow}>
-              <Animated.Text style={[styles.confirmedLabel, { color: EV.whiteDim }]}>Est. Arrival</Animated.Text>
-              <Animated.Text style={[styles.confirmedValue, { color: EV.white }]}>{TOW_OPTIONS[selectedTow].eta}</Animated.Text>
-            </View>
-            <View style={[styles.confirmedDivider, { backgroundColor: EV.border }]} />
-            <View style={styles.confirmedRow}>
-              <Animated.Text style={[styles.confirmedLabel, { color: EV.whiteDim }]}>Cost</Animated.Text>
-              <Animated.Text style={[styles.confirmedValue, { color: EV.neonPurple }]}>{TOW_OPTIONS[selectedTow].price}</Animated.Text>
-            </View>
-          </View>
-          <Animated.Text style={[styles.confirmedPin, { color: EV.neonPurple }]}>
-            Verification PIN: 6391
-          </Animated.Text>
-          <Pressable onPress={() => navigation.goBack()} style={[styles.backButton2, { borderColor: EV.neonPurple + "40" }]}>
-            <Animated.Text style={[styles.backButton2Text, { color: EV.neonPurple }]}>Back to EV Hub</Animated.Text>
-          </Pressable>
-        </View>
-      </View>
-    );
-  }
+    const pendingJob: ServiceRequest = {
+      id: jobId,
+      serviceType: "tow",
+      notes: `EV Tow — ${towOpt.label} to ${dest.label}`,
+      location: { address: "Current Location", latitude: coords.latitude, longitude: coords.longitude },
+      status: "pending",
+      estimatedCost: cost,
+      createdAt: new Date(),
+      driver: currentDriver ? { id: currentDriver.id, name: currentDriver.name, phone: currentDriver.phone, email: currentDriver.email } : undefined,
+    };
+
+    addPendingJob(pendingJob);
+    setActiveRequest(pendingJob);
+    addToHistory(pendingJob);
+    setIsRequesting(false);
+    navigation.replace("ActiveService");
+
+    // POST to server in background
+    try {
+      await apiRequest("POST", "/api/jobs", {
+        id: jobId,
+        serviceType: "tow",
+        notes: pendingJob.notes,
+        location: pendingJob.location,
+        estimatedCost: cost,
+        driver: pendingJob.driver,
+      });
+    } catch { /* silent — local state already set */ }
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: EV.bg }]}>
