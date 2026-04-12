@@ -23,7 +23,7 @@ import { ScreenDecoration } from "@/components/ScreenDecoration";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceStatus, ServiceType } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
-import { getApiUrl } from "@/lib/query-client";
+import { getApiUrl, apiRequest } from "@/lib/query-client";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 const { height: SCREEN_H } = Dimensions.get("window");
@@ -144,10 +144,9 @@ export default function ProviderActiveJobScreen() {
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== "granted") return;
         const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-        await fetch(new URL(`/api/jobs/${activeRequest.id}/location`, getApiUrl()).toString(), {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ latitude: loc.coords.latitude, longitude: loc.coords.longitude }),
+        await apiRequest("PATCH", `/api/jobs/${activeRequest.id}/location`, {
+          latitude: loc.coords.latitude,
+          longitude: loc.coords.longitude,
         });
       } catch { /* silent */ }
     };
@@ -217,11 +216,7 @@ export default function ProviderActiveJobScreen() {
     setAdvancing(true);
     setActiveRequest({ ...activeRequest, status: nextStatus });
     updateHistoryEntry(activeRequest.id, { status: nextStatus });
-    fetch(new URL(`/api/jobs/${activeRequest.id}/status`, getApiUrl()).toString(), {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: nextStatus }),
-    }).catch(() => {});
+    apiRequest("PATCH", `/api/jobs/${activeRequest.id}/status`, { status: nextStatus }).catch(() => {});
     setAdvancing(false);
     if (nextStatus === "completed") safeGoBack();
   };

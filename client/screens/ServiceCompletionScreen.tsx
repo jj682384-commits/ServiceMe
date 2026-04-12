@@ -15,7 +15,7 @@ import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceType } from "@/context/AppContext";
-import { getApiUrl } from "@/lib/query-client";
+import { getApiUrl, apiRequest } from "@/lib/query-client";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { COMPETITOR_PRICES, SERVICE_FEE, SERVICE_TYPE_LABELS } from "@/constants/pricing";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
@@ -143,14 +143,9 @@ export default function ServiceCompletionScreen() {
     // Fire-and-forget: persist tip + rating to server.
     // Do NOT await — a slow/down server must never freeze the driver's UI.
     if (jobId) {
-      const url = new URL(`/api/jobs/${jobId}/tip`, getApiUrl());
       const body: Record<string, unknown> = { tip: tipAmount, totalCost: totalAmount };
       if (rating > 0) body.driverRating = rating;
-      fetch(url.toString(), {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      }).catch(() => {});
+      apiRequest("PATCH", `/api/jobs/${jobId}/tip`, body).catch(() => {});
     }
 
     setActiveRequest(null);

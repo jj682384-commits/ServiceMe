@@ -13,7 +13,7 @@ import { ScreenDecoration } from "@/components/ScreenDecoration";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceStatus, ServiceType, Provider } from "@/context/AppContext";
 import { Spacing, BorderRadius, Shadows } from "@/constants/theme";
-import { getApiUrl } from "@/lib/query-client";
+import { getApiUrl, apiRequest } from "@/lib/query-client";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import {
   notifyProviderEnRoute,
@@ -314,8 +314,7 @@ export default function ActiveServiceScreen() {
           style: "destructive",
           onPress: async () => {
             try {
-              const url = new URL(`/api/jobs/${activeRequest.id}/cancel`, getApiUrl());
-              await fetch(url.toString(), { method: "PATCH" });
+              await apiRequest("PATCH", `/api/jobs/${activeRequest.id}/cancel`);
             } catch {
             }
             updateHistoryEntry(activeRequest.id, { status: "cancelled" });
@@ -374,12 +373,7 @@ export default function ActiveServiceScreen() {
     setActiveRequest({ ...activeRequest, status: "completed" });
     updateHistoryEntry(activeRequest.id, { status: "completed" });
     try {
-      const url = new URL(`/api/jobs/${activeRequest.id}/status`, getApiUrl());
-      await fetch(url.toString(), {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "completed" }),
-      });
+      await apiRequest("PATCH", `/api/jobs/${activeRequest.id}/status`, { status: "completed" });
     } catch {
     }
     if (userRole === "driver") {
@@ -397,12 +391,7 @@ export default function ActiveServiceScreen() {
       setActiveRequest({ ...activeRequest, status: nextStatus });
       updateHistoryEntry(activeRequest.id, { status: nextStatus });
       try {
-        const url = new URL(`/api/jobs/${activeRequest.id}/status`, getApiUrl());
-        await fetch(url.toString(), {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: nextStatus }),
-        });
+        await apiRequest("PATCH", `/api/jobs/${activeRequest.id}/status`, { status: nextStatus });
       } catch {
       }
       if (nextStatus === "completed") {
