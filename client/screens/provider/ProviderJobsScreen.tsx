@@ -271,8 +271,9 @@ function JobCard({ job, onPress }: { job: ServiceRequest; onPress: () => void })
   };
 
   const iconColor = job.isEV ? EV_CYAN : theme.primary;
-  const iconBg = job.isEV ? EV_CYAN + "15" : theme.primary + "15";
-  const cardBorderColor = job.isEV ? EV_CYAN + "30" : "transparent";
+  const iconBg = job.isEV ? EV_CYAN + "25" : theme.primary + "15";
+  const cardBg = job.isEV ? "#0A1A2E" : theme.backgroundDefault;
+  const cardBorderColor = job.isEV ? EV_CYAN + "50" : "transparent";
 
   return (
     <Pressable
@@ -280,13 +281,16 @@ function JobCard({ job, onPress }: { job: ServiceRequest; onPress: () => void })
       style={({ pressed }) => [
         styles.jobCard,
         {
-          backgroundColor: theme.backgroundDefault,
-          borderWidth: job.isEV ? 1 : 0,
+          backgroundColor: cardBg,
+          borderWidth: 1,
           borderColor: cardBorderColor,
           opacity: pressed ? 0.92 : 1,
         },
       ]}
     >
+      {job.isEV ? (
+        <View style={{ height: 3, backgroundColor: EV_CYAN, marginHorizontal: -Spacing.lg, marginTop: -Spacing.lg, marginBottom: Spacing.md, borderTopLeftRadius: BorderRadius.md, borderTopRightRadius: BorderRadius.md }} />
+      ) : null}
       <View style={styles.jobHeader}>
         <View style={[styles.serviceIcon, { backgroundColor: iconBg }]}>
           <Feather name={jobIcon(job)} size={24} color={iconColor} />
