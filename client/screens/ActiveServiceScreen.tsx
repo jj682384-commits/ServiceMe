@@ -163,10 +163,11 @@ export default function ActiveServiceScreen() {
       // Fix server field name mismatch: server sends { lat, lng }, client expects { latitude, longitude }
       const rawLoc = job.providerLocation as { lat?: number; lng?: number; latitude?: number; longitude?: number } | undefined;
       if (rawLoc) {
-        setProviderLocation({
-          latitude: rawLoc.latitude ?? rawLoc.lat ?? 0,
-          longitude: rawLoc.longitude ?? rawLoc.lng ?? 0,
-        });
+        const lat = rawLoc.latitude ?? rawLoc.lat;
+        const lng = rawLoc.longitude ?? rawLoc.lng;
+        if (lat && lng && (lat !== 0 || lng !== 0)) {
+          setProviderLocation({ latitude: lat, longitude: lng });
+        }
       }
       const serverIdx = STATUS_ORDER.indexOf(job.status as ServiceStatus);
       const localIdx = STATUS_ORDER.indexOf(current.status);
@@ -240,10 +241,11 @@ export default function ActiveServiceScreen() {
 
         if (job.providerLocation) {
           const loc = job.providerLocation as { lat?: number; lng?: number; latitude?: number; longitude?: number };
-          setProviderLocation({
-            latitude: loc.latitude ?? loc.lat ?? 0,
-            longitude: loc.longitude ?? loc.lng ?? 0,
-          });
+          const lat = loc.latitude ?? loc.lat;
+          const lng = loc.longitude ?? loc.lng;
+          if (lat && lng && (lat !== 0 || lng !== 0)) {
+            setProviderLocation({ latitude: lat, longitude: lng });
+          }
         }
 
         // Always apply if server is ahead OR if server says completed regardless of local state
@@ -412,10 +414,10 @@ export default function ActiveServiceScreen() {
     });
   };
 
-  const userLat = activeRequest.location.latitude ?? 37.7849;
-  const userLng = activeRequest.location.longitude ?? -122.4094;
-  const providerLat = providerLocation?.latitude ?? activeRequest.provider?.location?.latitude ?? userLat + 0.01;
-  const providerLng = providerLocation?.longitude ?? activeRequest.provider?.location?.longitude ?? userLng + 0.01;
+  const userLat = activeRequest.location.latitude || 37.7849;
+  const userLng = activeRequest.location.longitude || -122.4094;
+  const providerLat = providerLocation?.latitude || activeRequest.provider?.location?.latitude || userLat + 0.01;
+  const providerLng = providerLocation?.longitude || activeRequest.provider?.location?.longitude || userLng + 0.01;
 
   const routeCoords = [
     { latitude: userLat, longitude: userLng },

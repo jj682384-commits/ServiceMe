@@ -854,12 +854,20 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
     const jobId = req.params.id;
     console.log(`[ACCEPT] job=${jobId}`);
     try {
+      const provLoc = req.body.providerLocation;
       const { rows } = await pool.query<JobRow>(
         `UPDATE jobs
-         SET status = 'accepted', provider = $2, eta = $3, updated_at = NOW()
+         SET status = 'accepted', provider = $2, eta = $3,
+             provider_location = COALESCE($4, provider_location),
+             updated_at = NOW()
          WHERE id = $1 AND status = 'pending'
          RETURNING *`,
-        [jobId, req.body.provider ? JSON.stringify(req.body.provider) : null, req.body.eta ?? 8]
+        [
+          jobId,
+          req.body.provider ? JSON.stringify(req.body.provider) : null,
+          req.body.eta ?? 8,
+          provLoc ? JSON.stringify(provLoc) : null,
+        ]
       );
       if (!rows.length) {
         // Check if it exists but was already taken

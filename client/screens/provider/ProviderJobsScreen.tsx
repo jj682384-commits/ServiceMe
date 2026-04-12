@@ -21,7 +21,8 @@ import { ScreenDecoration } from "@/components/ScreenDecoration";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceType, ServiceRequest } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
-import { getApiUrl } from "@/lib/query-client";
+import { getApiUrl, apiRequest } from "@/lib/query-client";
+import * as Location from "expo-location";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 const serviceTypeLabels: Record<ServiceType, string> = {
@@ -338,23 +339,34 @@ export default function ProviderJobsScreen() {
     if (!selectedJob || accepting) return;
     setAccepting(true);
 
+    // Try to get the provider's real GPS so the driver map shows the correct location
+    let providerLocation: { latitude: number; longitude: number } | undefined;
+    try {
+      const { status } = await Location.getForegroundPermissionsAsync();
+      if (status === "granted") {
+        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        providerLocation = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+      }
+    } catch {
+      // location unavailable — continue without it
+    }
+
+    try {
+      await apiRequest("PATCH", `/api/jobs/${selectedJob.id}/accept`, {
+        provider: currentProvider,
+        eta: 8,
+        providerLocation,
+      });
+    } catch {
+      // proceed with local state even if server call fails
+    }
+
     const acceptedJob: ServiceRequest = {
       ...selectedJob,
       status: "accepted",
       provider: currentProvider ?? undefined,
       eta: 8,
     };
-
-    try {
-      const url = new URL(`/api/jobs/${selectedJob.id}/accept`, getApiUrl());
-      await fetch(url.toString(), {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider: currentProvider, eta: 8 }),
-      });
-    } catch {
-      // proceed with local state even if server call fails
-    }
 
     updateHistoryEntry(selectedJob.id, {
       status: "accepted",
