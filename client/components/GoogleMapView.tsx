@@ -1,6 +1,6 @@
 import React from "react";
 import { Platform, StyleSheet } from "react-native";
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE, PROVIDER_DEFAULT } from "react-native-maps";
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE, PROVIDER_DEFAULT, Region } from "react-native-maps";
 
 export interface MapMarker {
   id: string;
@@ -17,6 +17,7 @@ interface GoogleMapViewProps {
   longitude: number;
   markers?: MapMarker[];
   onMarkerPress?: (marker: MapMarker) => void;
+  onRegionChangeComplete?: (center: { latitude: number; longitude: number }) => void;
   style?: any;
   showsUserLocation?: boolean;
   showRoute?: boolean;
@@ -48,6 +49,7 @@ export function GoogleMapView({
   longitude,
   markers = [],
   onMarkerPress,
+  onRegionChangeComplete,
   style,
   showsUserLocation = false,
   showRoute = false,
@@ -69,6 +71,9 @@ export function GoogleMapView({
       showsUserLocation={showsUserLocation}
       showsMyLocationButton={false}
       customMapStyle={mapStyle === "dark" && Platform.OS === "android" ? DARK_MAP_STYLE : []}
+      onRegionChangeComplete={(region: Region) => {
+        onRegionChangeComplete?.({ latitude: region.latitude, longitude: region.longitude });
+      }}
     >
       {markers.map((marker) => (
         <Marker

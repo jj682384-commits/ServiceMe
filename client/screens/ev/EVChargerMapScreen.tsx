@@ -231,6 +231,9 @@ export default function EVChargerMapScreen() {
   const [fetchError, setFetchError] = useState(false);
   // mapKey changes exactly once when real location arrives, forcing the map to re-center
   const [mapKey, setMapKey] = useState("init");
+  // track where chargers were loaded from and where the map is now centered
+  const [loadedCenter, setLoadedCenter] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [mapPannedCenter, setMapPannedCenter] = useState<{ latitude: number; longitude: number } | null>(null);
 
   const bottomSheetAnim = useRef(new RNAnimated.Value(0)).current;
   const pulseAnim = useSharedValue(0.8);
@@ -254,6 +257,7 @@ export default function EVChargerMapScreen() {
   const fetchChargers = useCallback(async (lat: number, lon: number) => {
     try {
       setFetchError(false);
+      setMapPannedCenter(null); // reset the panned-away state when loading starts
       const base = getApiUrl();
       const url = new URL("/api/ev/chargers", base);
       url.searchParams.set("lat", String(lat));
@@ -262,6 +266,7 @@ export default function EVChargerMapScreen() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = (await res.json()) as ChargerStation[];
       setChargers(data);
+      setLoadedCenter({ latitude: lat, longitude: lon });
     } catch {
       setFetchError(true);
     } finally {
@@ -296,6 +301,37 @@ export default function EVChargerMapScreen() {
     setRefreshing(true);
     await fetchChargers(userCoords.latitude, userCoords.longitude);
   }, [userCoords, fetchChargers]);
+
+  // Distance in miles between two lat/lon points (haversine)
+  const milesApart = (
+    a: { latitude: number; longitude: number },
+    b: { latitude: number; longitude: number }
+  ) => {
+    const R = 3959;
+    const dLat = ((b.latitude - a.latitude) * Math.PI) / 180;
+    const dLon = ((b.longitude - a.longitude) * Math.PI) / 180;
+    const x =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos((a.latitude * Math.PI) / 180) *
+        Math.cos((b.latitude * Math.PI) / 180) *
+        Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+  };
+
+  // True when the user has panned the map more than 1.5 miles from the loaded area
+  const showSearchHere =
+    !loading &&
+    !fetchError &&
+    !!mapPannedCenter &&
+    !!loadedCenter &&
+    milesApart(mapPannedCenter, loadedCenter) > 1.5;
+
+  const handleRegionChange = useCallback(
+    (center: { latitude: number; longitude: number }) => {
+      setMapPannedCenter(center);
+    },
+    []
+  );
 
   const filteredChargers = chargers
     .filter((c) => {
@@ -414,10 +450,21 @@ export default function EVChargerMapScreen() {
         </Pressable>
       </View>
 
-      {Platform.OS !== "web" && !locationDenied && (loading || fetchError) ? (
+      {Platform.OS !== "web" && !locationDenied && (loading || fetchError || showSearchHere) ? (
         <View style={[
           styles.inlineNotice,
-          { backgroundColor: fetchError ? ev.neonPink + "18" : ev.bgCard, borderColor: fetchError ? ev.neonPink + "40" : ev.border },
+          {
+            backgroundColor: fetchError
+              ? ev.neonPink + "18"
+              : showSearchHere
+              ? ev.neonCyan + "12"
+              : ev.bgCard,
+            borderColor: fetchError
+              ? ev.neonPink + "40"
+              : showSearchHere
+              ? ev.neonCyan + "40"
+              : ev.border,
+          },
         ]}>
           {loading ? (
             <>
@@ -426,7 +473,7 @@ export default function EVChargerMapScreen() {
                 Finding chargers near you...
               </Animated.Text>
             </>
-          ) : (
+          ) : fetchError ? (
             <>
               <Feather name="wifi-off" size={14} color={ev.neonPink} />
               <Animated.Text style={[styles.noticeText, { color: ev.whiteDim, flex: 1 }]}>
@@ -439,6 +486,24 @@ export default function EVChargerMapScreen() {
                 style={[styles.noticeRetry, { backgroundColor: ev.neonCyan + "25" }]}
               >
                 <Animated.Text style={[styles.noticeRetryText, { color: ev.neonCyan }]}>Retry</Animated.Text>
+              </Pressable>
+            </>
+          ) : (
+            <>
+              <Feather name="map-pin" size={14} color={ev.neonCyan} />
+              <Animated.Text style={[styles.noticeText, { color: ev.whiteDim, flex: 1 }]}>
+                New area detected
+              </Animated.Text>
+              <Pressable
+                onPress={() => {
+                  if (mapPannedCenter) {
+                    setLoading(true);
+                    fetchChargers(mapPannedCenter.latitude, mapPannedCenter.longitude);
+                  }
+                }}
+                style={[styles.noticeRetry, { backgroundColor: ev.neonCyan + "25" }]}
+              >
+                <Animated.Text style={[styles.noticeRetryText, { color: ev.neonCyan }]}>Search here</Animated.Text>
               </Pressable>
             </>
           )}
@@ -476,6 +541,7 @@ export default function EVChargerMapScreen() {
                   color: c.available === 0 ? "#FF3D00" : c.id === selectedCharger ? "#00FF88" : "#00D4FF",
                 }))}
                 onMarkerPress={(m) => handleMarkerPress(m.id)}
+                onRegionChangeComplete={handleRegionChange}
                 mapStyle="dark"
                 style={StyleSheet.absoluteFill}
               />
