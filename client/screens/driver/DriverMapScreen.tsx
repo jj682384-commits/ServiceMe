@@ -14,7 +14,7 @@ import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import Animated, { useAnimatedStyle, useSharedValue, withSpring, interpolate } from "react-native-reanimated";
+import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, Easing, interpolate } from "react-native-reanimated";
 import * as Location from "expo-location";
 import { useQuery } from "@tanstack/react-query";
 import { getApiUrl } from "@/lib/query-client";
@@ -361,7 +361,13 @@ export default function DriverMapScreen() {
   const toggleHub = () => {
     const next = !hubOpen;
     setHubOpen(next);
-    hubAnim.value = withSpring(next ? 1 : 0, { damping: 18, stiffness: 180 });
+    if (next) {
+      // Opening: spring feels natural popping up
+      hubAnim.value = withSpring(1, { damping: 20, stiffness: 220 });
+    } else {
+      // Closing: fast ease-in so it snaps shut immediately
+      hubAnim.value = withTiming(0, { duration: 180, easing: Easing.in(Easing.quad) });
+    }
   };
 
   const hubContainerStyle = useAnimatedStyle(() => ({
@@ -442,7 +448,7 @@ export default function DriverMapScreen() {
     // Collapse hub when a provider card slides in
     if (hubOpen) {
       setHubOpen(false);
-      hubAnim.value = withSpring(0, { damping: 18, stiffness: 180 });
+      hubAnim.value = withTiming(0, { duration: 180, easing: Easing.in(Easing.quad) });
     }
     RNAnimated.spring(slideAnim, { toValue: 0, useNativeDriver: true, tension: 65, friction: 11 }).start();
   };
