@@ -379,9 +379,8 @@ export default function DriverMapScreen() {
     }
   };
 
-  // Swipe-down gesture to collapse the hub
+  // Swipe-down gesture — only applied to the header zone, not the ScrollView
   const swipeDownGesture = Gesture.Pan()
-    .activeOffsetY([0, 8])   // only activate for clearly downward moves
     .onUpdate((e) => {
       if (!hubIsOpen.value) return;
       dragY.value = Math.max(0, e.translationY);
@@ -647,7 +646,6 @@ export default function DriverMapScreen() {
       {/* Nearby Mechanics Hub — collapsible pill that expands into a list */}
       {hasPermission && !selectedProvider &&
       (!activeRequest || activeRequest.status === "completed" || activeRequest.status === "cancelled") ? (
-        <GestureDetector gesture={swipeDownGesture}>
         <Animated.View
           style={[
             styles.hubContainer,
@@ -671,33 +669,37 @@ export default function DriverMapScreen() {
 
           {/* Expanded content — fades in on open */}
           <Animated.View style={[{ flex: 1 }, hubExpandedOpacity]} pointerEvents={hubOpen ? "auto" : "none"}>
-            {/* Drag handle — visual cue to swipe down */}
-            <View style={styles.dragHandleRow}>
-              <View style={[styles.dragHandleBar, { backgroundColor: theme.border }]} />
-            </View>
-            <View style={[styles.listHeader, { borderBottomColor: theme.border }]}>
-              <View style={styles.listHeaderLeft}>
-                <ThemedText type="h4">Nearby Mechanics</ThemedText>
-                {freeCount > 0 ? (
-                  <View style={[styles.onlinePill, { backgroundColor: COLOR_FREE + "20" }]}>
-                    <View style={[styles.statusDotSmall, { backgroundColor: COLOR_FREE }]} />
-                    <ThemedText type="small" style={{ color: COLOR_FREE, fontWeight: "700", fontSize: 10 }}>
-                      {freeCount} online
-                    </ThemedText>
+            {/* Drag handle — gesture lives here only, no ScrollView conflict */}
+            <GestureDetector gesture={swipeDownGesture}>
+              <View style={styles.dragHandleZone}>
+                <View style={styles.dragHandleRow}>
+                  <View style={[styles.dragHandleBar, { backgroundColor: theme.border }]} />
+                </View>
+                <View style={[styles.listHeader, { borderBottomColor: theme.border }]}>
+                  <View style={styles.listHeaderLeft}>
+                    <ThemedText type="h4">Nearby Mechanics</ThemedText>
+                    {freeCount > 0 ? (
+                      <View style={[styles.onlinePill, { backgroundColor: COLOR_FREE + "20" }]}>
+                        <View style={[styles.statusDotSmall, { backgroundColor: COLOR_FREE }]} />
+                        <ThemedText type="small" style={{ color: COLOR_FREE, fontWeight: "700", fontSize: 10 }}>
+                          {freeCount} online
+                        </ThemedText>
+                      </View>
+                    ) : null}
                   </View>
-                ) : null}
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: Spacing.md }}>
+                    <Pressable onPress={() => navigation.navigate("BrowseProviders")}>
+                      <ThemedText type="small" style={{ color: theme.primary, fontWeight: "600" }}>
+                        Browse All ({filteredProviders.length})
+                      </ThemedText>
+                    </Pressable>
+                    <Pressable onPress={toggleHub}>
+                      <Feather name="chevron-down" size={18} color={theme.textSecondary} />
+                    </Pressable>
+                  </View>
+                </View>
               </View>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: Spacing.md }}>
-                <Pressable onPress={() => navigation.navigate("BrowseProviders")}>
-                  <ThemedText type="small" style={{ color: theme.primary, fontWeight: "600" }}>
-                    Browse All ({filteredProviders.length})
-                  </ThemedText>
-                </Pressable>
-                <Pressable onPress={toggleHub}>
-                  <Feather name="chevron-down" size={18} color={theme.textSecondary} />
-                </Pressable>
-              </View>
-            </View>
+            </GestureDetector>
             <ScrollView style={styles.listScroll} showsVerticalScrollIndicator={false}>
               {filteredProviders.length === 0 ? (
                 <View style={styles.emptyState}>
@@ -719,7 +721,6 @@ export default function DriverMapScreen() {
             </ScrollView>
           </Animated.View>
         </Animated.View>
-        </GestureDetector>
       ) : null}
 
       {/* Active service — compact right-aligned pill matching FAB style */}
@@ -871,6 +872,9 @@ const styles = StyleSheet.create({
   hubPillInner: {
     flex: 1, flexDirection: "row", alignItems: "center",
     paddingHorizontal: Spacing.md, gap: Spacing.sm, height: HUB_PILL_H,
+  },
+  dragHandleZone: {
+    // Tappable/swipeable header zone — gesture lives here only
   },
   dragHandleRow: {
     alignItems: "center", paddingTop: 8, paddingBottom: 2,
