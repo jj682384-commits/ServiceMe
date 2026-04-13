@@ -724,7 +724,7 @@ export default function DriverMapScreen() {
         <Animated.View
           style={[
             styles.hubContainer,
-            { bottom: tabBarHeight + ACTION_ROW_H + Spacing.md, backgroundColor: theme.backgroundDefault, ...Shadows.lg },
+            { bottom: tabBarHeight + ACTION_ROW_H + Spacing.xl, backgroundColor: theme.backgroundDefault, ...Shadows.lg },
             hubContainerStyle,
           ]}
         >
@@ -835,7 +835,7 @@ export default function DriverMapScreen() {
           onLayout={(e) => { rowWidthSV.value = e.nativeEvent.layout.width; }}
           style={[
             styles.actionRow,
-            { bottom: tabBarHeight + Spacing.xs, backgroundColor: theme.backgroundDefault, ...Shadows.md },
+            { bottom: tabBarHeight + Spacing.lg, backgroundColor: theme.backgroundDefault, ...Shadows.md },
           ]}
         >
           {/* Diagnose chip */}
