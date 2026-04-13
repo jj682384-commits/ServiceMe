@@ -160,7 +160,7 @@ function JobDetailSheet({
                 ${job.estimatedCost}
               </ThemedText>
               <ThemedText type="small" style={{ color: theme.success, opacity: 0.8 }}>
-                {job.isExpress && currentProvider?.acceptsPriorityJobs
+                {job.isExpress && acceptsPriorityJobs
                   ? "Estimated payout (after 10% priority fee)"
                   : "Estimated payout (after 15% fee)"}
               </ThemedText>
