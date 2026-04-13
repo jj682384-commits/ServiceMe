@@ -29,10 +29,13 @@ const SERVICE_LABELS: Record<string, string> = {
 export function useActiveJobTracker() {
   const { activeRequest, setActiveRequest, updateHistoryEntry, userRole } = useApp();
 
-  const activeRequestRef = useRef(activeRequest);
-  const pollRef          = useRef<ReturnType<typeof setInterval> | null>(null);
-  const wsRef            = useRef<WebSocket | null>(null);
-  const prevStatusRef    = useRef<ServiceStatus | null>(null);
+  const activeRequestRef          = useRef(activeRequest);
+  const pollRef                   = useRef<ReturnType<typeof setInterval> | null>(null);
+  const wsRef                     = useRef<WebSocket | null>(null);
+  const prevStatusRef             = useRef<ServiceStatus | null>(null);
+  // Guard: once we've sent the driver to ServiceCompletion, don't do it again
+  // until a brand-new job starts (activeRequest goes null → new id)
+  const hasNavigatedCompletionRef = useRef(false);
 
   // Keep ref in sync so polling closures always read the latest value
   useEffect(() => { activeRequestRef.current = activeRequest; }, [activeRequest]);
@@ -48,9 +51,12 @@ export function useActiveJobTracker() {
       const current = activeRequestRef.current;
       if (!current || job.id !== current.id) return;
       if (job.status === "cancelled") { setActiveRequest(null); return; }
+      // Never re-trigger once already completed — avoids re-launching ServiceCompletion
+      if (current.status === "completed") return;
       const serverIdx = STATUS_ORDER.indexOf(job.status as ServiceStatus);
       const localIdx  = STATUS_ORDER.indexOf(current.status);
-      if (serverIdx > localIdx || job.status === "completed" || (job.provider && !current.provider)) {
+      const providerChanged = !!(job.provider && !current.provider);
+      if (serverIdx > localIdx || providerChanged) {
         const newStatus   = job.status as ServiceStatus;
         const newProvider = (job.provider as Provider | undefined) ?? current.provider;
         setActiveRequest({
@@ -112,7 +118,8 @@ export function useActiveJobTracker() {
 
         const serverIdx = STATUS_ORDER.indexOf(job.status as ServiceStatus);
         const localIdx  = STATUS_ORDER.indexOf(cur.status);
-        if (serverIdx > localIdx || job.status === "completed" || (job.provider && !cur.provider)) {
+        const providerChanged = !!(job.provider && !cur.provider);
+        if (serverIdx > localIdx || providerChanged) {
           const newStatus   = job.status as ServiceStatus;
           const newProvider = job.provider ? (job.provider as Provider) : cur.provider;
           setActiveRequest({
@@ -152,8 +159,20 @@ export function useActiveJobTracker() {
   }, [activeRequest?.status]);
 
   // ── Navigate to completion screen when job finishes ───────────────────────
+  // Reset the guard whenever a new job starts so a future completion can navigate again
   useEffect(() => {
-    if (activeRequest?.status === "completed" && userRole === "driver") {
+    if (!activeRequest) {
+      hasNavigatedCompletionRef.current = false;
+    }
+  }, [activeRequest]);
+
+  useEffect(() => {
+    if (
+      activeRequest?.status === "completed" &&
+      userRole === "driver" &&
+      !hasNavigatedCompletionRef.current
+    ) {
+      hasNavigatedCompletionRef.current = true;
       navigateTo("ServiceCompletion");
     }
   }, [activeRequest?.status]);
