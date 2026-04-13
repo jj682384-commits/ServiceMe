@@ -1,6 +1,4 @@
 import { useEffect, useRef } from "react";
-import { useNavigation } from "@react-navigation/native";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { getApiUrl } from "@/lib/query-client";
 import { useApp, ServiceStatus, Provider } from "@/context/AppContext";
 import {
@@ -8,7 +6,7 @@ import {
   notifyProviderArrived,
   notifyServiceComplete,
 } from "@/lib/notifications";
-import type { RootStackParamList } from "@/navigation/RootStackNavigator";
+import { navigateTo } from "@/lib/navigationRef";
 
 const STATUS_ORDER: ServiceStatus[] = [
   "pending", "accepted", "en_route", "arrived", "in_progress", "completed", "cancelled",
@@ -30,7 +28,6 @@ const SERVICE_LABELS: Record<string, string> = {
  */
 export function useActiveJobTracker() {
   const { activeRequest, setActiveRequest, updateHistoryEntry, userRole } = useApp();
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const activeRequestRef = useRef(activeRequest);
   const pollRef          = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -157,7 +154,7 @@ export function useActiveJobTracker() {
   // ── Navigate to completion screen when job finishes ───────────────────────
   useEffect(() => {
     if (activeRequest?.status === "completed" && userRole === "driver") {
-      navigation.navigate("ServiceCompletion");
+      navigateTo("ServiceCompletion");
     }
   }, [activeRequest?.status]);
 }
