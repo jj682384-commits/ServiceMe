@@ -82,7 +82,7 @@ export default function ChatScreen() {
   const headerHeight = useHeaderHeight();
   const { theme } = useTheme();
   const route = useRoute<ChatRouteProp>();
-  const { userRole, currentDriver, currentProvider } = useApp();
+  const { userRole, currentDriver, currentProvider, updateHistoryEntry } = useApp();
   const flatListRef = useRef<FlatList>(null);
   const [inputText, setInputText] = useState("");
 
@@ -111,10 +111,16 @@ export default function ChatScreen() {
   }, [messages.length]);
 
   const handleSend = () => {
-    if (!inputText.trim()) return;
-    sendMessage(inputText.trim());
+    const text = inputText.trim();
+    if (!text) return;
+    sendMessage(text);
     setInputText("");
     Keyboard.dismiss();
+    // Stamp the conversation so the Messages list knows real messages exist
+    updateHistoryEntry(route.params.conversationId, {
+      lastChatMessage: text,
+      lastChatMessageAt: new Date(),
+    });
   };
 
   return (

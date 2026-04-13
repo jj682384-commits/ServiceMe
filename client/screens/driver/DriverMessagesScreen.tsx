@@ -23,24 +23,15 @@ const SERVICE_LABELS: Record<string, string> = {
   other: "Other",
 };
 
-const STATUS_PREVIEWS: Record<string, string> = {
-  completed: "Service completed successfully",
-  cancelled: "Service was cancelled",
-  accepted: "Provider is on the way",
-  en_route: "Provider is heading to you",
-  arrived: "Provider has arrived",
-  in_progress: "Service is in progress",
-  pending: "Waiting for a provider",
-};
 
 function getConversations(requestHistory: ServiceRequest[]) {
   return requestHistory
-    .filter((r) => r.provider !== undefined && r.status !== "pending")
+    .filter((r) => r.provider !== undefined && r.lastChatMessage !== undefined)
     .map((r) => ({
       id: r.id,
       providerName: r.provider!.name,
-      lastMessage: STATUS_PREVIEWS[r.status] ?? "Service request",
-      timestamp: r.createdAt,
+      lastMessage: r.lastChatMessage!,
+      timestamp: r.lastChatMessageAt ?? r.createdAt,
       serviceType: SERVICE_LABELS[r.serviceType] ?? r.serviceType,
     }))
     .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());

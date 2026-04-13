@@ -23,26 +23,17 @@ const SERVICE_LABELS: Record<string, string> = {
   other: "Other",
 };
 
-const STATUS_PREVIEWS: Record<string, string> = {
-  completed: "Service completed successfully",
-  cancelled: "Service was cancelled",
-  accepted: "Job accepted, heading to driver",
-  en_route: "Heading to the driver",
-  arrived: "Arrived at location",
-  in_progress: "Service in progress",
-  pending: "New job request",
-};
 
 const avatarColors = ["#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#14B8A6"];
 
 function getConversations(requestHistory: ServiceRequest[]) {
   return requestHistory
-    .filter((r) => r.driver !== undefined)
+    .filter((r) => r.driver !== undefined && r.lastChatMessage !== undefined)
     .map((r) => ({
       id: r.id,
       driverName: r.driver!.name,
-      lastMessage: STATUS_PREVIEWS[r.status] ?? "Service request",
-      timestamp: r.createdAt,
+      lastMessage: r.lastChatMessage!,
+      timestamp: r.lastChatMessageAt ?? r.createdAt,
       serviceType: SERVICE_LABELS[r.serviceType] ?? r.serviceType,
     }))
     .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());

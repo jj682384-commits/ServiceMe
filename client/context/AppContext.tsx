@@ -70,6 +70,8 @@ export interface ServiceRequest {
   timeSaved?: number;
   scheduledDate?: Date;
   isEV?: boolean;
+  lastChatMessage?: string;      // set when the first real message is sent
+  lastChatMessageAt?: Date;      // timestamp for sorting
 }
 
 export type BillingCycle = "monthly" | "yearly";
