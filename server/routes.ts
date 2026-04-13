@@ -842,10 +842,22 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
           isEV,
         ]
       );
-      const job = rows.length ? rowToJob(rows[0]) : { ...data, status: "pending", isEV, createdAt: new Date().toISOString() } as JobRecord;
 
-      // Instantly notify all connected provider WebSocket clients about the new job
-      broadcastJobUpdate(job as JobRecord);
+      // If conflict fired (DO NOTHING), fetch the existing row so we return real DB state
+      let job: JobRecord;
+      if (rows.length > 0) {
+        job = rowToJob(rows[0]);
+      } else {
+        const existing = await pool.query<JobRow>("SELECT * FROM jobs WHERE id = $1", [data.id]);
+        job = existing.rows.length
+          ? rowToJob(existing.rows[0])
+          : { ...data, status: "pending", isEV, createdAt: new Date().toISOString() } as JobRecord;
+      }
+
+      // Only broadcast if the job is still pending (don't re-advertise accepted/cancelled jobs)
+      if (job.status === "pending") {
+        broadcastJobUpdate(job as JobRecord);
+      }
 
       // Push notifications — EV jobs only go to EV-capable providers
       const providerQuery = isEV

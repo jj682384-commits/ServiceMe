@@ -367,25 +367,13 @@ export default function ProviderJobsScreen() {
 
   const { data: serverJobs } = useQuery<ServiceRequest[]>({
     queryKey: ["/api/jobs/pending"],
-    queryFn: async () => {
-      const baseUrl = getApiUrl();
-      const url = new URL("/api/jobs/pending", baseUrl);
-      url.searchParams.set("_t", Date.now().toString());
-      let res: Response;
-      try {
-        res = await fetch(url.toString(), { cache: "no-store" });
-      } catch {
-        return [];
-      }
-      if (!res.ok) return [];
-      const data = await res.json();
-      return data.map((j: Record<string, unknown>) => ({
+    select: (data: unknown) =>
+      (data as Record<string, unknown>[]).map((j) => ({
         ...j,
         createdAt: new Date(j.createdAt as string),
-      })) as ServiceRequest[];
-    },
+      })) as ServiceRequest[],
     refetchInterval: 1000,
-    enabled: true,
+    staleTime: 0,
   });
 
   // WebSocket: instantly receive new job broadcasts instead of waiting for next poll
