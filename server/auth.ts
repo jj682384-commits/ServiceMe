@@ -4,17 +4,37 @@ import { promisify } from "util";
 
 const scrypt = promisify(crypto.scrypt);
 
+// v2 hashes encode the cost parameter so we can tune it without breaking old accounts.
+// Format: "v2:<N>:<salt>:<hash>"   (old format: "<salt>:<hash>" used N=16384)
+const SCRYPT_N = 4096;  // 4× faster than the 16384 default, still secure for token-based auth
+
 export async function hashPassword(password: string): Promise<string> {
   const salt = crypto.randomBytes(16).toString("hex");
-  const hash = (await scrypt(password, salt, 64)) as Buffer;
-  return `${salt}:${hash.toString("hex")}`;
+  const hash = (await scrypt(password, salt, 64, { N: SCRYPT_N })) as Buffer;
+  return `v2:${SCRYPT_N}:${salt}:${hash.toString("hex")}`;
 }
 
 export async function verifyPassword(password: string, stored: string): Promise<boolean> {
-  const [salt, hash] = stored.split(":");
-  if (!salt || !hash) return false;
-  const derived = (await scrypt(password, salt, 64)) as Buffer;
-  return crypto.timingSafeEqual(Buffer.from(derived.toString("hex")), Buffer.from(hash));
+  try {
+    if (stored.startsWith("v2:")) {
+      // New format: v2:<N>:<salt>:<hash>
+      const parts = stored.split(":");
+      if (parts.length < 4) return false;
+      const N = parseInt(parts[1], 10);
+      const salt = parts[2];
+      const hash = parts.slice(3).join(":");  // rejoin in case hash contains colons
+      const derived = (await scrypt(password, salt, 64, { N })) as Buffer;
+      return crypto.timingSafeEqual(Buffer.from(derived.toString("hex")), Buffer.from(hash));
+    } else {
+      // Legacy format: <salt>:<hash> — verify with the old default N=16384
+      const [salt, hash] = stored.split(":");
+      if (!salt || !hash) return false;
+      const derived = (await scrypt(password, salt, 64, { N: 16384 })) as Buffer;
+      return crypto.timingSafeEqual(Buffer.from(derived.toString("hex")), Buffer.from(hash));
+    }
+  } catch {
+    return false;
+  }
 }
 
 export async function createSession(userId: string): Promise<string> {

@@ -134,14 +134,13 @@ export default function SignInScreen() {
 
       if (data.role === "provider") {
         setUserRole("provider");
-        try {
-          const provRes = await apiRequest("GET", `/api/providers/by-email/${encodeURIComponent(data.email)}`);
-          if (provRes.ok) {
-            const provData = await provRes.json();
-            setCurrentProvider(provData);
-          }
-        } catch {}
+        // Navigate immediately — don't block on the provider-data fetch
         navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "ProviderTabs" }] }));
+        // Load provider profile in the background after the screen is already open
+        apiRequest("GET", `/api/providers/by-email/${encodeURIComponent(data.email)}`)
+          .then((provRes) => provRes.ok ? provRes.json() : null)
+          .then((provData) => { if (provData) setCurrentProvider(provData); })
+          .catch(() => {});
       } else {
         navigateAfterAuth();
       }
