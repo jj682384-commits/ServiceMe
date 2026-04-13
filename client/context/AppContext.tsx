@@ -85,6 +85,8 @@ export interface Driver {
   trialEndDate?: Date;
   isOnTrial?: boolean;
   billingCycle?: BillingCycle;
+  freeServicesUsed?: number;
+  freeServicesReset?: string;
 }
 
 export type EVService = "ev_charging" | "ev_towing" | "hv_certified";
@@ -372,6 +374,7 @@ interface AppContextType {
   setBackgroundColorScheme: (scheme: BackgroundColorScheme) => void;
   pendingJobs: ServiceRequest[];
   addPendingJob: (job: ServiceRequest) => void;
+  useFreeService: () => void;
   removePendingJob: (id: string) => void;
   logout: () => void;
 }
@@ -561,9 +564,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const upgradeMembership = (tier: MembershipTier, cycle?: BillingCycle) => {
     if (currentDriver) {
       const selectedCycle = cycle || billingCycle;
-      setCurrentDriver({ ...currentDriver, membership: tier, isOnTrial: false, billingCycle: selectedCycle });
+      const now = new Date();
+      const resetDate = new Date(now);
+      if (selectedCycle === "yearly") {
+        resetDate.setFullYear(resetDate.getFullYear() + 1);
+      } else {
+        resetDate.setMonth(resetDate.getMonth() + 1);
+      }
+      setCurrentDriver({
+        ...currentDriver,
+        membership: tier,
+        isOnTrial: false,
+        billingCycle: selectedCycle,
+        freeServicesUsed: 0,
+        freeServicesReset: tier === "premium" ? resetDate.toISOString() : undefined,
+      });
       if (cycle) setBillingCycle(cycle);
     }
+  };
+
+  const useFreeService = () => {
+    if (!currentDriver || currentDriver.membership !== "premium") return;
+    const now = new Date();
+    const cycle = currentDriver.billingCycle ?? "monthly";
+    const existingReset = currentDriver.freeServicesReset ? new Date(currentDriver.freeServicesReset) : null;
+    const isPastReset = !existingReset || now > existingReset;
+    const newUsed = isPastReset ? 1 : (currentDriver.freeServicesUsed ?? 0) + 1;
+    const newReset = isPastReset ? (() => {
+      const d = new Date(now);
+      if (cycle === "yearly") d.setFullYear(d.getFullYear() + 1);
+      else d.setMonth(d.getMonth() + 1);
+      return d.toISOString();
+    })() : currentDriver.freeServicesReset;
+    setCurrentDriver({ ...currentDriver, freeServicesUsed: newUsed, freeServicesReset: newReset });
   };
 
   const startFreeTrial = () => {
@@ -783,6 +816,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setBackgroundColorScheme,
         pendingJobs,
         addPendingJob,
+        useFreeService,
         removePendingJob,
         logout,
       }}

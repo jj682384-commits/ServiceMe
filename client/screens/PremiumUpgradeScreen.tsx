@@ -199,9 +199,9 @@ export default function PremiumUpgradeScreen() {
               <ThemedText type="small" style={{ fontWeight: "600", color: theme.primary }}>Premium</ThemedText>
             </View>
           </View>
-          <ComparisonRow feature="Jump starts" free="Full price" premium="Free" />
-          <ComparisonRow feature="Tow service" free="Full price" premium="Discounted" />
+          <ComparisonRow feature="Free services" free="None" premium={selectedTab === "yearly" ? "2/year" : "1/month"} />
           <ComparisonRow feature="All services" free="Standard" premium="20% off" />
+          <ComparisonRow feature="Tow service" free="Full price" premium="Discounted" />
           <ComparisonRow feature="Priority response" free={false} premium={true} />
           <ComparisonRow feature="24/7 support" free={false} premium={true} />
           <ComparisonRow feature="Extended coverage" free={false} premium={true} />
@@ -209,9 +209,13 @@ export default function PremiumUpgradeScreen() {
 
         <View style={[styles.benefitsCard, { backgroundColor: theme.backgroundDefault }]}>
           <ThemedText type="h4" style={styles.benefitsTitle}>Premium Benefits</ThemedText>
-          <BenefitRow icon="battery-charging" title="Free Jump Starts" description="Unlimited free jump start service included" />
-          <BenefitRow icon="truck" title="Discounted Tows" description="Reduced rates on all towing services" />
+          <BenefitRow
+            icon="gift"
+            title="Free Services Included"
+            description={selectedTab === "yearly" ? "2 free services per year — any service type" : "1 free service per month — any service type"}
+          />
           <BenefitRow icon="percent" title="20% Off All Services" description="Save on every roadside assistance request" />
+          <BenefitRow icon="truck" title="Discounted Tows" description="Reduced rates on all towing services" />
           <BenefitRow icon="zap" title="Priority Response" description="Get connected to providers faster" />
           <BenefitRow icon="shield" title="Extended Coverage" description="Coverage in more remote areas" />
           <BenefitRow icon="clock" title="24/7 Priority Support" description="Skip the queue when you need help" />

@@ -149,7 +149,7 @@ export default function ServiceRequestScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const { theme } = useTheme();
-  const { nearbyProviders, getProvidersWithDistance, setActiveRequest, addToHistory, addPendingJob, currentDriver, getDefaultVehicle } = useApp();
+  const { nearbyProviders, getProvidersWithDistance, setActiveRequest, addToHistory, addPendingJob, currentDriver, getDefaultVehicle, useFreeService } = useApp();
   const defaultVehicle = getDefaultVehicle();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, "ServiceRequest">>();
@@ -200,6 +200,9 @@ export default function ServiceRequestScreen() {
   const isPremium = currentDriver?.membership === "premium";
   const selectedServiceData = serviceTypes.find((s) => s.type === selectedService);
   const isFuelSelected = selectedService === "fuel";
+  const isJumpStart = selectedService === "jump_start";
+  const [addBatteryCheck, setAddBatteryCheck] = useState(false);
+  const batteryCheckFee = isJumpStart && addBatteryCheck ? 8 : 0;
   const parsedCustom = parseFloat(customFuelAmount);
   const customFuelValid = useCustomFuel && !isNaN(parsedCustom) && parsedCustom > 0;
   const fuelPrice = useCustomFuel ? (customFuelValid ? parsedCustom : 0) : (FUEL_AMOUNTS[selectedFuelIndex]?.price || 0);
@@ -207,10 +210,26 @@ export default function ServiceRequestScreen() {
   const discountAmount = isPremium ? basePrice * PREMIUM_DISCOUNT : 0;
   const discountedBasePrice = basePrice - discountAmount;
   const expressFee = isExpress ? EXPRESS_FEE : 0;
-  const totalCost = discountedBasePrice + SERVICE_FEE + expressFee;
-
   const isScheduled = scheduleMode === "later";
   const scheduleValid = !isScheduled || selectedTimeIndex !== null;
+
+  // Free service allowance
+  const freeAllowance = isPremium ? (currentDriver?.billingCycle === "yearly" ? 2 : 1) : 0;
+  const freeServicesRemaining = (() => {
+    if (!isPremium || !currentDriver) return 0;
+    const now = new Date();
+    const resetDate = currentDriver.freeServicesReset ? new Date(currentDriver.freeServicesReset) : null;
+    if (!resetDate || now > resetDate) return freeAllowance;
+    return Math.max(0, freeAllowance - (currentDriver.freeServicesUsed ?? 0));
+  })();
+  const canUseFree = !isScheduled && isPremium && freeServicesRemaining > 0;
+  const [useFreeSvc, setUseFreeSvc] = useState(false);
+  const isUsingFree = canUseFree && useFreeSvc;
+
+  const effectiveBase = isUsingFree ? 0 : discountedBasePrice;
+  const effectiveSvcFee = isUsingFree ? 0 : SERVICE_FEE;
+  const effectiveExpressFee = isUsingFree ? 0 : expressFee;
+  const totalCost = effectiveBase + effectiveSvcFee + effectiveExpressFee + batteryCheckFee;
   const canSubmit = selectedService && !(isFuelSelected && useCustomFuel && !customFuelValid) && scheduleValid;
 
   const getScheduledDate = (): Date | undefined => {
@@ -255,16 +274,16 @@ export default function ServiceRequestScreen() {
         latitude: coords.latitude,
         longitude: coords.longitude,
       },
-      notes,
+      notes: notes + (addBatteryCheck && isJumpStart ? "\n[Battery Health Check included]" : ""),
       status: isScheduled ? "pending" : "accepted",
-      estimatedCost: discountedBasePrice,
+      estimatedCost: effectiveBase,
       createdAt: new Date(),
       provider,
       driver: driverInfo,
       eta: isScheduled ? undefined : (isExpress ? 4 : 8),
       isExpress: isScheduled ? false : isExpress,
-      expressFee: isExpress && !isScheduled ? EXPRESS_FEE : 0,
-      serviceFee: SERVICE_FEE,
+      expressFee: isExpress && !isScheduled && !isUsingFree ? EXPRESS_FEE : 0,
+      serviceFee: isUsingFree ? 0 : SERVICE_FEE,
       totalCost: isScheduled ? (discountedBasePrice + SERVICE_FEE) : totalCost,
       receiptNumber: `SM-${Date.now().toString(36).toUpperCase()}`,
       timeSaved: isScheduled ? undefined : Math.floor(Math.random() * 30) + 15,
@@ -277,6 +296,23 @@ export default function ServiceRequestScreen() {
         addToHistory(newRequest);
         if (mountedRef.current) setIsSubmitting(false);
         navigation.goBack();
+        return;
+      }
+
+      // ── Free service: skip Stripe entirely when charge is $0 ──────────────
+      if (isUsingFree && totalCost === 0) {
+        useFreeService();
+        const pendingJob: ServiceRequest = { ...newRequest, provider: undefined, status: "pending" };
+        addPendingJob(pendingJob);
+        setActiveRequest(pendingJob);
+        addToHistory(pendingJob);
+        if (mountedRef.current) setIsSubmitting(false);
+        navigation.replace("ActiveService");
+        fetch(new URL("/api/jobs", getApiUrl()).toString(), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...pendingJob, createdAt: pendingJob.createdAt.toISOString() }),
+        }).catch(() => {});
         return;
       }
 
@@ -320,6 +356,9 @@ export default function ServiceRequestScreen() {
         return;
       }
       // ─────────────────────────────────────────────────────────────────────
+
+      // If a free service was used, record it
+      if (isUsingFree) useFreeService();
 
       // Register the job locally so the driver's UI works immediately
       const pendingJob: ServiceRequest = { ...newRequest, provider: undefined, status: "pending" };
@@ -394,6 +433,53 @@ export default function ServiceRequestScreen() {
             />
           ))}
         </View>
+
+        {isJumpStart ? (
+          <ThemedText type="h4" style={styles.sectionTitle}>
+            Optional Add-On
+          </ThemedText>
+        ) : null}
+        {isJumpStart ? (
+          <Pressable
+            onPress={() => setAddBatteryCheck(!addBatteryCheck)}
+            style={[
+              styles.addOnCard,
+              {
+                backgroundColor: addBatteryCheck ? theme.secondary + "15" : theme.backgroundSecondary,
+                borderColor: addBatteryCheck ? theme.secondary : "transparent",
+                borderWidth: 2,
+              },
+            ]}
+          >
+            <View style={[styles.addOnIcon, { backgroundColor: addBatteryCheck ? theme.secondary : theme.backgroundDefault }]}>
+              <Feather name="activity" size={20} color={addBatteryCheck ? theme.primary : theme.textSecondary} />
+            </View>
+            <View style={styles.addOnContent}>
+              <View style={styles.addOnHeader}>
+                <ThemedText type="body" style={{ fontWeight: "600", color: addBatteryCheck ? theme.secondary : theme.text }}>
+                  Battery Health Check
+                </ThemedText>
+                <ThemedText type="body" style={{ fontWeight: "600", color: theme.secondary }}>
+                  +$8.00
+                </ThemedText>
+              </View>
+              <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                Technician tests battery health, cold-cranking amps, and charging system
+              </ThemedText>
+            </View>
+            <View
+              style={[
+                styles.addOnCheckbox,
+                {
+                  backgroundColor: addBatteryCheck ? theme.secondary : "transparent",
+                  borderColor: addBatteryCheck ? theme.secondary : theme.border,
+                },
+              ]}
+            >
+              {addBatteryCheck ? <Feather name="check" size={14} color="#FFFFFF" /> : null}
+            </View>
+          </Pressable>
+        ) : null}
 
         {isFuelSelected ? (
           <>
@@ -752,6 +838,50 @@ export default function ServiceRequestScreen() {
           textAlignVertical="top"
         />
 
+        {canUseFree && selectedService ? (
+          <Pressable
+            onPress={() => setUseFreeSvc(!useFreeSvc)}
+            style={[
+              styles.addOnCard,
+              {
+                backgroundColor: useFreeSvc ? theme.success + "15" : theme.backgroundSecondary,
+                borderColor: useFreeSvc ? theme.success : "transparent",
+                borderWidth: 2,
+              },
+            ]}
+          >
+            <View style={[styles.addOnIcon, { backgroundColor: useFreeSvc ? theme.success + "20" : theme.backgroundDefault }]}>
+              <Feather name="gift" size={20} color={useFreeSvc ? theme.success : theme.textSecondary} />
+            </View>
+            <View style={styles.addOnContent}>
+              <View style={styles.addOnHeader}>
+                <ThemedText type="body" style={{ fontWeight: "600", color: useFreeSvc ? theme.success : theme.text }}>
+                  Use a Free Service
+                </ThemedText>
+                <View style={[styles.freeBadge, { backgroundColor: theme.success + "20" }]}>
+                  <ThemedText type="small" style={{ color: theme.success, fontWeight: "700", fontSize: 11 }}>
+                    {freeServicesRemaining} left
+                  </ThemedText>
+                </View>
+              </View>
+              <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                {currentDriver?.billingCycle === "yearly" ? "2 free services/year" : "1 free service/month"} included with your plan
+              </ThemedText>
+            </View>
+            <View
+              style={[
+                styles.addOnCheckbox,
+                {
+                  backgroundColor: useFreeSvc ? theme.success : "transparent",
+                  borderColor: useFreeSvc ? theme.success : theme.border,
+                },
+              ]}
+            >
+              {useFreeSvc ? <Feather name="check" size={14} color="#FFFFFF" /> : null}
+            </View>
+          </Pressable>
+        ) : null}
+
         {selectedService ? (
           <View style={[styles.costCard, { backgroundColor: theme.backgroundSecondary }]}>
             <View style={styles.costBreakdown}>
@@ -759,7 +889,16 @@ export default function ServiceRequestScreen() {
                 <ThemedText type="body" style={{ color: theme.text }}>
                   {isFuelSelected ? (useCustomFuel ? `Fuel Delivery (Custom)` : `Fuel Delivery (${FUEL_AMOUNTS[selectedFuelIndex]?.label})`) : (selectedServiceData?.label || "Service")}
                 </ThemedText>
-                {isPremium ? (
+                {isUsingFree ? (
+                  <View style={styles.priceWithDiscount}>
+                    <ThemedText type="small" style={[styles.strikethrough, { color: theme.textSecondary }]}>
+                      ${basePrice.toFixed(2)}
+                    </ThemedText>
+                    <ThemedText type="body" style={{ color: theme.success }}>
+                      FREE
+                    </ThemedText>
+                  </View>
+                ) : isPremium ? (
                   <View style={styles.priceWithDiscount}>
                     <ThemedText type="small" style={[styles.strikethrough, { color: theme.textSecondary }]}>
                       ${basePrice.toFixed(2)}
@@ -774,7 +913,7 @@ export default function ServiceRequestScreen() {
                   </ThemedText>
                 )}
               </View>
-              {isPremium && (
+              {isPremium && !isUsingFree && (
                 <View style={styles.costRow}>
                   <ThemedText type="small" style={{ color: theme.success }}>
                     Premium Discount (20%)
@@ -784,15 +923,35 @@ export default function ServiceRequestScreen() {
                   </ThemedText>
                 </View>
               )}
+              {isUsingFree && (
+                <View style={styles.costRow}>
+                  <ThemedText type="small" style={{ color: theme.success }}>
+                    Premium Free Service
+                  </ThemedText>
+                  <ThemedText type="small" style={{ color: theme.success }}>
+                    -${discountedBasePrice.toFixed(2)}
+                  </ThemedText>
+                </View>
+              )}
+              {batteryCheckFee > 0 ? (
+                <View style={styles.costRow}>
+                  <ThemedText type="small" style={{ color: theme.secondary }}>
+                    Battery Health Check
+                  </ThemedText>
+                  <ThemedText type="small" style={{ color: theme.secondary }}>
+                    $8.00
+                  </ThemedText>
+                </View>
+              ) : null}
               <View style={styles.costRow}>
                 <ThemedText type="small" style={{ color: theme.textSecondary }}>
                   Service Fee
                 </ThemedText>
-                <ThemedText type="small" style={{ color: theme.textSecondary }}>
-                  ${SERVICE_FEE.toFixed(2)}
+                <ThemedText type="small" style={{ color: isUsingFree ? theme.success : theme.textSecondary }}>
+                  {isUsingFree ? "FREE" : `$${SERVICE_FEE.toFixed(2)}`}
                 </ThemedText>
               </View>
-              {isExpress ? (
+              {isExpress && !isUsingFree ? (
                 <View style={styles.costRow}>
                   <ThemedText type="small" style={{ color: theme.warning }}>
                     Express Service
@@ -812,7 +971,14 @@ export default function ServiceRequestScreen() {
                 </ThemedText>
               </View>
             </View>
-            {isPremium ? (
+            {isUsingFree ? (
+              <View style={[styles.savingsBanner, { backgroundColor: theme.success + "15" }]}>
+                <Feather name="gift" size={14} color={theme.success} />
+                <ThemedText type="small" style={{ color: theme.success, fontWeight: "600", marginLeft: Spacing.xs }}>
+                  Using 1 of your {freeAllowance} free service{freeAllowance > 1 ? "s" : ""} — {freeServicesRemaining - 1} remaining after this
+                </ThemedText>
+              </View>
+            ) : isPremium ? (
               <View style={[styles.savingsBanner, { backgroundColor: theme.success + "15" }]}>
                 <Feather name="tag" size={14} color={theme.success} />
                 <ThemedText type="small" style={{ color: theme.success, fontWeight: "600", marginLeft: Spacing.xs }}>
@@ -852,13 +1018,21 @@ export default function ServiceRequestScreen() {
         >
           {isSubmitting ? (
             <ThemedText type="body" style={styles.submitButtonText}>
-              {isScheduled ? "Scheduling..." : "Processing Payment..."}
+              {isScheduled ? "Scheduling..." : isUsingFree && totalCost === 0 ? "Dispatching..." : "Processing Payment..."}
             </ThemedText>
           ) : (
             <>
-              <Feather name={isScheduled ? "calendar" : "credit-card"} size={20} color="#FFFFFF" />
+              <Feather
+                name={isScheduled ? "calendar" : isUsingFree && totalCost === 0 ? "gift" : "credit-card"}
+                size={20}
+                color="#FFFFFF"
+              />
               <ThemedText type="body" style={styles.submitButtonText}>
-                {isScheduled ? "Schedule Service" : `Pay $${totalCost.toFixed(2)} & Dispatch`}
+                {isScheduled
+                  ? "Schedule Service"
+                  : isUsingFree && totalCost === 0
+                  ? "Dispatch Free Service"
+                  : `Pay $${totalCost.toFixed(2)} & Dispatch`}
               </ThemedText>
             </>
           )}
@@ -986,6 +1160,42 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     justifyContent: "center",
     alignItems: "center",
+  },
+  addOnCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    gap: Spacing.md,
+  },
+  addOnIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  addOnContent: {
+    flex: 1,
+    gap: 2,
+  },
+  addOnHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  addOnCheckbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  freeBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.xs,
   },
   costCard: {
     padding: Spacing.lg,
