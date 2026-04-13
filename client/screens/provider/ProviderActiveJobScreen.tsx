@@ -8,6 +8,7 @@ import {
   Animated,
   PanResponder,
   Dimensions,
+  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Location from "expo-location";
@@ -212,18 +213,30 @@ export default function ProviderActiveJobScreen() {
     </View>
   );
 
-  const handleAdvance = () => {
+  const handleAdvance = async () => {
     if (advancing) return;
     const statuses: ServiceStatus[] = ["accepted", "en_route", "arrived", "in_progress", "completed"];
     const idx = statuses.indexOf(activeRequest.status);
     if (idx < 0 || idx >= statuses.length - 1) return;
     const nextStatus = statuses[idx + 1];
+    const prevStatus = activeRequest.status;
+
     setAdvancing(true);
+    // Optimistic update for immediate UI feedback
     setActiveRequest({ ...activeRequest, status: nextStatus });
     updateHistoryEntry(activeRequest.id, { status: nextStatus });
-    apiRequest("PATCH", `/api/jobs/${activeRequest.id}/status`, { status: nextStatus }).catch(() => {});
-    setAdvancing(false);
-    if (nextStatus === "completed") safeGoBack();
+
+    try {
+      await apiRequest("PATCH", `/api/jobs/${activeRequest.id}/status`, { status: nextStatus });
+      if (nextStatus === "completed") safeGoBack();
+    } catch {
+      // Revert on failure so status stays in sync with server
+      setActiveRequest({ ...activeRequest, status: prevStatus });
+      updateHistoryEntry(activeRequest.id, { status: prevStatus });
+      Alert.alert("Connection Error", "Could not update job status. Please check your connection and try again.");
+    } finally {
+      setAdvancing(false);
+    }
   };
 
   const handleChat = () => {
