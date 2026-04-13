@@ -14,7 +14,7 @@ import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
+import Animated, { useAnimatedStyle, useSharedValue, withSpring, interpolate } from "react-native-reanimated";
 import * as Location from "expo-location";
 import { useQuery } from "@tanstack/react-query";
 import { getApiUrl } from "@/lib/query-client";
@@ -30,6 +30,8 @@ import { Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+const HUB_PILL_H = 44;
+const HUB_EXPANDED_H = 300;
 
 // Color constants for provider status
 const COLOR_FREE = "#22C55E";
@@ -348,11 +350,30 @@ export default function DriverMapScreen() {
 
   const [permission, requestPermission] = Location.useForegroundPermissions();
   const [selectedFilter, setSelectedFilter] = useState<ServiceType | "all">("all");
-  const [showList, setShowList] = useState(true);
+  const [hubOpen, setHubOpen] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
 
   // Slide animation for the quick-request card
   const slideAnim = useRef(new RNAnimated.Value(300)).current;
+
+  // Hub expand/collapse animation
+  const hubAnim = useSharedValue(0);
+  const toggleHub = () => {
+    const next = !hubOpen;
+    setHubOpen(next);
+    hubAnim.value = withSpring(next ? 1 : 0, { damping: 18, stiffness: 180 });
+  };
+
+  const hubContainerStyle = useAnimatedStyle(() => ({
+    height: interpolate(hubAnim.value, [0, 1], [HUB_PILL_H, HUB_EXPANDED_H]),
+    borderRadius: interpolate(hubAnim.value, [0, 1], [HUB_PILL_H / 2, 16]),
+  }));
+  const hubPillOpacity = useAnimatedStyle(() => ({
+    opacity: interpolate(hubAnim.value, [0, 0.35], [1, 0]),
+  }));
+  const hubExpandedOpacity = useAnimatedStyle(() => ({
+    opacity: interpolate(hubAnim.value, [0.45, 1], [0, 1]),
+  }));
 
   // Update module-level preferred check so WebMapPlaceholder can use it
   isProviderPreferred = isPreferredProvider;
@@ -418,7 +439,11 @@ export default function DriverMapScreen() {
   // Show / hide quick request card
   const showQuickCard = (provider: Provider) => {
     setSelectedProvider(provider);
-    setShowList(false);
+    // Collapse hub when a provider card slides in
+    if (hubOpen) {
+      setHubOpen(false);
+      hubAnim.value = withSpring(0, { damping: 18, stiffness: 180 });
+    }
     RNAnimated.spring(slideAnim, { toValue: 0, useNativeDriver: true, tension: 65, friction: 11 }).start();
   };
 
@@ -531,8 +556,8 @@ export default function DriverMapScreen() {
             ? `${freeCount} free · ${busyCount} busy nearby`
             : "Find nearby mechanics"}
         </ThemedText>
-        <Pressable onPress={() => { setShowList(!showList); if (selectedProvider) hideQuickCard(); }}>
-          <Feather name={showList ? "map" : "list"} size={20} color={theme.primary} />
+        <Pressable onPress={() => { toggleHub(); if (selectedProvider) hideQuickCard(); }}>
+          <Feather name={hubOpen ? "x" : "list"} size={20} color={theme.primary} />
         </Pressable>
       </View>
 
@@ -580,57 +605,76 @@ export default function DriverMapScreen() {
         ))}
       </ScrollView>
 
-      {/* Nearby mechanic list panel — hidden while a service request is active */}
-      {showList && hasPermission && !selectedProvider &&
+      {/* Nearby Mechanics Hub — collapsible pill that expands into a list */}
+      {hasPermission && !selectedProvider &&
       (!activeRequest || activeRequest.status === "completed" || activeRequest.status === "cancelled") ? (
-        <View
+        <Animated.View
           style={[
-            styles.listContainer,
-            {
-              bottom: activeRequest ? tabBarHeight + 100 : tabBarHeight + 200,
-              backgroundColor: theme.backgroundDefault,
-              ...Shadows.lg,
-            },
+            styles.hubContainer,
+            { bottom: tabBarHeight + Spacing.sm, backgroundColor: theme.backgroundDefault, ...Shadows.lg },
+            hubContainerStyle,
           ]}
         >
-          <View style={styles.listHeader}>
-            <View style={styles.listHeaderLeft}>
-              <ThemedText type="h4">Nearby Mechanics</ThemedText>
-              {providers.length > 0 ? (
+          {/* Collapsed pill content */}
+          <Animated.View style={[styles.hubPill, hubPillOpacity]} pointerEvents={hubOpen ? "none" : "auto"}>
+            <Pressable style={styles.hubPillInner} onPress={toggleHub}>
+              <View style={[styles.statusDotSmall, { backgroundColor: freeCount > 0 ? COLOR_FREE : theme.textSecondary }]} />
+              <ThemedText type="small" style={{ fontWeight: "600", flex: 1 }}>Nearby Mechanics</ThemedText>
+              {freeCount > 0 ? (
                 <View style={[styles.onlinePill, { backgroundColor: COLOR_FREE + "20" }]}>
-                  <View style={[styles.statusDotSmall, { backgroundColor: COLOR_FREE }]} />
-                  <ThemedText type="small" style={{ color: COLOR_FREE, fontWeight: "700", fontSize: 10 }}>
-                    {freeCount} online
-                  </ThemedText>
+                  <ThemedText style={{ color: COLOR_FREE, fontSize: 10, fontWeight: "700" }}>{freeCount} online</ThemedText>
                 </View>
               ) : null}
-            </View>
-            <Pressable onPress={() => navigation.navigate("BrowseProviders")}>
-              <ThemedText type="small" style={{ color: theme.primary, fontWeight: "600" }}>
-                Browse All ({filteredProviders.length})
-              </ThemedText>
+              <Feather name="chevron-up" size={16} color={theme.textSecondary} />
             </Pressable>
-          </View>
-          <ScrollView style={styles.listScroll} showsVerticalScrollIndicator={false}>
-            {filteredProviders.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Feather name="map-pin" size={24} color={theme.textSecondary} />
-                <ThemedText type="small" style={{ color: theme.textSecondary, textAlign: "center", marginTop: Spacing.sm }}>
-                  No mechanics found nearby. Try expanding your area.
-                </ThemedText>
+          </Animated.View>
+
+          {/* Expanded content — fades in on open */}
+          <Animated.View style={[{ flex: 1 }, hubExpandedOpacity]} pointerEvents={hubOpen ? "auto" : "none"}>
+            <View style={[styles.listHeader, { borderBottomColor: theme.border }]}>
+              <View style={styles.listHeaderLeft}>
+                <ThemedText type="h4">Nearby Mechanics</ThemedText>
+                {freeCount > 0 ? (
+                  <View style={[styles.onlinePill, { backgroundColor: COLOR_FREE + "20" }]}>
+                    <View style={[styles.statusDotSmall, { backgroundColor: COLOR_FREE }]} />
+                    <ThemedText type="small" style={{ color: COLOR_FREE, fontWeight: "700", fontSize: 10 }}>
+                      {freeCount} online
+                    </ThemedText>
+                  </View>
+                ) : null}
               </View>
-            ) : (
-              filteredProviders.map((provider) => (
-                <MechanicCard
-                  key={provider.id}
-                  provider={provider}
-                  isPreferred={isPreferredProvider(provider.id)}
-                  onPress={() => showQuickCard(provider)}
-                />
-              ))
-            )}
-          </ScrollView>
-        </View>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: Spacing.md }}>
+                <Pressable onPress={() => navigation.navigate("BrowseProviders")}>
+                  <ThemedText type="small" style={{ color: theme.primary, fontWeight: "600" }}>
+                    Browse All ({filteredProviders.length})
+                  </ThemedText>
+                </Pressable>
+                <Pressable onPress={toggleHub}>
+                  <Feather name="chevron-down" size={18} color={theme.textSecondary} />
+                </Pressable>
+              </View>
+            </View>
+            <ScrollView style={styles.listScroll} showsVerticalScrollIndicator={false}>
+              {filteredProviders.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <Feather name="map-pin" size={24} color={theme.textSecondary} />
+                  <ThemedText type="small" style={{ color: theme.textSecondary, textAlign: "center", marginTop: Spacing.sm }}>
+                    No mechanics found nearby. Try expanding your area.
+                  </ThemedText>
+                </View>
+              ) : (
+                filteredProviders.map((provider) => (
+                  <MechanicCard
+                    key={provider.id}
+                    provider={provider}
+                    isPreferred={isPreferredProvider(provider.id)}
+                    onPress={() => showQuickCard(provider)}
+                  />
+                ))
+              )}
+            </ScrollView>
+          </Animated.View>
+        </Animated.View>
       ) : null}
 
       {/* Active service — compact right-aligned pill matching FAB style */}
@@ -662,10 +706,10 @@ export default function DriverMapScreen() {
         </View>
       ) : null}
 
-      {/* FAB buttons */}
+      {/* FAB buttons — only shown when hub is collapsed and no active request */}
       {(!activeRequest || activeRequest.status === "completed" || activeRequest.status === "cancelled") &&
-      !selectedProvider ? (
-        <View style={[styles.fabContainer, { bottom: tabBarHeight + Spacing.xl }]}>
+      !selectedProvider && !hubOpen ? (
+        <View style={[styles.fabContainer, { bottom: tabBarHeight + HUB_PILL_H + Spacing.md }]}>
           <AnimatedPressable
             onPress={() => navigation.navigate("SmartDiagnostic")}
             onPressIn={handleFabPressIn}
@@ -771,9 +815,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.full, borderWidth: 1,
   },
-  listContainer: {
+  hubContainer: {
     position: "absolute", left: Spacing.lg, right: Spacing.lg,
-    borderRadius: BorderRadius.lg, maxHeight: 280, overflow: "hidden",
+    overflow: "hidden",
+  },
+  hubPill: {
+    position: "absolute", top: 0, left: 0, right: 0,
+    height: HUB_PILL_H,
+  },
+  hubPillInner: {
+    flex: 1, flexDirection: "row", alignItems: "center",
+    paddingHorizontal: Spacing.md, gap: Spacing.sm, height: HUB_PILL_H,
   },
   listHeader: {
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",
