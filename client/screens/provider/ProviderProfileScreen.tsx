@@ -12,6 +12,7 @@ import { VerificationBadge } from "@/components/VerificationBadge";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceType, BACKGROUND_SCHEMES } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
+import { apiRequest } from "@/lib/query-client";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 const serviceTypeLabels: Partial<Record<ServiceType, string>> = {
@@ -76,9 +77,24 @@ export default function ProviderProfileScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { theme, isDark } = useTheme();
-  const { currentProvider, setUserRole, logout, serviceRadius, backgroundPreferences } = useApp();
+  const { currentProvider, setCurrentProvider, setUserRole, logout, serviceRadius, backgroundPreferences } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
+  const [priorityOptIn, setPriorityOptIn] = React.useState(currentProvider?.acceptsPriorityJobs ?? false);
+
+  const handlePriorityToggle = async (value: boolean) => {
+    setPriorityOptIn(value);
+    if (currentProvider) {
+      setCurrentProvider({ ...currentProvider, acceptsPriorityJobs: value });
+      try {
+        await apiRequest("PATCH", `/api/providers/${currentProvider.id}/settings`, {
+          acceptsPriorityJobs: value,
+        });
+      } catch {
+        // persist locally regardless
+      }
+    }
+  };
   const isAnimated = backgroundPreferences.mode === "animated";
   const scheme = BACKGROUND_SCHEMES[backgroundPreferences.colorScheme];
   const sectionBg = isAnimated ? theme.cardAnimatedBg : theme.backgroundDefault;
@@ -307,6 +323,23 @@ export default function ProviderProfileScreen() {
               value={notificationsEnabled}
               onValueChange={setNotificationsEnabled}
               trackColor={{ false: theme.border, true: theme.secondary }}
+              thumbColor="#FFFFFF"
+            />
+          </View>
+          <View style={[styles.menuItem, { borderTopWidth: 1, borderTopColor: theme.border }]}>
+            <Feather name="zap" size={20} color={priorityOptIn ? theme.warning : theme.textSecondary} />
+            <View style={{ flex: 1, marginLeft: Spacing.sm }}>
+              <ThemedText type="body" style={styles.menuLabel}>
+                Accept Priority Requests
+              </ThemedText>
+              <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: 2 }}>
+                {priorityOptIn ? "Reduced 10% platform fee on priority jobs" : "Opt in for a reduced 10% fee on express jobs"}
+              </ThemedText>
+            </View>
+            <Switch
+              value={priorityOptIn}
+              onValueChange={handlePriorityToggle}
+              trackColor={{ false: theme.border, true: theme.warning }}
               thumbColor="#FFFFFF"
             />
           </View>

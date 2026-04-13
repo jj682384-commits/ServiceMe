@@ -39,6 +39,7 @@ interface ProviderRecord {
   pushToken?: string;
   evCapable?: boolean;
   evServices?: string[];
+  acceptsPriorityJobs?: boolean;
 }
 
 interface JobRecord {
@@ -201,6 +202,12 @@ let broadcastJobUpdate: (job: JobRecord) => void = () => {};
 // ── Routes ────────────────────────────────────────────────────────────────────
 
 export async function registerRoutes(app: Express): Promise<Server> {
+
+  // ── DB column migrations (idempotent) ────────────────────────────────────────
+  await pool.query(`
+    ALTER TABLE providers
+      ADD COLUMN IF NOT EXISTS accepts_priority_jobs BOOLEAN DEFAULT FALSE
+  `).catch(() => {});
 
   function getSmartcarRedirectUri(): string {
     const prodDomain = process.env.REPLIT_INTERNAL_APP_DOMAIN;
@@ -666,8 +673,8 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
            services_offered, is_available, provider_type,
            verification_status, verification_documents, verification_submitted_at,
            verification_notes, badges, location, last_location_update, push_token,
-           ev_capable, ev_services
-         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)
+           ev_capable, ev_services, accepts_priority_jobs
+         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24)
          ON CONFLICT (id) DO UPDATE SET
            name = EXCLUDED.name,
            phone = EXCLUDED.phone,
@@ -685,6 +692,7 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
            push_token = EXCLUDED.push_token,
            ev_capable = EXCLUDED.ev_capable,
            ev_services = EXCLUDED.ev_services,
+           accepts_priority_jobs = EXCLUDED.accepts_priority_jobs,
            updated_at = NOW()
          RETURNING *`,
         [
@@ -702,6 +710,7 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
           new Date().toISOString(), data.pushToken || null,
           data.evCapable ?? false,
           JSON.stringify(data.evServices || []),
+          data.acceptsPriorityJobs ?? false,
         ]
       );
       res.json(rowToProvider(rows[0]));
@@ -758,6 +767,21 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
       res.json({ success: true });
     } catch (err) {
       console.error("[providers/push-token]", err);
+      res.status(500).json({ error: "Database error" });
+    }
+  });
+
+  app.patch("/api/providers/:id/settings", async (req: Request, res: Response) => {
+    const { acceptsPriorityJobs } = req.body as { acceptsPriorityJobs?: boolean };
+    try {
+      const { rowCount } = await pool.query(
+        `UPDATE providers SET accepts_priority_jobs = $2, updated_at = NOW() WHERE id = $1`,
+        [req.params.id, acceptsPriorityJobs ?? false]
+      );
+      if (!rowCount) return res.status(404).json({ error: "Provider not found" });
+      res.json({ success: true });
+    } catch (err) {
+      console.error("[providers/settings]", err);
       res.status(500).json({ error: "Database error" });
     }
   });

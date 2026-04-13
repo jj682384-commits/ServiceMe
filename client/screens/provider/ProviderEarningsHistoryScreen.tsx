@@ -11,7 +11,12 @@ import { useApp, ServiceType, ServiceRequest } from "@/context/AppContext";
 import { getApiUrl } from "@/lib/query-client";
 import { Spacing, BorderRadius } from "@/constants/theme";
 
-const PLATFORM_FEE = 0.15;
+const PLATFORM_FEE_STANDARD = 0.15;
+const PLATFORM_FEE_PRIORITY = 0.10;
+
+function getPlatformFee(isExpress: boolean | undefined, acceptsPriorityJobs: boolean | undefined): number {
+  return (isExpress && acceptsPriorityJobs) ? PLATFORM_FEE_PRIORITY : PLATFORM_FEE_STANDARD;
+}
 
 const serviceTypeLabels: Record<ServiceType, string> = {
   flat_tire: "Flat Tire",
@@ -40,6 +45,7 @@ interface EarningEntry {
   request: ServiceRequest;
   gross: number;
   fee: number;
+  feeRate: number;
   net: number;
   tip: number;
   status: PayoutStatus;
@@ -72,7 +78,7 @@ function EarningCard({ entry }: { entry: EarningEntry }) {
         `Date: ${formatDate(entry.request.createdAt)}`,
         `Service fee: $${entry.gross.toFixed(2)}`,
         `Tip: $${entry.tip.toFixed(2)}`,
-        `Platform fee (15%): -$${entry.fee.toFixed(2)}`,
+        `Platform fee (${Math.round(entry.feeRate * 100)}%): -$${entry.fee.toFixed(2)}`,
         `Net payout: $${entry.net.toFixed(2)}`,
         `Status: ${status.label}`,
         entry.payoutDate ? `Paid on: ${formatDate(entry.payoutDate)}` : "",
@@ -179,14 +185,14 @@ export default function ProviderEarningsHistoryScreen() {
   const entries = useMemo<EarningEntry[]>(() => {
     return completedJobs.map((r, i) => {
       const gross = r.estimatedCost || 0;
-      // Prefer server-fetched tip; fall back to local calculation
       const tip = serverTips[r.id] !== undefined ? serverTips[r.id] : Math.max(0, (r.tip || 0));
-      const fee = gross * PLATFORM_FEE;
+      const feeRate = getPlatformFee(r.isExpress, currentProvider?.acceptsPriorityJobs);
+      const fee = gross * feeRate;
       const net = gross - fee + tip;
       const { status, payoutDate } = getPayoutStatus(r, i);
-      return { id: r.id, request: r, gross, fee, net, tip, status, payoutDate };
+      return { id: r.id, request: r, gross, fee, feeRate, net, tip, status, payoutDate };
     });
-  }, [completedJobs, serverTips]);
+  }, [completedJobs, serverTips, currentProvider?.acceptsPriorityJobs]);
 
   const now = new Date();
   const startOfWeek = new Date(now);
@@ -267,7 +273,9 @@ export default function ProviderEarningsHistoryScreen() {
         <View style={styles.feeNotice}>
           <Feather name="info" size={12} color={theme.textSecondary} />
           <ThemedText type="small" style={{ color: theme.textSecondary, flex: 1 }}>
-            15% platform fee deducted. Tips are fee-free — you keep 100%.
+            {currentProvider?.acceptsPriorityJobs
+              ? "10% fee on priority jobs, 15% on standard jobs. Tips are fee-free."
+              : "15% platform fee deducted. Tips are fee-free — you keep 100%."}
           </ThemedText>
         </View>
       ) : null}

@@ -12,12 +12,14 @@ import { Spacing, BorderRadius } from "@/constants/theme";
 import { useProviderLocation, updateProviderAvailability, registerProviderOnServer } from "@/hooks/useProviderLocation";
 import { getApiUrl } from "@/lib/query-client";
 
-const PLATFORM_FEE = 0.15;
+const PLATFORM_FEE_STANDARD = 0.15;
+const PLATFORM_FEE_PRIORITY = 0.10;
 
-function netEarnings(r: ServiceRequest): number {
+function netEarnings(r: ServiceRequest, acceptsPriorityJobs?: boolean): number {
   const gross = r.estimatedCost || 0;
   const tip = typeof r.tip === "number" ? r.tip : 0;
-  return gross * (1 - PLATFORM_FEE) + tip;
+  const feeRate = (r.isExpress && acceptsPriorityJobs) ? PLATFORM_FEE_PRIORITY : PLATFORM_FEE_STANDARD;
+  return gross * (1 - feeRate) + tip;
 }
 
 function StatCard({
@@ -231,9 +233,10 @@ export default function ProviderDashboardScreen() {
   const todayJobs = myJobs.filter((r) => r.createdAt >= todayStart);
   const weekJobs = myJobs.filter((r) => r.createdAt >= weekStart);
 
-  const todayEarnings = todayJobs.reduce((s, r) => s + netEarnings(r), 0);
-  const weekEarnings = weekJobs.reduce((s, r) => s + netEarnings(r), 0);
-  const allTimeEarnings = myJobs.reduce((s, r) => s + netEarnings(r), 0);
+  const acceptsPriority = currentProvider?.acceptsPriorityJobs;
+  const todayEarnings = todayJobs.reduce((s, r) => s + netEarnings(r, acceptsPriority), 0);
+  const weekEarnings = weekJobs.reduce((s, r) => s + netEarnings(r, acceptsPriority), 0);
+  const allTimeEarnings = myJobs.reduce((s, r) => s + netEarnings(r, acceptsPriority), 0);
   const totalTips = myJobs.reduce((s, r) => s + (r.tip ?? 0), 0);
 
   const rating = currentProvider?.rating ?? 0;

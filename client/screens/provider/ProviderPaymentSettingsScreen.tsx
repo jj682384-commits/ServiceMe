@@ -32,7 +32,9 @@ interface BankAccount {
   isDefault: boolean;
 }
 
-const PLATFORM_FEE_PERCENT = 15;
+function jobFeeRate(r: { isExpress?: boolean }, acceptsPriority?: boolean): number {
+  return r.isExpress && acceptsPriority ? 0.10 : 0.15;
+}
 
 export default function ProviderPaymentSettingsScreen() {
   const headerHeight = useHeaderHeight();
@@ -43,12 +45,13 @@ export default function ProviderPaymentSettingsScreen() {
   const completedJobs = requestHistory.filter(
     (r) => r.provider?.id === currentProvider?.id && r.status === "completed"
   );
+  const acceptsPriority = currentProvider?.acceptsPriorityJobs;
   const totalGross = completedJobs.reduce((s, r) => s + (r.totalCost || r.estimatedCost || 0), 0);
-  const totalFees = totalGross * (PLATFORM_FEE_PERCENT / 100);
+  const totalFees = completedJobs.reduce((s, r) => s + (r.totalCost || r.estimatedCost || 0) * jobFeeRate(r, acceptsPriority), 0);
   const totalNet = totalGross - totalFees;
   const pendingBalance = completedJobs
     .slice(0, 2)
-    .reduce((s, r) => s + (r.totalCost || r.estimatedCost || 0) * (1 - PLATFORM_FEE_PERCENT / 100), 0);
+    .reduce((s, r) => s + (r.totalCost || r.estimatedCost || 0) * (1 - jobFeeRate(r, acceptsPriority)), 0);
   const availableBalance = Math.max(0, totalNet - pendingBalance);
 
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
@@ -191,7 +194,7 @@ export default function ProviderPaymentSettingsScreen() {
             <View style={styles.balanceBreakdownDivider} />
             <View style={styles.balanceBreakdownItem}>
               <ThemedText type="small" style={{ color: "rgba(255,255,255,0.7)" }}>
-                Platform Fee ({PLATFORM_FEE_PERCENT}%)
+                Platform Fee ({acceptsPriority ? "10–15" : "15"}%)
               </ThemedText>
               <ThemedText type="body" style={{ color: "rgba(255,255,255,0.85)", fontWeight: "600" }}>
                 -${totalFees.toFixed(2)}
@@ -507,7 +510,9 @@ export default function ProviderPaymentSettingsScreen() {
         <View style={[styles.infoBox, { backgroundColor: theme.primary + "10", borderColor: theme.primary + "30" }]}>
           <Feather name="info" size={14} color={theme.primary} />
           <ThemedText type="small" style={{ color: theme.primary, flex: 1, lineHeight: 18 }}>
-            ServiceMe charges a {PLATFORM_FEE_PERCENT}% platform fee on every completed job. You keep {100 - PLATFORM_FEE_PERCENT}% of the service fee plus 100% of all tips.
+            {acceptsPriority
+              ? "ServiceMe charges a 10% fee on priority jobs and 15% on standard jobs. Tips are always fee-free — you keep 100%."
+              : "ServiceMe charges a 15% platform fee on every completed job. You keep 85% of the service fee plus 100% of all tips. Enable Accept Priority Requests in your profile to earn a reduced 10% fee on express jobs."}
           </ThemedText>
         </View>
       </KeyboardAwareScrollViewCompat>

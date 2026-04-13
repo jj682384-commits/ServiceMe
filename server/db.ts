@@ -29,6 +29,7 @@ export interface ProviderRow {
   push_token: string | null;
   ev_capable: boolean;
   ev_services: string[];
+  accepts_priority_jobs: boolean;
 }
 
 export interface JobRow {
@@ -81,6 +82,7 @@ export function rowToProvider(r: ProviderRow) {
     pushToken: r.push_token ?? undefined,
     evCapable: r.ev_capable ?? false,
     evServices: r.ev_services ?? [],
+    acceptsPriorityJobs: r.accepts_priority_jobs ?? false,
   };
 }
 

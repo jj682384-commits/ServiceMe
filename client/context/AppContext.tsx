@@ -113,6 +113,7 @@ export interface Provider {
   badges?: ProviderBadge[];
   evCapable?: boolean;
   evServices?: EVService[];
+  acceptsPriorityJobs?: boolean;
   location?: {
     latitude: number;
     longitude: number;
