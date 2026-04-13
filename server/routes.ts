@@ -1228,6 +1228,12 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
           if (peersInRoom.length === 0) {
             const replyDelay = 2000 + Math.random() * 2000;
             setTimeout(() => {
+              // Re-check: if a real peer joined since the message was sent, skip auto-reply
+              const currentPeers = [...clients].filter(
+                (c) => c.conversationId === conversationId && c !== clientRecord
+              );
+              if (currentPeers.length > 0) return;
+
               const autoReply: ChatMessage = {
                 id: `msg-${Date.now()}-auto`,
                 conversationId,
