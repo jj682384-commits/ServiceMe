@@ -431,15 +431,13 @@ export default function DriverMapScreen() {
     { key: "service"  as const, route: "ServiceRequest"  as keyof RootStackParamList },
   ];
 
-  // Quick-action row: highlight chip, fire haptic, then navigate (tap path)
+  // Quick-action row tap — no delay, navigate instantly
   const pressAction = useCallback(
     (action: "diagnose" | "tow" | "service", route: keyof RootStackParamList) => {
-      setActiveAction(action);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-      setTimeout(() => {
-        navigation.navigate(route as any);
-        setTimeout(() => setActiveAction(null), 300);
-      }, 150);
+      setActiveAction(action);
+      navigation.navigate(route as any);
+      setTimeout(() => setActiveAction(null), 400);
     },
     [navigation],
   );
@@ -459,22 +457,22 @@ export default function DriverMapScreen() {
   const _navigateIdx = useCallback((idx: number) => {
     if (idx < 0 || idx > 2) { setActiveAction(null); return; }
     navigation.navigate(ACTION_ITEMS[idx].route as any);
-    setTimeout(() => setActiveAction(null), 300);
+    setTimeout(() => setActiveAction(null), 400);
   }, [navigation]);
 
   const swipeRowGesture = Gesture.Pan()
-    .activeOffsetX([-8, 8])    // require 8 px horizontal before activating
+    .activeOffsetX([-10, 10])  // require 10 px horizontal movement before activating
     .failOffsetY([-14, 14])    // cancel if vertical movement wins first
     .onBegin((e) => {
+      // Record start position only — no haptic here so taps stay clean
       const w = rowWidthSV.value;
       if (w === 0) return;
       const startIdx = Math.min(2, Math.max(0, Math.floor((e.x / w) * 3)));
       panStartIdxSV.value = startIdx;
       prevIdxSV.value     = startIdx;
-      runOnJS(_setActionIdx)(startIdx);
-      runOnJS(_haptic)();
     })
     .onUpdate((e) => {
+      // Gesture is now confirmed as a swipe — highlight + haptic on position change
       const w = rowWidthSV.value;
       if (w === 0) return;
       const delta  = Math.round(e.translationX / (w / 3));
