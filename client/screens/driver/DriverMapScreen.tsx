@@ -14,7 +14,8 @@ import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, Easing, interpolate } from "react-native-reanimated";
+import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, Easing, interpolate, runOnJS } from "react-native-reanimated";
+import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import * as Location from "expo-location";
 import { useQuery } from "@tanstack/react-query";
 import { getApiUrl } from "@/lib/query-client";
@@ -358,21 +359,51 @@ export default function DriverMapScreen() {
 
   // Hub expand/collapse animation
   const hubAnim = useSharedValue(0);
+  // Shared value mirror of hubOpen for gesture worklets (can't read React state on UI thread)
+  const hubIsOpen = useSharedValue(false);
+  const dragY = useSharedValue(0);
+
+  const collapseHub = () => {
+    setHubOpen(false);
+  };
+
   const toggleHub = () => {
     const next = !hubOpen;
     setHubOpen(next);
+    hubIsOpen.value = next;
     if (next) {
-      // Opening: spring feels natural popping up
       hubAnim.value = withSpring(1, { damping: 20, stiffness: 220 });
     } else {
-      // Closing: fast ease-in so it snaps shut immediately
+      dragY.value = 0;
       hubAnim.value = withTiming(0, { duration: 180, easing: Easing.in(Easing.quad) });
     }
   };
 
+  // Swipe-down gesture to collapse the hub
+  const swipeDownGesture = Gesture.Pan()
+    .activeOffsetY([0, 8])   // only activate for clearly downward moves
+    .onUpdate((e) => {
+      if (!hubIsOpen.value) return;
+      dragY.value = Math.max(0, e.translationY);
+    })
+    .onEnd((e) => {
+      if (!hubIsOpen.value) return;
+      if (e.translationY > 60 || e.velocityY > 450) {
+        // Snap shut
+        hubAnim.value = withTiming(0, { duration: 180, easing: Easing.in(Easing.quad) });
+        dragY.value = withTiming(0, { duration: 180 });
+        hubIsOpen.value = false;
+        runOnJS(collapseHub)();
+      } else {
+        // Bounce back to fully open
+        dragY.value = withSpring(0, { damping: 20, stiffness: 300 });
+      }
+    });
+
   const hubContainerStyle = useAnimatedStyle(() => ({
     height: interpolate(hubAnim.value, [0, 1], [HUB_PILL_H, HUB_EXPANDED_H]),
     borderRadius: interpolate(hubAnim.value, [0, 1], [HUB_PILL_H / 2, 16]),
+    transform: [{ translateY: dragY.value }],
   }));
   const hubPillOpacity = useAnimatedStyle(() => ({
     opacity: interpolate(hubAnim.value, [0, 0.35], [1, 0]),
@@ -448,6 +479,8 @@ export default function DriverMapScreen() {
     // Collapse hub when a provider card slides in
     if (hubOpen) {
       setHubOpen(false);
+      hubIsOpen.value = false;
+      dragY.value = 0;
       hubAnim.value = withTiming(0, { duration: 180, easing: Easing.in(Easing.quad) });
     }
     RNAnimated.spring(slideAnim, { toValue: 0, useNativeDriver: true, tension: 65, friction: 11 }).start();
@@ -614,6 +647,7 @@ export default function DriverMapScreen() {
       {/* Nearby Mechanics Hub — collapsible pill that expands into a list */}
       {hasPermission && !selectedProvider &&
       (!activeRequest || activeRequest.status === "completed" || activeRequest.status === "cancelled") ? (
+        <GestureDetector gesture={swipeDownGesture}>
         <Animated.View
           style={[
             styles.hubContainer,
@@ -637,6 +671,10 @@ export default function DriverMapScreen() {
 
           {/* Expanded content — fades in on open */}
           <Animated.View style={[{ flex: 1 }, hubExpandedOpacity]} pointerEvents={hubOpen ? "auto" : "none"}>
+            {/* Drag handle — visual cue to swipe down */}
+            <View style={styles.dragHandleRow}>
+              <View style={[styles.dragHandleBar, { backgroundColor: theme.border }]} />
+            </View>
             <View style={[styles.listHeader, { borderBottomColor: theme.border }]}>
               <View style={styles.listHeaderLeft}>
                 <ThemedText type="h4">Nearby Mechanics</ThemedText>
@@ -681,6 +719,7 @@ export default function DriverMapScreen() {
             </ScrollView>
           </Animated.View>
         </Animated.View>
+        </GestureDetector>
       ) : null}
 
       {/* Active service — compact right-aligned pill matching FAB style */}
@@ -832,6 +871,12 @@ const styles = StyleSheet.create({
   hubPillInner: {
     flex: 1, flexDirection: "row", alignItems: "center",
     paddingHorizontal: Spacing.md, gap: Spacing.sm, height: HUB_PILL_H,
+  },
+  dragHandleRow: {
+    alignItems: "center", paddingTop: 8, paddingBottom: 2,
+  },
+  dragHandleBar: {
+    width: 36, height: 4, borderRadius: 2,
   },
   listHeader: {
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",
