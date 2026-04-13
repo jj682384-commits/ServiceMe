@@ -116,6 +116,7 @@ export interface Provider {
     longitude: number;
   };
   distance?: number;
+  isBusy?: boolean;
 }
 
 export interface UserLocation {

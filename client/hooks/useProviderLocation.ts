@@ -90,7 +90,7 @@ export function useProviderLocation(providerId: string | null, isAvailable: bool
         if (lastPos.current) {
           patchLocation(providerId, lastPos.current.latitude, lastPos.current.longitude);
         }
-      }, 30000);
+      }, 15000);
     };
 
     start();

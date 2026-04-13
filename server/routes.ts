@@ -613,13 +613,24 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
       const { rows } = await pool.query<ProviderRow>(
         "SELECT * FROM providers WHERE is_available = true"
       );
-      let result = rows.map(rowToProvider);
+      // Check which providers have an active (non-terminal) job
+      const { rows: activeJobs } = await pool.query<{ provider_id: string }>(
+        `SELECT provider->>'id' AS provider_id FROM jobs
+         WHERE status NOT IN ('completed', 'cancelled') AND provider IS NOT NULL`
+      );
+      const busyIds = new Set(activeJobs.map((j) => j.provider_id).filter(Boolean));
+
+      let result = rows.map((row) => ({
+        ...rowToProvider(row),
+        isBusy: busyIds.has(row.id),
+      }));
+
       if (lat && lng) {
         const userLat = parseFloat(lat);
         const userLng = parseFloat(lng);
         result = result
           .map((p) => ({ ...p, distance: calcDistance(userLat, userLng, p.location.latitude, p.location.longitude) }))
-          .filter((p) => (p as ProviderRecord & { distance: number }).distance <= maxRadius)
+          .filter((p) => (p as ProviderRecord & { distance: number; isBusy: boolean }).distance <= maxRadius)
           .sort((a, b) => ((a as ProviderRecord & { distance: number }).distance ?? 0) - ((b as ProviderRecord & { distance: number }).distance ?? 0));
       }
       res.json(result);
