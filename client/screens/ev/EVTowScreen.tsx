@@ -23,7 +23,7 @@ import { useApp, ServiceRequest } from "@/context/AppContext";
 import { useTheme } from "@/hooks/useTheme";
 import { getEVColors } from "@/constants/evColors";
 import { useStripe } from "@/lib/stripe";
-import { getApiUrl } from "@/lib/query-client";
+import { getApiUrl, apiRequest } from "@/lib/query-client";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 const TOW_OPTIONS = [
@@ -146,11 +146,7 @@ export default function EVTowScreen() {
     };
 
     // POST to server in background so providers see the job
-    fetch(new URL("/api/jobs", getApiUrl()).toString(), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...pendingJob, createdAt: pendingJob.createdAt.toISOString() }),
-    }).catch(() => {});
+    apiRequest("POST", "/api/jobs", { ...pendingJob, createdAt: pendingJob.createdAt.toISOString() }).catch(() => {});
 
     addPendingJob(pendingJob);
     setActiveRequest(pendingJob);

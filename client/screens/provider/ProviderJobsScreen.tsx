@@ -474,8 +474,11 @@ export default function ProviderJobsScreen() {
 
   const onRefresh = useCallback(async () => {
     setIsRefreshing(true);
-    await queryClient.invalidateQueries({ queryKey: ["/api/jobs/pending"] });
-    setIsRefreshing(false);
+    try {
+      await queryClient.refetchQueries({ queryKey: ["/api/jobs/pending"] });
+    } finally {
+      setIsRefreshing(false);
+    }
   }, [queryClient]);
 
   return (

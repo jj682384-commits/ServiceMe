@@ -300,6 +300,15 @@ process.on("unhandledRejection", (reason) => {
 
   setupErrorHandler(app);
 
+  // Graceful shutdown — release the port so restarts don't hit EADDRINUSE
+  const shutdown = () => {
+    server.closeAllConnections?.();
+    server.close(() => process.exit(0));
+    setTimeout(() => process.exit(0), 3000);
+  };
+  process.on("SIGTERM", shutdown);
+  process.on("SIGINT", shutdown);
+
   const port = parseInt(process.env.PORT || "5000", 10);
   server.listen(port, "0.0.0.0", async () => {
     log(`express server serving on port ${port}`);

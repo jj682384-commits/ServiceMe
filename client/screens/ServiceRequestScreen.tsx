@@ -22,7 +22,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceType, ServiceRequest } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { SERVICE_FEE, EXPRESS_FEE } from "@/constants/pricing";
-import { getApiUrl } from "@/lib/query-client";
+import { getApiUrl, apiRequest } from "@/lib/query-client";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -310,11 +310,7 @@ export default function ServiceRequestScreen() {
         addToHistory(pendingJob);
         if (mountedRef.current) setIsSubmitting(false);
         navigation.replace("ActiveService");
-        fetch(new URL("/api/jobs", getApiUrl()).toString(), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...pendingJob, createdAt: pendingJob.createdAt.toISOString() }),
-        }).catch(() => {});
+        apiRequest("POST", "/api/jobs", { ...pendingJob, createdAt: pendingJob.createdAt.toISOString() }).catch(() => {});
         return;
       }
 
@@ -374,14 +370,7 @@ export default function ServiceRequestScreen() {
       navigation.replace("ActiveService");
 
       // POST to server in background so providers on other devices see the job
-      const controller = new AbortController();
-      const abortTimer = setTimeout(() => controller.abort(), 15000);
-      fetch(new URL("/api/jobs", getApiUrl()).toString(), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...pendingJob, createdAt: pendingJob.createdAt.toISOString() }),
-        signal: controller.signal,
-      }).catch(() => {}).finally(() => clearTimeout(abortTimer));
+      apiRequest("POST", "/api/jobs", { ...pendingJob, createdAt: pendingJob.createdAt.toISOString() }).catch(() => {});
     })();
   };
 

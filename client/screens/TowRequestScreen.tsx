@@ -18,7 +18,7 @@ import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollV
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceRequest, Provider } from "@/context/AppContext";
 import { Spacing, BorderRadius, Shadows } from "@/constants/theme";
-import { getApiUrl } from "@/lib/query-client";
+import { getApiUrl, apiRequest } from "@/lib/query-client";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -170,18 +170,8 @@ export default function TowRequestScreen() {
     setActiveRequest(pendingJob);
     addToHistory(pendingJob);
 
-    // Register with server in background — don't block the user's journey to ActiveService.
-    // Use a generous 15s timeout so Replit's dev server has time to respond.
-    const controller = new AbortController();
-    const abortTimer = setTimeout(() => controller.abort(), 15000);
-    fetch(new URL("/api/jobs", getApiUrl()).toString(), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...pendingJob, createdAt: pendingJob.createdAt.toISOString() }),
-      signal: controller.signal,
-    })
-      .catch(() => {})
-      .finally(() => clearTimeout(abortTimer));
+    // Register with server in background so providers on other devices see the job
+    apiRequest("POST", "/api/jobs", { ...pendingJob, createdAt: pendingJob.createdAt.toISOString() }).catch(() => {});
 
     if (mountedRef.current) {
       setIsSubmitting(false);
