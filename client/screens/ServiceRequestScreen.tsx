@@ -26,7 +26,7 @@ import { getApiUrl } from "@/lib/query-client";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-const PREMIUM_DISCOUNT = 0.20;
+const PREMIUM_DISCOUNT = 0.25;
 
 const serviceTypes: { type: ServiceType; label: string; icon: keyof typeof Feather.glyphMap; price: number }[] = [
   { type: "flat_tire", label: "Flat Tire", icon: "disc", price: 40 },
@@ -413,7 +413,7 @@ export default function ServiceRequestScreen() {
           <View style={[styles.premiumBanner, { backgroundColor: theme.success + "15" }]}>
             <Feather name="star" size={16} color={theme.success} />
             <ThemedText type="small" style={{ color: theme.success, fontWeight: "600", marginLeft: Spacing.sm }}>
-              Premium Member - 20% off all services
+              Premium Member - 25% off all services
             </ThemedText>
           </View>
         )}
@@ -916,7 +916,7 @@ export default function ServiceRequestScreen() {
               {isPremium && !isUsingFree && (
                 <View style={styles.costRow}>
                   <ThemedText type="small" style={{ color: theme.success }}>
-                    Premium Discount (20%)
+                    Premium Discount (25%)
                   </ThemedText>
                   <ThemedText type="small" style={{ color: theme.success }}>
                     -${discountAmount.toFixed(2)}
