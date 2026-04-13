@@ -580,8 +580,9 @@ export default function DriverMapScreen() {
         ))}
       </ScrollView>
 
-      {/* Nearby mechanic list panel */}
-      {showList && hasPermission && !selectedProvider ? (
+      {/* Nearby mechanic list panel — hidden while a service request is active */}
+      {showList && hasPermission && !selectedProvider &&
+      (!activeRequest || activeRequest.status === "completed" || activeRequest.status === "cancelled") ? (
         <View
           style={[
             styles.listContainer,
@@ -632,36 +633,33 @@ export default function DriverMapScreen() {
         </View>
       ) : null}
 
-      {/* Active service bar */}
+      {/* Active service — compact right-aligned pill matching FAB style */}
       {activeRequest && activeRequest.status !== "completed" && activeRequest.status !== "cancelled" ? (
-        <Pressable
-          onPress={() => navigation.navigate("ActiveService")}
-          style={[
-            styles.activeServiceBar,
-            { bottom: tabBarHeight + Spacing.lg, backgroundColor: theme.backgroundDefault, ...Shadows.lg },
-          ]}
-        >
-          <View style={[styles.statusDot, { backgroundColor: theme.success }]} />
-          <View style={styles.activeServiceInfo}>
-            <ThemedText type="body" style={{ fontWeight: "600" }}>
+        <View style={[styles.fabContainer, { bottom: tabBarHeight + Spacing.xl }]}>
+          {/* Status chip */}
+          <View style={[styles.activeStatusChip, { backgroundColor: theme.backgroundDefault, borderColor: theme.border, ...Shadows.sm }]}>
+            <View style={[styles.statusDot, { backgroundColor: theme.success }]} />
+            <ThemedText type="small" style={{ color: theme.textSecondary }}>
               {activeRequest.status === "pending"
                 ? "Finding a provider…"
                 : activeRequest.status === "accepted"
-                ? "Provider accepted"
-                : activeRequest.status === "arrived"
-                ? "Provider arrived"
-                : activeRequest.status === "in_progress"
-                ? "Service in progress"
-                : "Provider en route"}
-            </ThemedText>
-            <ThemedText type="small" style={{ color: theme.textSecondary }}>
-              {activeRequest.eta
-                ? `${activeRequest.eta} min away · ${activeRequest.provider?.name}`
-                : activeRequest.provider?.name ?? "Tap to track"}
+                ? `Accepted${activeRequest.provider?.name ? ` · ${activeRequest.provider.name}` : ""}`
+                : activeRequest.status === "en_route" || activeRequest.status === "arrived"
+                ? `${activeRequest.status === "arrived" ? "Arrived" : "En Route"}${activeRequest.eta ? ` · ${activeRequest.eta} min` : ""}`
+                : "Service in progress"}
             </ThemedText>
           </View>
-          <Feather name="chevron-right" size={24} color={theme.textSecondary} />
-        </Pressable>
+          {/* Track button */}
+          <AnimatedPressable
+            onPress={() => navigation.navigate("ActiveService")}
+            onPressIn={handleFabPressIn}
+            onPressOut={handleFabPressOut}
+            style={[styles.fab, { backgroundColor: theme.success, ...Shadows.xl }, fabAnimatedStyle]}
+          >
+            <Feather name="navigation" size={22} color="#FFFFFF" />
+            <ThemedText type="body" style={styles.fabText}>Track Service</ThemedText>
+          </AnimatedPressable>
+        </View>
       ) : null}
 
       {/* FAB buttons */}
@@ -808,13 +806,12 @@ const styles = StyleSheet.create({
     borderRadius: 10, borderWidth: 1,
   },
   statusDotSmall: { width: 6, height: 6, borderRadius: 3 },
-  activeServiceBar: {
-    position: "absolute", left: Spacing.lg, right: Spacing.lg,
-    flexDirection: "row", alignItems: "center",
-    padding: Spacing.md, borderRadius: BorderRadius.lg, gap: Spacing.md,
+  activeStatusChip: {
+    flexDirection: "row", alignItems: "center", gap: Spacing.xs,
+    paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full, borderWidth: 1,
   },
-  statusDot: { width: 10, height: 10, borderRadius: 5 },
-  activeServiceInfo: { flex: 1 },
+  statusDot: { width: 8, height: 8, borderRadius: 4 },
   fabContainer: {
     position: "absolute", right: Spacing.lg, gap: Spacing.sm, alignItems: "flex-end",
   },
