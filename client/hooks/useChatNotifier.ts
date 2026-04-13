@@ -44,6 +44,7 @@ export function useChatNotifier({ conversationId, myRole, peerName }: UseChatNot
           conversationId,
           senderId: `notifier-${myRole}`,
           senderRole: myRole,
+          isNotifier: true,
         }));
       };
 

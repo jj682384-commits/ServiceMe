@@ -80,6 +80,7 @@ interface WsClient {
   conversationId: string;
   senderId: string;
   senderRole: "driver" | "provider" | null;
+  isNotifier?: boolean;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -1199,8 +1200,8 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
         const data = JSON.parse(raw.toString());
 
         if (data.type === "join") {
-          const { conversationId, senderId, senderRole } = data;
-          clientRecord = { ws, conversationId, senderId, senderRole };
+          const { conversationId, senderId, senderRole, isNotifier } = data;
+          clientRecord = { ws, conversationId, senderId, senderRole, isNotifier: !!isNotifier };
           clients.add(clientRecord);
           const history = messageHistory.get(conversationId) || [];
           ws.send(JSON.stringify({ type: "history", messages: history }));
@@ -1222,15 +1223,15 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
           ws.send(JSON.stringify({ type: "message", message }));
           broadcastToConversation(conversationId, { type: "message", message }, clientRecord);
 
-          const peersInRoom = [...clients].filter(
-            (c) => c.conversationId === conversationId && c !== clientRecord
+          const realPeersInRoom = [...clients].filter(
+            (c) => c.conversationId === conversationId && c !== clientRecord && !c.isNotifier
           );
-          if (peersInRoom.length === 0) {
+          if (realPeersInRoom.length === 0) {
             const replyDelay = 2000 + Math.random() * 2000;
             setTimeout(() => {
-              // Re-check: if a real peer joined since the message was sent, skip auto-reply
+              // Re-check: if a real (non-notifier) peer joined since the message was sent, skip
               const currentPeers = [...clients].filter(
-                (c) => c.conversationId === conversationId && c !== clientRecord
+                (c) => c.conversationId === conversationId && c !== clientRecord && !c.isNotifier
               );
               if (currentPeers.length > 0) return;
 

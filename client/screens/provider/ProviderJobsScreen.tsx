@@ -403,7 +403,7 @@ export default function ProviderJobsScreen() {
         } catch {}
       };
       ws.onerror = () => {};
-      ws.onclose = () => { if (!cancelled) setTimeout(connect, 3000); };
+      ws.onclose = () => { if (!cancelled) setTimeout(connect, 1000); };
     };
     connect();
     return () => {
