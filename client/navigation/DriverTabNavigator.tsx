@@ -13,6 +13,8 @@ import Animated, {
 } from "react-native-reanimated";
 import { useTheme } from "@/hooks/useTheme";
 import { useActiveJobTracker } from "@/hooks/useActiveJobTracker";
+import { useChatNotifier } from "@/hooks/useChatNotifier";
+import { useApp } from "@/context/AppContext";
 
 import DriverMapScreen from "@/screens/driver/DriverMapScreen";
 import DriverHistoryScreen from "@/screens/driver/DriverHistoryScreen";
@@ -86,8 +88,15 @@ const Tab = createBottomTabNavigator<DriverTabParamList>();
 
 export default function DriverTabNavigator() {
   const { theme, isDark } = useTheme();
+  const { activeRequest } = useApp();
   // Runs on every driver screen — polls job status, fires notifications, handles completion nav
   useActiveJobTracker();
+  // Background chat watcher — notifies when provider sends a message while not on ChatScreen
+  useChatNotifier({
+    conversationId: activeRequest?.id ?? null,
+    myRole: "driver",
+    peerName: activeRequest?.provider?.name ?? "Provider",
+  });
 
   return (
     <Tab.Navigator

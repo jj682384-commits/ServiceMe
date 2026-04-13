@@ -23,6 +23,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceType, ServiceStatus } from "@/context/AppContext";
+import { useChatNotifier } from "@/hooks/useChatNotifier";
 import { ThemedText } from "@/components/ThemedText";
 import { Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
@@ -202,6 +203,13 @@ const Tab = createBottomTabNavigator<ProviderTabParamList>();
 export default function ProviderTabNavigator() {
   const { theme, isDark } = useTheme();
   const { activeRequest } = useApp();
+
+  // Background chat watcher — notifies when driver sends a message while not on ChatScreen
+  useChatNotifier({
+    conversationId: activeRequest?.id ?? null,
+    myRole: "provider",
+    peerName: activeRequest?.driver?.name ?? "Driver",
+  });
 
   const hasActiveJob =
     !!activeRequest && ACTIVE_STATUSES.includes(activeRequest.status as ServiceStatus);

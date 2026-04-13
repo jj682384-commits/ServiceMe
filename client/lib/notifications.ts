@@ -122,6 +122,14 @@ export async function notifyNewJobRequest(serviceType: string, distance: string)
   );
 }
 
+export async function notifyNewChatMessage(senderName: string, preview: string) {
+  await scheduleNotification(
+    `Message from ${senderName}`,
+    preview.length > 80 ? preview.slice(0, 77) + "…" : preview,
+    { screen: "ActiveService" }
+  );
+}
+
 export async function notifyRangeAlert(milesRemaining: number, threshold: number) {
   await scheduleNotification(
     "Range Alert",

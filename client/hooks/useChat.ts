@@ -1,6 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { getApiUrl } from "@/lib/query-client";
 
+/**
+ * Conversations currently visible in ChatScreen.
+ * useChatNotifier checks this before firing a push notification so we never
+ * alert the user for a message they can already see on screen.
+ */
+export const activeChatConversations = new Set<string>();
+
 export interface ChatMessage {
   id: string;
   conversationId: string;
@@ -96,16 +103,18 @@ export function useChat({ conversationId, senderId, senderRole, enabled = true }
 
   useEffect(() => {
     mountedRef.current = true;
+    if (conversationId) activeChatConversations.add(conversationId);
     connect();
     return () => {
       mountedRef.current = false;
+      if (conversationId) activeChatConversations.delete(conversationId);
       if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
       if (wsRef.current) {
         wsRef.current.onclose = null;
         wsRef.current.close();
       }
     };
-  }, [connect]);
+  }, [connect, conversationId]);
 
   const sendMessage = useCallback(
     (content: string) => {
