@@ -14,26 +14,31 @@ export async function hashPassword(password: string): Promise<string> {
   return `v2:${SCRYPT_N}:${salt}:${hash.toString("hex")}`;
 }
 
-export async function verifyPassword(password: string, stored: string): Promise<boolean> {
+export async function verifyPassword(
+  password: string,
+  stored: string
+): Promise<{ valid: boolean; needsRehash: boolean }> {
   try {
     if (stored.startsWith("v2:")) {
-      // New format: v2:<N>:<salt>:<hash>
       const parts = stored.split(":");
-      if (parts.length < 4) return false;
+      if (parts.length < 4) return { valid: false, needsRehash: false };
       const N = parseInt(parts[1], 10);
       const salt = parts[2];
-      const hash = parts.slice(3).join(":");  // rejoin in case hash contains colons
+      const hash = parts.slice(3).join(":");
       const derived = (await scrypt(password, salt, 64, { N })) as Buffer;
-      return crypto.timingSafeEqual(Buffer.from(derived.toString("hex")), Buffer.from(hash));
+      const valid = crypto.timingSafeEqual(Buffer.from(derived.toString("hex")), Buffer.from(hash));
+      // Rehash if stored with a higher cost than current default
+      return { valid, needsRehash: valid && N !== SCRYPT_N };
     } else {
       // Legacy format: <salt>:<hash> — verify with the old default N=16384
       const [salt, hash] = stored.split(":");
-      if (!salt || !hash) return false;
+      if (!salt || !hash) return { valid: false, needsRehash: false };
       const derived = (await scrypt(password, salt, 64, { N: 16384 })) as Buffer;
-      return crypto.timingSafeEqual(Buffer.from(derived.toString("hex")), Buffer.from(hash));
+      const valid = crypto.timingSafeEqual(Buffer.from(derived.toString("hex")), Buffer.from(hash));
+      return { valid, needsRehash: valid };
     }
   } catch {
-    return false;
+    return { valid: false, needsRehash: false };
   }
 }
 

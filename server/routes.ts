@@ -264,13 +264,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Email or password is incorrect" });
       }
       const user = rows[0];
-      const valid = await verifyPassword(password, user.password_hash);
+      const { valid, needsRehash } = await verifyPassword(password, user.password_hash);
       if (!valid) {
         return res.status(401).json({ error: "Email or password is incorrect" });
       }
       const token = await createSession(user.id);
       console.log(`[AUTH] signin userId=${user.id} email=${email}`);
       res.json({ userId: user.id, token, role: user.role, name: user.name, email: user.email, phone: user.phone });
+      // Silently upgrade legacy/slow password hash in the background — next login will be fast
+      if (needsRehash) {
+        hashPassword(password)
+          .then((newHash) =>
+            pool.query("UPDATE auth_users SET password_hash = $1 WHERE id = $2", [newHash, user.id])
+          )
+          .then(() => console.log(`[AUTH] rehashed password for userId=${user.id}`))
+          .catch(() => {});
+      }
     } catch (err) {
       console.error("[auth/signin]", err);
       res.status(500).json({ error: "Sign in failed" });
