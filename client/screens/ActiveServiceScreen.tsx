@@ -25,11 +25,6 @@ import { useApp, ServiceStatus, ServiceType, Provider } from "@/context/AppConte
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { getApiUrl, apiRequest } from "@/lib/query-client";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
-import {
-  notifyProviderEnRoute,
-  notifyProviderArrived,
-  notifyServiceComplete,
-} from "@/lib/notifications";
 
 const { height: SCREEN_H } = Dimensions.get("window");
 
@@ -128,7 +123,7 @@ export default function ActiveServiceScreen() {
   const insets      = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const { theme }   = useTheme();
-  const { activeRequest, setActiveRequest, updateHistoryEntry, userRole } = useApp();
+  const { activeRequest, setActiveRequest, updateHistoryEntry } = useApp();
   const navigation  = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const isFocused   = useIsFocused();
 
@@ -139,8 +134,7 @@ export default function ActiveServiceScreen() {
 
   const [eta, setEta]                   = useState(activeRequest?.eta || 8);
   const [providerLocation, setProviderLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-  const pollRef          = useRef<ReturnType<typeof setInterval> | null>(null);
-  const wsRef            = useRef<WebSocket | null>(null);
+  const locPollRef       = useRef<ReturnType<typeof setInterval> | null>(null);
   const activeRequestRef = useRef(activeRequest);
 
   useEffect(() => { activeRequestRef.current = activeRequest; }, [activeRequest]);
@@ -208,113 +202,35 @@ export default function ActiveServiceScreen() {
     return () => clearInterval(timer);
   }, [activeRequest?.id, isFocused]);
 
-  // ── WebSocket ───────────────────────────────────────────────────────────────
+  // ── Provider location poll (screen-local, for live map pin) ─────────────────
+  // Status/notifications/WS are handled globally by useActiveJobTracker in DriverTabNavigator
   useEffect(() => {
     if (!activeRequest?.id) return;
-    const apiUrl  = getApiUrl();
-    const wsBase  = apiUrl.replace(/^https/, "wss").replace(/^http/, "ws").replace(/\/$/, "");
-    const wsUrl   = `${wsBase}/ws`;
-
-    const applyJobUpdate = (job: Record<string, unknown>) => {
-      const current = activeRequestRef.current;
-      if (!current || job.id !== current.id) return;
-      if (job.status === "cancelled") { setActiveRequest(null); return; }
-      const rawLoc = job.providerLocation as { lat?: number; lng?: number; latitude?: number; longitude?: number } | undefined;
-      if (rawLoc) {
-        const lat = rawLoc.latitude ?? rawLoc.lat;
-        const lng = rawLoc.longitude ?? rawLoc.lng;
-        if (lat && lng && (lat !== 0 || lng !== 0)) setProviderLocation({ latitude: lat, longitude: lng });
-      }
-      const serverIdx = STATUS_ORDER.indexOf(job.status as ServiceStatus);
-      const localIdx  = STATUS_ORDER.indexOf(current.status);
-      if (serverIdx > localIdx || job.status === "completed" || (job.provider && !current.provider)) {
-        const newStatus   = job.status as ServiceStatus;
-        const newProvider = (job.provider as Provider | undefined) ?? current.provider;
-        setActiveRequest({ ...current, status: newStatus, provider: newProvider, eta: (job.eta as number | undefined) ?? current.eta });
-        setEta((job.eta as number | undefined) ?? current.eta ?? 8);
-        updateHistoryEntry(current.id, { status: newStatus, provider: newProvider });
-      }
-    };
-
-    let cancelled = false;
-    const connect = () => {
-      if (cancelled) return;
-      const ws = new WebSocket(wsUrl);
-      wsRef.current = ws;
-      ws.onmessage = (event) => {
-        try { const d = JSON.parse(event.data as string); if (d.type === "job_status_update") applyJobUpdate(d.job); } catch {}
-      };
-      ws.onerror  = () => {};
-      ws.onclose  = () => { if (!cancelled) setTimeout(connect, 1000); };
-    };
-    connect();
-    return () => { cancelled = true; wsRef.current?.close(); wsRef.current = null; };
-  }, [activeRequest?.id]);
-
-  // ── Completion navigation ────────────────────────────────────────────────────
-  useEffect(() => {
-    if (activeRequest?.status === "completed" && userRole === "driver") {
-      navigation.navigate("ServiceCompletion");
-    }
-  }, [activeRequest?.status]);
-
-  // ── Polling ──────────────────────────────────────────────────────────────────
-  // NOTE: deps are [activeRequest?.id] only — the poll reads the LIVE status via
-  // activeRequestRef so stale closures never silently stop updates on mid-job status changes.
-  useEffect(() => {
-    if (!activeRequest?.id) return;
-
-    const poll = async () => {
-      // Always read the latest request from the ref, never the stale closure
+    const pollLocation = async () => {
       const cur = activeRequestRef.current;
-      if (!cur) return;
-      if (cur.status === "cancelled" || cur.status === "completed") {
-        if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+      if (!cur || cur.status === "completed" || cur.status === "cancelled") {
+        if (locPollRef.current) { clearInterval(locPollRef.current); locPollRef.current = null; }
         return;
       }
       try {
         const url = new URL(`/api/jobs/${cur.id}`, getApiUrl());
-        const res = await fetch(url.toString(), { headers: { "Cache-Control": "no-cache", "Pragma": "no-cache" } });
+        const res = await fetch(url.toString(), { headers: { "Cache-Control": "no-cache" } });
         if (!res.ok) return;
         const job = await res.json();
-        if (job.status === "cancelled") {
-          if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
-          setActiveRequest(null); safeGoBack(); return;
-        }
         if (job.providerLocation) {
           const loc = job.providerLocation as { lat?: number; lng?: number; latitude?: number; longitude?: number };
           const lat = loc.latitude ?? loc.lat;
           const lng = loc.longitude ?? loc.lng;
           if (lat && lng && (lat !== 0 || lng !== 0)) setProviderLocation({ latitude: lat, longitude: lng });
         }
-        // Compare server vs current live status (not stale closure)
-        const serverIdx = STATUS_ORDER.indexOf(job.status as ServiceStatus);
-        const localIdx  = STATUS_ORDER.indexOf(cur.status);
-        if (serverIdx > localIdx || job.status === "completed" || (job.provider && !cur.provider)) {
-          const newStatus   = job.status as ServiceStatus;
-          const newProvider = job.provider ? (job.provider as Provider) : cur.provider;
-          setActiveRequest({ ...cur, status: newStatus, provider: newProvider, eta: job.eta ?? cur.eta });
-          setEta(job.eta ?? cur.eta ?? 8);
-          updateHistoryEntry(cur.id, { status: newStatus, provider: newProvider });
-          if (newStatus === "completed" && pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
-        }
+        // Keep ETA in sync with server
+        if (job.eta != null) setEta(job.eta as number);
       } catch {}
     };
-
-    poll(); // immediate poll on mount / job change
-    pollRef.current = setInterval(poll, 1000);
-    return () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } };
+    pollLocation();
+    locPollRef.current = setInterval(pollLocation, 3000);
+    return () => { if (locPollRef.current) { clearInterval(locPollRef.current); locPollRef.current = null; } };
   }, [activeRequest?.id]);
-
-  // ── Notifications ────────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!activeRequest) return;
-    const providerName = activeRequest.provider?.name ?? "Your provider";
-    const serviceLabel = serviceTypeLabels[activeRequest.serviceType] ?? "service";
-    if (activeRequest.status === "en_route")  notifyProviderEnRoute(providerName, activeRequest.eta ?? 8);
-    else if (activeRequest.status === "arrived")   notifyProviderArrived(providerName);
-    else if (activeRequest.status === "completed") notifyServiceComplete(serviceLabel);
-  }, [activeRequest?.status]);
 
   if (!activeRequest) return null;
 
