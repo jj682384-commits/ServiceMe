@@ -97,6 +97,7 @@ function JobDetailSheet({
   accepting,
   canAccept,
   isEvCapable,
+  acceptsPriorityJobs,
 }: {
   job: ServiceRequest;
   visible: boolean;
@@ -105,6 +106,7 @@ function JobDetailSheet({
   accepting: boolean;
   canAccept: boolean;
   isEvCapable: boolean;
+  acceptsPriorityJobs?: boolean;
 }) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -543,6 +545,7 @@ export default function ProviderJobsScreen() {
           accepting={accepting}
           canAccept={currentProvider?.isAvailable ?? false}
           isEvCapable={isEvCapable}
+          acceptsPriorityJobs={currentProvider?.acceptsPriorityJobs}
         />
       ) : null}
     </ThemedView>
