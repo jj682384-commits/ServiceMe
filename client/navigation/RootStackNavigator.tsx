@@ -134,6 +134,8 @@ export default function RootStackNavigator() {
         options={{
           presentation: "modal",
           headerTitle: "Request Service",
+          gestureEnabled: true,
+          gestureResponseDistance: { top: 135 },
         }}
       />
       <Stack.Screen
@@ -199,6 +201,8 @@ export default function RootStackNavigator() {
         options={{
           presentation: "modal",
           headerTitle: "Tow Service",
+          gestureEnabled: true,
+          gestureResponseDistance: { top: 135 },
         }}
       />
       <Stack.Screen
@@ -229,6 +233,8 @@ export default function RootStackNavigator() {
         options={{
           presentation: "modal",
           headerTitle: "Smart Diagnostic",
+          gestureEnabled: true,
+          gestureResponseDistance: { top: 135 },
         }}
       />
       <Stack.Screen

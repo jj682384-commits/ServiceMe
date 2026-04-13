@@ -33,6 +33,7 @@ import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const HUB_PILL_H = 44;
 const HUB_EXPANDED_H = 300;
+const ACTION_ROW_H = 48;
 
 // Color constants for provider status
 const COLOR_FREE = "#22C55E";
@@ -381,21 +382,23 @@ export default function DriverMapScreen() {
 
   // Swipe-down gesture — only applied to the header zone, not the ScrollView
   const swipeDownGesture = Gesture.Pan()
+    .activeOffsetY(6)          // respond after just 6px down-movement — minimal latency
+    .failOffsetY(-6)           // cancel if user swipes up
     .onUpdate((e) => {
       if (!hubIsOpen.value) return;
       dragY.value = Math.max(0, e.translationY);
     })
     .onEnd((e) => {
       if (!hubIsOpen.value) return;
-      if (e.translationY > 60 || e.velocityY > 450) {
-        // Snap shut
-        hubAnim.value = withTiming(0, { duration: 180, easing: Easing.in(Easing.quad) });
-        dragY.value = withTiming(0, { duration: 180 });
+      if (e.translationY > 40 || e.velocityY > 300) {
+        // Snap shut — fast 140ms collapse so it feels instant
+        hubAnim.value = withTiming(0, { duration: 140, easing: Easing.in(Easing.quad) });
+        dragY.value = withTiming(0, { duration: 140 });
         hubIsOpen.value = false;
         runOnJS(collapseHub)();
       } else {
         // Bounce back to fully open
-        dragY.value = withSpring(0, { damping: 20, stiffness: 300 });
+        dragY.value = withSpring(0, { damping: 22, stiffness: 350 });
       }
     });
 
@@ -643,13 +646,13 @@ export default function DriverMapScreen() {
         ))}
       </ScrollView>
 
-      {/* Nearby Mechanics Hub — collapsible pill that expands into a list */}
+      {/* Nearby Mechanics Hub — collapsible pill, sits above the action row */}
       {hasPermission && !selectedProvider &&
       (!activeRequest || activeRequest.status === "completed" || activeRequest.status === "cancelled") ? (
         <Animated.View
           style={[
             styles.hubContainer,
-            { bottom: tabBarHeight + Spacing.sm, backgroundColor: theme.backgroundDefault, ...Shadows.lg },
+            { bottom: tabBarHeight + ACTION_ROW_H + Spacing.md, backgroundColor: theme.backgroundDefault, ...Shadows.lg },
             hubContainerStyle,
           ]}
         >
@@ -752,39 +755,48 @@ export default function DriverMapScreen() {
         </View>
       ) : null}
 
-      {/* FAB buttons — only shown when hub is collapsed and no active request */}
+      {/* Persistent quick-action row — always visible (no active request, no quick card) */}
       {(!activeRequest || activeRequest.status === "completed" || activeRequest.status === "cancelled") &&
-      !selectedProvider && !hubOpen ? (
-        <View style={[styles.fabContainer, { bottom: tabBarHeight + HUB_PILL_H + Spacing.md }]}>
-          <AnimatedPressable
+      !selectedProvider ? (
+        <View
+          style={[
+            styles.actionRow,
+            { bottom: tabBarHeight + Spacing.xs, backgroundColor: theme.backgroundDefault, ...Shadows.md },
+          ]}
+        >
+          <Pressable
             onPress={() => navigation.navigate("SmartDiagnostic")}
-            onPressIn={handleFabPressIn}
-            onPressOut={handleFabPressOut}
-            style={[styles.diagnoseFab, { backgroundColor: theme.backgroundDefault, borderColor: theme.secondary }]}
+            style={[styles.actionChip, { borderColor: theme.secondary }]}
           >
-            <Feather name="cpu" size={20} color={theme.secondary} />
-            <ThemedText type="small" style={[styles.diagnoseFabText, { color: theme.secondary }]}>
-              Diagnose My Issue
+            <Feather name="cpu" size={15} color={theme.secondary} />
+            <ThemedText type="small" style={{ color: theme.secondary, fontWeight: "600", fontSize: 12 }}>
+              Diagnose
             </ThemedText>
-          </AnimatedPressable>
-          <AnimatedPressable
+          </Pressable>
+
+          <View style={[styles.actionDivider, { backgroundColor: theme.border }]} />
+
+          <Pressable
             onPress={() => navigation.navigate("TowRequest")}
-            onPressIn={handleFabPressIn}
-            onPressOut={handleFabPressOut}
-            style={[styles.towFab, { backgroundColor: theme.secondary, ...Shadows.lg }]}
+            style={[styles.actionChip, { borderColor: theme.primary }]}
           >
-            <Feather name="truck" size={22} color="#FFFFFF" />
-            <ThemedText type="small" style={styles.towFabText}>Need a Tow?</ThemedText>
-          </AnimatedPressable>
-          <AnimatedPressable
+            <Feather name="truck" size={15} color={theme.primary} />
+            <ThemedText type="small" style={{ color: theme.primary, fontWeight: "600", fontSize: 12 }}>
+              Need a Tow
+            </ThemedText>
+          </Pressable>
+
+          <View style={[styles.actionDivider, { backgroundColor: theme.border }]} />
+
+          <Pressable
             onPress={() => navigation.navigate("ServiceRequest")}
-            onPressIn={handleFabPressIn}
-            onPressOut={handleFabPressOut}
-            style={[styles.fab, { backgroundColor: theme.primary, ...Shadows.xl }, fabAnimatedStyle]}
+            style={[styles.actionChipPrimary, { backgroundColor: theme.primary }]}
           >
-            <Feather name="zap" size={28} color="#FFFFFF" />
-            <ThemedText type="body" style={styles.fabText}>Get Help Fast</ThemedText>
-          </AnimatedPressable>
+            <Feather name="zap" size={15} color="#FFF" />
+            <ThemedText type="small" style={{ color: "#FFF", fontWeight: "700", fontSize: 12 }}>
+              Get Help Fast
+            </ThemedText>
+          </Pressable>
         </View>
       ) : null}
 
@@ -922,24 +934,28 @@ const styles = StyleSheet.create({
   fabContainer: {
     position: "absolute", right: Spacing.lg, gap: Spacing.sm, alignItems: "flex-end",
   },
-  diagnoseFab: {
-    flexDirection: "row", alignItems: "center", gap: Spacing.sm,
-    paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.full, borderWidth: 1.5,
-  },
-  diagnoseFabText: { fontWeight: "600" },
-  towFab: {
-    flexDirection: "row", alignItems: "center", gap: Spacing.sm,
-    paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.full,
-  },
-  towFabText: { color: "#FFFFFF", fontWeight: "600" },
   fab: {
     flexDirection: "row", alignItems: "center", gap: Spacing.sm,
     paddingHorizontal: Spacing.xl, paddingVertical: Spacing.md,
     borderRadius: BorderRadius.full,
   },
   fabText: { color: "#FFFFFF", fontWeight: "700" },
+  // Persistent horizontal quick-action row
+  actionRow: {
+    position: "absolute", left: Spacing.lg, right: Spacing.lg,
+    flexDirection: "row", alignItems: "center",
+    borderRadius: BorderRadius.full, overflow: "hidden",
+    height: ACTION_ROW_H,
+  },
+  actionChip: {
+    flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center",
+    gap: 5, height: ACTION_ROW_H, borderRightWidth: 0,
+  },
+  actionChipPrimary: {
+    flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center",
+    gap: 5, height: ACTION_ROW_H, borderRadius: BorderRadius.full,
+  },
+  actionDivider: { width: StyleSheet.hairlineWidth, height: 24 },
   // Quick request card
   quickCardBackdrop: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 30 },
   quickCard: {
