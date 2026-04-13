@@ -424,20 +424,75 @@ export default function DriverMapScreen() {
   const handleFabPressIn = () => { fabScale.value = withSpring(0.95, { damping: 15, stiffness: 150 }); };
   const handleFabPressOut = () => { fabScale.value = withSpring(1, { damping: 15, stiffness: 150 }); };
 
-  // Quick-action row: highlight chip, fire haptic, then navigate
+  // Action row items — single source of truth for tap + swipe
+  const ACTION_ITEMS = [
+    { key: "diagnose" as const, route: "SmartDiagnostic" as keyof RootStackParamList },
+    { key: "tow"      as const, route: "TowRequest"      as keyof RootStackParamList },
+    { key: "service"  as const, route: "ServiceRequest"  as keyof RootStackParamList },
+  ];
+
+  // Quick-action row: highlight chip, fire haptic, then navigate (tap path)
   const pressAction = useCallback(
     (action: "diagnose" | "tow" | "service", route: keyof RootStackParamList) => {
       setActiveAction(action);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-      // Brief highlight window so the user sees the selection before navigating
       setTimeout(() => {
         navigation.navigate(route as any);
-        // Reset after navigate so coming back shows no lingering highlight
         setTimeout(() => setActiveAction(null), 300);
       }, 150);
     },
     [navigation],
   );
+
+  // Swipe-between-chips gesture
+  const rowWidthSV    = useSharedValue(0);   // measured on layout
+  const panStartIdxSV = useSharedValue(0);   // chip index where finger landed
+  const prevIdxSV     = useSharedValue(-1);  // last emitted index (for change detection)
+
+  // JS-thread helpers called via runOnJS inside the worklet
+  const _setActionIdx = useCallback((idx: number) => {
+    setActiveAction(ACTION_ITEMS[idx].key);
+  }, []);
+  const _haptic = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+  }, []);
+  const _navigateIdx = useCallback((idx: number) => {
+    if (idx < 0 || idx > 2) { setActiveAction(null); return; }
+    navigation.navigate(ACTION_ITEMS[idx].route as any);
+    setTimeout(() => setActiveAction(null), 300);
+  }, [navigation]);
+
+  const swipeRowGesture = Gesture.Pan()
+    .activeOffsetX([-8, 8])    // require 8 px horizontal before activating
+    .failOffsetY([-14, 14])    // cancel if vertical movement wins first
+    .onBegin((e) => {
+      const w = rowWidthSV.value;
+      if (w === 0) return;
+      const startIdx = Math.min(2, Math.max(0, Math.floor((e.x / w) * 3)));
+      panStartIdxSV.value = startIdx;
+      prevIdxSV.value     = startIdx;
+      runOnJS(_setActionIdx)(startIdx);
+      runOnJS(_haptic)();
+    })
+    .onUpdate((e) => {
+      const w = rowWidthSV.value;
+      if (w === 0) return;
+      const delta  = Math.round(e.translationX / (w / 3));
+      const newIdx = Math.min(2, Math.max(0, panStartIdxSV.value + delta));
+      if (newIdx !== prevIdxSV.value) {
+        prevIdxSV.value = newIdx;
+        runOnJS(_setActionIdx)(newIdx);
+        runOnJS(_haptic)();
+      }
+    })
+    .onEnd(() => {
+      const idx = prevIdxSV.value;
+      prevIdxSV.value = -1;
+      runOnJS(_navigateIdx)(idx);
+    })
+    .onFinalize(() => {
+      prevIdxSV.value = -1;
+    });
 
   useEffect(() => {
     if (permission?.granted && Platform.OS !== "web") {
@@ -775,7 +830,9 @@ export default function DriverMapScreen() {
       {/* Persistent quick-action row — always visible (no active request, no quick card) */}
       {(!activeRequest || activeRequest.status === "completed" || activeRequest.status === "cancelled") &&
       !selectedProvider ? (
+        <GestureDetector gesture={swipeRowGesture}>
         <View
+          onLayout={(e) => { rowWidthSV.value = e.nativeEvent.layout.width; }}
           style={[
             styles.actionRow,
             { bottom: tabBarHeight + Spacing.xs, backgroundColor: theme.backgroundDefault, ...Shadows.md },
@@ -862,6 +919,7 @@ export default function DriverMapScreen() {
             </ThemedText>
           </Pressable>
         </View>
+        </GestureDetector>
       ) : null}
 
       {/* Quick request card (appears when marker tapped) */}
