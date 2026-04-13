@@ -11,7 +11,6 @@ import {
   ScrollView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useHeaderHeight } from "@react-navigation/elements";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation, useIsFocused } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -121,7 +120,6 @@ function StatusTimeline({
 
 export default function ActiveServiceScreen() {
   const insets      = useSafeAreaInsets();
-  const headerHeight = useHeaderHeight();
   const { theme }   = useTheme();
   const { activeRequest, setActiveRequest, updateHistoryEntry } = useApp();
   const navigation  = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -259,7 +257,14 @@ export default function ActiveServiceScreen() {
     return (
       <ThemedView style={styles.container}>
         <ScreenDecoration />
-        <View style={[styles.pendingContainer, { paddingTop: headerHeight + Spacing.xl }]}>
+        {/* Floating back button */}
+        <Pressable
+          onPress={safeGoBack}
+          style={[styles.floatingBack, { top: insets.top + Spacing.sm, backgroundColor: theme.backgroundDefault }]}
+        >
+          <Feather name="arrow-left" size={20} color={theme.text} />
+        </Pressable>
+        <View style={[styles.pendingContainer, { paddingTop: insets.top + 56 + Spacing.xl }]}>
           <View style={[styles.pendingIcon, { backgroundColor: theme.primary + "15" }]}>
             <ActivityIndicator size="large" color={theme.primary} />
           </View>
@@ -349,6 +354,14 @@ export default function ActiveServiceScreen() {
         />
       </View>
 
+      {/* Floating back button — rendered above the map */}
+      <Pressable
+        onPress={safeGoBack}
+        style={[styles.floatingBack, { top: insets.top + Spacing.sm, backgroundColor: theme.backgroundDefault }]}
+      >
+        <Feather name="arrow-left" size={20} color={theme.text} />
+      </Pressable>
+
       {/* Draggable bottom sheet */}
       <Animated.View
         style={[
@@ -413,7 +426,7 @@ export default function ActiveServiceScreen() {
         >
           {/* Provider card */}
           {activeRequest.provider ? (
-            <View style={[styles.card, { backgroundColor: theme.backgroundDefault }]}>
+            <View style={[styles.card, { backgroundColor: theme.backgroundSecondary, borderWidth: 1, borderColor: theme.border }]}>
               <ThemedText type="small" style={{ color: theme.textSecondary, marginBottom: Spacing.sm }}>
                 YOUR PROVIDER
               </ThemedText>
@@ -465,7 +478,7 @@ export default function ActiveServiceScreen() {
           ) : null}
 
           {/* Service info card */}
-          <View style={[styles.card, { backgroundColor: theme.backgroundDefault }]}>
+          <View style={[styles.card, { backgroundColor: theme.backgroundSecondary, borderWidth: 1, borderColor: theme.border }]}>
             <View style={styles.cardHeader}>
               <View style={[styles.iconBox, { backgroundColor: theme.primary + "15" }]}>
                 <Feather name={serviceTypeIcons[activeRequest.serviceType]} size={24} color={theme.primary} />
@@ -494,7 +507,7 @@ export default function ActiveServiceScreen() {
           </View>
 
           {/* Progress timeline */}
-          <View style={[styles.card, { backgroundColor: theme.backgroundDefault }]}>
+          <View style={[styles.card, { backgroundColor: theme.backgroundSecondary, borderWidth: 1, borderColor: theme.border }]}>
             <ThemedText type="small" style={{ color: theme.textSecondary, marginBottom: Spacing.md }}>
               SERVICE PROGRESS
             </ThemedText>
@@ -520,6 +533,19 @@ export default function ActiveServiceScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+
+  floatingBack: {
+    position: "absolute",
+    left: Spacing.lg,
+    zIndex: 10,
+    width: 40, height: 40, borderRadius: 20,
+    alignItems: "center", justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 4,
+    elevation: 6,
+  },
 
   mapFallback: { flex: 1, alignItems: "center", justifyContent: "center", gap: Spacing.sm },
   mapMarker:   { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center" },

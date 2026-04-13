@@ -141,9 +141,7 @@ export default function RootStackNavigator() {
       <Stack.Screen
         name="ActiveService"
         component={ActiveServiceScreen}
-        options={{
-          headerTitle: "Service Status",
-        }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="ServiceCompletion"
