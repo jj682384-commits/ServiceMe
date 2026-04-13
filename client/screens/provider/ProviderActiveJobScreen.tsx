@@ -256,6 +256,14 @@ export default function ProviderActiveJobScreen() {
         />
       </View>
 
+      {/* Floating back button — rendered above the map */}
+      <Pressable
+        onPress={safeGoBack}
+        style={[styles.floatingBack, { top: insets.top + Spacing.sm, backgroundColor: theme.backgroundDefault }]}
+      >
+        <Feather name="arrow-left" size={20} color={theme.text} />
+      </Pressable>
+
       {/* ── Draggable bottom sheet ─────────────────────────────────────────── */}
       <Animated.View
         style={[
@@ -319,7 +327,7 @@ export default function ProviderActiveJobScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* Service info card */}
-          <View style={[styles.card, { backgroundColor: theme.backgroundDefault }]}>
+          <View style={[styles.card, { backgroundColor: theme.backgroundSecondary, borderWidth: 1, borderColor: theme.border }]}>
             <View style={styles.cardHeader}>
               <View style={[styles.iconBox, { backgroundColor: theme.primary + "15" }]}>
                 <Feather name={serviceTypeIcons[activeRequest.serviceType]} size={24} color={theme.primary} />
@@ -349,7 +357,7 @@ export default function ProviderActiveJobScreen() {
 
           {/* Customer card */}
           {activeRequest.driver ? (
-            <View style={[styles.card, { backgroundColor: theme.backgroundDefault }]}>
+            <View style={[styles.card, { backgroundColor: theme.backgroundSecondary, borderWidth: 1, borderColor: theme.border }]}>
               <ThemedText type="small" style={{ color: theme.textSecondary, marginBottom: Spacing.sm }}>
                 CUSTOMER
               </ThemedText>
@@ -371,7 +379,7 @@ export default function ProviderActiveJobScreen() {
           ) : null}
 
           {/* Progress timeline */}
-          <View style={[styles.card, { backgroundColor: theme.backgroundDefault }]}>
+          <View style={[styles.card, { backgroundColor: theme.backgroundSecondary, borderWidth: 1, borderColor: theme.border }]}>
             <ThemedText type="small" style={{ color: theme.textSecondary, marginBottom: Spacing.md }}>
               JOB PROGRESS
             </ThemedText>
@@ -456,6 +464,19 @@ const styles = StyleSheet.create({
   container:      { flex: 1 },
   mapFallback:    { flex: 1, alignItems: "center", justifyContent: "center", gap: Spacing.sm },
   customerMarker: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center" },
+
+  floatingBack: {
+    position: "absolute",
+    left: Spacing.lg,
+    zIndex: 10,
+    width: 40, height: 40, borderRadius: 20,
+    alignItems: "center", justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 4,
+    elevation: 6,
+  },
 
   sheet: {
     position: "absolute",

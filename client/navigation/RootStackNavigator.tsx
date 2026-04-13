@@ -351,9 +351,7 @@ export default function RootStackNavigator() {
       <Stack.Screen
         name="ProviderActiveJob"
         component={ProviderActiveJobScreen}
-        options={{
-          headerTitle: "Active Job",
-        }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="ProviderPaymentSettings"
