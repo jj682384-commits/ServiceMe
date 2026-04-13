@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   View,
   StyleSheet,
@@ -17,6 +17,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, Easing, interpolate, runOnJS } from "react-native-reanimated";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import * as Location from "expo-location";
+import * as Haptics from "expo-haptics";
 import { useQuery } from "@tanstack/react-query";
 import { getApiUrl } from "@/lib/query-client";
 
@@ -354,6 +355,7 @@ export default function DriverMapScreen() {
   const [selectedFilter, setSelectedFilter] = useState<ServiceType | "all">("all");
   const [hubOpen, setHubOpen] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
+  const [activeAction, setActiveAction] = useState<"diagnose" | "tow" | "service" | null>(null);
 
   // Slide animation for the quick-request card
   const slideAnim = useRef(new RNAnimated.Value(300)).current;
@@ -421,6 +423,21 @@ export default function DriverMapScreen() {
   const fabAnimatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: fabScale.value }] }));
   const handleFabPressIn = () => { fabScale.value = withSpring(0.95, { damping: 15, stiffness: 150 }); };
   const handleFabPressOut = () => { fabScale.value = withSpring(1, { damping: 15, stiffness: 150 }); };
+
+  // Quick-action row: highlight chip, fire haptic, then navigate
+  const pressAction = useCallback(
+    (action: "diagnose" | "tow" | "service", route: keyof RootStackParamList) => {
+      setActiveAction(action);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      // Brief highlight window so the user sees the selection before navigating
+      setTimeout(() => {
+        navigation.navigate(route as any);
+        // Reset after navigate so coming back shows no lingering highlight
+        setTimeout(() => setActiveAction(null), 300);
+      }, 150);
+    },
+    [navigation],
+  );
 
   useEffect(() => {
     if (permission?.granted && Platform.OS !== "web") {
@@ -764,36 +781,83 @@ export default function DriverMapScreen() {
             { bottom: tabBarHeight + Spacing.xs, backgroundColor: theme.backgroundDefault, ...Shadows.md },
           ]}
         >
+          {/* Diagnose chip */}
           <Pressable
-            onPress={() => navigation.navigate("SmartDiagnostic")}
-            style={[styles.actionChip, { borderColor: theme.secondary }]}
+            onPress={() => pressAction("diagnose", "SmartDiagnostic")}
+            style={[
+              styles.actionChip,
+              activeAction === "diagnose"
+                ? { backgroundColor: theme.secondary }
+                : { backgroundColor: "transparent" },
+            ]}
           >
-            <Feather name="cpu" size={15} color={theme.secondary} />
-            <ThemedText type="small" style={{ color: theme.secondary, fontWeight: "600", fontSize: 12 }}>
+            <Feather
+              name="cpu"
+              size={15}
+              color={activeAction === "diagnose" ? "#FFF" : theme.secondary}
+            />
+            <ThemedText
+              type="small"
+              style={{
+                color: activeAction === "diagnose" ? "#FFF" : theme.secondary,
+                fontWeight: "700",
+                fontSize: 12,
+              }}
+            >
               Diagnose
             </ThemedText>
           </Pressable>
 
           <View style={[styles.actionDivider, { backgroundColor: theme.border }]} />
 
+          {/* Need a Tow chip */}
           <Pressable
-            onPress={() => navigation.navigate("TowRequest")}
-            style={[styles.actionChip, { borderColor: theme.primary }]}
+            onPress={() => pressAction("tow", "TowRequest")}
+            style={[
+              styles.actionChip,
+              activeAction === "tow"
+                ? { backgroundColor: theme.primary }
+                : { backgroundColor: "transparent" },
+            ]}
           >
-            <Feather name="truck" size={15} color={theme.primary} />
-            <ThemedText type="small" style={{ color: theme.primary, fontWeight: "600", fontSize: 12 }}>
+            <Feather
+              name="truck"
+              size={15}
+              color={activeAction === "tow" ? "#FFF" : theme.primary}
+            />
+            <ThemedText
+              type="small"
+              style={{
+                color: activeAction === "tow" ? "#FFF" : theme.primary,
+                fontWeight: "700",
+                fontSize: 12,
+              }}
+            >
               Need a Tow
             </ThemedText>
           </Pressable>
 
           <View style={[styles.actionDivider, { backgroundColor: theme.border }]} />
 
+          {/* Get Help Fast chip — always filled as the CTA */}
           <Pressable
-            onPress={() => navigation.navigate("ServiceRequest")}
-            style={[styles.actionChipPrimary, { backgroundColor: theme.primary }]}
+            onPress={() => pressAction("service", "ServiceRequest")}
+            style={[
+              styles.actionChipPrimary,
+              {
+                backgroundColor:
+                  activeAction === "service"
+                    ? theme.primaryDark ?? theme.primary
+                    : theme.primary,
+                transform: [{ scale: activeAction === "service" ? 0.95 : 1 }],
+              },
+            ]}
           >
             <Feather name="zap" size={15} color="#FFF" />
-            <ThemedText type="small" style={{ color: "#FFF", fontWeight: "700", fontSize: 12 }}>
+            <ThemedText
+              type="small"
+              style={{ color: "#FFF", fontWeight: "700", fontSize: 12 }}
+            >
               Get Help Fast
             </ThemedText>
           </Pressable>
