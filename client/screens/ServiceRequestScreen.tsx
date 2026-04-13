@@ -26,7 +26,8 @@ import { getApiUrl } from "@/lib/query-client";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-const PREMIUM_DISCOUNT = 0.25;
+const PREMIUM_DISCOUNT_MONTHLY = 0.20;
+const PREMIUM_DISCOUNT_YEARLY  = 0.25;
 
 const serviceTypes: { type: ServiceType; label: string; icon: keyof typeof Feather.glyphMap; price: number }[] = [
   { type: "flat_tire", label: "Flat Tire", icon: "disc", price: 40 },
@@ -207,7 +208,8 @@ export default function ServiceRequestScreen() {
   const customFuelValid = useCustomFuel && !isNaN(parsedCustom) && parsedCustom > 0;
   const fuelPrice = useCustomFuel ? (customFuelValid ? parsedCustom : 0) : (FUEL_AMOUNTS[selectedFuelIndex]?.price || 0);
   const basePrice = isFuelSelected ? fuelPrice : (selectedServiceData?.price || 0);
-  const discountAmount = isPremium ? basePrice * PREMIUM_DISCOUNT : 0;
+  const premiumDiscount = currentDriver?.billingCycle === "yearly" ? PREMIUM_DISCOUNT_YEARLY : PREMIUM_DISCOUNT_MONTHLY;
+  const discountAmount = isPremium ? basePrice * premiumDiscount : 0;
   const discountedBasePrice = basePrice - discountAmount;
   const expressFee = isExpress ? EXPRESS_FEE : 0;
   const isScheduled = scheduleMode === "later";
@@ -413,7 +415,7 @@ export default function ServiceRequestScreen() {
           <View style={[styles.premiumBanner, { backgroundColor: theme.success + "15" }]}>
             <Feather name="star" size={16} color={theme.success} />
             <ThemedText type="small" style={{ color: theme.success, fontWeight: "600", marginLeft: Spacing.sm }}>
-              Premium Member - 25% off all services
+              Premium Member - {Math.round(premiumDiscount * 100)}% off all services
             </ThemedText>
           </View>
         )}
@@ -426,7 +428,7 @@ export default function ServiceRequestScreen() {
             <ServiceTypeCard
               key={service.type}
               {...service}
-              discountedPrice={isPremium ? service.price * (1 - PREMIUM_DISCOUNT) : undefined}
+              discountedPrice={isPremium ? service.price * (1 - premiumDiscount) : undefined}
               isPremium={isPremium}
               isSelected={selectedService === service.type}
               onPress={() => setSelectedService(service.type)}
@@ -557,7 +559,7 @@ export default function ServiceRequestScreen() {
                       ${parsedCustom.toFixed(2)}
                     </ThemedText>
                     <ThemedText type="body" style={{ color: theme.success, fontWeight: "700" }}>
-                      ${(parsedCustom * (1 - PREMIUM_DISCOUNT)).toFixed(2)}
+                      ${(parsedCustom * (1 - premiumDiscount)).toFixed(2)}
                     </ThemedText>
                   </View>
                 ) : null}
@@ -570,7 +572,7 @@ export default function ServiceRequestScreen() {
               >
                 {FUEL_AMOUNTS.map((fuel, index) => {
                   const isActive = selectedFuelIndex === index;
-                  const fuelDiscounted = isPremium ? fuel.price * (1 - PREMIUM_DISCOUNT) : fuel.price;
+                  const fuelDiscounted = isPremium ? fuel.price * (1 - premiumDiscount) : fuel.price;
                   return (
                     <Pressable
                       key={fuel.price}
@@ -916,7 +918,7 @@ export default function ServiceRequestScreen() {
               {isPremium && !isUsingFree && (
                 <View style={styles.costRow}>
                   <ThemedText type="small" style={{ color: theme.success }}>
-                    Premium Discount (25%)
+                    Premium Discount ({Math.round(premiumDiscount * 100)}%)
                   </ThemedText>
                   <ThemedText type="small" style={{ color: theme.success }}>
                     -${discountAmount.toFixed(2)}

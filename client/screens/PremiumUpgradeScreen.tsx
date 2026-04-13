@@ -200,7 +200,7 @@ export default function PremiumUpgradeScreen() {
             </View>
           </View>
           <ComparisonRow feature="Free services" free="None" premium={selectedTab === "yearly" ? "2/year" : "1/month"} />
-          <ComparisonRow feature="All services" free="Standard" premium="25% off" />
+          <ComparisonRow feature="All services" free="Standard" premium={selectedTab === "yearly" ? "25% off" : "20% off"} />
           <ComparisonRow feature="Tow service" free="Full price" premium="Discounted" />
           <ComparisonRow feature="Priority response" free={false} premium={true} />
           <ComparisonRow feature="24/7 support" free={false} premium={true} />
@@ -214,7 +214,7 @@ export default function PremiumUpgradeScreen() {
             title="Free Services Included"
             description={selectedTab === "yearly" ? "2 free services per year — any service type" : "1 free service per month — any service type"}
           />
-          <BenefitRow icon="percent" title="25% Off All Services" description="Save on every roadside assistance request" />
+          <BenefitRow icon="percent" title={selectedTab === "yearly" ? "25% Off All Services" : "20% Off All Services"} description="Save on every roadside assistance request" />
           <BenefitRow icon="truck" title="Discounted Tows" description="Reduced rates on all towing services" />
           <BenefitRow icon="zap" title="Priority Response" description="Get connected to providers faster" />
           <BenefitRow icon="shield" title="Extended Coverage" description="Coverage in more remote areas" />
