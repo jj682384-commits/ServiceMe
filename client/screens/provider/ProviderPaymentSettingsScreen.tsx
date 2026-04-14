@@ -2,20 +2,16 @@ import React, { useState, useEffect } from "react";
 import {
   View,
   StyleSheet,
-  ScrollView,
   Pressable,
   Alert,
   TextInput,
   Switch,
   Modal,
-  ActivityIndicator,
-  Linking,
 } from "react-native";
 import Slider from "@react-native-community/slider";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import { useQuery, useMutation } from "@tanstack/react-query";
 
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -23,18 +19,8 @@ import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollV
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
-import { apiRequest } from "@/lib/query-client";
 
 type PayoutSchedule = "daily" | "weekly" | "instant";
-
-interface BankAccount {
-  id: string;
-  bankName: string;
-  accountType: "checking" | "savings";
-  last4: string;
-  routingLast4: string;
-  isDefault: boolean;
-}
 
 function jobFeeRate(r: { isExpress?: boolean }, acceptsPriority?: boolean): number {
   return r.isExpress && acceptsPriority ? 0.10 : 0.15;
@@ -45,36 +31,6 @@ export default function ProviderPaymentSettingsScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
   const { requestHistory, currentProvider } = useApp();
-
-  // Stripe Connect status
-  const { data: connectData, isLoading: connectLoading, refetch: refetchConnect } = useQuery({
-    queryKey: ["/api/stripe/connect/status", currentProvider?.id],
-    enabled: !!currentProvider?.id,
-    select: (d: any) => d as {
-      connected: boolean;
-      detailsSubmitted: boolean;
-      chargesEnabled: boolean;
-      payoutsEnabled: boolean;
-      accountId: string | null;
-    },
-  });
-
-  const onboardMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/stripe/connect/onboard", { providerId: currentProvider?.id });
-      return res.json() as Promise<{ url: string }>;
-    },
-    onSuccess: async ({ url }) => {
-      try {
-        const canOpen = await Linking.canOpenURL(url);
-        if (canOpen) await Linking.openURL(url);
-        else Alert.alert("Error", "Could not open payout setup page.");
-      } catch {
-        Alert.alert("Error", "Could not open payout setup page.");
-      }
-    },
-    onError: () => Alert.alert("Error", "Could not start payout setup. Please try again."),
-  });
 
   const completedJobs = requestHistory.filter(
     (r) => r.provider?.id === currentProvider?.id && r.status === "completed"
@@ -88,15 +44,9 @@ export default function ProviderPaymentSettingsScreen() {
     .reduce((s, r) => s + (r.totalCost || r.estimatedCost || 0) * (1 - jobFeeRate(r, acceptsPriority)), 0);
   const availableBalance = Math.max(0, totalNet - pendingBalance);
 
-  const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [payoutSchedule, setPayoutSchedule] = useState<PayoutSchedule>("weekly");
   const [instantPayoutEnabled, setInstantPayoutEnabled] = useState(false);
   const [minimumThreshold, setMinimumThreshold] = useState("25");
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [bankName, setBankName] = useState("");
-  const [routingNumber, setRoutingNumber] = useState("");
-  const [accountNumber, setAccountNumber] = useState("");
-  const [accountType, setAccountType] = useState<"checking" | "savings">("checking");
   const [taxSSN, setTaxSSN] = useState("");
   const [showSSN, setShowSSN] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
@@ -107,47 +57,6 @@ export default function ProviderPaymentSettingsScreen() {
   }, [availableBalance]);
 
   const PRESETS = [10, 25, 50, 100];
-
-  const handleAddAccount = () => {
-    if (!bankName.trim() || routingNumber.length < 9 || accountNumber.length < 4) {
-      Alert.alert("Missing Info", "Please fill in all bank account fields correctly.");
-      return;
-    }
-    const newAccount: BankAccount = {
-      id: `bank-${Date.now()}`,
-      bankName: bankName.trim(),
-      accountType,
-      last4: accountNumber.slice(-4),
-      routingLast4: routingNumber.slice(-4),
-      isDefault: accounts.length === 0,
-    };
-    setAccounts((prev) => [...prev, newAccount]);
-    setBankName("");
-    setRoutingNumber("");
-    setAccountNumber("");
-    setShowAddForm(false);
-  };
-
-  const handleRemoveAccount = (id: string) => {
-    if (accounts.find((a) => a.id === id)?.isDefault && accounts.length > 1) {
-      Alert.alert("Cannot Remove", "Set another account as default before removing this one.");
-      return;
-    }
-    Alert.alert("Remove Account", "Are you sure you want to remove this bank account?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Remove",
-        style: "destructive",
-        onPress: () => setAccounts((prev) => prev.filter((a) => a.id !== id)),
-      },
-    ]);
-  };
-
-  const handleSetDefault = (id: string) => {
-    setAccounts((prev) =>
-      prev.map((a) => ({ ...a, isDefault: a.id === id }))
-    );
-  };
 
   const handleTransfer = () => {
     if (availableBalance < 1) {
@@ -163,14 +72,10 @@ export default function ProviderPaymentSettingsScreen() {
       Alert.alert("Amount Too Low", "Please select at least $1 to transfer.");
       return;
     }
-    const defaultAccount = accounts.find((a) => a.isDefault);
-    const destination = defaultAccount
-      ? `${defaultAccount.bankName} ••••${defaultAccount.last4}`
-      : "your bank account";
     setShowWithdrawModal(false);
     Alert.alert(
       "Transfer Initiated",
-      `$${withdrawAmount.toFixed(2)} will arrive in ${destination} within 1-2 business days.`
+      `$${withdrawAmount.toFixed(2)} will arrive in your payout account within 1-2 business days.`
     );
   };
 
@@ -190,59 +95,37 @@ export default function ProviderPaymentSettingsScreen() {
         }}
         scrollIndicatorInsets={{ bottom: insets.bottom }}
       >
-        {/* Stripe Connect onboarding banner */}
-        {connectLoading ? (
-          <View style={[styles.connectCard, { backgroundColor: theme.backgroundDefault }]}>
-            <ActivityIndicator color={theme.primary} size="small" />
-            <ThemedText type="small" style={{ color: theme.textSecondary, marginLeft: Spacing.sm }}>
-              Checking payout setup...
-            </ThemedText>
-          </View>
-        ) : connectData?.connected ? (
-          <View style={[styles.connectCard, { backgroundColor: theme.success + "12", borderColor: theme.success + "40" }]}>
-            <Feather name="check-circle" size={20} color={theme.success} />
-            <View style={{ flex: 1, marginLeft: Spacing.sm }}>
-              <ThemedText type="body" style={{ fontWeight: "700", color: theme.success }}>
-                Payouts Active
+        {/* Payout Info Card */}
+        <View style={[styles.payoutInfoCard, { backgroundColor: theme.secondary + "12", borderColor: theme.secondary + "30" }]}>
+          <View style={styles.payoutInfoRow}>
+            <View style={[styles.payoutInfoIcon, { backgroundColor: theme.secondary + "20" }]}>
+              <Feather name="dollar-sign" size={20} color={theme.secondary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <ThemedText type="body" style={{ fontWeight: "700", color: theme.secondary }}>
+                How Payouts Work
               </ThemedText>
-              <ThemedText type="small" style={{ color: theme.textSecondary }}>
-                Earnings are automatically sent to your bank
+              <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: 2, lineHeight: 18 }}>
+                Earnings from completed jobs are paid out weekly. ServiceMe charges a {acceptsPriority ? "10–15" : "15"}% platform fee — you keep the rest plus 100% of tips.
               </ThemedText>
             </View>
-            <Pressable
-              onPress={() => { refetchConnect(); onboardMutation.mutate(); }}
-              style={({ pressed }) => [styles.connectButton, { backgroundColor: theme.success, opacity: pressed ? 0.8 : 1 }]}
-            >
-              <ThemedText type="small" style={{ color: "#FFFFFF", fontWeight: "600" }}>Manage</ThemedText>
-            </Pressable>
           </View>
-        ) : (
-          <View style={[styles.connectCard, { backgroundColor: theme.warning + "12", borderColor: theme.warning + "40" }]}>
-            <Feather name="alert-circle" size={20} color={theme.warning} />
-            <View style={{ flex: 1, marginLeft: Spacing.sm }}>
-              <ThemedText type="body" style={{ fontWeight: "700", color: theme.warning }}>
-                Set Up Payouts
-              </ThemedText>
-              <ThemedText type="small" style={{ color: theme.textSecondary }}>
-                Connect your bank to receive earnings
-              </ThemedText>
-            </View>
-            <Pressable
-              onPress={() => onboardMutation.mutate()}
-              disabled={onboardMutation.isPending}
-              style={({ pressed }) => [
-                styles.connectButton,
-                { backgroundColor: theme.warning, opacity: pressed || onboardMutation.isPending ? 0.7 : 1 },
-              ]}
-            >
-              {onboardMutation.isPending ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <ThemedText type="small" style={{ color: "#FFFFFF", fontWeight: "600" }}>Set Up</ThemedText>
-              )}
-            </Pressable>
+          <View style={[styles.payoutInfoDivider, { backgroundColor: theme.secondary + "20" }]} />
+          <View style={styles.payoutInfoSteps}>
+            {[
+              { icon: "check-circle" as const, text: "Complete a service request" },
+              { icon: "clock" as const, text: "Earnings appear in your balance" },
+              { icon: "credit-card" as const, text: "Paid out every Friday automatically" },
+            ].map((step, i) => (
+              <View key={i} style={styles.payoutInfoStep}>
+                <Feather name={step.icon} size={14} color={theme.secondary} />
+                <ThemedText type="small" style={{ color: theme.textSecondary, marginLeft: Spacing.sm, flex: 1 }}>
+                  {step.text}
+                </ThemedText>
+              </View>
+            ))}
           </View>
-        )}
+        </View>
 
         <View style={[styles.balanceCard, { backgroundColor: theme.success }]}>
           <View style={styles.balanceRow}>
@@ -300,159 +183,6 @@ export default function ProviderPaymentSettingsScreen() {
           </View>
         </View>
 
-        <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
-          <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
-            BANK ACCOUNTS
-          </ThemedText>
-
-          {accounts.map((account) => (
-            <View key={account.id} style={[styles.accountRow, { borderTopColor: theme.border, borderTopWidth: 1 }]}>
-              <View style={[styles.bankIcon, { backgroundColor: theme.secondary + "15" }]}>
-                <Feather name="home" size={20} color={theme.secondary} />
-              </View>
-              <View style={styles.accountInfo}>
-                <View style={styles.accountTitleRow}>
-                  <ThemedText type="body" style={{ fontWeight: "600" }}>
-                    {account.bankName}
-                  </ThemedText>
-                  {account.isDefault ? (
-                    <View style={[styles.defaultBadge, { backgroundColor: theme.success + "20" }]}>
-                      <ThemedText type="small" style={{ color: theme.success, fontWeight: "600", fontSize: 10 }}>
-                        Default
-                      </ThemedText>
-                    </View>
-                  ) : null}
-                </View>
-                <ThemedText type="small" style={{ color: theme.textSecondary }}>
-                  {account.accountType === "checking" ? "Checking" : "Savings"} •••• {account.last4}
-                </ThemedText>
-                <ThemedText type="small" style={{ color: theme.textSecondary }}>
-                  Routing •••• {account.routingLast4}
-                </ThemedText>
-              </View>
-              <View style={styles.accountActions}>
-                {!account.isDefault ? (
-                  <Pressable
-                    onPress={() => handleSetDefault(account.id)}
-                    style={({ pressed }) => [styles.smallButton, { backgroundColor: theme.secondary + "15", opacity: pressed ? 0.7 : 1 }]}
-                  >
-                    <ThemedText type="small" style={{ color: theme.secondary, fontWeight: "600", fontSize: 10 }}>
-                      Default
-                    </ThemedText>
-                  </Pressable>
-                ) : null}
-                <Pressable
-                  onPress={() => handleRemoveAccount(account.id)}
-                  style={({ pressed }) => [styles.smallButton, { backgroundColor: theme.error + "15", opacity: pressed ? 0.7 : 1 }]}
-                >
-                  <Feather name="trash-2" size={12} color={theme.error} />
-                </Pressable>
-              </View>
-            </View>
-          ))}
-
-          {showAddForm ? (
-            <View style={[styles.addForm, { borderTopColor: theme.border, borderTopWidth: 1 }]}>
-              <ThemedText type="body" style={{ fontWeight: "600", marginBottom: Spacing.md }}>
-                Add Bank Account
-              </ThemedText>
-
-              <ThemedText type="small" style={[styles.inputLabel, { color: theme.textSecondary }]}>
-                Bank Name
-              </ThemedText>
-              <TextInput
-                style={[styles.input, { backgroundColor: theme.backgroundSecondary, color: theme.text, borderColor: theme.border }]}
-                value={bankName}
-                onChangeText={setBankName}
-                placeholder="e.g. Chase, Wells Fargo, Bank of America"
-                placeholderTextColor={theme.textSecondary}
-                autoCapitalize="words"
-              />
-
-              <ThemedText type="small" style={[styles.inputLabel, { color: theme.textSecondary }]}>
-                Account Type
-              </ThemedText>
-              <View style={styles.accountTypeRow}>
-                {(["checking", "savings"] as const).map((type) => (
-                  <Pressable
-                    key={type}
-                    onPress={() => setAccountType(type)}
-                    style={[
-                      styles.accountTypeButton,
-                      {
-                        backgroundColor: accountType === type ? theme.secondary : theme.backgroundSecondary,
-                        borderColor: accountType === type ? theme.secondary : theme.border,
-                      },
-                    ]}
-                  >
-                    <ThemedText
-                      type="small"
-                      style={{ color: accountType === type ? "#FFFFFF" : theme.text, fontWeight: "600" }}
-                    >
-                      {type.charAt(0).toUpperCase() + type.slice(1)}
-                    </ThemedText>
-                  </Pressable>
-                ))}
-              </View>
-
-              <ThemedText type="small" style={[styles.inputLabel, { color: theme.textSecondary }]}>
-                Routing Number (9 digits)
-              </ThemedText>
-              <TextInput
-                style={[styles.input, { backgroundColor: theme.backgroundSecondary, color: theme.text, borderColor: theme.border }]}
-                value={routingNumber}
-                onChangeText={setRoutingNumber}
-                placeholder="123456789"
-                placeholderTextColor={theme.textSecondary}
-                keyboardType="number-pad"
-                maxLength={9}
-                secureTextEntry
-              />
-
-              <ThemedText type="small" style={[styles.inputLabel, { color: theme.textSecondary }]}>
-                Account Number
-              </ThemedText>
-              <TextInput
-                style={[styles.input, { backgroundColor: theme.backgroundSecondary, color: theme.text, borderColor: theme.border }]}
-                value={accountNumber}
-                onChangeText={setAccountNumber}
-                placeholder="Account number"
-                placeholderTextColor={theme.textSecondary}
-                keyboardType="number-pad"
-                maxLength={17}
-                secureTextEntry
-              />
-
-              <View style={styles.formActions}>
-                <Pressable
-                  onPress={() => setShowAddForm(false)}
-                  style={({ pressed }) => [styles.formButton, { backgroundColor: theme.backgroundSecondary, opacity: pressed ? 0.7 : 1 }]}
-                >
-                  <ThemedText type="body" style={{ fontWeight: "600" }}>Cancel</ThemedText>
-                </Pressable>
-                <Pressable
-                  onPress={handleAddAccount}
-                  style={({ pressed }) => [styles.formButton, { backgroundColor: theme.secondary, flex: 1, opacity: pressed ? 0.7 : 1 }]}
-                >
-                  <ThemedText type="body" style={{ fontWeight: "600", color: "#FFFFFF" }}>Add Account</ThemedText>
-                </Pressable>
-              </View>
-            </View>
-          ) : (
-            <Pressable
-              onPress={() => setShowAddForm(true)}
-              style={({ pressed }) => [
-                styles.addBankButton,
-                { borderColor: theme.border, opacity: pressed ? 0.7 : 1 },
-              ]}
-            >
-              <Feather name="plus" size={16} color={theme.secondary} />
-              <ThemedText type="small" style={{ color: theme.secondary, fontWeight: "600" }}>
-                Add Bank Account
-              </ThemedText>
-            </Pressable>
-          )}
-        </View>
 
         <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
           <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
@@ -697,21 +427,12 @@ export default function ProviderPaymentSettingsScreen() {
               </Pressable>
             </View>
 
-            {accounts.find((a) => a.isDefault) ? (
-              <View style={[styles.destinationRow, { backgroundColor: theme.backgroundSecondary, borderColor: theme.border }]}>
-                <Feather name="home" size={16} color={theme.textSecondary} />
-                <ThemedText type="small" style={{ color: theme.textSecondary, flex: 1 }}>
-                  To: {accounts.find((a) => a.isDefault)?.bankName} ••••{accounts.find((a) => a.isDefault)?.last4}
-                </ThemedText>
-              </View>
-            ) : (
-              <View style={[styles.destinationRow, { backgroundColor: theme.warning + "15", borderColor: theme.warning + "40" }]}>
-                <Feather name="alert-circle" size={16} color={theme.warning} />
-                <ThemedText type="small" style={{ color: theme.warning, flex: 1 }}>
-                  Add a bank account to enable transfers
-                </ThemedText>
-              </View>
-            )}
+            <View style={[styles.destinationRow, { backgroundColor: theme.backgroundSecondary, borderColor: theme.border }]}>
+              <Feather name="dollar-sign" size={16} color={theme.textSecondary} />
+              <ThemedText type="small" style={{ color: theme.textSecondary, flex: 1 }}>
+                To: ServiceMe payout account (paid out weekly)
+              </ThemedText>
+            </View>
 
             <View style={styles.modalActions}>
               <Pressable
@@ -728,7 +449,7 @@ export default function ProviderPaymentSettingsScreen() {
                 style={({ pressed }) => [
                   styles.modalActionButton,
                   {
-                    backgroundColor: accounts.find((a) => a.isDefault) ? theme.success : theme.border,
+                    backgroundColor: theme.success,
                     flex: 1,
                     opacity: pressed ? 0.7 : 1,
                   },
@@ -748,22 +469,34 @@ export default function ProviderPaymentSettingsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  connectCard: {
-    flexDirection: "row",
-    alignItems: "center",
+  payoutInfoCard: {
     borderRadius: BorderRadius.md,
     padding: Spacing.md,
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.lg,
     borderWidth: 1,
-    borderColor: "transparent",
   },
-  connectButton: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
+  payoutInfoRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: Spacing.md,
+  },
+  payoutInfoIcon: {
+    width: 40,
+    height: 40,
     borderRadius: BorderRadius.sm,
-    minWidth: 60,
     alignItems: "center",
     justifyContent: "center",
+  },
+  payoutInfoDivider: {
+    height: 1,
+    marginVertical: Spacing.md,
+  },
+  payoutInfoSteps: {
+    gap: Spacing.sm,
+  },
+  payoutInfoStep: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   balanceCard: {
     borderRadius: BorderRadius.lg,
@@ -810,86 +543,6 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.lg,
     paddingBottom: Spacing.sm,
     fontWeight: "600",
-  },
-  accountRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    gap: Spacing.md,
-  },
-  bankIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: BorderRadius.sm,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  accountInfo: { flex: 1, gap: 2 },
-  accountTitleRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
-  defaultBadge: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
-    borderRadius: BorderRadius.xs,
-  },
-  accountActions: { flexDirection: "row", gap: Spacing.xs },
-  smallButton: {
-    padding: Spacing.sm,
-    borderRadius: BorderRadius.xs,
-    alignItems: "center",
-    justifyContent: "center",
-    minWidth: 36,
-    minHeight: 36,
-  },
-  addBankButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: Spacing.sm,
-    padding: Spacing.md,
-    margin: Spacing.lg,
-    marginTop: Spacing.sm,
-    borderRadius: BorderRadius.xs,
-    borderWidth: 1,
-    borderStyle: "dashed",
-  },
-  addForm: {
-    padding: Spacing.lg,
-  },
-  inputLabel: {
-    fontWeight: "600",
-    marginBottom: Spacing.xs,
-    marginTop: Spacing.md,
-  },
-  input: {
-    height: 48,
-    borderRadius: BorderRadius.xs,
-    paddingHorizontal: Spacing.md,
-    fontSize: 16,
-    borderWidth: 1,
-  },
-  accountTypeRow: {
-    flexDirection: "row",
-    gap: Spacing.md,
-  },
-  accountTypeButton: {
-    flex: 1,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.xs,
-    borderWidth: 1,
-    alignItems: "center",
-  },
-  formActions: {
-    flexDirection: "row",
-    gap: Spacing.md,
-    marginTop: Spacing.xl,
-  },
-  formButton: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.xl,
-    borderRadius: BorderRadius.xs,
   },
   scheduleRow: {
     flexDirection: "row",
