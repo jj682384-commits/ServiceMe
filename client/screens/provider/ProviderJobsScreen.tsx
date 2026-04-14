@@ -368,10 +368,12 @@ export default function ProviderJobsScreen() {
   const { data: serverJobs } = useQuery<ServiceRequest[]>({
     queryKey: ["/api/jobs/pending"],
     select: (data: unknown) =>
-      (data as Record<string, unknown>[]).map((j) => ({
-        ...j,
-        createdAt: new Date(j.createdAt as string),
-      })) as ServiceRequest[],
+      Array.isArray(data)
+        ? (data as Record<string, unknown>[]).map((j) => ({
+            ...j,
+            createdAt: new Date(j.createdAt as string),
+          })) as ServiceRequest[]
+        : [],
     refetchInterval: 1000,
     staleTime: 0,
   });
