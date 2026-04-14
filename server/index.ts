@@ -17,7 +17,9 @@ async function ensureStripeCustomer(userId: string, email: string, name: string)
   );
   if (rows[0]?.stripe_customer_id) return rows[0].stripe_customer_id;
   const stripe = await getUncachableStripeClient();
-  const customer = await stripe.customers.create({ email, name, metadata: { userId } });
+  // Only pass email to Stripe if it looks like a real email address
+  const validEmail = email && email.includes("@") ? email : undefined;
+  const customer = await stripe.customers.create({ email: validEmail, name, metadata: { userId } });
   await pool.query("UPDATE auth_users SET stripe_customer_id = $2 WHERE id = $1", [userId, customer.id]);
   return customer.id;
 }
