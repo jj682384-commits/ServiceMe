@@ -167,6 +167,7 @@ export default function PaymentMethodsScreen() {
         customerEphemeralKeySecret: ephemeralKey,
         setupIntentClientSecret: clientSecret,
         merchantDisplayName: "ServiceMe",
+        returnURL: "serviceme://stripe-redirect",
         allowsDelayedPaymentMethods: false,
         defaultBillingDetails: { address: { country: "US" } },
       });
