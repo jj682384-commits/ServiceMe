@@ -427,10 +427,11 @@ process.on("unhandledRejection", (reason) => {
       let accountId = rows[0]?.stripe_account_id;
 
       if (!accountId) {
+        const validEmail = user.email && user.email.includes("@") ? user.email : undefined;
         const account = await stripe.accounts.create({
           type: "express",
           country: "US",
-          email: user.email,
+          email: validEmail,
           capabilities: { transfers: { requested: true } },
           metadata: { providerId, userId: user.id },
         });
