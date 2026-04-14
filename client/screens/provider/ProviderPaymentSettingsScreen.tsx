@@ -7,11 +7,13 @@ import {
   TextInput,
   Switch,
   Modal,
+  ActivityIndicator,
 } from "react-native";
 import Slider from "@react-native-community/slider";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -19,6 +21,15 @@ import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollV
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
+import { apiRequest } from "@/lib/query-client";
+
+interface SavedBankAccount {
+  bankName: string;
+  accountType: "checking" | "savings";
+  accountHolderName: string;
+  routingLast4: string;
+  accountLast4: string;
+}
 
 type PayoutSchedule = "daily" | "weekly" | "instant";
 
@@ -31,6 +42,42 @@ export default function ProviderPaymentSettingsScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
   const { requestHistory, currentProvider } = useApp();
+  const queryClient = useQueryClient();
+
+  const bankQueryKey = `/api/providers/${currentProvider?.id}/payout-bank`;
+
+  const { data: bankData, isLoading: bankLoading } = useQuery<{ bankAccount: SavedBankAccount | null }>({
+    queryKey: [bankQueryKey],
+    enabled: !!currentProvider?.id,
+  });
+  const savedBank = bankData?.bankAccount ?? null;
+
+  const saveBankMutation = useMutation({
+    mutationFn: async (payload: {
+      bankName: string; accountType: string; accountHolderName: string;
+      routingNumber: string; accountNumber: string;
+    }) => {
+      const res = await apiRequest("POST", `/api/providers/${currentProvider!.id}/payout-bank`, payload);
+      if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Failed to save bank account"); }
+      return res.json() as Promise<{ bankAccount: SavedBankAccount }>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [bankQueryKey] });
+      setShowAddForm(false);
+      setBankName(""); setAccountHolderName(""); setRoutingNumber(""); setAccountNumber("");
+      Alert.alert("Saved", "Your bank account has been saved for payouts.");
+    },
+    onError: (e: Error) => Alert.alert("Error", e.message),
+  });
+
+  const removeBankMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("DELETE", `/api/providers/${currentProvider!.id}/payout-bank`, {});
+      if (!res.ok) throw new Error("Failed to remove bank account");
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [bankQueryKey] }),
+    onError: () => Alert.alert("Error", "Could not remove bank account. Please try again."),
+  });
 
   const completedJobs = requestHistory.filter(
     (r) => r.provider?.id === currentProvider?.id && r.status === "completed"
@@ -51,6 +98,13 @@ export default function ProviderPaymentSettingsScreen() {
   const [showSSN, setShowSSN] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState(0);
+
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [bankName, setBankName] = useState("");
+  const [accountHolderName, setAccountHolderName] = useState("");
+  const [routingNumber, setRoutingNumber] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [accountType, setAccountType] = useState<"checking" | "savings">("checking");
 
   useEffect(() => {
     setWithdrawAmount(availableBalance);
@@ -73,9 +127,12 @@ export default function ProviderPaymentSettingsScreen() {
       return;
     }
     setShowWithdrawModal(false);
+    const destination = savedBank
+      ? `${savedBank.bankName} •••• ${savedBank.accountLast4}`
+      : "your payout account";
     Alert.alert(
       "Transfer Initiated",
-      `$${withdrawAmount.toFixed(2)} will arrive in your payout account within 1-2 business days.`
+      `$${withdrawAmount.toFixed(2)} will arrive in ${destination} within 1-2 business days.`
     );
   };
 
@@ -125,6 +182,177 @@ export default function ProviderPaymentSettingsScreen() {
               </View>
             ))}
           </View>
+        </View>
+
+        {/* Bank Account Section */}
+        <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
+          <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
+            PAYOUT BANK ACCOUNT
+          </ThemedText>
+
+          {bankLoading ? (
+            <View style={styles.bankLoadingRow}>
+              <ActivityIndicator size="small" color={theme.secondary} />
+              <ThemedText type="small" style={{ color: theme.textSecondary, marginLeft: Spacing.sm }}>
+                Loading account info...
+              </ThemedText>
+            </View>
+          ) : savedBank ? (
+            <View style={[styles.bankAccountRow, { borderTopColor: theme.border, borderTopWidth: 1 }]}>
+              <View style={[styles.bankIcon, { backgroundColor: theme.secondary + "15" }]}>
+                <Feather name="home" size={20} color={theme.secondary} />
+              </View>
+              <View style={styles.bankAccountInfo}>
+                <ThemedText type="body" style={{ fontWeight: "600" }}>{savedBank.bankName}</ThemedText>
+                <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                  {savedBank.accountHolderName}
+                </ThemedText>
+                <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                  {savedBank.accountType === "checking" ? "Checking" : "Savings"} •••• {savedBank.accountLast4}
+                  {"  "}Routing •••• {savedBank.routingLast4}
+                </ThemedText>
+              </View>
+              <Pressable
+                onPress={() =>
+                  Alert.alert("Remove Bank Account", "Are you sure you want to remove this bank account?", [
+                    { text: "Cancel", style: "cancel" },
+                    {
+                      text: "Remove",
+                      style: "destructive",
+                      onPress: () => removeBankMutation.mutate(),
+                    },
+                  ])
+                }
+                disabled={removeBankMutation.isPending}
+                style={({ pressed }) => [
+                  styles.removeButton,
+                  { backgroundColor: theme.error + "15", opacity: pressed || removeBankMutation.isPending ? 0.6 : 1 },
+                ]}
+              >
+                {removeBankMutation.isPending ? (
+                  <ActivityIndicator size="small" color={theme.error} />
+                ) : (
+                  <Feather name="trash-2" size={14} color={theme.error} />
+                )}
+              </Pressable>
+            </View>
+          ) : !showAddForm ? (
+            <Pressable
+              onPress={() => setShowAddForm(true)}
+              style={({ pressed }) => [
+                styles.addBankButton,
+                { borderColor: theme.secondary + "60", opacity: pressed ? 0.7 : 1 },
+              ]}
+            >
+              <Feather name="plus" size={16} color={theme.secondary} />
+              <ThemedText type="small" style={{ color: theme.secondary, fontWeight: "600" }}>
+                Add Bank Account
+              </ThemedText>
+            </Pressable>
+          ) : null}
+
+          {showAddForm ? (
+            <View style={[styles.addForm, { borderTopColor: savedBank ? theme.border : "transparent", borderTopWidth: savedBank ? 1 : 0 }]}>
+              <ThemedText type="body" style={{ fontWeight: "600", marginBottom: Spacing.md }}>
+                {savedBank ? "Update Bank Account" : "Add Bank Account"}
+              </ThemedText>
+
+              <ThemedText type="small" style={[styles.inputLabel, { color: theme.textSecondary }]}>
+                Bank Name
+              </ThemedText>
+              <TextInput
+                style={[styles.formInput, { backgroundColor: theme.backgroundSecondary, color: theme.text, borderColor: theme.border }]}
+                value={bankName}
+                onChangeText={setBankName}
+                placeholder="e.g. Chase, Wells Fargo, Bank of America"
+                placeholderTextColor={theme.textSecondary}
+                autoCapitalize="words"
+              />
+
+              <ThemedText type="small" style={[styles.inputLabel, { color: theme.textSecondary }]}>
+                Account Holder Name
+              </ThemedText>
+              <TextInput
+                style={[styles.formInput, { backgroundColor: theme.backgroundSecondary, color: theme.text, borderColor: theme.border }]}
+                value={accountHolderName}
+                onChangeText={setAccountHolderName}
+                placeholder="Full name on the account"
+                placeholderTextColor={theme.textSecondary}
+                autoCapitalize="words"
+              />
+
+              <ThemedText type="small" style={[styles.inputLabel, { color: theme.textSecondary }]}>
+                Account Type
+              </ThemedText>
+              <View style={styles.accountTypeRow}>
+                {(["checking", "savings"] as const).map((type) => (
+                  <Pressable
+                    key={type}
+                    onPress={() => setAccountType(type)}
+                    style={[
+                      styles.accountTypeButton,
+                      {
+                        backgroundColor: accountType === type ? theme.secondary : theme.backgroundSecondary,
+                        borderColor: accountType === type ? theme.secondary : theme.border,
+                      },
+                    ]}
+                  >
+                    <ThemedText type="small" style={{ color: accountType === type ? "#FFFFFF" : theme.text, fontWeight: "600" }}>
+                      {type.charAt(0).toUpperCase() + type.slice(1)}
+                    </ThemedText>
+                  </Pressable>
+                ))}
+              </View>
+
+              <ThemedText type="small" style={[styles.inputLabel, { color: theme.textSecondary }]}>
+                Routing Number (9 digits)
+              </ThemedText>
+              <TextInput
+                style={[styles.formInput, { backgroundColor: theme.backgroundSecondary, color: theme.text, borderColor: theme.border }]}
+                value={routingNumber}
+                onChangeText={setRoutingNumber}
+                placeholder="123456789"
+                placeholderTextColor={theme.textSecondary}
+                keyboardType="number-pad"
+                maxLength={9}
+                secureTextEntry
+              />
+
+              <ThemedText type="small" style={[styles.inputLabel, { color: theme.textSecondary }]}>
+                Account Number
+              </ThemedText>
+              <TextInput
+                style={[styles.formInput, { backgroundColor: theme.backgroundSecondary, color: theme.text, borderColor: theme.border }]}
+                value={accountNumber}
+                onChangeText={setAccountNumber}
+                placeholder="Account number"
+                placeholderTextColor={theme.textSecondary}
+                keyboardType="number-pad"
+                maxLength={17}
+                secureTextEntry
+              />
+
+              <View style={styles.formActions}>
+                <Pressable
+                  onPress={() => { setShowAddForm(false); setBankName(""); setAccountHolderName(""); setRoutingNumber(""); setAccountNumber(""); }}
+                  style={({ pressed }) => [styles.formButton, { backgroundColor: theme.backgroundSecondary, opacity: pressed ? 0.7 : 1 }]}
+                >
+                  <ThemedText type="body" style={{ fontWeight: "600" }}>Cancel</ThemedText>
+                </Pressable>
+                <Pressable
+                  onPress={() => saveBankMutation.mutate({ bankName, accountHolderName, accountType, routingNumber, accountNumber })}
+                  disabled={saveBankMutation.isPending}
+                  style={({ pressed }) => [styles.formButton, { backgroundColor: theme.secondary, flex: 1, opacity: pressed || saveBankMutation.isPending ? 0.7 : 1 }]}
+                >
+                  {saveBankMutation.isPending ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <ThemedText type="body" style={{ fontWeight: "600", color: "#FFFFFF" }}>Save Account</ThemedText>
+                  )}
+                </Pressable>
+              </View>
+            </View>
+          ) : null}
         </View>
 
         <View style={[styles.balanceCard, { backgroundColor: theme.success }]}>
@@ -427,12 +655,24 @@ export default function ProviderPaymentSettingsScreen() {
               </Pressable>
             </View>
 
-            <View style={[styles.destinationRow, { backgroundColor: theme.backgroundSecondary, borderColor: theme.border }]}>
-              <Feather name="dollar-sign" size={16} color={theme.textSecondary} />
-              <ThemedText type="small" style={{ color: theme.textSecondary, flex: 1 }}>
-                To: ServiceMe payout account (paid out weekly)
-              </ThemedText>
-            </View>
+            {savedBank ? (
+              <View style={[styles.destinationRow, { backgroundColor: theme.backgroundSecondary, borderColor: theme.border }]}>
+                <Feather name="home" size={16} color={theme.textSecondary} />
+                <ThemedText type="small" style={{ color: theme.textSecondary, flex: 1 }}>
+                  To: {savedBank.bankName} {savedBank.accountType === "checking" ? "Checking" : "Savings"} •••• {savedBank.accountLast4}
+                </ThemedText>
+              </View>
+            ) : (
+              <Pressable
+                onPress={() => { setShowWithdrawModal(false); setTimeout(() => setShowAddForm(true), 400); }}
+                style={[styles.destinationRow, { backgroundColor: theme.warning + "15", borderColor: theme.warning + "40" }]}
+              >
+                <Feather name="alert-circle" size={16} color={theme.warning} />
+                <ThemedText type="small" style={{ color: theme.warning, flex: 1 }}>
+                  Add a bank account to enable transfers — tap to add
+                </ThemedText>
+              </Pressable>
+            )}
 
             <View style={styles.modalActions}>
               <Pressable
@@ -497,6 +737,83 @@ const styles = StyleSheet.create({
   payoutInfoStep: {
     flexDirection: "row",
     alignItems: "center",
+  },
+  bankLoadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: Spacing.lg,
+  },
+  bankAccountRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    gap: Spacing.md,
+  },
+  bankIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: BorderRadius.sm,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bankAccountInfo: { flex: 1, gap: 2 },
+  removeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: BorderRadius.xs,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addBankButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.sm,
+    padding: Spacing.md,
+    margin: Spacing.lg,
+    marginTop: Spacing.sm,
+    borderRadius: BorderRadius.xs,
+    borderWidth: 1,
+    borderStyle: "dashed",
+  },
+  addForm: {
+    padding: Spacing.lg,
+  },
+  inputLabel: {
+    fontWeight: "600",
+    marginBottom: Spacing.xs,
+    marginTop: Spacing.md,
+  },
+  formInput: {
+    height: 48,
+    borderRadius: BorderRadius.xs,
+    paddingHorizontal: Spacing.md,
+    fontSize: 16,
+    borderWidth: 1,
+  },
+  accountTypeRow: {
+    flexDirection: "row",
+    gap: Spacing.md,
+  },
+  accountTypeButton: {
+    flex: 1,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.xs,
+    borderWidth: 1,
+    alignItems: "center",
+  },
+  formActions: {
+    flexDirection: "row",
+    gap: Spacing.md,
+    marginTop: Spacing.xl,
+  },
+  formButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xl,
+    borderRadius: BorderRadius.xs,
   },
   balanceCard: {
     borderRadius: BorderRadius.lg,

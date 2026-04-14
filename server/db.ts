@@ -5,6 +5,14 @@ export const pool = new Pool({
   ssl: process.env.DATABASE_URL?.includes("localhost") ? false : { rejectUnauthorized: false },
 });
 
+export interface PayoutBankInfo {
+  bankName: string;
+  accountType: "checking" | "savings";
+  accountHolderName: string;
+  routingNumber: string;
+  accountNumber: string;
+}
+
 export interface ProviderRow {
   id: string;
   name: string;
@@ -30,6 +38,7 @@ export interface ProviderRow {
   ev_capable: boolean;
   ev_services: string[];
   accepts_priority_jobs: boolean;
+  payout_bank_info: PayoutBankInfo | null;
 }
 
 export interface JobRow {

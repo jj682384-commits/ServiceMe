@@ -254,6 +254,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ALTER TABLE providers
       ADD COLUMN IF NOT EXISTS accepts_priority_jobs BOOLEAN DEFAULT FALSE
   `).catch(() => {});
+  await pool.query(`
+    ALTER TABLE providers
+      ADD COLUMN IF NOT EXISTS payout_bank_info JSONB DEFAULT NULL
+  `).catch(() => {});
 
   function getSmartcarRedirectUri(): string {
     const prodDomain = process.env.REPLIT_INTERNAL_APP_DOMAIN;
@@ -855,6 +859,79 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
       res.json({ success: true });
     } catch (err) {
       console.error("[providers/settings]", err);
+      res.status(500).json({ error: "Database error" });
+    }
+  });
+
+  // ── Payout bank account ────────────────────────────────────────────────────
+  app.get("/api/providers/:id/payout-bank", async (req: Request, res: Response) => {
+    try {
+      const { rows } = await pool.query<ProviderRow>(
+        "SELECT payout_bank_info FROM providers WHERE id = $1", [req.params.id]
+      );
+      if (!rows.length) return res.status(404).json({ error: "Provider not found" });
+      const info = rows[0].payout_bank_info;
+      if (!info) return res.json({ bankAccount: null });
+      res.json({
+        bankAccount: {
+          bankName: info.bankName,
+          accountType: info.accountType,
+          accountHolderName: info.accountHolderName,
+          routingLast4: info.routingNumber.slice(-4),
+          accountLast4: info.accountNumber.slice(-4),
+        },
+      });
+    } catch (err) {
+      console.error("[providers/payout-bank GET]", err);
+      res.status(500).json({ error: "Database error" });
+    }
+  });
+
+  app.post("/api/providers/:id/payout-bank", async (req: Request, res: Response) => {
+    const { bankName, accountType, accountHolderName, routingNumber, accountNumber } = req.body as {
+      bankName: string; accountType: string; accountHolderName: string;
+      routingNumber: string; accountNumber: string;
+    };
+    if (!bankName || !accountType || !accountHolderName || !routingNumber || !accountNumber) {
+      return res.status(400).json({ error: "All bank account fields are required" });
+    }
+    if (routingNumber.length !== 9 || !/^\d+$/.test(routingNumber)) {
+      return res.status(400).json({ error: "Routing number must be exactly 9 digits" });
+    }
+    if (accountNumber.length < 4 || accountNumber.length > 17 || !/^\d+$/.test(accountNumber)) {
+      return res.status(400).json({ error: "Account number must be 4–17 digits" });
+    }
+    try {
+      const { rowCount } = await pool.query(
+        `UPDATE providers SET payout_bank_info = $2, updated_at = NOW() WHERE id = $1`,
+        [req.params.id, JSON.stringify({ bankName, accountType, accountHolderName, routingNumber, accountNumber })]
+      );
+      if (!rowCount) return res.status(404).json({ error: "Provider not found" });
+      res.json({
+        bankAccount: {
+          bankName,
+          accountType,
+          accountHolderName,
+          routingLast4: routingNumber.slice(-4),
+          accountLast4: accountNumber.slice(-4),
+        },
+      });
+    } catch (err) {
+      console.error("[providers/payout-bank POST]", err);
+      res.status(500).json({ error: "Database error" });
+    }
+  });
+
+  app.delete("/api/providers/:id/payout-bank", async (req: Request, res: Response) => {
+    try {
+      const { rowCount } = await pool.query(
+        `UPDATE providers SET payout_bank_info = NULL, updated_at = NOW() WHERE id = $1`,
+        [req.params.id]
+      );
+      if (!rowCount) return res.status(404).json({ error: "Provider not found" });
+      res.json({ success: true });
+    } catch (err) {
+      console.error("[providers/payout-bank DELETE]", err);
       res.status(500).json({ error: "Database error" });
     }
   });
