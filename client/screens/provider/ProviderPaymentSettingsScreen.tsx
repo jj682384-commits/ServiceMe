@@ -8,11 +8,14 @@ import {
   TextInput,
   Switch,
   Modal,
+  ActivityIndicator,
+  Linking,
 } from "react-native";
 import Slider from "@react-native-community/slider";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
+import { useQuery, useMutation } from "@tanstack/react-query";
 
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -20,6 +23,7 @@ import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollV
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
+import { apiRequest } from "@/lib/query-client";
 
 type PayoutSchedule = "daily" | "weekly" | "instant";
 
@@ -41,6 +45,36 @@ export default function ProviderPaymentSettingsScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
   const { requestHistory, currentProvider } = useApp();
+
+  // Stripe Connect status
+  const { data: connectData, isLoading: connectLoading, refetch: refetchConnect } = useQuery({
+    queryKey: ["/api/stripe/connect/status", currentProvider?.id],
+    enabled: !!currentProvider?.id,
+    select: (d: any) => d as {
+      connected: boolean;
+      detailsSubmitted: boolean;
+      chargesEnabled: boolean;
+      payoutsEnabled: boolean;
+      accountId: string | null;
+    },
+  });
+
+  const onboardMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/stripe/connect/onboard", { providerId: currentProvider?.id });
+      return res.json() as Promise<{ url: string }>;
+    },
+    onSuccess: async ({ url }) => {
+      try {
+        const canOpen = await Linking.canOpenURL(url);
+        if (canOpen) await Linking.openURL(url);
+        else Alert.alert("Error", "Could not open payout setup page.");
+      } catch {
+        Alert.alert("Error", "Could not open payout setup page.");
+      }
+    },
+    onError: () => Alert.alert("Error", "Could not start payout setup. Please try again."),
+  });
 
   const completedJobs = requestHistory.filter(
     (r) => r.provider?.id === currentProvider?.id && r.status === "completed"
@@ -156,6 +190,60 @@ export default function ProviderPaymentSettingsScreen() {
         }}
         scrollIndicatorInsets={{ bottom: insets.bottom }}
       >
+        {/* Stripe Connect onboarding banner */}
+        {connectLoading ? (
+          <View style={[styles.connectCard, { backgroundColor: theme.backgroundDefault }]}>
+            <ActivityIndicator color={theme.primary} size="small" />
+            <ThemedText type="small" style={{ color: theme.textSecondary, marginLeft: Spacing.sm }}>
+              Checking payout setup...
+            </ThemedText>
+          </View>
+        ) : connectData?.connected ? (
+          <View style={[styles.connectCard, { backgroundColor: theme.success + "12", borderColor: theme.success + "40" }]}>
+            <Feather name="check-circle" size={20} color={theme.success} />
+            <View style={{ flex: 1, marginLeft: Spacing.sm }}>
+              <ThemedText type="body" style={{ fontWeight: "700", color: theme.success }}>
+                Payouts Active
+              </ThemedText>
+              <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                Earnings are automatically sent to your bank
+              </ThemedText>
+            </View>
+            <Pressable
+              onPress={() => { refetchConnect(); onboardMutation.mutate(); }}
+              style={({ pressed }) => [styles.connectButton, { backgroundColor: theme.success, opacity: pressed ? 0.8 : 1 }]}
+            >
+              <ThemedText type="small" style={{ color: "#FFFFFF", fontWeight: "600" }}>Manage</ThemedText>
+            </Pressable>
+          </View>
+        ) : (
+          <View style={[styles.connectCard, { backgroundColor: theme.warning + "12", borderColor: theme.warning + "40" }]}>
+            <Feather name="alert-circle" size={20} color={theme.warning} />
+            <View style={{ flex: 1, marginLeft: Spacing.sm }}>
+              <ThemedText type="body" style={{ fontWeight: "700", color: theme.warning }}>
+                Set Up Payouts
+              </ThemedText>
+              <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                Connect your bank to receive earnings
+              </ThemedText>
+            </View>
+            <Pressable
+              onPress={() => onboardMutation.mutate()}
+              disabled={onboardMutation.isPending}
+              style={({ pressed }) => [
+                styles.connectButton,
+                { backgroundColor: theme.warning, opacity: pressed || onboardMutation.isPending ? 0.7 : 1 },
+              ]}
+            >
+              {onboardMutation.isPending ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <ThemedText type="small" style={{ color: "#FFFFFF", fontWeight: "600" }}>Set Up</ThemedText>
+              )}
+            </Pressable>
+          </View>
+        )}
+
         <View style={[styles.balanceCard, { backgroundColor: theme.success }]}>
           <View style={styles.balanceRow}>
             <View>
@@ -660,6 +748,23 @@ export default function ProviderPaymentSettingsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  connectCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+    borderWidth: 1,
+    borderColor: "transparent",
+  },
+  connectButton: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.sm,
+    minWidth: 60,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   balanceCard: {
     borderRadius: BorderRadius.lg,
     padding: Spacing.xl,

@@ -7,6 +7,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { pool, rowToProvider, rowToJob, type ProviderRow, type JobRow } from "./db";
 import { hashPassword, verifyPassword, createSession, getUserByToken, deleteSession, extractToken } from "./auth";
+import { getUncachableStripeClient } from "./stripeClient";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -195,6 +196,51 @@ async function refreshSmartcarToken(userId: string): Promise<string | null> {
   }
 }
 
+// ── Push notification helper ─────────────────────────────────────────────────
+
+function sendPush(
+  tokens: string[],
+  title: string,
+  body: string,
+  data: Record<string, string> = {},
+  opts: { priority?: "normal" | "high"; channelId?: string } = {}
+) {
+  if (!tokens.length) return;
+  const messages = tokens.map((to) => ({
+    to, title, body, data,
+    sound: "default",
+    priority: opts.priority ?? "normal",
+    channelId: opts.channelId ?? "default",
+  }));
+  fetch("https://exp.host/--/api/v2/push/send", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Accept": "application/json" },
+    body: JSON.stringify(messages),
+  }).catch((err) => console.error("[PUSH]", err));
+}
+
+async function getDriverPushToken(driverEmail: string): Promise<string | null> {
+  const { rows } = await pool.query<{ push_token: string }>(
+    "SELECT push_token FROM auth_users WHERE email = $1 AND push_token IS NOT NULL",
+    [driverEmail]
+  );
+  return rows[0]?.push_token ?? null;
+}
+
+// ── Stripe customer helper ────────────────────────────────────────────────────
+
+async function getOrCreateStripeCustomer(userId: string, email: string, name: string): Promise<string> {
+  const { rows } = await pool.query<{ stripe_customer_id: string }>(
+    "SELECT stripe_customer_id FROM auth_users WHERE id = $1",
+    [userId]
+  );
+  if (rows[0]?.stripe_customer_id) return rows[0].stripe_customer_id;
+  const stripe = await getUncachableStripeClient();
+  const customer = await stripe.customers.create({ email, name, metadata: { userId } });
+  await pool.query("UPDATE auth_users SET stripe_customer_id = $2 WHERE id = $1", [userId, customer.id]);
+  return customer.id;
+}
+
 // ── DB broadcast helper ───────────────────────────────────────────────────────
 
 let broadcastJobUpdate: (job: JobRecord) => void = () => {};
@@ -305,6 +351,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try { await deleteSession(token); } catch {}
     }
     res.json({ success: true });
+  });
+
+  app.patch("/api/auth/push-token", async (req: Request, res: Response) => {
+    const token = extractToken(req.headers["authorization"]);
+    if (!token) return res.status(401).json({ error: "No token" });
+    try {
+      const user = await getUserByToken(token);
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
+      const { pushToken } = req.body as { pushToken: string };
+      await pool.query(
+        "UPDATE auth_users SET push_token = $2, updated_at = NOW() WHERE id = $1",
+        [user.id, pushToken || null]
+      );
+      res.json({ success: true });
+    } catch (err) {
+      console.error("[auth/push-token]", err);
+      res.status(500).json({ error: "Database error" });
+    }
   });
 
   // ── SmartCar ────────────────────────────────────────────────────────────────
@@ -950,6 +1014,22 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
       const job = rowToJob(rows[0]);
       console.log(`[ACCEPT] updated to accepted, provider=${JSON.stringify(job.provider)}`);
       broadcastJobUpdate(job as JobRecord);
+
+      // Push notification to driver
+      const driverEmail = (job.driver as Record<string, unknown> | undefined)?.email as string | undefined;
+      if (driverEmail) {
+        const driverToken = await getDriverPushToken(driverEmail).catch(() => null);
+        if (driverToken) {
+          const providerName = (job.provider as Record<string, unknown> | undefined)?.name as string || "A provider";
+          sendPush(
+            [driverToken],
+            "Provider Accepted Your Request",
+            `${providerName} is on their way — ETA ~${job.eta ?? 8} mins`,
+            { screen: "ActiveService" }
+          );
+        }
+      }
+
       res.json(job);
     } catch (err) {
       console.error("[jobs/accept]", err);
@@ -982,6 +1062,27 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
       if (!rows.length) return res.status(404).json({ error: "Job not found" });
       const job = rowToJob(rows[0]);
       broadcastJobUpdate(job as JobRecord);
+
+      // Push to driver on meaningful status changes
+      const statusPush: Record<string, { title: string; body: string }> = {
+        en_route:    { title: "Provider En Route", body: `${(job.provider as any)?.name || "Your provider"} is heading your way` },
+        arrived:     { title: "Provider Arrived", body: "Your service provider has arrived at your location" },
+        in_progress: { title: "Service In Progress", body: "Your service is now underway" },
+        completed:   { title: "Service Complete", body: "Your service is complete — rate your experience" },
+        cancelled:   { title: "Request Cancelled", body: "Your service request has been cancelled" },
+      };
+      const pushInfo = statusPush[status];
+      if (pushInfo) {
+        const driverEmail = (job.driver as Record<string, unknown> | undefined)?.email as string | undefined;
+        if (driverEmail) {
+          const driverToken = await getDriverPushToken(driverEmail).catch(() => null);
+          if (driverToken) {
+            sendPush([driverToken], pushInfo.title, pushInfo.body, { screen: "ActiveService" },
+              { priority: status === "cancelled" ? "high" : "normal" });
+          }
+        }
+      }
+
       res.json(job);
     } catch (err) {
       console.error("[jobs/status]", err);
@@ -1047,6 +1148,36 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
       }
 
       broadcastJobUpdate(job as JobRecord);
+
+      // Stripe Connect transfer — pay provider their cut after tip is finalised
+      const providerId = (job.provider as Record<string, unknown> | undefined)?.id as string | undefined;
+      if (providerId) {
+        try {
+          const { rows: provRows } = await pool.query<{ stripe_account_id: string; accepts_priority_jobs: boolean }>(
+            "SELECT stripe_account_id, accepts_priority_jobs FROM providers WHERE id = $1",
+            [providerId]
+          );
+          const provStripeId = provRows[0]?.stripe_account_id;
+          if (provStripeId) {
+            const gross = job.totalCost ?? job.estimatedCost ?? 0;
+            const feeRate = (job.isExpress && provRows[0]?.accepts_priority_jobs) ? 0.10 : 0.15;
+            const tipAmt = typeof job.tip === "number" ? job.tip : 0;
+            const netCents = Math.round((gross * (1 - feeRate) + tipAmt) * 100);
+            if (netCents > 50) {
+              const stripe = await getUncachableStripeClient();
+              await stripe.transfers.create({
+                amount: netCents,
+                currency: "usd",
+                destination: provStripeId,
+                metadata: { jobId: job.id, providerId },
+              });
+            }
+          }
+        } catch (err: any) {
+          console.error("[stripe/transfer]", err.message);
+        }
+      }
+
       res.json({ success: true });
     } catch (err) {
       console.error("[jobs/tip]", err);

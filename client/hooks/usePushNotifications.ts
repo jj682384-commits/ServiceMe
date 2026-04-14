@@ -4,7 +4,7 @@ import { Platform } from "react-native";
 import { initNotifications, NotificationData } from "@/lib/notifications";
 import { navigateTo } from "@/lib/navigationRef";
 import { useApp } from "@/context/AppContext";
-import { getApiUrl } from "@/lib/query-client";
+import { getApiUrl, apiRequest, getAuthToken } from "@/lib/query-client";
 
 export function usePushNotifications() {
   const notificationListener = useRef<Notifications.EventSubscription | null>(null);
@@ -18,8 +18,9 @@ export function usePushNotifications() {
 
     const setup = async () => {
       const token = await initNotifications();
+      if (cancelled || !token) return;
 
-      if (!cancelled && token && userRole === "provider" && currentProvider?.id) {
+      if (userRole === "provider" && currentProvider?.id) {
         try {
           const url = new URL(`/api/providers/${currentProvider.id}/push-token`, getApiUrl());
           await fetch(url.toString(), {
@@ -28,7 +29,13 @@ export function usePushNotifications() {
             body: JSON.stringify({ pushToken: token }),
           });
         } catch {
-          // non-critical — will retry next mount
+          // non-critical
+        }
+      } else if (userRole === "driver" && getAuthToken()) {
+        try {
+          await apiRequest("PATCH", "/api/auth/push-token", { pushToken: token });
+        } catch {
+          // non-critical
         }
       }
     };

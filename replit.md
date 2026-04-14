@@ -27,7 +27,8 @@ Real server-side auth: `POST /api/auth/signup` and `POST /api/auth/signin` hash/
 - **EV Mode Tab**: Dedicated section for electric vehicles, offering EV-specific services like mobile charging and EV-safe towing, along with range alerts.
 - **Vehicle Profiles**: Management of multiple vehicle profiles. Provider vehicle screen has smart make/model pickers that switch between standard passenger car data and commercial tow truck data (14 manufacturers, 62 models, 6 wrecker classes) depending on the selected vehicle type. Tow truck class selection (Light-Duty Wrecker, Flatbed/Rollback, Heavy-Duty Wrecker, etc.) is stored alongside the model. Same smart pickers are available during provider sign-up.
 - **Provider Management**: Preferred provider identification, verified technician badges, and provider browsing with filtering.
-- **Financial Management**: Detailed service receipts, enhanced tipping options, breakdown history, and secure payment method management.
+- **Financial Management**: Detailed service receipts, enhanced tipping options, breakdown history, and real payment method management via Stripe SetupIntent. Saved cards are fetched from Stripe, added via the native Stripe Payment Sheet, and removed via Stripe detach API. Driver's Stripe customer ID is persisted in `auth_users.stripe_customer_id`.
+- **Provider Payouts (Stripe Connect)**: Providers onboard via Stripe Express Connect (`POST /api/stripe/connect/onboard`). Connect status shown in `ProviderPaymentSettingsScreen` with "Set Up Payouts" / "Payouts Active" banner. On job completion, earnings are automatically transferred to the provider's Stripe Express account via `stripe.transfers.create` in the tip route. Platform fee is 15% (10% for priority jobs by verified priority providers). `stripe_account_id` stored in `providers` table.
 - **Legal Compliance**: Mandatory acceptance of legal documents during sign-up.
 - **Service Scheduling**: Users can choose immediate or scheduled service requests.
 - **Provider Sign-Up Flow**: Multi-step registration for independent helpers and roadside shops, including ID verification.
@@ -41,7 +42,7 @@ Real server-side auth: `POST /api/auth/signup` and `POST /api/auth/signin` hash/
 - **Billing History**: Reads from `requestHistory` filtered to `status === "completed"`. `totalCost` is written by `ServiceCompletionScreen` after tip selection. `driver` field is now stamped on every new service request for provider-side visibility.
 - **Animated Background System**: Dynamic backgrounds with customizable color schemes for various screens.
 - **In-App Subscriptions**: Integration with RevenueCat for managing premium memberships.
-- **Push Notifications**: `expo-notifications` for various alerts (e.g., SOS activated, provider en route, job requests).
+- **Push Notifications**: `expo-notifications` for various alerts. Providers receive push on new job requests. Drivers receive push on job accept, en route, arrived, in-progress, completed, and cancelled status changes. Tokens registered via `PATCH /api/providers/:id/push-token` (provider) and `PATCH /api/auth/push-token` (driver).
 - **Google Sign-In**: Integration for user authentication.
 
 ## External Dependencies

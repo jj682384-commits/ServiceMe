@@ -1,29 +1,47 @@
-import React, { useState } from "react";
-import { View, StyleSheet, ScrollView, Pressable, Alert, TextInput, Keyboard } from "react-native";
+import React, { useState, useCallback } from "react";
+import { View, StyleSheet, Pressable, Alert, Platform, ActivityIndicator } from "react-native";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useStripe } from "@stripe/stripe-react-native";
 
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { useTheme } from "@/hooks/useTheme";
-import { useApp, PaymentMethod } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
+import { apiRequest, getApiUrl } from "@/lib/query-client";
 
-const cardBrandLabels: Record<PaymentMethod["type"], string> = {
-  visa: "Visa",
-  mastercard: "Mastercard",
-  amex: "American Express",
-  discover: "Discover",
-};
+interface StripeCard {
+  id: string;
+  card: {
+    brand: string;
+    last4: string;
+    exp_month: number;
+    exp_year: number;
+  };
+  billing_details?: { name?: string };
+}
+
+function brandIcon(brand: string): string {
+  switch (brand.toLowerCase()) {
+    case "visa": return "Visa";
+    case "mastercard": return "Mastercard";
+    case "amex": return "Amex";
+    case "discover": return "Discover";
+    default: return brand.charAt(0).toUpperCase() + brand.slice(1);
+  }
+}
 
 function PaymentCard({
   method,
+  isDefault,
   onSetDefault,
   onRemove,
 }: {
-  method: PaymentMethod;
+  method: StripeCard;
+  isDefault: boolean;
   onSetDefault: () => void;
   onRemove: () => void;
 }) {
@@ -32,7 +50,7 @@ function PaymentCard({
   const handleRemove = () => {
     Alert.alert(
       "Remove Card",
-      `Are you sure you want to remove ${cardBrandLabels[method.type]} ending in ${method.last4}?`,
+      `Remove ${brandIcon(method.card.brand)} ending in ${method.card.last4}?`,
       [
         { text: "Cancel", style: "cancel" },
         { text: "Remove", style: "destructive", onPress: onRemove },
@@ -49,9 +67,9 @@ function PaymentCard({
         <View style={styles.cardInfo}>
           <View style={styles.cardTitleRow}>
             <ThemedText type="body" style={{ fontWeight: "600" }}>
-              {cardBrandLabels[method.type]}
+              {brandIcon(method.card.brand)}
             </ThemedText>
-            {method.isDefault ? (
+            {isDefault ? (
               <View style={[styles.defaultBadge, { backgroundColor: theme.success + "20" }]}>
                 <ThemedText type="small" style={{ color: theme.success, fontWeight: "600", fontSize: 10 }}>
                   Default
@@ -60,15 +78,15 @@ function PaymentCard({
             ) : null}
           </View>
           <ThemedText type="small" style={{ color: theme.textSecondary }}>
-            Ending in {method.last4}
+            Ending in {method.card.last4}
           </ThemedText>
           <ThemedText type="small" style={{ color: theme.textSecondary }}>
-            Expires {String(method.expiryMonth).padStart(2, "0")}/{method.expiryYear}
+            Expires {String(method.card.exp_month).padStart(2, "0")}/{method.card.exp_year}
           </ThemedText>
         </View>
       </View>
       <View style={styles.cardActions}>
-        {!method.isDefault ? (
+        {!isDefault ? (
           <Pressable
             onPress={onSetDefault}
             style={({ pressed }) => [
@@ -102,53 +120,79 @@ export default function PaymentMethodsScreen() {
   const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
-  const { paymentMethods, addPaymentMethod, removePaymentMethod, setDefaultPaymentMethod } = useApp();
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
+  const qc = useQueryClient();
 
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [cardholderName, setCardholderName] = useState("");
-  const [cardNumber, setCardNumber] = useState("");
-  const [expiry, setExpiry] = useState("");
-  const [zipCode, setZipCode] = useState("");
+  const [defaultId, setDefaultId] = useState<string | null>(null);
+  const [addingCard, setAddingCard] = useState(false);
 
-  const handleAddCard = () => {
-    if (!cardholderName.trim() || !cardNumber.trim() || !expiry.trim() || !zipCode.trim()) {
-      Alert.alert("Missing Information", "Please fill in all fields.");
+  const { data, isLoading } = useQuery({
+    queryKey: ["/api/stripe/payment-methods"],
+    select: (d: { paymentMethods: StripeCard[] }) => d.paymentMethods ?? [],
+  });
+
+  const paymentMethods: StripeCard[] = data ?? [];
+
+  const removeMutation = useMutation({
+    mutationFn: (pmId: string) => apiRequest("DELETE", `/api/stripe/payment-methods/${pmId}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/stripe/payment-methods"] }),
+    onError: () => Alert.alert("Error", "Could not remove card. Please try again."),
+  });
+
+  const setDefaultMutation = useMutation({
+    mutationFn: (pmId: string) =>
+      apiRequest("POST", "/api/stripe/payment-methods/set-default", { paymentMethodId: pmId }),
+    onSuccess: (_data, pmId) => setDefaultId(pmId),
+    onError: () => Alert.alert("Error", "Could not update default card."),
+  });
+
+  const handleAddCard = useCallback(async () => {
+    if (Platform.OS === "web") {
+      Alert.alert("Use Mobile App", "Adding cards is available in the iOS/Android app.");
       return;
     }
+    setAddingCard(true);
+    try {
+      const publishableKeyRes = await fetch(new URL("/api/stripe/publishable-key", getApiUrl()).toString());
+      const { publishableKey } = await publishableKeyRes.json();
 
-    const parts = expiry.split("/");
-    if (parts.length !== 2) {
-      Alert.alert("Invalid Expiry", "Please enter expiry as MM/YY.");
-      return;
+      const setupRes = await apiRequest("POST", "/api/stripe/setup-intent", {});
+      const { clientSecret, customerId } = (await setupRes.json()) as { clientSecret: string; customerId: string };
+
+      const ephemeralRes = await apiRequest("POST", "/api/stripe/ephemeral-key", { apiVersion: "2024-04-10" });
+      const { ephemeralKey } = (await ephemeralRes.json()) as { ephemeralKey: string };
+
+      const { error: initError } = await initPaymentSheet({
+        customerId,
+        customerEphemeralKeySecret: ephemeralKey,
+        setupIntentClientSecret: clientSecret,
+        merchantDisplayName: "ServiceMe",
+        allowsDelayedPaymentMethods: false,
+        defaultBillingDetails: { address: { country: "US" } },
+      });
+
+      if (initError) {
+        Alert.alert("Error", initError.message);
+        return;
+      }
+
+      const { error: presentError } = await presentPaymentSheet();
+      if (presentError) {
+        if (presentError.code !== "Canceled") {
+          Alert.alert("Error", presentError.message);
+        }
+        return;
+      }
+
+      await qc.invalidateQueries({ queryKey: ["/api/stripe/payment-methods"] });
+    } catch (err: any) {
+      Alert.alert("Error", err?.message ?? "Could not add card. Please try again.");
+    } finally {
+      setAddingCard(false);
     }
+  }, [initPaymentSheet, presentPaymentSheet, qc]);
 
-    const month = parseInt(parts[0], 10);
-    const year = 2000 + parseInt(parts[1], 10);
-
-    if (month < 1 || month > 12 || isNaN(year)) {
-      Alert.alert("Invalid Expiry", "Please enter a valid expiry date.");
-      return;
-    }
-
-    const last4 = cardNumber.slice(-4);
-    const types: PaymentMethod["type"][] = ["visa", "mastercard", "amex", "discover"];
-    const detectedType = types[Math.floor(Math.random() * 2)];
-
-    addPaymentMethod({
-      type: detectedType,
-      last4,
-      isDefault: paymentMethods.length === 0,
-      expiryMonth: month,
-      expiryYear: year,
-      cardholderName: cardholderName.trim(),
-    });
-
-    setCardholderName("");
-    setCardNumber("");
-    setExpiry("");
-    setZipCode("");
-    setShowAddForm(false);
-  };
+  const effectiveDefaultId = defaultId ?? (paymentMethods[0]?.id ?? null);
 
   return (
     <ThemedView style={styles.container}>
@@ -160,16 +204,26 @@ export default function PaymentMethodsScreen() {
         }}
         scrollIndicatorInsets={{ bottom: insets.bottom }}
       >
-        {paymentMethods.map((method) => (
+        {isLoading ? (
+          <View style={styles.loadingState}>
+            <ActivityIndicator color={theme.primary} />
+            <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: Spacing.sm }}>
+              Loading payment methods...
+            </ThemedText>
+          </View>
+        ) : null}
+
+        {!isLoading && paymentMethods.map((method) => (
           <PaymentCard
             key={method.id}
             method={method}
-            onSetDefault={() => setDefaultPaymentMethod(method.id)}
-            onRemove={() => removePaymentMethod(method.id)}
+            isDefault={method.id === effectiveDefaultId}
+            onSetDefault={() => setDefaultMutation.mutate(method.id)}
+            onRemove={() => removeMutation.mutate(method.id)}
           />
         ))}
 
-        {paymentMethods.length === 0 ? (
+        {!isLoading && paymentMethods.length === 0 ? (
           <View style={styles.emptyState}>
             <Feather name="credit-card" size={48} color={theme.textSecondary} />
             <ThemedText type="h4" style={{ marginTop: Spacing.lg }}>
@@ -179,134 +233,41 @@ export default function PaymentMethodsScreen() {
               type="body"
               style={{ color: theme.textSecondary, textAlign: "center", marginTop: Spacing.sm }}
             >
-              Add a card to get started
+              Add a card to pay for services
             </ThemedText>
           </View>
         ) : null}
 
-        {showAddForm ? (
-          <View style={[styles.addForm, { backgroundColor: theme.backgroundDefault }]}>
-            <ThemedText type="h4" style={{ marginBottom: Spacing.lg }}>
-              Add Payment Method
-            </ThemedText>
-
-            <ThemedText type="small" style={[styles.inputLabel, { color: theme.textSecondary }]}>
-              Cardholder Name
-            </ThemedText>
-            <TextInput
-              style={[styles.input, { backgroundColor: theme.backgroundSecondary, color: theme.text, borderColor: theme.border }]}
-              value={cardholderName}
-              onChangeText={setCardholderName}
-              placeholder="Full name on card"
-              placeholderTextColor={theme.textSecondary}
-              autoCapitalize="words"
-              returnKeyType="done"
-              onSubmitEditing={() => Keyboard.dismiss()}
-              blurOnSubmit
-            />
-
-            <ThemedText type="small" style={[styles.inputLabel, { color: theme.textSecondary }]}>
-              Card Number
-            </ThemedText>
-            <TextInput
-              style={[styles.input, { backgroundColor: theme.backgroundSecondary, color: theme.text, borderColor: theme.border }]}
-              value={cardNumber}
-              onChangeText={setCardNumber}
-              placeholder="Card number"
-              placeholderTextColor={theme.textSecondary}
-              keyboardType="number-pad"
-              maxLength={19}
-              secureTextEntry
-              returnKeyType="done"
-              onSubmitEditing={() => Keyboard.dismiss()}
-              blurOnSubmit
-            />
-
-            <View style={styles.formRow}>
-              <View style={{ flex: 1 }}>
-                <ThemedText type="small" style={[styles.inputLabel, { color: theme.textSecondary }]}>
-                  Expiry (MM/YY)
-                </ThemedText>
-                <TextInput
-                  style={[styles.input, { backgroundColor: theme.backgroundSecondary, color: theme.text, borderColor: theme.border }]}
-                  value={expiry}
-                  onChangeText={setExpiry}
-                  placeholder="MM/YY"
-                  placeholderTextColor={theme.textSecondary}
-                  keyboardType="number-pad"
-                  maxLength={5}
-                  returnKeyType="done"
-                  onSubmitEditing={() => Keyboard.dismiss()}
-                  blurOnSubmit
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <ThemedText type="small" style={[styles.inputLabel, { color: theme.textSecondary }]}>
-                  Zip Code
-                </ThemedText>
-                <TextInput
-                  style={[styles.input, { backgroundColor: theme.backgroundSecondary, color: theme.text, borderColor: theme.border }]}
-                  value={zipCode}
-                  onChangeText={setZipCode}
-                  placeholder="Zip code"
-                  placeholderTextColor={theme.textSecondary}
-                  keyboardType="number-pad"
-                  maxLength={10}
-                  returnKeyType="done"
-                  onSubmitEditing={() => Keyboard.dismiss()}
-                  blurOnSubmit
-                />
-              </View>
-            </View>
-
-            <View style={styles.formActions}>
-              <Pressable
-                onPress={() => setShowAddForm(false)}
-                style={({ pressed }) => [
-                  styles.formButton,
-                  { backgroundColor: theme.backgroundSecondary, opacity: pressed ? 0.7 : 1 },
-                ]}
-              >
-                <ThemedText type="body" style={{ fontWeight: "600" }}>
-                  Cancel
-                </ThemedText>
-              </Pressable>
-              <Pressable
-                onPress={handleAddCard}
-                style={({ pressed }) => [
-                  styles.formButton,
-                  { backgroundColor: theme.primary, opacity: pressed ? 0.7 : 1, flex: 1 },
-                ]}
-              >
-                <ThemedText type="body" style={{ fontWeight: "600", color: "#FFFFFF" }}>
-                  Add Card
-                </ThemedText>
-              </Pressable>
-            </View>
-          </View>
-        ) : (
-          <Pressable
-            onPress={() => setShowAddForm(true)}
-            style={({ pressed }) => [
-              styles.addButton,
-              { backgroundColor: theme.backgroundDefault, borderColor: theme.border, opacity: pressed ? 0.7 : 1 },
-            ]}
-          >
+        <Pressable
+          onPress={handleAddCard}
+          disabled={addingCard}
+          style={({ pressed }) => [
+            styles.addButton,
+            { backgroundColor: theme.backgroundDefault, borderColor: theme.border, opacity: pressed || addingCard ? 0.6 : 1 },
+          ]}
+        >
+          {addingCard ? (
+            <ActivityIndicator size="small" color={theme.secondary} />
+          ) : (
             <Feather name="plus" size={20} color={theme.secondary} />
-            <ThemedText type="body" style={{ color: theme.secondary, fontWeight: "600" }}>
-              Add Payment Method
-            </ThemedText>
-          </Pressable>
-        )}
+          )}
+          <ThemedText type="body" style={{ color: theme.secondary, fontWeight: "600" }}>
+            {addingCard ? "Opening card form..." : "Add Payment Method"}
+          </ThemedText>
+        </Pressable>
+
+        {Platform.OS === "web" ? (
+          <ThemedText type="small" style={{ color: theme.textSecondary, textAlign: "center", marginTop: Spacing.sm }}>
+            Open in the iOS or Android app to add a card
+          </ThemedText>
+        ) : null}
       </KeyboardAwareScrollViewCompat>
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   cardItem: {
     borderRadius: BorderRadius.md,
     padding: Spacing.lg,
@@ -324,10 +285,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  cardInfo: {
-    flex: 1,
-    gap: 2,
-  },
+  cardInfo: { flex: 1, gap: 2 },
   cardTitleRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -363,43 +321,15 @@ const styles = StyleSheet.create({
     borderStyle: "dashed",
     marginTop: Spacing.sm,
   },
-  addForm: {
-    borderRadius: BorderRadius.md,
-    padding: Spacing.lg,
-    marginTop: Spacing.sm,
-  },
-  inputLabel: {
-    fontWeight: "600",
-    marginBottom: Spacing.xs,
-    marginTop: Spacing.md,
-  },
-  input: {
-    height: 48,
-    borderRadius: BorderRadius.xs,
-    paddingHorizontal: Spacing.md,
-    fontSize: 16,
-    borderWidth: 1,
-  },
-  formRow: {
-    flexDirection: "row",
-    gap: Spacing.md,
-  },
-  formActions: {
-    flexDirection: "row",
-    gap: Spacing.md,
-    marginTop: Spacing["2xl"],
-  },
-  formButton: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.xl,
-    borderRadius: BorderRadius.xs,
-  },
   emptyState: {
     alignItems: "center",
     justifyContent: "center",
     paddingTop: 60,
     paddingBottom: Spacing["2xl"],
+  },
+  loadingState: {
+    alignItems: "center",
+    paddingTop: 60,
+    paddingBottom: Spacing.xl,
   },
 });

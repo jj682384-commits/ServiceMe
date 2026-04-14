@@ -6,6 +6,29 @@ import * as path from "path";
 import { WebhookHandlers } from "./webhookHandlers";
 import { getStripeSync, getStripePublishableKey, getUncachableStripeClient } from "./stripeClient";
 import { runMigrations } from "stripe-replit-sync";
+import { pool } from "./db";
+import { getUserByToken, extractToken } from "./auth";
+
+// ── Stripe helpers (index-level) ─────────────────────────────────────────────
+
+async function ensureStripeCustomer(userId: string, email: string, name: string): Promise<string> {
+  const { rows } = await pool.query<{ stripe_customer_id: string }>(
+    "SELECT stripe_customer_id FROM auth_users WHERE id = $1", [userId]
+  );
+  if (rows[0]?.stripe_customer_id) return rows[0].stripe_customer_id;
+  const stripe = await getUncachableStripeClient();
+  const customer = await stripe.customers.create({ email, name, metadata: { userId } });
+  await pool.query("UPDATE auth_users SET stripe_customer_id = $2 WHERE id = $1", [userId, customer.id]);
+  return customer.id;
+}
+
+async function requireUser(req: Request, res: Response): Promise<{ id: string; email: string; name: string } | null> {
+  const token = extractToken(req.headers["authorization"]);
+  if (!token) { res.status(401).json({ error: "No token" }); return null; }
+  const user = await getUserByToken(token);
+  if (!user) { res.status(401).json({ error: "Unauthorized" }); return null; }
+  return user;
+}
 
 const app = express();
 app.disable("etag");
@@ -292,6 +315,180 @@ process.on("unhandledRejection", (reason) => {
       console.error("[stripe/create-payment-intent]", err.message);
       res.status(500).json({ error: "Could not create payment intent" });
     }
+  });
+
+  // ── Stripe SetupIntent (save card) ──────────────────────────────────────────
+  app.post("/api/stripe/setup-intent", async (req: Request, res: Response) => {
+    try {
+      const user = await requireUser(req, res);
+      if (!user) return;
+      const stripe = await getUncachableStripeClient();
+      const customerId = await ensureStripeCustomer(user.id, user.email, user.name);
+      const setupIntent = await stripe.setupIntents.create({
+        customer: customerId,
+        payment_method_types: ["card"],
+        usage: "off_session",
+      });
+      res.json({ clientSecret: setupIntent.client_secret, customerId });
+    } catch (err: any) {
+      console.error("[stripe/setup-intent]", err.message);
+      res.status(500).json({ error: "Could not create setup intent" });
+    }
+  });
+
+  app.post("/api/stripe/ephemeral-key", async (req: Request, res: Response) => {
+    try {
+      const user = await requireUser(req, res);
+      if (!user) return;
+      const { apiVersion } = req.body as { apiVersion?: string };
+      const stripe = await getUncachableStripeClient();
+      const customerId = await ensureStripeCustomer(user.id, user.email, user.name);
+      const ephemeralKey = await stripe.ephemeralKeys.create(
+        { customer: customerId },
+        { apiVersion: apiVersion || "2024-04-10" }
+      );
+      res.json({ ephemeralKey: ephemeralKey.secret, customerId });
+    } catch (err: any) {
+      console.error("[stripe/ephemeral-key]", err.message);
+      res.status(500).json({ error: "Could not create ephemeral key" });
+    }
+  });
+
+  // ── Payment Methods (list & remove) ─────────────────────────────────────────
+  app.get("/api/stripe/payment-methods", async (req: Request, res: Response) => {
+    try {
+      const user = await requireUser(req, res);
+      if (!user) return;
+      const { rows } = await pool.query<{ stripe_customer_id: string }>(
+        "SELECT stripe_customer_id FROM auth_users WHERE id = $1", [user.id]
+      );
+      if (!rows[0]?.stripe_customer_id) return res.json({ paymentMethods: [] });
+      const stripe = await getUncachableStripeClient();
+      const list = await stripe.paymentMethods.list({
+        customer: rows[0].stripe_customer_id,
+        type: "card",
+      });
+      res.json({ paymentMethods: list.data });
+    } catch (err: any) {
+      console.error("[stripe/payment-methods]", err.message);
+      res.status(500).json({ error: "Could not fetch payment methods" });
+    }
+  });
+
+  app.delete("/api/stripe/payment-methods/:pmId", async (req: Request, res: Response) => {
+    try {
+      const user = await requireUser(req, res);
+      if (!user) return;
+      const stripe = await getUncachableStripeClient();
+      await stripe.paymentMethods.detach(req.params.pmId);
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error("[stripe/payment-methods/detach]", err.message);
+      res.status(500).json({ error: "Could not remove payment method" });
+    }
+  });
+
+  app.post("/api/stripe/payment-methods/set-default", async (req: Request, res: Response) => {
+    try {
+      const user = await requireUser(req, res);
+      if (!user) return;
+      const { paymentMethodId } = req.body as { paymentMethodId: string };
+      const { rows } = await pool.query<{ stripe_customer_id: string }>(
+        "SELECT stripe_customer_id FROM auth_users WHERE id = $1", [user.id]
+      );
+      if (!rows[0]?.stripe_customer_id) return res.status(400).json({ error: "No Stripe customer" });
+      const stripe = await getUncachableStripeClient();
+      await stripe.customers.update(rows[0].stripe_customer_id, {
+        invoice_settings: { default_payment_method: paymentMethodId },
+      });
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error("[stripe/set-default]", err.message);
+      res.status(500).json({ error: "Could not set default" });
+    }
+  });
+
+  // ── Stripe Connect (provider payouts) ────────────────────────────────────────
+  app.post("/api/stripe/connect/onboard", async (req: Request, res: Response) => {
+    try {
+      const user = await requireUser(req, res);
+      if (!user) return;
+      const { providerId } = req.body as { providerId: string };
+      if (!providerId) return res.status(400).json({ error: "providerId required" });
+
+      const stripe = await getUncachableStripeClient();
+
+      // Check if provider already has a Connect account
+      const { rows } = await pool.query<{ stripe_account_id: string }>(
+        "SELECT stripe_account_id FROM providers WHERE id = $1", [providerId]
+      );
+      let accountId = rows[0]?.stripe_account_id;
+
+      if (!accountId) {
+        const account = await stripe.accounts.create({
+          type: "express",
+          country: "US",
+          email: user.email,
+          capabilities: { transfers: { requested: true } },
+          metadata: { providerId, userId: user.id },
+        });
+        accountId = account.id;
+        await pool.query(
+          "UPDATE providers SET stripe_account_id = $2 WHERE id = $1",
+          [providerId, accountId]
+        );
+      }
+
+      const domain = process.env.REPLIT_DOMAINS?.split(",")[0] || process.env.REPLIT_DEV_DOMAIN;
+      const baseUrl = domain ? `https://${domain}` : "https://localhost:5000";
+      const accountLink = await stripe.accountLinks.create({
+        account: accountId,
+        refresh_url: `${baseUrl}/api/stripe/connect/refresh?providerId=${providerId}`,
+        return_url: `${baseUrl}/api/stripe/connect/return?providerId=${providerId}`,
+        type: "account_onboarding",
+      });
+
+      res.json({ url: accountLink.url, accountId });
+    } catch (err: any) {
+      console.error("[stripe/connect/onboard]", err.message);
+      res.status(500).json({ error: "Could not create Connect account" });
+    }
+  });
+
+  app.get("/api/stripe/connect/status", async (req: Request, res: Response) => {
+    try {
+      const user = await requireUser(req, res);
+      if (!user) return;
+      const { providerId } = req.query as { providerId?: string };
+      if (!providerId) return res.status(400).json({ error: "providerId required" });
+
+      const { rows } = await pool.query<{ stripe_account_id: string }>(
+        "SELECT stripe_account_id FROM providers WHERE id = $1", [providerId]
+      );
+      const accountId = rows[0]?.stripe_account_id;
+      if (!accountId) return res.json({ connected: false, accountId: null });
+
+      const stripe = await getUncachableStripeClient();
+      const account = await stripe.accounts.retrieve(accountId);
+      res.json({
+        connected: account.charges_enabled && account.payouts_enabled,
+        detailsSubmitted: account.details_submitted,
+        chargesEnabled: account.charges_enabled,
+        payoutsEnabled: account.payouts_enabled,
+        accountId,
+      });
+    } catch (err: any) {
+      console.error("[stripe/connect/status]", err.message);
+      res.status(500).json({ error: "Could not get Connect status" });
+    }
+  });
+
+  app.get("/api/stripe/connect/return", (_req: Request, res: Response) => {
+    res.send("<html><body><h2>Payout setup complete — return to the ServiceMe app.</h2></body></html>");
+  });
+
+  app.get("/api/stripe/connect/refresh", (req: Request, res: Response) => {
+    res.send("<html><body><h2>Session expired — please re-open the payout setup from the ServiceMe app.</h2></body></html>");
   });
 
   configureExpoAndLanding(app);
