@@ -1132,12 +1132,30 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
   });
 
   app.get("/api/stripe/connect/return/:providerId", (_req: Request, res: Response) => {
-    res.send(`<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>ServiceMe</title>
-<style>body{font-family:-apple-system,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#0A0E27;color:#fff;text-align:center;padding:24px}
-h2{font-size:24px;font-weight:700;margin-bottom:12px}p{color:rgba(255,255,255,.7);margin-bottom:32px;line-height:1.5}
-a{background:#00D4FF;color:#0A0E27;padding:14px 32px;border-radius:12px;font-weight:700;text-decoration:none;font-size:16px}</style></head>
-<body><h2>Setup Complete</h2><p>Your bank account is connected.<br>Return to the ServiceMe app to start receiving payouts.</p>
-<a href="serviceme://stripe-connect-return">Open ServiceMe</a></body></html>`);
+    res.send(`<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>ServiceMe — Setup Complete</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:#0A0E27;color:#fff;text-align:center;padding:32px}
+.icon{width:72px;height:72px;background:rgba(0,212,255,0.15);border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;font-size:36px}
+h2{font-size:26px;font-weight:800;margin-bottom:12px}
+p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
+.steps{background:rgba(255,255,255,0.06);border-radius:16px;padding:20px 24px;margin:28px 0;text-align:left;width:100%;max-width:340px}
+.step{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;font-size:14px;color:rgba(255,255,255,0.75)}
+.step:last-child{margin-bottom:0}
+.num{background:#00D4FF;color:#0A0E27;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;flex-shrink:0;margin-top:1px}
+.badge{display:inline-flex;align-items:center;gap:6px;background:rgba(0,212,255,0.12);border:1px solid rgba(0,212,255,0.3);color:#00D4FF;padding:6px 14px;border-radius:100px;font-size:13px;font-weight:600;margin-top:4px}
+</style></head>
+<body>
+<div class="icon">&#10003;</div>
+<h2>Bank Connected!</h2>
+<p>Your Stripe payout account is set up.<br>You can now receive real earnings.</p>
+<div class="steps">
+  <div class="step"><div class="num">1</div><span>Close this page using your browser's back button or swipe down</span></div>
+  <div class="step"><div class="num">2</div><span>Return to the ServiceMe app — it will update automatically</span></div>
+  <div class="step"><div class="num">3</div><span>Your Payment Settings will show <strong style="color:#00D4FF">Stripe Payouts Active</strong></span></div>
+</div>
+<div class="badge">&#10003; &nbsp;Setup complete</div>
+</body></html>`);
   });
 
   app.get("/api/stripe/connect/refresh/:providerId", async (req: Request, res: Response) => {
