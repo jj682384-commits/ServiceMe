@@ -1061,6 +1061,110 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
     }
   });
 
+  // ── Stripe Connect (provider onboarding) ─────────────────────────────────────
+
+  app.post("/api/stripe/connect/onboard", async (req: Request, res: Response) => {
+    const { providerId } = req.body as { providerId?: string };
+    if (!providerId) return res.status(400).json({ error: "providerId required" });
+    try {
+      const { rows } = await pool.query<{ email: string; name: string; stripe_account_id: string | null }>(
+        "SELECT email, name, stripe_account_id FROM providers WHERE id = $1",
+        [providerId]
+      );
+      if (!rows.length) return res.status(404).json({ error: "Provider not found" });
+      const stripe = await getUncachableStripeClient();
+      let accountId = rows[0].stripe_account_id;
+
+      if (!accountId) {
+        const account = await stripe.accounts.create({
+          type: "express",
+          country: "US",
+          email: rows[0].email || undefined,
+          capabilities: { transfers: { requested: true } },
+          business_profile: { name: rows[0].name || "ServiceMe Provider" },
+          metadata: { providerId },
+        });
+        accountId = account.id;
+        await pool.query("UPDATE providers SET stripe_account_id = $2 WHERE id = $1", [providerId, accountId]);
+      }
+
+      const domain = process.env.REPLIT_DEV_DOMAIN
+        ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+        : "http://localhost:5000";
+
+      const accountLink = await stripe.accountLinks.create({
+        account: accountId,
+        refresh_url: `${domain}/api/stripe/connect/refresh/${providerId}`,
+        return_url: `${domain}/api/stripe/connect/return/${providerId}`,
+        type: "account_onboarding",
+      });
+
+      res.json({ url: accountLink.url, accountId });
+    } catch (err: any) {
+      console.error("[stripe/connect/onboard]", err.message);
+      res.status(500).json({ error: err.message || "Failed to create onboarding link" });
+    }
+  });
+
+  app.get("/api/stripe/connect/status/:providerId", async (req: Request, res: Response) => {
+    try {
+      const { rows } = await pool.query<{ stripe_account_id: string | null }>(
+        "SELECT stripe_account_id FROM providers WHERE id = $1",
+        [req.params.providerId]
+      );
+      if (!rows.length) return res.status(404).json({ error: "Provider not found" });
+      const accountId = rows[0].stripe_account_id;
+      if (!accountId) return res.json({ connected: false, chargesEnabled: false, payoutsEnabled: false, detailsSubmitted: false });
+
+      const stripe = await getUncachableStripeClient();
+      const account = await stripe.accounts.retrieve(accountId);
+      res.json({
+        connected: true,
+        chargesEnabled: account.charges_enabled,
+        payoutsEnabled: account.payouts_enabled,
+        detailsSubmitted: account.details_submitted,
+        accountId,
+      });
+    } catch (err: any) {
+      console.error("[stripe/connect/status]", err.message);
+      res.status(500).json({ error: err.message || "Failed to fetch status" });
+    }
+  });
+
+  app.get("/api/stripe/connect/return/:providerId", (_req: Request, res: Response) => {
+    res.send(`<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>ServiceMe</title>
+<style>body{font-family:-apple-system,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#0A0E27;color:#fff;text-align:center;padding:24px}
+h2{font-size:24px;font-weight:700;margin-bottom:12px}p{color:rgba(255,255,255,.7);margin-bottom:32px;line-height:1.5}
+a{background:#00D4FF;color:#0A0E27;padding:14px 32px;border-radius:12px;font-weight:700;text-decoration:none;font-size:16px}</style></head>
+<body><h2>Setup Complete</h2><p>Your bank account is connected.<br>Return to the ServiceMe app to start receiving payouts.</p>
+<a href="serviceme://stripe-connect-return">Open ServiceMe</a></body></html>`);
+  });
+
+  app.get("/api/stripe/connect/refresh/:providerId", async (req: Request, res: Response) => {
+    try {
+      const { rows } = await pool.query<{ stripe_account_id: string | null }>(
+        "SELECT stripe_account_id FROM providers WHERE id = $1",
+        [req.params.providerId]
+      );
+      const accountId = rows[0]?.stripe_account_id;
+      if (!accountId) return res.redirect("/");
+      const stripe = await getUncachableStripeClient();
+      const domain = process.env.REPLIT_DEV_DOMAIN
+        ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+        : "http://localhost:5000";
+      const link = await stripe.accountLinks.create({
+        account: accountId,
+        refresh_url: `${domain}/api/stripe/connect/refresh/${req.params.providerId}`,
+        return_url: `${domain}/api/stripe/connect/return/${req.params.providerId}`,
+        type: "account_onboarding",
+      });
+      res.redirect(link.url);
+    } catch (err: any) {
+      console.error("[stripe/connect/refresh]", err.message);
+      res.status(500).send("Failed to refresh onboarding link. Please return to the app and try again.");
+    }
+  });
+
   // ── Jobs ──────────────────────────────────────────────────────────────────────
 
   app.post("/api/jobs", async (req: Request, res: Response) => {
