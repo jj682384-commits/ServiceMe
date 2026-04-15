@@ -374,6 +374,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ success: true });
   });
 
+  app.patch("/api/auth/profile", async (req: Request, res: Response) => {
+    const token = extractToken(req.headers["authorization"]);
+    if (!token) return res.status(401).json({ error: "No token" });
+    try {
+      const user = await getUserByToken(token);
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
+      const { name, phone, email } = req.body as { name?: string; phone?: string; email?: string };
+      if (!name?.trim() && !phone?.trim() && !email?.trim()) {
+        return res.status(400).json({ error: "Provide at least one field to update" });
+      }
+      await pool.query(
+        `UPDATE auth_users SET
+           name  = COALESCE(NULLIF($2,''), name),
+           phone = COALESCE(NULLIF($3,''), phone),
+           email = COALESCE(NULLIF($4,''), email),
+           updated_at = NOW()
+         WHERE id = $1`,
+        [user.id, name?.trim() ?? "", phone?.trim() ?? "", email?.trim() ?? ""]
+      );
+      await pool.query(
+        `UPDATE providers SET
+           name  = COALESCE(NULLIF($2,''), name),
+           phone = COALESCE(NULLIF($3,''), phone),
+           email = COALESCE(NULLIF($4,''), email),
+           updated_at = NOW()
+         WHERE id = $1`,
+        [user.id, name?.trim() ?? "", phone?.trim() ?? "", email?.trim() ?? ""]
+      ).catch(() => {});
+      const { rows } = await pool.query(
+        "SELECT id, name, email, phone, role FROM auth_users WHERE id = $1",
+        [user.id]
+      );
+      console.log(`[AUTH] profile updated userId=${user.id}`);
+      res.json({ success: true, user: rows[0] });
+    } catch (err) {
+      console.error("[auth/profile]", err);
+      res.status(500).json({ error: "Database error" });
+    }
+  });
+
   app.patch("/api/auth/role", async (req: Request, res: Response) => {
     const token = extractToken(req.headers["authorization"]);
     if (!token) return res.status(401).json({ error: "No token" });

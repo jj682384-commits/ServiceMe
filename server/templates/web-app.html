@@ -234,6 +234,59 @@
     .badge.pending { background: rgba(245,158,11,.15); color: var(--warning); }
     .badge.cancelled { background: rgba(239,68,68,.12); color: var(--danger); }
 
+    /* ── Edit Profile ── */
+    .profile-edit-row { display: flex; align-items: center; justify-content: space-between; }
+    .profile-section-title {
+      font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: .8px;
+      text-transform: uppercase; margin-bottom: 14px; margin-top: 4px;
+    }
+    .edit-field { margin-bottom: 14px; }
+    .edit-field label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 6px; letter-spacing: .5px; text-transform: uppercase; }
+    .edit-actions { display: flex; gap: 10px; margin-top: 4px; }
+    .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
+
+    /* ── Payment Methods ── */
+    .pm-list { display: flex; flex-direction: column; gap: 10px; }
+    .pm-item {
+      display: flex; align-items: center; gap: 14px;
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      border-radius: 12px; padding: 14px 16px;
+    }
+    .pm-brand {
+      width: 44px; height: 30px; border-radius: 6px; display: flex; align-items: center;
+      justify-content: center; font-size: 11px; font-weight: 900; background: rgba(255,255,255,0.1);
+      color: var(--text); flex-shrink: 0; letter-spacing: .5px;
+    }
+    .pm-info { flex: 1; }
+    .pm-number { font-size: 14px; font-weight: 700; }
+    .pm-exp { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .pm-remove {
+      background: transparent; border: 1px solid rgba(239,68,68,0.25); color: var(--danger);
+      padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700;
+      cursor: pointer; font-family: inherit; transition: all .15s;
+    }
+    .pm-remove:hover { background: rgba(239,68,68,0.08); }
+    .pm-empty { text-align: center; padding: 24px 0; color: var(--muted); font-size: 13px; }
+
+    /* ── Card Modal ── */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+      z-index: 100; display: flex; align-items: center; justify-content: center; padding: 24px;
+    }
+    .modal-box {
+      background: var(--card2); border: 1px solid var(--border); border-radius: 20px;
+      padding: 28px; width: 100%; max-width: 420px;
+    }
+    .modal-title { font-size: 18px; font-weight: 900; margin-bottom: 4px; }
+    .modal-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+    #stripe-card-element {
+      background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px 16px;
+    }
+    #stripe-card-element.focused { border-color: var(--cyan); }
+    #card-modal-error { color: var(--danger); font-size: 13px; margin-top: 10px; min-height: 18px; }
+
     /* ── Responsive ── */
     @media (max-width: 680px) {
       .app-sidebar { display: none; }
@@ -419,18 +472,49 @@
         <!-- Profile -->
         <div class="view" id="view-profile">
           <div class="view-title">Profile</div>
-          <div class="view-sub">Your account details</div>
+          <div class="view-sub">Manage your account and payment methods</div>
+
+          <!-- Profile Header -->
           <div class="profile-header" id="profile-header">
             <div class="profile-avatar" id="profile-initial">?</div>
-            <div>
+            <div style="flex:1">
               <div class="profile-name" id="profile-name">Loading...</div>
               <div class="profile-email" id="profile-email"></div>
               <div class="profile-badge" id="profile-role-badge">Driver</div>
             </div>
+            <button class="btn btn-ghost btn-sm" onclick="toggleEditProfile()" id="edit-profile-btn" style="width:auto;flex-shrink:0">Edit</button>
           </div>
+
+          <!-- Edit Profile Form -->
+          <div id="edit-profile-section" style="display:none">
+            <div class="card">
+              <div class="profile-section-title">Edit Profile</div>
+              <div class="edit-field"><label>Full Name</label><input class="web-input" type="text" id="edit-name" placeholder="Your name" /></div>
+              <div class="edit-field"><label>Email</label><input class="web-input" type="email" id="edit-email" placeholder="you@example.com" /></div>
+              <div class="edit-field"><label>Phone</label><input class="web-input" type="tel" id="edit-phone" placeholder="+1 (555) 000-0000" /></div>
+              <div class="edit-actions">
+                <button class="btn btn-cyan" style="flex:1" onclick="saveProfile()" id="save-profile-btn">Save Changes</button>
+                <button class="btn btn-ghost btn-sm" onclick="toggleEditProfile()">Cancel</button>
+              </div>
+              <div id="profile-save-error" style="color:var(--danger);font-size:13px;margin-top:10px;display:none"></div>
+            </div>
+          </div>
+
+          <!-- Payment Methods -->
+          <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+              <h3 style="margin-bottom:0">Payment Methods</h3>
+              <button class="btn btn-ghost btn-sm" onclick="showAddCardModal()" style="width:auto">+ Add Card</button>
+            </div>
+            <div id="payment-methods-list">
+              <div class="pm-empty">Loading...</div>
+            </div>
+          </div>
+
+          <!-- Get the app promo -->
           <div class="card">
             <h3>Get the Full Experience</h3>
-            <p>The web app gives you core access to ServiceMe. Download the mobile app for real-time GPS tracking, push notifications, emergency SOS, in-app chat, vehicle profiles, payment management, and more.</p>
+            <p>Download the mobile app for real-time GPS tracking, push notifications, emergency SOS, in-app chat, and vehicle profile management.</p>
             <div style="display:flex;gap:12px;margin-top:16px;flex-wrap:wrap">
               <a href="https://apps.apple.com" class="btn btn-ghost btn-sm" style="text-decoration:none">&#xF8FF; App Store</a>
               <a href="https://play.google.com" class="btn btn-ghost btn-sm" style="text-decoration:none">&#9654; Google Play</a>
@@ -477,9 +561,24 @@
   </div>
 </div>
 
+<!-- Add Card Modal -->
+<div class="modal-backdrop" id="card-modal" style="display:none" onclick="if(event.target===this)hideAddCardModal()">
+  <div class="modal-box">
+    <div class="modal-title">Add Payment Method</div>
+    <div class="modal-sub">Your card is saved securely via Stripe.</div>
+    <div id="stripe-card-element"></div>
+    <div id="card-modal-error"></div>
+    <div class="modal-actions">
+      <button class="btn btn-cyan" style="flex:1" onclick="confirmAddCard()" id="add-card-btn">Save Card</button>
+      <button class="btn btn-ghost btn-sm" onclick="hideAddCardModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div id="toast"></div>
 
+<script src="https://js.stripe.com/v3/"></script>
 <script>
   const BASE = window.location.origin;
   let userToken = localStorage.getItem("sm_web_token") || "";
@@ -607,6 +706,7 @@
     if (view) view.classList.add("active");
     const nav = document.getElementById(`nav-${id}`);
     if (nav) nav.classList.add("active");
+    if (id === "profile") loadPaymentMethods();
   }
 
   // ── Services ──
@@ -744,8 +844,163 @@
     document.getElementById("profile-initial").textContent = (currentUser.name || "?")[0].toUpperCase();
     document.getElementById("profile-name").textContent = currentUser.name || "—";
     document.getElementById("profile-email").textContent = currentUser.email || "—";
-    document.getElementById("profile-role-badge").textContent = role === "provider" ? "Service Provider" : "Driver";
-    if (role === "provider") document.getElementById("profile-role-badge").style.background = "rgba(255,107,107,0.12)";
+    const badge = document.getElementById("profile-role-badge");
+    badge.textContent = role === "provider" ? "Service Provider" : "Driver";
+    badge.style.background = role === "provider" ? "rgba(255,107,107,0.12)" : "";
+    badge.style.color = role === "provider" ? "var(--coral)" : "";
+    badge.style.borderColor = role === "provider" ? "rgba(255,107,107,0.25)" : "";
+  }
+
+  function toggleEditProfile() {
+    const section = document.getElementById("edit-profile-section");
+    const isOpen = section.style.display !== "none";
+    if (isOpen) {
+      section.style.display = "none";
+      document.getElementById("edit-profile-btn").textContent = "Edit";
+    } else {
+      document.getElementById("edit-name").value = currentUser?.name || "";
+      document.getElementById("edit-email").value = currentUser?.email || "";
+      document.getElementById("edit-phone").value = currentUser?.phone || "";
+      document.getElementById("profile-save-error").style.display = "none";
+      section.style.display = "block";
+      document.getElementById("edit-profile-btn").textContent = "Close";
+      section.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
+
+  async function saveProfile() {
+    const name = document.getElementById("edit-name").value.trim();
+    const email = document.getElementById("edit-email").value.trim();
+    const phone = document.getElementById("edit-phone").value.trim();
+    const errEl = document.getElementById("profile-save-error");
+    const btn = document.getElementById("save-profile-btn");
+    errEl.style.display = "none";
+    if (!name || !email) { errEl.textContent = "Name and email are required."; errEl.style.display = "block"; return; }
+    btn.disabled = true; btn.textContent = "Saving...";
+    try {
+      const res = await fetch(`${BASE}/api/auth/profile`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${userToken}` },
+        body: JSON.stringify({ name, email, phone }),
+      });
+      const data = await res.json();
+      if (!res.ok) { errEl.textContent = data.error || "Failed to save."; errEl.style.display = "block"; return; }
+      currentUser = { ...currentUser, ...data.user };
+      updateProfile();
+      document.getElementById("bar-user-name").textContent = currentUser.name || "";
+      toggleEditProfile();
+      toast("Profile updated!");
+    } catch { errEl.textContent = "Network error. Try again."; errEl.style.display = "block"; }
+    finally { btn.disabled = false; btn.textContent = "Save Changes"; }
+  }
+
+  // ── Payment Methods ──
+  async function loadPaymentMethods() {
+    const list = document.getElementById("payment-methods-list");
+    if (!list || !userToken) return;
+    list.innerHTML = '<div class="pm-empty">Loading...</div>';
+    try {
+      const res = await fetch(`${BASE}/api/stripe/payment-methods`, {
+        headers: { "Authorization": `Bearer ${userToken}` },
+      });
+      if (!res.ok) { list.innerHTML = '<div class="pm-empty">Could not load payment methods.</div>'; return; }
+      const data = await res.json();
+      const methods = data.paymentMethods || [];
+      if (!methods.length) {
+        list.innerHTML = '<div class="pm-empty">No saved cards yet. Add one above.</div>';
+        return;
+      }
+      list.innerHTML = '<div class="pm-list">' + methods.map(pm => {
+        const brand = (pm.card?.brand || "card").toUpperCase().slice(0,4);
+        const last4 = pm.card?.last4 || "????";
+        const expM = String(pm.card?.exp_month || "").padStart(2,"0");
+        const expY = String(pm.card?.exp_year || "").slice(-2);
+        return `<div class="pm-item">
+          <div class="pm-brand">${brand}</div>
+          <div class="pm-info">
+            <div class="pm-number">•••• •••• •••• ${last4}</div>
+            <div class="pm-exp">Expires ${expM}/${expY}</div>
+          </div>
+          <button class="pm-remove" onclick="removeCard('${pm.id}', this)">Remove</button>
+        </div>`;
+      }).join("") + "</div>";
+    } catch { list.innerHTML = '<div class="pm-empty">Could not load payment methods.</div>'; }
+  }
+
+  async function removeCard(pmId, btn) {
+    if (!confirm("Remove this card?")) return;
+    const orig = btn.textContent;
+    btn.textContent = "..."; btn.disabled = true;
+    try {
+      const res = await fetch(`${BASE}/api/stripe/payment-methods/${pmId}`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${userToken}` },
+      });
+      if (res.ok) { toast("Card removed."); loadPaymentMethods(); }
+      else { toast("Could not remove card. Try again."); btn.textContent = orig; btn.disabled = false; }
+    } catch { toast("Network error."); btn.textContent = orig; btn.disabled = false; }
+  }
+
+  // ── Add Card (Stripe Elements) ──
+  let _stripe = null;
+  let _cardElement = null;
+  let _setupClientSecret = null;
+
+  async function showAddCardModal() {
+    document.getElementById("card-modal").style.display = "flex";
+    document.getElementById("card-modal-error").textContent = "";
+    document.getElementById("add-card-btn").disabled = false;
+    document.getElementById("add-card-btn").textContent = "Save Card";
+    try {
+      const pkRes = await fetch(`${BASE}/api/stripe/publishable-key`);
+      const { publishableKey } = await pkRes.json();
+      if (!publishableKey) throw new Error("No key");
+      const siRes = await fetch(`${BASE}/api/stripe/setup-intent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${userToken}` },
+      });
+      const { clientSecret } = await siRes.json();
+      _setupClientSecret = clientSecret;
+      if (!_stripe) _stripe = Stripe(publishableKey);
+      const elements = _stripe.elements();
+      if (_cardElement) _cardElement.destroy();
+      _cardElement = elements.create("card", {
+        style: {
+          base: { color: "#ffffff", fontFamily: "-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif", fontSize: "15px", "::placeholder": { color: "rgba(255,255,255,0.4)" } },
+          invalid: { color: "#ef4444" },
+        },
+      });
+      _cardElement.mount("#stripe-card-element");
+      _cardElement.on("focus", () => document.getElementById("stripe-card-element").classList.add("focused"));
+      _cardElement.on("blur", () => document.getElementById("stripe-card-element").classList.remove("focused"));
+      _cardElement.on("change", e => { document.getElementById("card-modal-error").textContent = e.error ? e.error.message : ""; });
+    } catch {
+      document.getElementById("card-modal-error").textContent = "Could not load card form. Try again.";
+    }
+  }
+
+  function hideAddCardModal() {
+    document.getElementById("card-modal").style.display = "none";
+    if (_cardElement) { _cardElement.destroy(); _cardElement = null; }
+    _setupClientSecret = null;
+  }
+
+  async function confirmAddCard() {
+    if (!_stripe || !_cardElement || !_setupClientSecret) return;
+    const btn = document.getElementById("add-card-btn");
+    const errEl = document.getElementById("card-modal-error");
+    btn.disabled = true; btn.textContent = "Saving...";
+    try {
+      const { setupIntent, error } = await _stripe.confirmCardSetup(_setupClientSecret, {
+        payment_method: { card: _cardElement },
+      });
+      if (error) { errEl.textContent = error.message; btn.disabled = false; btn.textContent = "Save Card"; return; }
+      if (setupIntent?.status === "succeeded") {
+        hideAddCardModal();
+        toast("Card saved!");
+        loadPaymentMethods();
+      }
+    } catch { errEl.textContent = "Something went wrong. Try again."; btn.disabled = false; btn.textContent = "Save Card"; }
   }
 
   // ── Auto-login ──

@@ -16,7 +16,7 @@ import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollV
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceType, EVService, EmergencyContact } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
-import { getApiUrl } from "@/lib/query-client";
+import { getApiUrl, apiRequest } from "@/lib/query-client";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -267,6 +267,12 @@ export default function EditProfileScreen() {
         phone: phone.trim(),
       });
     }
+
+    apiRequest("PATCH", "/api/auth/profile", {
+      name: name.trim(),
+      phone: phone.trim(),
+      email: email.trim(),
+    }).catch(() => {});
 
     if (isProvider && currentProvider) {
       const updatedProvider = {
