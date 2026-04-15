@@ -57,13 +57,13 @@ const LEGAL_DOCUMENTS = [
     key: "terms" as const,
     title: "Terms of Service",
     icon: "file-text" as const,
-    summary: "Rules governing your use of ServiceMe, including your responsibilities, payment terms, and dispute resolution procedures.",
+    summary: "Rules governing your use of ResqRide, including your responsibilities, payment terms, and dispute resolution procedures.",
   },
   {
     key: "liability" as const,
     title: "Liability Disclaimer",
     icon: "alert-triangle" as const,
-    summary: "Important limitations on ServiceMe's liability and your assumption of risks when providing roadside assistance services.",
+    summary: "Important limitations on ResqRide's liability and your assumption of risks when providing roadside assistance services.",
   },
 ];
 

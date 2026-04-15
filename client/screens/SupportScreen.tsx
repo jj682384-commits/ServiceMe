@@ -39,7 +39,7 @@ interface ChatMessage {
 const initialMessages: ChatMessage[] = [
   {
     id: "1",
-    text: "Hi there! Welcome to ServiceMe Support. I'm here to help you 24/7. How can I assist you today?",
+    text: "Hi there! Welcome to ResqRide Support. I'm here to help you 24/7. How can I assist you today?",
     isUser: false,
     timestamp: new Date(),
   },
@@ -272,7 +272,7 @@ export default function SupportScreen() {
             <Feather name="headphones" size={18} color="#FFFFFF" />
           </View>
           <View>
-            <ThemedText type="h4">ServiceMe Support</ThemedText>
+            <ThemedText type="h4">ResqRide Support</ThemedText>
             <View style={styles.onlineStatus}>
               <View style={[styles.onlineDot, { backgroundColor: theme.success }]} />
               <ThemedText type="small" style={{ color: theme.success }}>

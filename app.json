@@ -1,18 +1,18 @@
 {
   "expo": {
-    "name": "ServiceMe",
-    "slug": "serviceme",
+    "name": "ResqRide",
+    "slug": "resqride",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "serviceme",
+    "scheme": "resqride",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.serviceme.app",
+      "bundleIdentifier": "com.resqride.app",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "ServiceMe needs your location to find nearby mechanics and service providers."
+        "NSLocationWhenInUseUsageDescription": "ResqRide needs your location to find nearby mechanics and service providers."
       }
     },
     "android": {
@@ -22,7 +22,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.serviceme.app",
+      "package": "com.resqride.app",
       "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
     },
     "web": {
@@ -46,7 +46,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "ServiceMe needs your location to find nearby mechanics."
+          "locationWhenInUsePermission": "ResqRide needs your location to find nearby mechanics."
         }
       ]
     ],

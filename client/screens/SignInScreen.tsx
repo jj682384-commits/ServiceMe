@@ -166,7 +166,7 @@ export default function SignInScreen() {
             </View>
           </Pressable>
           <ThemedText type="h2" style={styles.title}>Welcome Back</ThemedText>
-          <ThemedText type="body" style={styles.subtitle}>Sign in to continue with ServiceMe</ThemedText>
+          <ThemedText type="body" style={styles.subtitle}>Sign in to continue with ResqRide</ThemedText>
         </View>
 
         <View style={styles.form}>

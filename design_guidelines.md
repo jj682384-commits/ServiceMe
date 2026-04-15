@@ -1,4 +1,4 @@
-# ServiceMe - V2 Modern Design (2025)
+# ResqRide - V2 Modern Design (2025)
 
 ## Design Direction: Dark-First, High-Contrast
 

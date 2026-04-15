@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ServiceMe Admin</title>
+  <title>ResqRide Admin</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -227,7 +227,7 @@
     <div class="login-logo">
       <div class="login-logo-icon">S</div>
       <div>
-        <div class="login-logo-text">ServiceMe</div>
+        <div class="login-logo-text">ResqRide</div>
         <div class="login-sub">Admin Dashboard</div>
       </div>
     </div>
@@ -249,7 +249,7 @@
       <div class="sidebar-logo-row">
         <div class="sidebar-logo-icon">S</div>
         <div>
-          <div class="sidebar-logo-text">ServiceMe</div>
+          <div class="sidebar-logo-text">ResqRide</div>
           <div class="sidebar-version">Admin Panel</div>
         </div>
       </div>
@@ -478,7 +478,7 @@
         </div>
         <div class="field">
           <label>Title</label>
-          <input type="text" id="notify-title" placeholder="e.g. ServiceMe is now live in your city!" maxlength="80" />
+          <input type="text" id="notify-title" placeholder="e.g. ResqRide is now live in your city!" maxlength="80" />
         </div>
         <div class="field">
           <label>Message</label>
@@ -822,7 +822,7 @@
     const csv = ["Email,Role,Date", ...allWaitlist.map(w => `${w.email},${w.role || "driver"},${new Date(w.created_at).toISOString()}`)].join("\n");
     const a = document.createElement("a");
     a.href = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
-    a.download = `serviceme-waitlist-${Date.now()}.csv`;
+    a.download = `resqride-waitlist-${Date.now()}.csv`;
     a.click();
   }
 

@@ -166,8 +166,8 @@ export default function PaymentMethodsScreen() {
         customerId,
         customerEphemeralKeySecret: ephemeralKey,
         setupIntentClientSecret: clientSecret,
-        merchantDisplayName: "ServiceMe",
-        returnURL: "serviceme://stripe-redirect",
+        merchantDisplayName: "ResqRide",
+        returnURL: "resqride://stripe-redirect",
         allowsDelayedPaymentMethods: false,
         defaultBillingDetails: { address: { country: "US" } },
       });

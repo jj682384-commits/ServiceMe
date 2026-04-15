@@ -927,7 +927,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return `Q: ${q.question}\nA: ${answer}`;
         })
         .join("\n\n");
-      const prompt = `You are an expert automotive roadside assistance diagnostic AI for the ServiceMe app. A driver is stranded and needs help.
+      const prompt = `You are an expert automotive roadside assistance diagnostic AI for the ResqRide app. A driver is stranded and needs help.
 
 Primary symptom reported: "${symptomLabel || symptom}"
 
@@ -1343,7 +1343,7 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
           country: "US",
           email: rows[0].email || undefined,
           capabilities: { transfers: { requested: true } },
-          business_profile: { name: rows[0].name || "ServiceMe Provider" },
+          business_profile: { name: rows[0].name || "ResqRide Provider" },
           metadata: { providerId },
         });
         accountId = account.id;
@@ -1394,7 +1394,7 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
   });
 
   app.get("/api/stripe/connect/return/:providerId", (_req: Request, res: Response) => {
-    res.send(`<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>ServiceMe — Setup Complete</title>
+    res.send(`<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>ResqRide — Setup Complete</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:#0A0E27;color:#fff;text-align:center;padding:32px}
@@ -1413,7 +1413,7 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
 <p>Your Stripe payout account is set up.<br>You can now receive real earnings.</p>
 <div class="steps">
   <div class="step"><div class="num">1</div><span>Close this page using your browser's back button or swipe down</span></div>
-  <div class="step"><div class="num">2</div><span>Return to the ServiceMe app — it will update automatically</span></div>
+  <div class="step"><div class="num">2</div><span>Return to the ResqRide app — it will update automatically</span></div>
   <div class="step"><div class="num">3</div><span>Your Payment Settings will show <strong style="color:#00D4FF">Stripe Payouts Active</strong></span></div>
 </div>
 <div class="badge">&#10003; &nbsp;Setup complete</div>
@@ -1919,7 +1919,7 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
         {
           role: "system",
           content:
-            "You are a helpful customer support agent for ServiceMe, a roadside assistance app. " +
+            "You are a helpful customer support agent for ResqRide, a roadside assistance app. " +
             "You help drivers and service providers with service requests, payments, the app, and safety concerns. " +
             "Be concise, empathetic, and professional. Keep responses under 3 sentences unless more detail is needed. " +
             "For emergencies always direct users to call 911.",

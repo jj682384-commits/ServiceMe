@@ -104,7 +104,7 @@ export default function EmergencyModeScreen() {
         : "Location not available";
 
       const message =
-        `[SOS ALERT] ${driverName} has activated Emergency Mode on ServiceMe and needs help.\n\n` +
+        `[SOS ALERT] ${driverName} has activated Emergency Mode on ResqRide and needs help.\n\n` +
         `${locationText}\n\n` +
         `Please check on them immediately or call 911 if needed.`;
 

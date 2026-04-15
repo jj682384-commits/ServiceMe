@@ -8,7 +8,7 @@ interface Props {
 
 export default function StripeWrapper({ publishableKey, children }: Props) {
   return (
-    <StripeProvider publishableKey={publishableKey} urlScheme="serviceme">
+    <StripeProvider publishableKey={publishableKey} urlScheme="resqride">
       {children}
     </StripeProvider>
   );

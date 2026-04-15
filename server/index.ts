@@ -308,7 +308,7 @@ process.on("unhandledRejection", (reason) => {
         metadata: {
           jobId: jobId || "",
           serviceType: serviceType || "",
-          platform: "serviceme",
+          platform: "resqride",
         },
         automatic_payment_methods: { enabled: true },
       });
@@ -487,11 +487,11 @@ process.on("unhandledRejection", (reason) => {
   });
 
   app.get("/api/stripe/connect/return", (_req: Request, res: Response) => {
-    res.send("<html><body><h2>Payout setup complete — return to the ServiceMe app.</h2></body></html>");
+    res.send("<html><body><h2>Payout setup complete — return to the ResqRide app.</h2></body></html>");
   });
 
   app.get("/api/stripe/connect/refresh", (req: Request, res: Response) => {
-    res.send("<html><body><h2>Session expired — please re-open the payout setup from the ServiceMe app.</h2></body></html>");
+    res.send("<html><body><h2>Session expired — please re-open the payout setup from the ResqRide app.</h2></body></html>");
   });
 
   configureExpoAndLanding(app);

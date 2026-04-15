@@ -136,7 +136,7 @@ export default function PremiumUpgradeScreen() {
           <View style={[styles.starBadge, { backgroundColor: theme.secondary }]}>
             <Feather name="star" size={32} color={theme.primary} />
           </View>
-          <ThemedText type="h2" style={styles.title}>ServiceMe Premium</ThemedText>
+          <ThemedText type="h2" style={styles.title}>ResqRide Premium</ThemedText>
           <ThemedText type="body" style={{ color: theme.textSecondary, textAlign: "center" }}>
             Unlock exclusive benefits for roadside peace of mind
           </ThemedText>

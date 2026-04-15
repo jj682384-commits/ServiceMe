@@ -179,7 +179,7 @@ export default function ServiceCompletionScreen() {
             Service Complete
           </ThemedText>
           <ThemedText type="body" style={{ color: theme.textSecondary, textAlign: "center" }}>
-            Thank you for using ServiceMe
+            Thank you for using ResqRide
           </ThemedText>
         </View>
 

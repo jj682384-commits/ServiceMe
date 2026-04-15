@@ -90,7 +90,7 @@ export default function EVMobileChargeScreen() {
       // Step 2 — Init Stripe PaymentSheet
       const { error: initError } = await initPaymentSheet({
         paymentIntentClientSecret: piData.clientSecret,
-        merchantDisplayName: "ServiceMe",
+        merchantDisplayName: "ResqRide",
         allowsDelayedPaymentMethods: false,
       });
       if (initError) throw new Error(initError.message);

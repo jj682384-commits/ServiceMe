@@ -338,7 +338,7 @@ export default function ServiceRequestScreen() {
 
         const { error: initError } = await initPaymentSheet({
           paymentIntentClientSecret: piData.clientSecret,
-          merchantDisplayName: "ServiceMe",
+          merchantDisplayName: "ResqRide",
           allowsDelayedPaymentMethods: false,
         });
         if (initError) throw new Error(initError.message);

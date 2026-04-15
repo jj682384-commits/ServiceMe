@@ -21,9 +21,9 @@ const PRIVACY_POLICY = {
   sections: [
     {
       heading: "Introduction",
-      content: `ServiceMe ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our mobile application and related services (collectively, the "Service").
+      content: `ResqRide ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our mobile application and related services (collectively, the "Service").
 
-By using ServiceMe, you agree to the collection and use of information in accordance with this policy. If you do not agree with the terms of this Privacy Policy, please do not access the Service.`
+By using ResqRide, you agree to the collection and use of information in accordance with this policy. If you do not agree with the terms of this Privacy Policy, please do not access the Service.`
     },
     {
       heading: "Information We Collect",
@@ -135,7 +135,7 @@ Opt-Out: Opt out of marketing communications at any time
 
 Withdraw Consent: Withdraw consent where processing is based on consent
 
-To exercise these rights, please contact us at privacy@serviceme.app`
+To exercise these rights, please contact us at privacy@resqride.app`
     },
     {
       heading: "Children's Privacy",
@@ -155,13 +155,13 @@ We encourage you to review this Privacy Policy periodically for any changes. Cha
       heading: "Contact Us",
       content: `If you have any questions about this Privacy Policy, please contact us:
 
-Email: privacy@serviceme.app
-Address: ServiceMe Inc.
+Email: privacy@resqride.app
+Address: ResqRide Inc.
 123 Roadside Way
 San Francisco, CA 94102
 United States
 
-For data protection inquiries in the EU, please contact our Data Protection Officer at dpo@serviceme.app`
+For data protection inquiries in the EU, please contact our Data Protection Officer at dpo@resqride.app`
     }
   ]
 };
@@ -171,15 +171,15 @@ const TERMS_OF_SERVICE = {
   sections: [
     {
       heading: "Agreement to Terms",
-      content: `Welcome to ServiceMe. These Terms of Service ("Terms") govern your access to and use of the ServiceMe mobile application and related services (collectively, the "Service") operated by ServiceMe Inc. ("Company," "we," "us," or "our").
+      content: `Welcome to ResqRide. These Terms of Service ("Terms") govern your access to and use of the ResqRide mobile application and related services (collectively, the "Service") operated by ResqRide Inc. ("Company," "we," "us," or "our").
 
 By accessing or using our Service, you agree to be bound by these Terms. If you disagree with any part of these Terms, you may not access the Service.
 
-You must be at least 18 years old to use this Service. By using ServiceMe, you represent and warrant that you are at least 18 years of age.`
+You must be at least 18 years old to use this Service. By using ResqRide, you represent and warrant that you are at least 18 years of age.`
     },
     {
       heading: "Description of Service",
-      content: `ServiceMe is an on-demand roadside assistance platform that connects drivers in need of help with nearby service providers. Our services include, but are not limited to:
+      content: `ResqRide is an on-demand roadside assistance platform that connects drivers in need of help with nearby service providers. Our services include, but are not limited to:
 
 - Flat tire assistance and tire changes
 - Jump start services for dead batteries
@@ -187,7 +187,7 @@ You must be at least 18 years old to use this Service. By using ServiceMe, you r
 - Emergency fuel delivery
 - Lockout assistance
 
-ServiceMe acts as a platform connecting users with independent service providers. We do not directly provide roadside assistance services. Service providers are independent contractors, not employees of ServiceMe.`
+ResqRide acts as a platform connecting users with independent service providers. We do not directly provide roadside assistance services. Service providers are independent contractors, not employees of ResqRide.`
     },
     {
       heading: "User Accounts",
@@ -203,7 +203,7 @@ We reserve the right to suspend or terminate accounts that violate these Terms o
     },
     {
       heading: "User Responsibilities",
-      content: `As a user of ServiceMe, you agree to:
+      content: `As a user of ResqRide, you agree to:
 
 - Use the Service only for lawful purposes
 - Provide accurate information about your location and vehicle
@@ -222,7 +222,7 @@ You agree NOT to:
     },
     {
       heading: "Service Providers",
-      content: `Service providers on our platform are independent contractors, not employees of ServiceMe. We screen service providers and verify their credentials, but we do not guarantee:
+      content: `Service providers on our platform are independent contractors, not employees of ResqRide. We screen service providers and verify their credentials, but we do not guarantee:
 
 - The quality or safety of any service provided
 - The accuracy of service provider information or ratings
@@ -272,7 +272,7 @@ Refunds:
       heading: "Limitation of Liability",
       content: `TO THE MAXIMUM EXTENT PERMITTED BY LAW:
 
-ServiceMe provides the Service on an "AS IS" and "AS AVAILABLE" basis. We make no warranties, express or implied, regarding:
+ResqRide provides the Service on an "AS IS" and "AS AVAILABLE" basis. We make no warranties, express or implied, regarding:
 - The reliability or availability of the Service
 - The quality of services provided by service providers
 - The accuracy of information on the platform
@@ -288,7 +288,7 @@ Some jurisdictions do not allow limitations on implied warranties or exclusion o
     },
     {
       heading: "Indemnification",
-      content: `You agree to defend, indemnify, and hold harmless ServiceMe, its officers, directors, employees, and agents from any claims, damages, obligations, losses, liabilities, costs, or debt arising from:
+      content: `You agree to defend, indemnify, and hold harmless ResqRide, its officers, directors, employees, and agents from any claims, damages, obligations, losses, liabilities, costs, or debt arising from:
 
 - Your use of the Service
 - Your violation of these Terms
@@ -298,7 +298,7 @@ Some jurisdictions do not allow limitations on implied warranties or exclusion o
     },
     {
       heading: "Intellectual Property",
-      content: `The Service and its original content, features, and functionality are owned by ServiceMe and are protected by international copyright, trademark, patent, trade secret, and other intellectual property laws.
+      content: `The Service and its original content, features, and functionality are owned by ResqRide and are protected by international copyright, trademark, patent, trade secret, and other intellectual property laws.
 
 You may not:
 - Copy, modify, or distribute the Service or its content
@@ -314,7 +314,7 @@ User Content:
     {
       heading: "Dispute Resolution",
       content: `Informal Resolution:
-Before filing any legal claim, you agree to attempt to resolve disputes informally by contacting us at legal@serviceme.app
+Before filing any legal claim, you agree to attempt to resolve disputes informally by contacting us at legal@resqride.app
 
 Arbitration:
 Any disputes not resolved informally shall be resolved through binding arbitration in accordance with the rules of the American Arbitration Association. Arbitration shall take place in San Francisco, California.
@@ -353,8 +353,8 @@ Your continued use of the Service after changes constitutes acceptance of the ne
       heading: "Contact Information",
       content: `If you have any questions about these Terms, please contact us:
 
-Email: legal@serviceme.app
-Address: ServiceMe Inc.
+Email: legal@resqride.app
+Address: ResqRide Inc.
 123 Roadside Way
 San Francisco, CA 94102
 United States
@@ -370,15 +370,15 @@ const LIABILITY_DISCLAIMER = {
   sections: [
     {
       heading: "Purpose of This Disclaimer",
-      content: `This Liability Disclaimer ("Disclaimer") applies to all users of the ServiceMe platform, including both Customers (drivers requesting roadside assistance) and Service Providers (individuals and businesses offering roadside assistance services).
+      content: `This Liability Disclaimer ("Disclaimer") applies to all users of the ResqRide platform, including both Customers (drivers requesting roadside assistance) and Service Providers (individuals and businesses offering roadside assistance services).
 
-By using ServiceMe, you acknowledge that you have read, understood, and agree to the terms outlined in this Disclaimer. If you do not agree, you must discontinue use of the platform immediately.`
+By using ResqRide, you acknowledge that you have read, understood, and agree to the terms outlined in this Disclaimer. If you do not agree, you must discontinue use of the platform immediately.`
     },
     {
       heading: "Platform Role",
-      content: `ServiceMe operates solely as a technology platform that connects Customers with independent Service Providers. ServiceMe does not provide roadside assistance services directly. We are not a roadside assistance company, towing company, or automotive repair shop.
+      content: `ResqRide operates solely as a technology platform that connects Customers with independent Service Providers. ResqRide does not provide roadside assistance services directly. We are not a roadside assistance company, towing company, or automotive repair shop.
 
-ServiceMe is not responsible for:
+ResqRide is not responsible for:
 - The quality, safety, or legality of services performed
 - The qualifications or competence of Service Providers
 - The condition or suitability of equipment or tools used
@@ -387,17 +387,17 @@ ServiceMe is not responsible for:
     },
     {
       heading: "For Customers (Drivers)",
-      content: `By requesting roadside assistance through ServiceMe, you acknowledge and agree to the following:
+      content: `By requesting roadside assistance through ResqRide, you acknowledge and agree to the following:
 
 Assumption of Risk:
 - Roadside assistance involves inherent risks, including but not limited to vehicle damage, personal injury, and property damage
 - You voluntarily assume all risks associated with receiving roadside assistance services
-- You understand that ServiceMe has no control over the actions or quality of work performed by Service Providers
+- You understand that ResqRide has no control over the actions or quality of work performed by Service Providers
 
 Vehicle and Property:
 - You are responsible for ensuring your vehicle is in a safe location before requesting service
 - You acknowledge that minor cosmetic or mechanical damage may occur during towing, tire changes, jump starts, or other services
-- ServiceMe is not liable for any pre-existing conditions or damage to your vehicle
+- ResqRide is not liable for any pre-existing conditions or damage to your vehicle
 - You should remove all valuables from your vehicle before any tow service
 
 Personal Safety:
@@ -406,24 +406,24 @@ Personal Safety:
 - You should verify the identity of your Service Provider before allowing them to work on your vehicle
 
 Service Expectations:
-- ServiceMe does not guarantee response times, availability, or service outcomes
+- ResqRide does not guarantee response times, availability, or service outcomes
 - Estimated arrival times are approximations and may vary based on traffic, weather, and other factors
 - Service Providers may decline or be unable to complete a service request for any reason
 - You are responsible for verifying that the service performed meets your expectations before confirming completion`
     },
     {
       heading: "For Service Providers",
-      content: `By offering roadside assistance services through ServiceMe, you acknowledge and agree to the following:
+      content: `By offering roadside assistance services through ResqRide, you acknowledge and agree to the following:
 
 Independent Contractor Status:
-- You are an independent contractor, not an employee of ServiceMe
+- You are an independent contractor, not an employee of ResqRide
 - You are solely responsible for your own actions, conduct, and the quality of services you provide
 - You are responsible for maintaining your own insurance, licenses, and certifications as required by applicable law
 
 Liability and Insurance:
 - You assume full liability for any injury, damage, or loss that occurs as a result of your services
 - You are required to maintain adequate general liability insurance at all times while providing services
-- You agree to indemnify and hold ServiceMe harmless from any claims, damages, or losses arising from your services
+- You agree to indemnify and hold ResqRide harmless from any claims, damages, or losses arising from your services
 - Commercial auto insurance is strongly recommended for providers using personal vehicles
 
 Safety and Compliance:
@@ -442,7 +442,7 @@ Duty of Care:
       heading: "Limitation of Liability",
       content: `TO THE FULLEST EXTENT PERMITTED BY APPLICABLE LAW:
 
-ServiceMe, its affiliates, officers, directors, employees, agents, and licensors shall not be liable for any direct, indirect, incidental, special, consequential, or punitive damages, including but not limited to:
+ResqRide, its affiliates, officers, directors, employees, agents, and licensors shall not be liable for any direct, indirect, incidental, special, consequential, or punitive damages, including but not limited to:
 
 - Personal injury or death arising from roadside assistance services
 - Damage to vehicles, property, or equipment during or after service
@@ -451,22 +451,22 @@ ServiceMe, its affiliates, officers, directors, employees, agents, and licensors
 - Data loss or security breaches
 - Any damages exceeding the service fee paid for the specific transaction giving rise to the claim
 
-ServiceMe's total aggregate liability to any user for all claims arising from or related to the use of the platform shall not exceed the greater of (a) the total fees paid by the user to ServiceMe in the twelve (12) months preceding the claim, or (b) one hundred dollars ($100).`
+ResqRide's total aggregate liability to any user for all claims arising from or related to the use of the platform shall not exceed the greater of (a) the total fees paid by the user to ResqRide in the twelve (12) months preceding the claim, or (b) one hundred dollars ($100).`
     },
     {
       heading: "Mutual Waiver of Claims",
       content: `Both Customers and Service Providers agree to:
 
-- Waive any right to bring class action claims against ServiceMe
+- Waive any right to bring class action claims against ResqRide
 - Resolve all disputes through the arbitration process outlined in our Terms of Service
-- Release ServiceMe from any claims arising from interactions between Customers and Service Providers
-- Acknowledge that ServiceMe's role is limited to facilitating connections between parties
+- Release ResqRide from any claims arising from interactions between Customers and Service Providers
+- Acknowledge that ResqRide's role is limited to facilitating connections between parties
 
-This waiver does not apply to claims that cannot be waived under applicable law, including claims for gross negligence or willful misconduct by ServiceMe.`
+This waiver does not apply to claims that cannot be waived under applicable law, including claims for gross negligence or willful misconduct by ResqRide.`
     },
     {
       heading: "Insurance Recommendations",
-      content: `ServiceMe strongly recommends the following insurance coverage:
+      content: `ResqRide strongly recommends the following insurance coverage:
 
 For Customers:
 - Comprehensive auto insurance that covers roadside incidents
@@ -480,7 +480,7 @@ For Service Providers:
 - Workers' compensation insurance if employing helpers or assistants
 - Garagekeepers liability insurance for providers handling customer vehicles
 
-ServiceMe does not provide insurance coverage to Customers or Service Providers. Each party is responsible for obtaining and maintaining their own insurance coverage.`
+ResqRide does not provide insurance coverage to Customers or Service Providers. Each party is responsible for obtaining and maintaining their own insurance coverage.`
     },
     {
       heading: "Reporting Incidents",
@@ -492,28 +492,28 @@ Immediate Steps:
 - Document the incident with photos and written notes
 - Exchange insurance information with the other party
 
-Reporting to ServiceMe:
+Reporting to ResqRide:
 - Report the incident through the app using the "Report a Problem" feature
-- Contact our support team at safety@serviceme.app
+- Contact our support team at safety@resqride.app
 - Provide all relevant details, photos, and documentation
 - Cooperate fully with any investigation
 
-ServiceMe may assist in facilitating communication between parties but is not responsible for resolving disputes or mediating claims between Customers and Service Providers.`
+ResqRide may assist in facilitating communication between parties but is not responsible for resolving disputes or mediating claims between Customers and Service Providers.`
     },
     {
       heading: "Acknowledgment",
-      content: `By using ServiceMe as either a Customer or Service Provider, you confirm that:
+      content: `By using ResqRide as either a Customer or Service Provider, you confirm that:
 
 - You have read and understood this Liability Disclaimer in its entirety
 - You voluntarily agree to all terms and conditions stated herein
 - You understand that roadside assistance services carry inherent risks
-- You acknowledge that ServiceMe is a platform facilitator, not a service provider
+- You acknowledge that ResqRide is a platform facilitator, not a service provider
 - You agree to maintain appropriate insurance coverage for your role
 - You understand that this Disclaimer supplements the Terms of Service and Privacy Policy
 
-This Disclaimer is effective as of your first use of the ServiceMe platform and remains in effect for the duration of your use of the platform and any services obtained or provided through it.
+This Disclaimer is effective as of your first use of the ResqRide platform and remains in effect for the duration of your use of the platform and any services obtained or provided through it.
 
-For questions about this Disclaimer, contact: legal@serviceme.app`
+For questions about this Disclaimer, contact: legal@resqride.app`
     }
   ]
 };

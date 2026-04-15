@@ -26,24 +26,24 @@ import {
   type CreateProductData,
 } from "replit-revenuecat-v2";
 
-const PROJECT_NAME = "ServiceMe";
+const PROJECT_NAME = "ResqRide";
 
 // Monthly plan
-const MONTHLY_PRODUCT_IDENTIFIER = "serviceme_premium_monthly";
-const MONTHLY_PLAY_STORE_IDENTIFIER = "serviceme_premium_monthly:monthly";
-const MONTHLY_DISPLAY_NAME = "ServiceMe Premium Monthly";
+const MONTHLY_PRODUCT_IDENTIFIER = "resqride_premium_monthly";
+const MONTHLY_PLAY_STORE_IDENTIFIER = "resqride_premium_monthly:monthly";
+const MONTHLY_DISPLAY_NAME = "ResqRide Premium Monthly";
 const MONTHLY_DURATION = "P1M";
 
 // Yearly plan
-const YEARLY_PRODUCT_IDENTIFIER = "serviceme_premium_yearly";
-const YEARLY_PLAY_STORE_IDENTIFIER = "serviceme_premium_yearly:yearly";
-const YEARLY_DISPLAY_NAME = "ServiceMe Premium Yearly";
+const YEARLY_PRODUCT_IDENTIFIER = "resqride_premium_yearly";
+const YEARLY_PLAY_STORE_IDENTIFIER = "resqride_premium_yearly:yearly";
+const YEARLY_DISPLAY_NAME = "ResqRide Premium Yearly";
 const YEARLY_DURATION = "P1Y";
 
-const APP_STORE_APP_NAME = "ServiceMe iOS";
-const APP_STORE_BUNDLE_ID = "com.serviceme.app";
-const PLAY_STORE_APP_NAME = "ServiceMe Android";
-const PLAY_STORE_PACKAGE_NAME = "com.serviceme.app";
+const APP_STORE_APP_NAME = "ResqRide iOS";
+const APP_STORE_BUNDLE_ID = "com.resqride.app";
+const PLAY_STORE_APP_NAME = "ResqRide Android";
+const PLAY_STORE_PACKAGE_NAME = "com.resqride.app";
 
 const ENTITLEMENT_IDENTIFIER = "premium";
 const ENTITLEMENT_DISPLAY_NAME = "Premium Access";

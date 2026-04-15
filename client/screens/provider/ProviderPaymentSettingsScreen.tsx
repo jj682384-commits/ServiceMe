@@ -549,8 +549,8 @@ export default function ProviderPaymentSettingsScreen() {
           <Feather name="info" size={14} color={theme.primary} />
           <ThemedText type="small" style={{ color: theme.primary, flex: 1, lineHeight: 18 }}>
             {acceptsPriority
-              ? "ServiceMe charges a 10% fee on priority jobs and 15% on standard jobs. Tips are always fee-free."
-              : "ServiceMe charges a 15% platform fee on every completed job. You keep 85% of the service fee plus 100% of all tips."}
+              ? "ResqRide charges a 10% fee on priority jobs and 15% on standard jobs. Tips are always fee-free."
+              : "ResqRide charges a 15% platform fee on every completed job. You keep 85% of the service fee plus 100% of all tips."}
           </ThemedText>
         </View>
       </KeyboardAwareScrollViewCompat>
