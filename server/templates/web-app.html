@@ -8,14 +8,18 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --navy: #0A0E27;
-      --navy2: #111428;
-      --card: #161A35;
-      --card2: #1C2040;
+      --navy2: #0D1230;
+      --card: rgba(22,26,53,0.85);
+      --card-solid: #161A35;
+      --card2: rgba(28,32,64,0.9);
       --border: rgba(255,255,255,0.08);
+      --border-glow: rgba(0,212,255,0.25);
       --cyan: #00D4FF;
+      --cyan2: #00AACC;
       --coral: #FF6B6B;
+      --purple: #A78BFA;
       --text: #ffffff;
-      --muted: rgba(255,255,255,0.55);
+      --muted: rgba(255,255,255,0.5);
       --success: #22c55e;
       --warning: #f59e0b;
       --danger: #ef4444;
@@ -26,275 +30,528 @@
       background: var(--navy); color: var(--text); overflow: hidden; font-size: 14px;
     }
 
+    /* ── Canvas Background ── */
+    #bg-canvas {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    }
+    .orb {
+      position: fixed; border-radius: 50%; pointer-events: none; z-index: 0;
+      animation: orbFloat 12s ease-in-out infinite alternate;
+      filter: blur(80px);
+    }
+    .orb-1 { width: 500px; height: 500px; top: -150px; left: -100px; background: radial-gradient(circle, rgba(0,212,255,0.12) 0%, transparent 70%); animation-duration: 14s; }
+    .orb-2 { width: 400px; height: 400px; bottom: -100px; right: -80px; background: radial-gradient(circle, rgba(255,107,107,0.1) 0%, transparent 70%); animation-duration: 18s; animation-delay: -5s; }
+    .orb-3 { width: 300px; height: 300px; top: 40%; left: 40%; background: radial-gradient(circle, rgba(167,139,250,0.08) 0%, transparent 70%); animation-duration: 20s; animation-delay: -8s; }
+    @keyframes orbFloat {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(40px, 30px) scale(1.15); }
+    }
+
     /* ── App Shell ── */
-    #app { height: 100vh; display: flex; flex-direction: column; }
+    #app { height: 100vh; display: flex; flex-direction: column; position: relative; z-index: 1; }
 
     /* ── Auth Screen ── */
     #auth-screen {
-      flex: 1; display: flex; align-items: center; justify-content: center;
-      padding: 24px; background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,212,255,0.08) 0%, transparent 70%);
+      flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px;
     }
-    .auth-box { width: 100%; max-width: 420px; }
-    .auth-logo { text-align: center; margin-bottom: 32px; }
+    .auth-box {
+      width: 100%; max-width: 440px;
+      background: rgba(22,26,53,0.7); backdrop-filter: blur(40px);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 28px;
+      padding: 40px 36px;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,212,255,0.05), inset 0 1px 0 rgba(255,255,255,0.1);
+      animation: authEntrance .6s cubic-bezier(.34,1.56,.64,1);
+    }
+    @keyframes authEntrance {
+      from { opacity: 0; transform: translateY(24px) scale(.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .auth-logo { text-align: center; margin-bottom: 36px; }
     .auth-logo-icon {
-      width: 64px; height: 64px; border-radius: 20px;
-      background: linear-gradient(135deg, var(--cyan), #0066cc);
+      width: 72px; height: 72px; border-radius: 22px;
+      background: linear-gradient(135deg, var(--cyan), #0055CC);
       display: flex; align-items: center; justify-content: center;
-      font-size: 30px; font-weight: 900; color: #fff; margin: 0 auto 12px;
+      font-size: 32px; font-weight: 900; color: #fff; margin: 0 auto 14px;
+      box-shadow: 0 12px 40px rgba(0,212,255,0.35), 0 0 0 1px rgba(0,212,255,0.2);
     }
-    .auth-logo h1 { font-size: 26px; font-weight: 900; }
-    .auth-logo p { color: var(--muted); font-size: 14px; margin-top: 4px; }
-    .auth-tabs { display: flex; background: rgba(255,255,255,0.05); border-radius: 12px; padding: 4px; margin-bottom: 24px; }
+    .auth-logo h1 { font-size: 28px; font-weight: 900; letter-spacing: -.5px; }
+    .auth-logo p { color: var(--muted); font-size: 14px; margin-top: 5px; }
+    .auth-tabs {
+      display: flex; background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+      border-radius: 14px; padding: 4px; margin-bottom: 28px;
+    }
     .auth-tab {
-      flex: 1; padding: 10px; border-radius: 8px; font-size: 14px; font-weight: 700;
-      cursor: pointer; border: none; background: transparent; color: var(--muted); font-family: inherit; transition: all .2s;
+      flex: 1; padding: 11px; border-radius: 10px; font-size: 14px; font-weight: 700;
+      cursor: pointer; border: none; background: transparent; color: var(--muted);
+      font-family: inherit; transition: all .25s;
     }
-    .auth-tab.active { background: var(--card2); color: var(--text); }
-    .role-picker { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+    .auth-tab.active {
+      background: rgba(0,212,255,0.12); color: var(--cyan);
+      box-shadow: 0 0 20px rgba(0,212,255,0.15);
+    }
+    .role-picker { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 22px; }
     .role-card {
       background: rgba(255,255,255,0.04); border: 1px solid var(--border);
-      border-radius: 12px; padding: 16px 12px; text-align: center; cursor: pointer;
-      transition: all .2s;
+      border-radius: 16px; padding: 18px 12px; text-align: center; cursor: pointer;
+      transition: all .25s;
     }
-    .role-card.selected { border-color: var(--cyan); background: rgba(0,212,255,0.08); }
-    .role-card .role-icon { font-size: 28px; margin-bottom: 6px; }
+    .role-card:hover { border-color: rgba(0,212,255,0.3); background: rgba(0,212,255,0.05); transform: translateY(-2px); }
+    .role-card.selected { border-color: var(--cyan); background: rgba(0,212,255,0.1); box-shadow: 0 0 24px rgba(0,212,255,0.15); }
+    .role-card .role-icon { font-size: 30px; margin-bottom: 8px; }
     .role-card .role-name { font-size: 13px; font-weight: 800; }
-    .role-card .role-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
-    .field label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 6px; letter-spacing: .6px; text-transform: uppercase; }
-    .field input {
-      width: 100%; padding: 13px 16px; background: rgba(255,255,255,0.06); border: 1px solid var(--border);
-      border-radius: 10px; color: var(--text); font-size: 14px; outline: none; font-family: inherit;
+    .role-card .role-desc { font-size: 11px; color: var(--muted); margin-top: 3px; }
+    .field label {
+      display: block; font-size: 11px; font-weight: 700; color: var(--muted);
+      margin-bottom: 7px; letter-spacing: .7px; text-transform: uppercase;
     }
-    .field input:focus { border-color: var(--cyan); }
+    .field input {
+      width: 100%; padding: 13px 16px;
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+      border-radius: 12px; color: var(--text); font-size: 14px; outline: none;
+      font-family: inherit; transition: all .2s;
+    }
+    .field input:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(0,212,255,0.1); background: rgba(0,212,255,0.04); }
     .field { margin-bottom: 16px; }
     .btn {
       display: flex; align-items: center; justify-content: center; gap: 8px;
-      width: 100%; padding: 14px; border-radius: 12px;
-      font-size: 15px; font-weight: 800; cursor: pointer; border: none; font-family: inherit;
-      transition: opacity .15s;
+      width: 100%; padding: 14px; border-radius: 14px;
+      font-size: 15px; font-weight: 800; cursor: pointer; border: none;
+      font-family: inherit; transition: all .2s; position: relative; overflow: hidden;
     }
-    .btn:hover { opacity: .85; }
+    .btn::after { content:''; position:absolute; inset:0; background: rgba(255,255,255,0); transition: background .2s; }
+    .btn:hover::after { background: rgba(255,255,255,0.08); }
+    .btn:active { transform: scale(.98); }
     .btn:disabled { opacity: .4; cursor: not-allowed; }
-    .btn-cyan { background: var(--cyan); color: var(--navy); }
-    .btn-coral { background: var(--coral); color: #fff; }
-    .btn-ghost { background: rgba(255,255,255,0.06); color: var(--text); border: 1px solid var(--border); }
-    .btn-sm { padding: 9px 16px; font-size: 13px; border-radius: 8px; width: auto; }
-    .auth-error { color: var(--danger); font-size: 13px; text-align: center; margin-top: 12px; }
+    .btn-cyan { background: linear-gradient(135deg, var(--cyan), #0088DD); color: var(--navy); box-shadow: 0 6px 24px rgba(0,212,255,0.3); }
+    .btn-cyan:hover { box-shadow: 0 8px 32px rgba(0,212,255,0.45); }
+    .btn-coral { background: linear-gradient(135deg, var(--coral), #E05555); color: #fff; box-shadow: 0 6px 24px rgba(255,107,107,0.3); }
+    .btn-coral:hover { box-shadow: 0 8px 32px rgba(255,107,107,0.45); }
+    .btn-ghost {
+      background: rgba(255,255,255,0.06); color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.15); }
+    .btn-sm { padding: 9px 16px; font-size: 13px; border-radius: 10px; width: auto; }
+    .auth-error { color: var(--danger); font-size: 13px; text-align: center; margin-top: 14px; }
 
     /* ── App Bar ── */
     #app-bar {
-      display: none; background: var(--card); border-bottom: 1px solid var(--border);
-      padding: 12px 20px; align-items: center; justify-content: space-between; gap: 12px; flex-shrink: 0;
+      display: none; background: rgba(22,26,53,0.8); backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border); padding: 12px 20px;
+      align-items: center; justify-content: space-between; gap: 12px; flex-shrink: 0;
+      box-shadow: 0 1px 0 rgba(255,255,255,0.04);
     }
-    .app-bar-left { display: flex; align-items: center; gap: 10px; }
-    .app-bar-logo { font-size: 16px; font-weight: 900; color: var(--cyan); }
+    .app-bar-left { display: flex; align-items: center; gap: 12px; }
+    .app-bar-logo {
+      font-size: 17px; font-weight: 900; letter-spacing: -.3px;
+      background: linear-gradient(90deg, var(--cyan), #66CCFF);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .app-bar-sep { width: 1px; height: 16px; background: var(--border); }
     .app-bar-user { font-size: 13px; color: var(--muted); }
     .app-bar-right { display: flex; gap: 10px; align-items: center; }
     .mode-chip {
-      padding: 4px 12px; border-radius: 100px; font-size: 11px; font-weight: 800;
-      background: rgba(0,212,255,0.12); color: var(--cyan); border: 1px solid rgba(0,212,255,0.2);
+      padding: 5px 14px; border-radius: 100px; font-size: 11px; font-weight: 800; letter-spacing: .3px;
+      background: rgba(0,212,255,0.1); color: var(--cyan); border: 1px solid rgba(0,212,255,0.2);
     }
-    .mode-chip.provider { background: rgba(255,107,107,0.12); color: var(--coral); border-color: rgba(255,107,107,0.2); }
+    .mode-chip.provider { background: rgba(255,107,107,0.1); color: var(--coral); border-color: rgba(255,107,107,0.2); }
+    .live-dot {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 11px; font-weight: 700; color: var(--success);
+    }
+    .live-dot::before {
+      content: ''; width: 7px; height: 7px; border-radius: 50%;
+      background: var(--success); display: block;
+      box-shadow: 0 0 8px var(--success);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(.85)} }
 
     /* ── Main App ── */
-    #main-app {
-      display: none; flex: 1; overflow: hidden;
-    }
+    #main-app { display: none; flex: 1; overflow: hidden; }
     .app-layout { display: flex; height: 100%; }
 
     /* ── Sidebar ── */
     .app-sidebar {
-      width: 220px; background: var(--card); border-right: 1px solid var(--border);
-      display: flex; flex-direction: column; flex-shrink: 0;
+      width: 230px; flex-shrink: 0;
+      background: rgba(14,17,40,0.85); backdrop-filter: blur(20px);
+      border-right: 1px solid var(--border); display: flex; flex-direction: column;
     }
-    .sidebar-section { padding: 20px 12px 8px; font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+    .sidebar-logo-area {
+      padding: 20px 16px 8px; display: flex; align-items: center; gap: 10px;
+    }
+    .sidebar-logo-icon {
+      width: 32px; height: 32px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--cyan), #0055CC);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 900; color: #fff; flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(0,212,255,0.3);
+    }
+    .sidebar-logo-text { font-size: 15px; font-weight: 900; color: var(--text); }
+    .sidebar-section {
+      padding: 20px 16px 6px; font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.3);
+      letter-spacing: 1.2px; text-transform: uppercase;
+    }
     .sidebar-item {
-      display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px;
-      cursor: pointer; color: var(--muted); font-size: 13px; font-weight: 600;
-      margin: 0 6px 2px; transition: all .15s;
+      display: flex; align-items: center; gap: 12px; padding: 11px 14px;
+      border-radius: 12px; cursor: pointer; color: var(--muted);
+      font-size: 13px; font-weight: 600; margin: 1px 8px;
+      transition: all .2s; position: relative;
     }
-    .sidebar-item:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+    .sidebar-item:hover { background: rgba(255,255,255,0.06); color: var(--text); }
     .sidebar-item.active { background: rgba(0,212,255,0.1); color: var(--cyan); }
     .sidebar-item.active.provider-mode { background: rgba(255,107,107,0.1); color: var(--coral); }
-    .sidebar-icon { width: 20px; text-align: center; font-size: 16px; }
-    .sidebar-footer { margin-top: auto; padding: 12px; border-top: 1px solid var(--border); }
+    .sidebar-item.active::before {
+      content: ''; position: absolute; left: -8px; top: 50%; transform: translateY(-50%);
+      width: 3px; height: 18px; border-radius: 0 2px 2px 0;
+      background: var(--cyan);
+    }
+    .sidebar-item.active.provider-mode::before { background: var(--coral); }
+    .sidebar-icon {
+      width: 32px; height: 32px; border-radius: 9px; display: flex;
+      align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0;
+      background: rgba(255,255,255,0.05);
+      transition: all .2s;
+    }
+    .sidebar-item.active .sidebar-icon { background: rgba(0,212,255,0.15); }
+    .sidebar-item.active.provider-mode .sidebar-icon { background: rgba(255,107,107,0.15); }
+    .sidebar-label { flex: 1; }
+    .sidebar-footer { margin-top: auto; padding: 12px 8px 16px; border-top: 1px solid var(--border); }
+    .sidebar-user-area {
+      display: flex; align-items: center; gap: 10px; padding: 10px 10px; margin-bottom: 8px;
+    }
+    .sidebar-avatar {
+      width: 34px; height: 34px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--cyan), #0055CC);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 900; flex-shrink: 0;
+    }
+    .sidebar-user-info { flex:1; overflow:hidden; }
+    .sidebar-user-name { font-size: 13px; font-weight: 700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .sidebar-user-role { font-size: 11px; color: var(--muted); margin-top: 1px; }
 
     /* ── Content ── */
-    .app-content { flex: 1; overflow-y: auto; padding: 24px; }
-    .view { display: none; }
+    .app-content { flex: 1; overflow-y: auto; padding: 28px 32px; }
+    .app-content::-webkit-scrollbar { width: 4px; }
+    .app-content::-webkit-scrollbar-track { background: transparent; }
+    .app-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+    .view { display: none; animation: viewFadeIn .3s ease; }
     .view.active { display: block; }
-    .view-title { font-size: 20px; font-weight: 900; margin-bottom: 4px; }
-    .view-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+    @keyframes viewFadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+    .view-header { margin-bottom: 28px; }
+    .view-title { font-size: 26px; font-weight: 900; letter-spacing: -.5px; }
+    .view-sub { font-size: 14px; color: var(--muted); margin-top: 5px; }
 
-    /* ── Cards ── */
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+    /* ── Glass Cards ── */
+    .glass-card {
+      background: var(--card); backdrop-filter: blur(20px);
+      border: 1px solid var(--border); border-radius: 20px;
+      padding: 22px; margin-bottom: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .glass-card:hover { border-color: rgba(255,255,255,0.12); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+    .glass-card h3 { font-size: 16px; font-weight: 800; margin-bottom: 10px; }
+    .glass-card p { font-size: 13px; color: var(--muted); line-height: 1.65; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 22px; margin-bottom: 16px; }
     .card h3 { font-size: 15px; font-weight: 800; margin-bottom: 10px; }
-    .card p { font-size: 13px; color: var(--muted); line-height: 1.6; }
-    .card-row { display: flex; align-items: center; gap: 12px; }
-    .card-icon { font-size: 32px; flex-shrink: 0; }
-    .card-info { flex: 1; }
+    .card p { font-size: 13px; color: var(--muted); line-height: 1.65; }
 
-    /* ── Service Request ── */
-    .service-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+    /* ── Section Label ── */
+    .section-label {
+      font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: 1px;
+      text-transform: uppercase; margin-bottom: 14px; margin-top: 4px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .section-label::after { content:''; flex:1; height:1px; background: var(--border); }
+
+    /* ── Service Grid ── */
+    .service-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); gap: 14px; margin-bottom: 24px; }
     .service-btn {
-      background: var(--card); border: 1px solid var(--border); border-radius: 14px;
-      padding: 20px 14px; text-align: center; cursor: pointer; transition: all .2s;
+      background: var(--card); backdrop-filter: blur(12px);
+      border: 1px solid var(--border); border-radius: 18px;
+      padding: 22px 14px; text-align: center; cursor: pointer;
+      transition: all .25s;
     }
-    .service-btn:hover, .service-btn.selected { border-color: var(--cyan); background: rgba(0,212,255,0.08); }
-    .service-btn .svc-icon { font-size: 28px; margin-bottom: 8px; }
-    .service-btn .svc-name { font-size: 13px; font-weight: 700; }
-    .service-btn .svc-est { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .service-btn:hover { border-color: rgba(0,212,255,0.35); background: rgba(0,212,255,0.06); transform: translateY(-3px); box-shadow: 0 8px 28px rgba(0,0,0,0.25), 0 0 0 1px rgba(0,212,255,0.1); }
+    .service-btn.selected { border-color: var(--cyan); background: rgba(0,212,255,0.1); box-shadow: 0 0 30px rgba(0,212,255,0.2); transform: translateY(-2px); }
+    .svc-icon-wrap {
+      width: 52px; height: 52px; border-radius: 16px; margin: 0 auto 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px;
+      background: linear-gradient(135deg, rgba(0,212,255,0.15), rgba(0,212,255,0.05));
+      border: 1px solid rgba(0,212,255,0.15);
+      transition: all .25s;
+    }
+    .service-btn.selected .svc-icon-wrap, .service-btn:hover .svc-icon-wrap {
+      background: linear-gradient(135deg, rgba(0,212,255,0.25), rgba(0,212,255,0.1));
+      border-color: rgba(0,212,255,0.3);
+      transform: scale(1.05);
+    }
+    .svc-name { font-size: 13px; font-weight: 800; }
+    .svc-est { font-size: 11px; color: var(--cyan); margin-top: 4px; font-weight: 700; }
 
-    .request-form { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; }
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .web-input {
-      width: 100%; padding: 12px 14px; background: rgba(255,255,255,0.05); border: 1px solid var(--border);
-      border-radius: 10px; color: var(--text); font-size: 14px; outline: none; font-family: inherit;
+    /* ── Request Form ── */
+    .request-form {
+      background: var(--card); backdrop-filter: blur(20px);
+      border: 1px solid var(--border-glow); border-radius: 20px; padding: 26px;
+      box-shadow: 0 0 40px rgba(0,212,255,0.08);
+      animation: slideUp .3s cubic-bezier(.34,1.56,.64,1);
     }
-    .web-input:focus { border-color: var(--cyan); }
+    @keyframes slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+    .request-form h3 { font-size: 18px; font-weight: 900; margin-bottom: 16px; }
     .price-preview {
       display: flex; align-items: center; justify-content: space-between;
-      background: rgba(0,212,255,0.06); border: 1px solid rgba(0,212,255,0.15);
-      border-radius: 12px; padding: 16px 18px; margin-bottom: 16px;
-    }
-    .price-label { font-size: 13px; color: var(--muted); }
-    .price-value { font-size: 22px; font-weight: 900; color: var(--cyan); }
-
-    /* ── Jobs (provider) ── */
-    .job-card {
-      background: var(--card); border: 1px solid var(--border); border-radius: 16px;
-      padding: 20px; margin-bottom: 14px; transition: border-color .2s;
-    }
-    .job-card:hover { border-color: rgba(255,107,107,0.3); }
-    .job-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
-    .job-type { font-size: 16px; font-weight: 900; text-transform: capitalize; }
-    .job-price { font-size: 20px; font-weight: 900; color: var(--coral); }
-    .job-detail { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
-    .job-actions { display: flex; gap: 10px; margin-top: 14px; }
-
-    /* ── History ── */
-    .history-item {
-      display: flex; align-items: center; gap: 14px;
-      background: var(--card); border: 1px solid var(--border); border-radius: 14px;
-      padding: 16px; margin-bottom: 10px;
-    }
-    .history-icon { font-size: 28px; }
-    .history-info { flex: 1; }
-    .history-name { font-size: 14px; font-weight: 700; }
-    .history-date { font-size: 12px; color: var(--muted); margin-top: 2px; }
-    .history-amount { font-size: 16px; font-weight: 800; }
-
-    /* ── Profile ── */
-    .profile-header {
       background: linear-gradient(135deg, rgba(0,212,255,0.08), rgba(0,212,255,0.03));
-      border: 1px solid rgba(0,212,255,0.15); border-radius: 20px;
-      padding: 28px; margin-bottom: 20px; display: flex; align-items: center; gap: 20px;
+      border: 1px solid rgba(0,212,255,0.2); border-radius: 16px;
+      padding: 18px 20px; margin-bottom: 18px;
     }
-    .profile-avatar {
-      width: 64px; height: 64px; border-radius: 20px;
-      background: linear-gradient(135deg, var(--cyan), #0066cc);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 26px; font-weight: 900; flex-shrink: 0;
+    .price-label { font-size: 12px; color: var(--muted); font-weight: 700; letter-spacing: .5px; text-transform: uppercase; }
+    .price-value { font-size: 28px; font-weight: 900; color: var(--cyan); margin-top: 4px; }
+    .price-eta { font-size: 20px; font-weight: 900; text-align: right; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .web-input {
+      width: 100%; padding: 13px 16px;
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+      border-radius: 12px; color: var(--text); font-size: 14px; outline: none;
+      font-family: inherit; transition: all .2s;
     }
-    .profile-name { font-size: 20px; font-weight: 900; }
-    .profile-email { font-size: 13px; color: var(--muted); margin-top: 3px; }
-    .profile-badge {
-      display: inline-flex; align-items: center; gap: 5px;
-      background: rgba(0,212,255,0.12); border: 1px solid rgba(0,212,255,0.2);
-      color: var(--cyan); padding: 4px 12px; border-radius: 100px;
-      font-size: 11px; font-weight: 700; margin-top: 8px;
-    }
+    .web-input:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(0,212,255,0.1); background: rgba(0,212,255,0.03); }
+    .web-input::placeholder { color: var(--muted); }
+    .input-label { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: .5px; text-transform: uppercase; margin-bottom: 7px; display: block; }
+    .input-group { margin-bottom: 0; }
 
     /* ── SOS Banner ── */
     .sos-banner {
-      background: linear-gradient(135deg, rgba(239,68,68,0.15), rgba(239,68,68,0.05));
-      border: 1px solid rgba(239,68,68,0.25); border-radius: 14px;
-      padding: 16px 20px; display: flex; align-items: center; gap: 14px; margin-bottom: 20px;
+      background: linear-gradient(135deg, rgba(239,68,68,0.12), rgba(239,68,68,0.04));
+      border: 1px solid rgba(239,68,68,0.2); border-radius: 16px;
+      padding: 16px 20px; display: flex; align-items: center; gap: 16px; margin-bottom: 24px;
     }
-    .sos-icon { font-size: 28px; }
+    .sos-icon { font-size: 30px; }
     .sos-text h4 { font-size: 14px; font-weight: 800; color: var(--danger); }
-    .sos-text p { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .sos-text p { font-size: 12px; color: var(--muted); margin-top: 3px; line-height: 1.5; }
+
+    /* ── Success State ── */
+    .success-card {
+      background: linear-gradient(135deg, rgba(34,197,94,0.12), rgba(34,197,94,0.04));
+      border: 1px solid rgba(34,197,94,0.2); border-radius: 20px;
+      padding: 48px 32px; text-align: center;
+      animation: slideUp .4s cubic-bezier(.34,1.56,.64,1);
+    }
+    .success-check {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: linear-gradient(135deg, rgba(34,197,94,0.2), rgba(34,197,94,0.08));
+      border: 2px solid rgba(34,197,94,0.3); display: flex; align-items: center;
+      justify-content: center; font-size: 32px; margin: 0 auto 20px;
+      box-shadow: 0 0 40px rgba(34,197,94,0.2);
+    }
+    .success-title { font-size: 22px; font-weight: 900; color: var(--success); margin-bottom: 10px; }
+    .success-sub { font-size: 14px; color: var(--muted); line-height: 1.6; max-width: 380px; margin: 0 auto; }
+
+    /* ── Job Cards ── */
+    .job-card {
+      background: var(--card); backdrop-filter: blur(16px);
+      border: 1px solid var(--border); border-radius: 20px;
+      padding: 22px; margin-bottom: 14px;
+      transition: all .25s;
+      animation: viewFadeIn .3s ease;
+    }
+    .job-card:hover { border-color: rgba(255,107,107,0.3); box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,107,107,0.08); transform: translateY(-2px); }
+    .job-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+    .job-type-wrap { display: flex; align-items: center; gap: 12px; }
+    .job-type-icon {
+      width: 42px; height: 42px; border-radius: 13px;
+      background: linear-gradient(135deg, rgba(255,107,107,0.2), rgba(255,107,107,0.08));
+      border: 1px solid rgba(255,107,107,0.2);
+      display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;
+    }
+    .job-type { font-size: 16px; font-weight: 900; text-transform: capitalize; }
+    .job-driver { font-size: 12px; color: var(--muted); margin-top: 3px; }
+    .job-price { font-size: 24px; font-weight: 900; color: var(--coral); }
+    .job-detail {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; color: var(--muted); margin-bottom: 5px;
+    }
+    .job-detail::before { content: ''; width: 4px; height: 4px; border-radius: 50%; background: rgba(255,255,255,0.3); flex-shrink: 0; }
+    .job-actions { display: flex; gap: 10px; margin-top: 16px; }
+
+    /* ── Earnings View ── */
+    .earnings-hero {
+      background: linear-gradient(135deg, rgba(34,197,94,0.12), rgba(34,197,94,0.04));
+      border: 1px solid rgba(34,197,94,0.2); border-radius: 24px;
+      padding: 36px; text-align: center; margin-bottom: 20px;
+      box-shadow: 0 0 60px rgba(34,197,94,0.1);
+    }
+    .earnings-label { font-size: 11px; font-weight: 800; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px; }
+    .earnings-amount { font-size: 56px; font-weight: 900; color: var(--success); line-height: 1; letter-spacing: -2px; }
+    .earnings-sub { font-size: 13px; color: var(--muted); margin-top: 10px; }
+
+    /* ── History ── */
+    .history-item {
+      display: flex; align-items: center; gap: 16px;
+      background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+      padding: 16px 18px; margin-bottom: 10px; transition: all .2s;
+    }
+    .history-item:hover { border-color: rgba(255,255,255,0.12); transform: translateX(3px); }
+    .history-icon-wrap {
+      width: 44px; height: 44px; border-radius: 13px;
+      background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.15);
+      display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;
+    }
+    .history-info { flex: 1; }
+    .history-name { font-size: 14px; font-weight: 700; }
+    .history-date { font-size: 12px; color: var(--muted); margin-top: 3px; }
+    .history-amount { font-size: 16px; font-weight: 900; }
+
+    /* ── Profile ── */
+    .profile-hero {
+      background: linear-gradient(135deg, rgba(0,212,255,0.1), rgba(0,212,255,0.04));
+      border: 1px solid rgba(0,212,255,0.18); border-radius: 24px;
+      padding: 32px; margin-bottom: 20px;
+      box-shadow: 0 0 60px rgba(0,212,255,0.08);
+      display: flex; align-items: center; gap: 22px;
+      position: relative; overflow: hidden;
+    }
+    .profile-hero::before {
+      content: ''; position: absolute; top: -40px; right: -40px;
+      width: 180px; height: 180px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(0,212,255,0.12) 0%, transparent 70%);
+    }
+    .profile-avatar {
+      width: 80px; height: 80px; border-radius: 24px;
+      background: linear-gradient(135deg, var(--cyan), #0055CC);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 32px; font-weight: 900; flex-shrink: 0;
+      box-shadow: 0 12px 36px rgba(0,212,255,0.35), 0 0 0 2px rgba(0,212,255,0.3);
+    }
+    .profile-info { flex: 1; min-width: 0; }
+    .profile-name { font-size: 22px; font-weight: 900; letter-spacing: -.3px; }
+    .profile-email { font-size: 13px; color: var(--muted); margin-top: 4px; }
+    .profile-badge {
+      display: inline-flex; align-items: center; gap: 5px; margin-top: 10px;
+      background: rgba(0,212,255,0.12); border: 1px solid rgba(0,212,255,0.2);
+      color: var(--cyan); padding: 5px 14px; border-radius: 100px;
+      font-size: 11px; font-weight: 700; letter-spacing: .3px;
+    }
+
+    /* ── Edit Profile ── */
+    .edit-field { margin-bottom: 16px; }
+    .edit-field label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 7px; letter-spacing: .5px; text-transform: uppercase; }
+    .edit-actions { display: flex; gap: 10px; margin-top: 6px; }
+
+    /* ── Payment Methods ── */
+    .pm-list { display: flex; flex-direction: column; gap: 10px; }
+    .pm-item {
+      display: flex; align-items: center; gap: 16px;
+      background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+      border-radius: 14px; padding: 14px 18px; transition: all .2s;
+    }
+    .pm-item:hover { border-color: rgba(255,255,255,0.12); background: rgba(255,255,255,0.05); }
+    .pm-brand {
+      width: 48px; height: 32px; border-radius: 8px; display: flex; align-items: center;
+      justify-content: center; font-size: 11px; font-weight: 900;
+      background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06));
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--text); flex-shrink: 0; letter-spacing: .3px;
+    }
+    .pm-info { flex: 1; }
+    .pm-number { font-size: 14px; font-weight: 700; letter-spacing: .5px; }
+    .pm-exp { font-size: 12px; color: var(--muted); margin-top: 3px; }
+    .pm-remove {
+      background: transparent; border: 1px solid rgba(239,68,68,0.2); color: rgba(239,68,68,0.8);
+      padding: 6px 14px; border-radius: 9px; font-size: 12px; font-weight: 700;
+      cursor: pointer; font-family: inherit; transition: all .2s;
+    }
+    .pm-remove:hover { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.4); color: var(--danger); }
+    .pm-empty { text-align: center; padding: 28px 0; color: var(--muted); font-size: 13px; }
+
+    /* ── EV Cards ── */
+    .ev-service-btn {
+      background: var(--card); border: 1px solid var(--border); border-radius: 18px;
+      padding: 22px 14px; text-align: center; cursor: pointer; transition: all .25s;
+    }
+    .ev-service-btn:hover { border-color: rgba(167,139,250,0.4); background: rgba(167,139,250,0.06); transform: translateY(-3px); box-shadow: 0 8px 28px rgba(0,0,0,0.25); }
+    .ev-svc-icon-wrap {
+      width: 52px; height: 52px; border-radius: 16px; margin: 0 auto 12px;
+      display: flex; align-items: center; justify-content: center; font-size: 26px;
+      background: linear-gradient(135deg, rgba(167,139,250,0.15), rgba(167,139,250,0.05));
+      border: 1px solid rgba(167,139,250,0.15);
+    }
+    .ev-svc-name { font-size: 13px; font-weight: 800; }
+    .ev-svc-est { font-size: 11px; color: var(--purple); margin-top: 4px; font-weight: 700; }
 
     /* ── Toast ── */
     #toast {
-      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-      background: var(--card2); border: 1px solid var(--border); color: var(--text);
-      padding: 12px 24px; border-radius: 100px; font-size: 13px; font-weight: 600;
-      z-index: 999; opacity: 0; transition: opacity .3s; pointer-events: none;
+      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(0);
+      background: rgba(22,26,53,0.95); backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.12); color: var(--text);
+      padding: 12px 24px; border-radius: 100px; font-size: 13px; font-weight: 700;
+      z-index: 999; opacity: 0; transition: opacity .3s, transform .3s; pointer-events: none;
       max-width: 90vw; text-align: center;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
     }
     #toast.show { opacity: 1; }
 
     /* ── Badge ── */
     .badge {
       display: inline-flex; align-items: center; gap: 4px;
-      padding: 3px 9px; border-radius: 100px; font-size: 11px; font-weight: 700;
+      padding: 4px 10px; border-radius: 100px; font-size: 11px; font-weight: 700;
     }
-    .badge.completed { background: rgba(34,197,94,.15); color: var(--success); }
-    .badge.pending { background: rgba(245,158,11,.15); color: var(--warning); }
-    .badge.cancelled { background: rgba(239,68,68,.12); color: var(--danger); }
-
-    /* ── Edit Profile ── */
-    .profile-edit-row { display: flex; align-items: center; justify-content: space-between; }
-    .profile-section-title {
-      font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: .8px;
-      text-transform: uppercase; margin-bottom: 14px; margin-top: 4px;
-    }
-    .edit-field { margin-bottom: 14px; }
-    .edit-field label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 6px; letter-spacing: .5px; text-transform: uppercase; }
-    .edit-actions { display: flex; gap: 10px; margin-top: 4px; }
-    .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
-
-    /* ── Payment Methods ── */
-    .pm-list { display: flex; flex-direction: column; gap: 10px; }
-    .pm-item {
-      display: flex; align-items: center; gap: 14px;
-      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
-      border-radius: 12px; padding: 14px 16px;
-    }
-    .pm-brand {
-      width: 44px; height: 30px; border-radius: 6px; display: flex; align-items: center;
-      justify-content: center; font-size: 11px; font-weight: 900; background: rgba(255,255,255,0.1);
-      color: var(--text); flex-shrink: 0; letter-spacing: .5px;
-    }
-    .pm-info { flex: 1; }
-    .pm-number { font-size: 14px; font-weight: 700; }
-    .pm-exp { font-size: 12px; color: var(--muted); margin-top: 2px; }
-    .pm-remove {
-      background: transparent; border: 1px solid rgba(239,68,68,0.25); color: var(--danger);
-      padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700;
-      cursor: pointer; font-family: inherit; transition: all .15s;
-    }
-    .pm-remove:hover { background: rgba(239,68,68,0.08); }
-    .pm-empty { text-align: center; padding: 24px 0; color: var(--muted); font-size: 13px; }
+    .badge.completed { background: rgba(34,197,94,.15); color: var(--success); border: 1px solid rgba(34,197,94,.2); }
+    .badge.pending { background: rgba(245,158,11,.12); color: var(--warning); border: 1px solid rgba(245,158,11,.2); }
+    .badge.cancelled { background: rgba(239,68,68,.1); color: var(--danger); border: 1px solid rgba(239,68,68,.15); }
 
     /* ── Card Modal ── */
     .modal-backdrop {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.65); backdrop-filter: blur(12px);
       z-index: 100; display: flex; align-items: center; justify-content: center; padding: 24px;
+      animation: fadeIn .2s ease;
     }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
     .modal-box {
-      background: var(--card2); border: 1px solid var(--border); border-radius: 20px;
-      padding: 28px; width: 100%; max-width: 420px;
+      background: rgba(22,26,53,0.95); backdrop-filter: blur(40px);
+      border: 1px solid rgba(255,255,255,0.12); border-radius: 24px;
+      padding: 32px; width: 100%; max-width: 440px;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,212,255,0.05);
+      animation: slideUp .3s cubic-bezier(.34,1.56,.64,1);
     }
-    .modal-title { font-size: 18px; font-weight: 900; margin-bottom: 4px; }
-    .modal-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
-    .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+    .modal-title { font-size: 20px; font-weight: 900; letter-spacing: -.3px; margin-bottom: 5px; }
+    .modal-sub { font-size: 13px; color: var(--muted); margin-bottom: 26px; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 22px; }
     #stripe-card-element {
-      background: rgba(255,255,255,0.06); border: 1px solid var(--border);
-      border-radius: 10px; padding: 14px 16px;
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px; transition: all .2s;
     }
-    #stripe-card-element.focused { border-color: var(--cyan); }
+    #stripe-card-element.focused { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(0,212,255,0.1); }
     #card-modal-error { color: var(--danger); font-size: 13px; margin-top: 10px; min-height: 18px; }
 
+    /* ── App Store Buttons ── */
+    .store-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 18px; border-radius: 12px; font-size: 13px; font-weight: 700;
+      background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+      color: var(--text); text-decoration: none; transition: all .2s;
+    }
+    .store-btn:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.15); transform: translateY(-1px); }
+
     /* ── Responsive ── */
-    @media (max-width: 680px) {
+    @media (max-width: 720px) {
       .app-sidebar { display: none; }
       .form-row { grid-template-columns: 1fr; }
+      .app-content { padding: 20px; }
     }
   </style>
 </head>
 <body>
+
+<!-- Background Orbs -->
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<!-- Constellation Canvas -->
+<canvas id="bg-canvas"></canvas>
 
 <div id="app">
 
@@ -347,10 +604,12 @@
   <div id="app-bar">
     <div class="app-bar-left">
       <span class="app-bar-logo">ServiceMe</span>
-      <span class="app-bar-user" id="bar-user-name"></span>
+      <div class="app-bar-sep"></div>
+      <span class="live-dot">Live</span>
     </div>
     <div class="app-bar-right">
-      <span class="mode-chip" id="bar-mode-chip">Driver</span>
+      <span class="mode-chip" id="bar-mode-chip">Driver Mode</span>
+      <span class="app-bar-user" id="bar-user-name"></span>
       <button class="btn btn-ghost btn-sm" onclick="logout()" style="width:auto">Sign Out</button>
     </div>
   </div>
@@ -361,22 +620,50 @@
 
       <!-- Sidebar -->
       <div class="app-sidebar" id="app-sidebar">
+        <div class="sidebar-logo-area">
+          <div class="sidebar-logo-icon">S</div>
+          <span class="sidebar-logo-text">ServiceMe</span>
+        </div>
+
         <!-- Driver nav -->
         <div id="driver-nav">
           <div class="sidebar-section">Driver</div>
-          <div class="sidebar-item active" onclick="showView('request')" id="nav-request"><span class="sidebar-icon">&#128205;</span> Request Help</div>
-          <div class="sidebar-item" onclick="showView('history')" id="nav-history"><span class="sidebar-icon">&#128203;</span> History</div>
-          <div class="sidebar-item" onclick="showView('ev')" id="nav-ev"><span class="sidebar-icon">&#9889;</span> EV Services</div>
-          <div class="sidebar-item" onclick="showView('profile')" id="nav-profile"><span class="sidebar-icon">&#128100;</span> Profile</div>
+          <div class="sidebar-item active" onclick="showView('request')" id="nav-request">
+            <div class="sidebar-icon">&#128205;</div><span class="sidebar-label">Request Help</span>
+          </div>
+          <div class="sidebar-item" onclick="showView('history')" id="nav-history">
+            <div class="sidebar-icon">&#128203;</div><span class="sidebar-label">History</span>
+          </div>
+          <div class="sidebar-item" onclick="showView('ev')" id="nav-ev">
+            <div class="sidebar-icon">&#9889;</div><span class="sidebar-label">EV Services</span>
+          </div>
+          <div class="sidebar-item" onclick="showView('profile')" id="nav-profile">
+            <div class="sidebar-icon">&#128100;</div><span class="sidebar-label">Profile</span>
+          </div>
         </div>
+
         <!-- Provider nav -->
         <div id="provider-nav" style="display:none">
           <div class="sidebar-section">Provider</div>
-          <div class="sidebar-item provider-mode active" onclick="showView('jobs')" id="nav-jobs"><span class="sidebar-icon">&#128188;</span> Available Jobs</div>
-          <div class="sidebar-item" onclick="showView('earnings-view')" id="nav-earnings-view"><span class="sidebar-icon">&#128176;</span> Earnings</div>
-          <div class="sidebar-item" onclick="showView('profile')" id="nav-profile-p"><span class="sidebar-icon">&#128100;</span> Profile</div>
+          <div class="sidebar-item provider-mode active" onclick="showView('jobs')" id="nav-jobs">
+            <div class="sidebar-icon">&#128188;</div><span class="sidebar-label">Available Jobs</span>
+          </div>
+          <div class="sidebar-item" onclick="showView('earnings-view')" id="nav-earnings-view">
+            <div class="sidebar-icon">&#128176;</div><span class="sidebar-label">Earnings</span>
+          </div>
+          <div class="sidebar-item" onclick="showView('profile')" id="nav-profile-p">
+            <div class="sidebar-icon">&#128100;</div><span class="sidebar-label">Profile</span>
+          </div>
         </div>
+
         <div class="sidebar-footer">
+          <div class="sidebar-user-area">
+            <div class="sidebar-avatar" id="sidebar-avatar-initial">?</div>
+            <div class="sidebar-user-info">
+              <div class="sidebar-user-name" id="sidebar-user-name">—</div>
+              <div class="sidebar-user-role" id="sidebar-user-role">Driver</div>
+            </div>
+          </div>
           <button class="btn btn-ghost btn-sm" onclick="logout()" style="width:100%">Sign Out</button>
         </div>
       </div>
@@ -386,28 +673,43 @@
 
         <!-- Request Help (Driver) -->
         <div class="view active" id="view-request">
-          <div class="view-title">Request Help</div>
-          <div class="view-sub">What do you need assistance with?</div>
+          <div class="view-header">
+            <div class="view-title">Request Help</div>
+            <div class="view-sub">Select a service and we'll connect you with a nearby provider</div>
+          </div>
 
           <div class="sos-banner">
             <div class="sos-icon">&#128680;</div>
             <div class="sos-text">
-              <h4>Emergency? Use our app for one-tap SOS</h4>
-              <p>The mobile app has GPS sharing, emergency contacts, and instant dispatch.</p>
+              <h4>Emergency? Use the app for one-tap SOS</h4>
+              <p>GPS sharing, emergency contacts, and instant dispatch — download the ServiceMe app.</p>
             </div>
           </div>
 
+          <div class="section-label">Choose Your Service</div>
           <div class="service-grid" id="service-grid"></div>
 
           <div class="request-form" id="request-form" style="display:none">
             <h3 id="request-title">Flat Tire</h3>
             <div class="price-preview">
-              <div><div class="price-label">Estimated cost</div><div class="price-value" id="request-price">$0</div></div>
-              <div style="text-align:right"><div class="price-label">ETA</div><div style="font-size:16px;font-weight:800;color:var(--text)" id="request-eta">~15 min</div></div>
+              <div>
+                <div class="price-label">Estimated Cost</div>
+                <div class="price-value" id="request-price">$0</div>
+              </div>
+              <div>
+                <div class="price-label" style="text-align:right">ETA</div>
+                <div class="price-eta" id="request-eta">~15 min</div>
+              </div>
             </div>
-            <div class="form-row" style="margin-bottom:14px">
-              <div class="field" style="margin:0"><label>Your Location / Address</label><input class="web-input" type="text" id="req-location" placeholder="123 Main St, City, State" /></div>
-              <div class="field" style="margin:0"><label>Additional Notes</label><input class="web-input" type="text" id="req-notes" placeholder="e.g. Silver Toyota, right lane" /></div>
+            <div class="form-row" style="margin-bottom:16px">
+              <div class="input-group">
+                <label class="input-label">Your Location / Address</label>
+                <input class="web-input" type="text" id="req-location" placeholder="123 Main St, City, State" />
+              </div>
+              <div class="input-group">
+                <label class="input-label">Additional Notes</label>
+                <input class="web-input" type="text" id="req-notes" placeholder="e.g. Silver Toyota, right lane" />
+              </div>
             </div>
             <div style="display:flex;gap:10px;flex-wrap:wrap">
               <button class="btn btn-cyan" style="flex:1;min-width:160px" onclick="submitRequest()">Request Service</button>
@@ -416,14 +718,12 @@
           </div>
 
           <div id="request-success" style="display:none">
-            <div class="card" style="border-color:rgba(34,197,94,0.3);background:rgba(34,197,94,0.05)">
-              <div style="text-align:center;padding:20px">
-                <div style="font-size:48px;margin-bottom:16px">&#10003;</div>
-                <h3 style="font-size:20px;margin-bottom:8px;color:var(--success)">Request Submitted!</h3>
-                <p>Your service request has been sent. Download the ServiceMe app to track your provider in real time, chat with them, and manage your service.</p>
-                <div style="margin-top:24px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-                  <a href="#" onclick="resetRequest()" class="btn btn-cyan" style="width:auto;padding:12px 24px;text-decoration:none">New Request</a>
-                </div>
+            <div class="success-card">
+              <div class="success-check">&#10003;</div>
+              <div class="success-title">Request Submitted!</div>
+              <p class="success-sub">Your service request has been sent. Download the ServiceMe app to track your provider in real time, chat with them, and manage your service.</p>
+              <div style="margin-top:28px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+                <a href="#" onclick="resetRequest()" class="btn btn-cyan" style="width:auto;padding:12px 28px;text-decoration:none">New Request</a>
               </div>
             </div>
           </div>
@@ -431,64 +731,76 @@
 
         <!-- History (Driver) -->
         <div class="view" id="view-history">
-          <div class="view-title">Service History</div>
-          <div class="view-sub">Your past roadside assistance requests</div>
+          <div class="view-header">
+            <div class="view-title">Service History</div>
+            <div class="view-sub">Your past roadside assistance requests</div>
+          </div>
           <div id="history-list">
-            <div class="card" style="text-align:center;padding:48px 24px">
-              <div style="font-size:40px;margin-bottom:12px">&#128203;</div>
-              <p>Your service history will appear here after you use ServiceMe. Download the app for the full experience.</p>
+            <div class="glass-card" style="text-align:center;padding:56px 24px">
+              <div style="font-size:44px;margin-bottom:16px">&#128203;</div>
+              <h3 style="margin-bottom:8px">No history yet</h3>
+              <p>Your service history will appear here. Download the app for the full experience with real-time tracking.</p>
             </div>
           </div>
         </div>
 
         <!-- EV Services -->
         <div class="view" id="view-ev">
-          <div class="view-title">EV Services</div>
-          <div class="view-sub">Specialized services for electric vehicles</div>
+          <div class="view-header">
+            <div class="view-title">EV Services</div>
+            <div class="view-sub">Specialized roadside assistance for electric vehicles</div>
+          </div>
+          <div class="section-label">EV-Specific Services</div>
           <div class="service-grid">
-            <div class="service-btn" onclick="selectServiceAndRequest({name:'Mobile EV Charging',price:10,eta:15,emoji:'&#128268;'})">
-              <div class="svc-icon">&#128268;</div>
-              <div class="svc-name">Mobile Charging</div>
-              <div class="svc-est">From $10</div>
+            <div class="ev-service-btn" onclick="selectServiceAndRequest({name:'Mobile EV Charging',price:10,eta:15,emoji:'&#128268;'})">
+              <div class="ev-svc-icon-wrap">&#128268;</div>
+              <div class="ev-svc-name">Mobile Charging</div>
+              <div class="ev-svc-est">From $10</div>
             </div>
-            <div class="service-btn" onclick="selectServiceAndRequest({name:'EV-Safe Tow',price:84,eta:20,emoji:'&#128690;'})">
-              <div class="svc-icon">&#128690;</div>
-              <div class="svc-name">EV-Safe Tow</div>
-              <div class="svc-est">From $84</div>
+            <div class="ev-service-btn" onclick="selectServiceAndRequest({name:'EV-Safe Tow',price:84,eta:20,emoji:'&#128690;'})">
+              <div class="ev-svc-icon-wrap">&#128690;</div>
+              <div class="ev-svc-name">EV-Safe Tow</div>
+              <div class="ev-svc-est">From $84</div>
             </div>
-            <div class="service-btn" onclick="selectServiceAndRequest({name:'Battery Diagnostic',price:75,eta:20,emoji:'&#9889;'})">
-              <div class="svc-icon">&#9889;</div>
-              <div class="svc-name">Battery Diagnostic</div>
-              <div class="svc-est">From $75</div>
+            <div class="ev-service-btn" onclick="selectServiceAndRequest({name:'Battery Diagnostic',price:75,eta:20,emoji:'&#9889;'})">
+              <div class="ev-svc-icon-wrap">&#9889;</div>
+              <div class="ev-svc-name">Battery Diagnostic</div>
+              <div class="ev-svc-est">From $75</div>
             </div>
-            <div class="service-btn" onclick="selectServiceAndRequest({name:'Range Emergency',price:25,eta:30,emoji:'&#9888;'})">
-              <div class="svc-icon">&#9888;</div>
-              <div class="svc-name">Range Emergency</div>
-              <div class="svc-est">From $25</div>
+            <div class="ev-service-btn" onclick="selectServiceAndRequest({name:'Range Emergency',price:25,eta:30,emoji:'&#9888;'})">
+              <div class="ev-svc-icon-wrap">&#9888;</div>
+              <div class="ev-svc-name">Range Emergency</div>
+              <div class="ev-svc-est">From $25</div>
             </div>
+          </div>
+          <div class="glass-card" style="background:linear-gradient(135deg,rgba(167,139,250,0.08),rgba(167,139,250,0.03));border-color:rgba(167,139,250,0.2)">
+            <h3 style="color:var(--purple)">&#9889; EV Owner Benefits</h3>
+            <p>ServiceMe providers are EV-certified and use non-conductive towing equipment. We support all major EV brands including Tesla, Rivian, Ford, and GM.</p>
           </div>
         </div>
 
         <!-- Profile -->
         <div class="view" id="view-profile">
-          <div class="view-title">Profile</div>
-          <div class="view-sub">Manage your account and payment methods</div>
+          <div class="view-header">
+            <div class="view-title">Profile</div>
+            <div class="view-sub">Manage your account and payment methods</div>
+          </div>
 
-          <!-- Profile Header -->
-          <div class="profile-header" id="profile-header">
+          <!-- Profile Hero -->
+          <div class="profile-hero" id="profile-header">
             <div class="profile-avatar" id="profile-initial">?</div>
-            <div style="flex:1">
+            <div class="profile-info">
               <div class="profile-name" id="profile-name">Loading...</div>
               <div class="profile-email" id="profile-email"></div>
               <div class="profile-badge" id="profile-role-badge">Driver</div>
             </div>
-            <button class="btn btn-ghost btn-sm" onclick="toggleEditProfile()" id="edit-profile-btn" style="width:auto;flex-shrink:0">Edit</button>
+            <button class="btn btn-ghost btn-sm" onclick="toggleEditProfile()" id="edit-profile-btn" style="width:auto;flex-shrink:0;align-self:flex-start">Edit</button>
           </div>
 
           <!-- Edit Profile Form -->
           <div id="edit-profile-section" style="display:none">
-            <div class="card">
-              <div class="profile-section-title">Edit Profile</div>
+            <div class="glass-card" style="border-color:rgba(0,212,255,0.2)">
+              <div class="section-label" style="margin-top:0">Edit Profile</div>
               <div class="edit-field"><label>Full Name</label><input class="web-input" type="text" id="edit-name" placeholder="Your name" /></div>
               <div class="edit-field"><label>Email</label><input class="web-input" type="email" id="edit-email" placeholder="you@example.com" /></div>
               <div class="edit-field"><label>Phone</label><input class="web-input" type="tel" id="edit-phone" placeholder="+1 (555) 000-0000" /></div>
@@ -501,57 +813,64 @@
           </div>
 
           <!-- Payment Methods -->
-          <div class="card">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-              <h3 style="margin-bottom:0">Payment Methods</h3>
-              <button class="btn btn-ghost btn-sm" onclick="showAddCardModal()" style="width:auto">+ Add Card</button>
+          <div class="glass-card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+              <div>
+                <h3 style="margin-bottom:2px">Payment Methods</h3>
+                <p style="font-size:12px;margin:0">Cards saved securely via Stripe</p>
+              </div>
+              <button class="btn btn-cyan btn-sm" onclick="showAddCardModal()" style="width:auto">+ Add Card</button>
             </div>
-            <div id="payment-methods-list">
-              <div class="pm-empty">Loading...</div>
-            </div>
+            <div id="payment-methods-list"><div class="pm-empty">Loading...</div></div>
           </div>
 
-          <!-- Get the app promo -->
-          <div class="card">
+          <!-- App Promo -->
+          <div class="glass-card" style="background:linear-gradient(135deg,rgba(0,212,255,0.06),rgba(0,212,255,0.02));border-color:rgba(0,212,255,0.12)">
             <h3>Get the Full Experience</h3>
-            <p>Download the mobile app for real-time GPS tracking, push notifications, emergency SOS, in-app chat, and vehicle profile management.</p>
-            <div style="display:flex;gap:12px;margin-top:16px;flex-wrap:wrap">
-              <a href="https://apps.apple.com" class="btn btn-ghost btn-sm" style="text-decoration:none">&#xF8FF; App Store</a>
-              <a href="https://play.google.com" class="btn btn-ghost btn-sm" style="text-decoration:none">&#9654; Google Play</a>
+            <p style="margin-bottom:16px">Download the mobile app for real-time GPS tracking, push notifications, emergency SOS, in-app chat, and vehicle profile management.</p>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <a href="https://apps.apple.com" class="store-btn" style="text-decoration:none">&#xF8FF; App Store</a>
+              <a href="https://play.google.com" class="store-btn" style="text-decoration:none">&#9654; Google Play</a>
             </div>
           </div>
         </div>
 
         <!-- Available Jobs (Provider) -->
         <div class="view" id="view-jobs">
-          <div class="view-title">Available Jobs</div>
-          <div class="view-sub">Nearby service requests waiting for a provider</div>
+          <div class="view-header" style="display:flex;align-items:flex-start;justify-content:space-between">
+            <div>
+              <div class="view-title">Available Jobs</div>
+              <div class="view-sub">Nearby service requests waiting for you</div>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="loadProviderJobs()" style="width:auto;margin-top:4px">&#8635; Refresh</button>
+          </div>
           <div id="jobs-list">
-            <div class="card" style="text-align:center;padding:40px">
-              <div style="font-size:40px;margin-bottom:12px">&#128188;</div>
-              <p>No jobs available right now. New requests will appear here automatically.</p>
-              <button class="btn btn-ghost btn-sm" style="margin-top:16px" onclick="loadProviderJobs()">Refresh</button>
+            <div class="glass-card" style="text-align:center;padding:48px 24px">
+              <div style="font-size:44px;margin-bottom:14px">&#128188;</div>
+              <h3 style="margin-bottom:8px">No jobs right now</h3>
+              <p>New service requests will appear here automatically. Stay online to receive jobs.</p>
+              <button class="btn btn-ghost btn-sm" style="margin-top:20px;display:inline-flex" onclick="loadProviderJobs()">Refresh</button>
             </div>
           </div>
         </div>
 
         <!-- Earnings (Provider) -->
         <div class="view" id="view-earnings-view">
-          <div class="view-title">Earnings</div>
-          <div class="view-sub">Your balance and payout history</div>
-          <div class="card" id="earnings-card">
-            <div style="text-align:center;padding:16px">
-              <div style="font-size:13px;color:var(--muted);margin-bottom:8px">AVAILABLE BALANCE</div>
-              <div style="font-size:48px;font-weight:900;color:var(--success)" id="earnings-amount">$0.00</div>
-              <p style="margin-top:12px">Cash out through the mobile app. Download ServiceMe to set up Stripe Connect and manage your payouts.</p>
-            </div>
+          <div class="view-header">
+            <div class="view-title">Earnings</div>
+            <div class="view-sub">Your balance and payout information</div>
           </div>
-          <div class="card">
-            <h3>Get Paid Faster</h3>
-            <p>Download the ServiceMe app to connect your bank account via Stripe, view full earnings history, and cash out anytime — standard (free, 1-2 days) or instant (30 min, small fee).</p>
-            <div style="display:flex;gap:12px;margin-top:14px;flex-wrap:wrap">
-              <a href="https://apps.apple.com" class="btn btn-ghost btn-sm" style="text-decoration:none">&#xF8FF; App Store</a>
-              <a href="https://play.google.com" class="btn btn-ghost btn-sm" style="text-decoration:none">&#9654; Google Play</a>
+          <div class="earnings-hero">
+            <div class="earnings-label">Available Balance</div>
+            <div class="earnings-amount" id="earnings-amount">$0.00</div>
+            <div class="earnings-sub">Cash out through the ServiceMe mobile app</div>
+          </div>
+          <div class="glass-card">
+            <h3>&#128176; Get Paid Faster</h3>
+            <p style="margin-bottom:18px">Connect your bank account via Stripe in the mobile app. Cash out anytime — standard (free, 1-2 days) or instant (~30 min, small fee).</p>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <a href="https://apps.apple.com" class="store-btn" style="text-decoration:none">&#xF8FF; App Store</a>
+              <a href="https://play.google.com" class="store-btn" style="text-decoration:none">&#9654; Google Play</a>
             </div>
           </div>
         </div>
@@ -565,7 +884,7 @@
 <div class="modal-backdrop" id="card-modal" style="display:none" onclick="if(event.target===this)hideAddCardModal()">
   <div class="modal-box">
     <div class="modal-title">Add Payment Method</div>
-    <div class="modal-sub">Your card is saved securely via Stripe.</div>
+    <div class="modal-sub">Your card is encrypted and stored securely via Stripe.</div>
     <div id="stripe-card-element"></div>
     <div id="card-modal-error"></div>
     <div class="modal-actions">
@@ -580,6 +899,60 @@
 
 <script src="https://js.stripe.com/v3/"></script>
 <script>
+  // ── Constellation Background ──
+  (function() {
+    const canvas = document.getElementById("bg-canvas");
+    const ctx = canvas.getContext("2d");
+    let W, H, dots = [];
+
+    function resize() {
+      W = canvas.width = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+    }
+
+    function initDots() {
+      dots = [];
+      const count = Math.floor((W * H) / 18000);
+      for (let i = 0; i < count; i++) {
+        dots.push({
+          x: Math.random() * W, y: Math.random() * H,
+          vx: (Math.random() - .5) * .25, vy: (Math.random() - .5) * .25,
+          r: Math.random() * 1.5 + .5, o: Math.random() * .5 + .2
+        });
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      for (let i = 0; i < dots.length; i++) {
+        const d = dots[i];
+        d.x += d.vx; d.y += d.vy;
+        if (d.x < 0 || d.x > W) d.vx *= -1;
+        if (d.y < 0 || d.y > H) d.vy *= -1;
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(0,212,255,${d.o})`;
+        ctx.fill();
+        for (let j = i + 1; j < dots.length; j++) {
+          const d2 = dots[j];
+          const dist = Math.hypot(d.x - d2.x, d.y - d2.y);
+          if (dist < 120) {
+            ctx.beginPath();
+            ctx.moveTo(d.x, d.y); ctx.lineTo(d2.x, d2.y);
+            ctx.strokeStyle = `rgba(0,212,255,${.06 * (1 - dist/120)})`;
+            ctx.lineWidth = .5;
+            ctx.stroke();
+          }
+        }
+      }
+      requestAnimationFrame(draw);
+    }
+
+    resize(); initDots(); draw();
+    window.addEventListener("resize", () => { resize(); initDots(); });
+  })();
+
+  // ── App State ──
   const BASE = window.location.origin;
   let userToken = localStorage.getItem("sm_web_token") || "";
   let currentUser = null;
@@ -587,18 +960,19 @@
   let selectedService = null;
 
   const SERVICES = [
-    { name: "Flat Tire",     price: 40,  display: "$40",       eta: 15, emoji: "&#128739;" },
-    { name: "Jump Start",    price: 30,  display: "$30",       eta: 12, emoji: "&#9889;" },
-    { name: "Towing",        price: 85,  display: "From $85",  eta: 20, emoji: "&#128664;" },
-    { name: "Fuel Delivery", price: 10,  display: "From $10",  eta: 18, emoji: "&#9981;" },
-    { name: "Lockout",       price: 55,  display: "$55",       eta: 15, emoji: "&#128273;" },
-    { name: "OBD Diagnostic",price: 21,  display: "$21",       eta: 25, emoji: "&#128187;" },
+    { name: "Flat Tire",      price: 40,  display: "$40",       eta: 15, emoji: "&#128739;" },
+    { name: "Jump Start",     price: 30,  display: "$30",       eta: 12, emoji: "&#9889;" },
+    { name: "Towing",         price: 85,  display: "From $85",  eta: 20, emoji: "&#128664;" },
+    { name: "Fuel Delivery",  price: 10,  display: "From $10",  eta: 18, emoji: "&#9981;" },
+    { name: "Lockout",        price: 55,  display: "$55",       eta: 15, emoji: "&#128273;" },
+    { name: "OBD Diagnostic", price: 21,  display: "$21",       eta: 25, emoji: "&#128187;" },
   ];
+
+  const SVC_ICONS = { "Flat Tire":"&#128739;","Jump Start":"&#9889;","Towing":"&#128664;","Fuel Delivery":"&#9981;","Lockout":"&#128273;","OBD Diagnostic":"&#128187;" };
 
   function toast(msg, duration) {
     const el = document.getElementById("toast");
-    el.textContent = msg;
-    el.classList.add("show");
+    el.textContent = msg; el.classList.add("show");
     setTimeout(() => el.classList.remove("show"), duration || 3000);
   }
 
@@ -688,9 +1062,7 @@
   }
 
   function logout() {
-    userToken = "";
-    localStorage.removeItem("sm_web_token");
-    currentUser = null;
+    userToken = ""; localStorage.removeItem("sm_web_token"); currentUser = null;
     document.getElementById("auth-screen").style.display = "flex";
     document.getElementById("app-bar").style.display = "none";
     document.getElementById("main-app").style.display = "none";
@@ -714,9 +1086,9 @@
     const grid = document.getElementById("service-grid");
     grid.innerHTML = SERVICES.map((s, i) =>
       `<div class="service-btn" onclick="selectServiceItem(${i})" id="svc-${i}">
-        <div class="svc-icon">${s.emoji}</div>
+        <div class="svc-icon-wrap">${s.emoji}</div>
         <div class="svc-name">${s.name}</div>
-        <div class="svc-est">${s.display || ('~$' + s.price)}</div>
+        <div class="svc-est">${s.display}</div>
       </div>`
     ).join("");
   }
@@ -724,8 +1096,7 @@
   function selectServiceItem(i) {
     document.querySelectorAll(".service-btn").forEach(b => b.classList.remove("selected"));
     document.getElementById(`svc-${i}`)?.classList.add("selected");
-    const svc = SERVICES[i];
-    selectServiceAndRequest(svc);
+    selectServiceAndRequest(SERVICES[i]);
   }
 
   function selectServiceAndRequest(svc) {
@@ -735,10 +1106,8 @@
     document.getElementById("request-price").textContent = `$${svc.price}`;
     document.getElementById("request-eta").textContent = `~${svc.eta} min`;
     document.getElementById("request-success").style.display = "none";
-    if (document.getElementById("view-ev").classList.contains("active")) {
-      showView("request");
-    }
-    document.getElementById("request-form").scrollIntoView({ behavior: "smooth" });
+    if (document.getElementById("view-ev").classList.contains("active")) showView("request");
+    setTimeout(() => document.getElementById("request-form").scrollIntoView({ behavior: "smooth" }), 50);
   }
 
   function cancelRequest() {
@@ -764,7 +1133,7 @@
         body: JSON.stringify({
           serviceType: selectedService.name.toLowerCase().replace(/ /g, "_"),
           location: { address: location, latitude: 0, longitude: 0 },
-          notes: notes,
+          notes,
           estimatedCost: selectedService.price,
           driver: currentUser ? { id: currentUser.id, name: currentUser.name, email: currentUser.email } : {},
         }),
@@ -775,35 +1144,45 @@
         document.getElementById("request-success").scrollIntoView({ behavior: "smooth" });
       } else {
         const data = await res.json().catch(() => ({}));
-        toast(data.error || "Failed to submit request. Try again.");
+        toast(data.error || "Failed to submit. Try again.");
       }
     } catch { toast("Network error. Check your connection."); }
   }
 
   // ── Provider Jobs ──
+  const JOB_ICONS = { flat_tire:"&#128739;", jump_start:"&#9889;", towing:"&#128664;", fuel_delivery:"&#9981;", lockout:"&#128273;", obd_diagnostic:"&#128187;", mobile_ev_charging:"&#128268;", ev_safe_tow:"&#128690;" };
+
   async function loadProviderJobs() {
     try {
       const res = await fetch(`${BASE}/api/jobs/pending`, { headers: { Authorization: `Bearer ${userToken}` } });
       const jobs = await res.json();
       const list = document.getElementById("jobs-list");
       if (!jobs.length) {
-        list.innerHTML = '<div class="card" style="text-align:center;padding:40px"><div style="font-size:40px;margin-bottom:12px">&#128188;</div><p>No jobs available right now.</p><button class="btn btn-ghost btn-sm" style="margin-top:16px" onclick="loadProviderJobs()">Refresh</button></div>';
+        list.innerHTML = `<div class="glass-card" style="text-align:center;padding:48px 24px"><div style="font-size:44px;margin-bottom:14px">&#128188;</div><h3 style="margin-bottom:8px">No jobs right now</h3><p>New service requests will appear here automatically. Stay online to receive jobs.</p><button class="btn btn-ghost btn-sm" style="margin-top:20px;display:inline-flex" onclick="loadProviderJobs()">Refresh</button></div>`;
         return;
       }
-      list.innerHTML = jobs.slice(0, 10).map(j => `<div class="job-card">
-        <div class="job-header">
-          <div>
-            <div class="job-type">${(j.serviceType || j.service_type || "").replace(/_/g," ")}</div>
-            <div class="job-detail">&#128205; ${(j.location?.address || "Unknown location")}</div>
-            ${j.notes ? `<div class="job-detail">&#128172; ${j.notes}</div>` : ""}
+      list.innerHTML = jobs.slice(0, 10).map(j => {
+        const type = (j.serviceType || j.service_type || "").replace(/_/g," ");
+        const icon = JOB_ICONS[(j.serviceType || j.service_type || "").toLowerCase()] || "&#128736;";
+        return `<div class="job-card">
+          <div class="job-header">
+            <div class="job-type-wrap">
+              <div class="job-type-icon">${icon}</div>
+              <div>
+                <div class="job-type">${type}</div>
+                <div class="job-driver">${j.driver?.name ? "&#128100; " + j.driver.name : "Driver request"}</div>
+              </div>
+            </div>
+            <div class="job-price">$${j.estimatedCost || j.estimated_cost || 0}</div>
           </div>
-          <div class="job-price">$${j.estimatedCost || j.estimated_cost || 0}</div>
-        </div>
-        <div class="job-actions">
-          <button class="btn btn-coral btn-sm" style="flex:1" onclick="acceptJob('${j.id}')">Accept Job</button>
-          <button class="btn btn-ghost btn-sm" onclick="toast('Job skipped')">Skip</button>
-        </div>
-      </div>`).join("");
+          <div class="job-detail">&#128205; ${j.location?.address || "Location not specified"}</div>
+          ${j.notes ? `<div class="job-detail">&#128172; ${j.notes}</div>` : ""}
+          <div class="job-actions">
+            <button class="btn btn-coral btn-sm" style="flex:1" onclick="acceptJob('${j.id}')">Accept Job</button>
+            <button class="btn btn-ghost btn-sm" onclick="toast('Job skipped')">Skip</button>
+          </div>
+        </div>`;
+      }).join("");
     } catch { toast("Could not load jobs."); }
   }
 
@@ -814,12 +1193,8 @@
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${userToken}` },
         body: JSON.stringify({ provider: currentUser }),
       });
-      if (res.ok) {
-        toast("Job accepted! Download the app to communicate with the driver.");
-        loadProviderJobs();
-      } else {
-        toast("Could not accept job — it may have been taken.");
-      }
+      if (res.ok) { toast("Job accepted! Download the app to communicate with the driver."); loadProviderJobs(); }
+      else { toast("Could not accept — job may have been taken."); }
     } catch { toast("Network error."); }
   }
 
@@ -841,9 +1216,13 @@
   function updateProfile() {
     if (!currentUser) return;
     const role = currentUser.role || "driver";
-    document.getElementById("profile-initial").textContent = (currentUser.name || "?")[0].toUpperCase();
+    const initial = (currentUser.name || "?")[0].toUpperCase();
+    document.getElementById("profile-initial").textContent = initial;
     document.getElementById("profile-name").textContent = currentUser.name || "—";
     document.getElementById("profile-email").textContent = currentUser.email || "—";
+    document.getElementById("sidebar-avatar-initial").textContent = initial;
+    document.getElementById("sidebar-user-name").textContent = currentUser.name || "—";
+    document.getElementById("sidebar-user-role").textContent = role === "provider" ? "Service Provider" : "Driver";
     const badge = document.getElementById("profile-role-badge");
     badge.textContent = role === "provider" ? "Service Provider" : "Driver";
     badge.style.background = role === "provider" ? "rgba(255,107,107,0.12)" : "";
@@ -864,7 +1243,7 @@
       document.getElementById("profile-save-error").style.display = "none";
       section.style.display = "block";
       document.getElementById("edit-profile-btn").textContent = "Close";
-      section.scrollIntoView({ behavior: "smooth", block: "start" });
+      setTimeout(() => section.scrollIntoView({ behavior: "smooth", block: "nearest" }), 50);
     }
   }
 
@@ -900,16 +1279,11 @@
     if (!list || !userToken) return;
     list.innerHTML = '<div class="pm-empty">Loading...</div>';
     try {
-      const res = await fetch(`${BASE}/api/stripe/payment-methods`, {
-        headers: { "Authorization": `Bearer ${userToken}` },
-      });
+      const res = await fetch(`${BASE}/api/stripe/payment-methods`, { headers: { Authorization: `Bearer ${userToken}` } });
       if (!res.ok) { list.innerHTML = '<div class="pm-empty">Could not load payment methods.</div>'; return; }
       const data = await res.json();
       const methods = data.paymentMethods || [];
-      if (!methods.length) {
-        list.innerHTML = '<div class="pm-empty">No saved cards yet. Add one above.</div>';
-        return;
-      }
+      if (!methods.length) { list.innerHTML = '<div class="pm-empty">No saved cards yet. Add one above.</div>'; return; }
       list.innerHTML = '<div class="pm-list">' + methods.map(pm => {
         const brand = (pm.card?.brand || "card").toUpperCase().slice(0,4);
         const last4 = pm.card?.last4 || "????";
@@ -921,7 +1295,7 @@
             <div class="pm-number">•••• •••• •••• ${last4}</div>
             <div class="pm-exp">Expires ${expM}/${expY}</div>
           </div>
-          <button class="pm-remove" onclick="removeCard('${pm.id}', this)">Remove</button>
+          <button class="pm-remove" onclick="removeCard('${pm.id}',this)">Remove</button>
         </div>`;
       }).join("") + "</div>";
     } catch { list.innerHTML = '<div class="pm-empty">Could not load payment methods.</div>'; }
@@ -929,22 +1303,16 @@
 
   async function removeCard(pmId, btn) {
     if (!confirm("Remove this card?")) return;
-    const orig = btn.textContent;
-    btn.textContent = "..."; btn.disabled = true;
+    const orig = btn.textContent; btn.textContent = "..."; btn.disabled = true;
     try {
-      const res = await fetch(`${BASE}/api/stripe/payment-methods/${pmId}`, {
-        method: "DELETE",
-        headers: { "Authorization": `Bearer ${userToken}` },
-      });
+      const res = await fetch(`${BASE}/api/stripe/payment-methods/${pmId}`, { method: "DELETE", headers: { Authorization: `Bearer ${userToken}` } });
       if (res.ok) { toast("Card removed."); loadPaymentMethods(); }
       else { toast("Could not remove card. Try again."); btn.textContent = orig; btn.disabled = false; }
     } catch { toast("Network error."); btn.textContent = orig; btn.disabled = false; }
   }
 
   // ── Add Card (Stripe Elements) ──
-  let _stripe = null;
-  let _cardElement = null;
-  let _setupClientSecret = null;
+  let _stripe = null, _cardElement = null, _setupClientSecret = null;
 
   async function showAddCardModal() {
     document.getElementById("card-modal").style.display = "flex";
@@ -957,7 +1325,7 @@
       if (!publishableKey) throw new Error("No key");
       const siRes = await fetch(`${BASE}/api/stripe/setup-intent`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${userToken}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${userToken}` },
       });
       const { clientSecret } = await siRes.json();
       _setupClientSecret = clientSecret;
@@ -966,7 +1334,7 @@
       if (_cardElement) _cardElement.destroy();
       _cardElement = elements.create("card", {
         style: {
-          base: { color: "#ffffff", fontFamily: "-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif", fontSize: "15px", "::placeholder": { color: "rgba(255,255,255,0.4)" } },
+          base: { color: "#ffffff", fontFamily: "-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif", fontSize: "15px", "::placeholder": { color: "rgba(255,255,255,0.35)" } },
           invalid: { color: "#ef4444" },
         },
       });
@@ -991,15 +1359,9 @@
     const errEl = document.getElementById("card-modal-error");
     btn.disabled = true; btn.textContent = "Saving...";
     try {
-      const { setupIntent, error } = await _stripe.confirmCardSetup(_setupClientSecret, {
-        payment_method: { card: _cardElement },
-      });
+      const { setupIntent, error } = await _stripe.confirmCardSetup(_setupClientSecret, { payment_method: { card: _cardElement } });
       if (error) { errEl.textContent = error.message; btn.disabled = false; btn.textContent = "Save Card"; return; }
-      if (setupIntent?.status === "succeeded") {
-        hideAddCardModal();
-        toast("Card saved!");
-        loadPaymentMethods();
-      }
+      if (setupIntent?.status === "succeeded") { hideAddCardModal(); toast("Card saved!"); loadPaymentMethods(); }
     } catch { errEl.textContent = "Something went wrong. Try again."; btn.disabled = false; btn.textContent = "Save Card"; }
   }
 
@@ -1008,17 +1370,11 @@
     if (!userToken) return;
     try {
       const res = await fetch(`${BASE}/api/auth/me`, { headers: { Authorization: `Bearer ${userToken}` } });
-      if (res.ok) {
-        const data = await res.json();
-        currentUser = data.user || data;
-        enterApp();
-      } else {
-        userToken = ""; localStorage.removeItem("sm_web_token");
-      }
+      if (res.ok) { const data = await res.json(); currentUser = data.user || data; enterApp(); }
+      else { userToken = ""; localStorage.removeItem("sm_web_token"); }
     } catch {}
   }
 
-  // ── Init ──
   buildServiceGrid();
   tryAutoLogin();
 </script>
