@@ -68,11 +68,11 @@ function RoleCard({ icon, title, description, onPress, gradientColors, accentCol
 export default function RoleSelectionScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
-  const { setUserRole, setCurrentDriver, setCurrentProvider, authUser } = useApp();
+  const { switchUserRole, setCurrentDriver, setCurrentProvider, authUser } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
-  const handleDriverSelect = () => {
-    setUserRole("driver");
+  const handleDriverSelect = async () => {
+    await switchUserRole("driver");
     setCurrentDriver({
       id: authUser?.id || `d-${Date.now()}`,
       name: authUser?.name || "Driver",
@@ -84,8 +84,8 @@ export default function RoleSelectionScreen() {
     navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "DriverTabs" }] }));
   };
 
-  const handleProviderSelect = () => {
-    setUserRole("provider");
+  const handleProviderSelect = async () => {
+    await switchUserRole("provider");
     setCurrentProvider({
       id: authUser?.id || `p-${Date.now()}`,
       name: authUser?.name || "Provider",

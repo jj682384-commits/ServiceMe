@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useMemo, useEffect, ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { loadAuthToken, saveAuthToken, deleteAuthToken } from "@/lib/secureStorage";
-import { setAuthToken } from "@/lib/query-client";
+import { setAuthToken, apiRequest } from "@/lib/query-client";
 export type UserRole = "driver" | "provider" | null;
 
 export type MembershipTier = "free" | "premium";
@@ -328,6 +328,7 @@ interface AppContextType {
   setAuthUser: (user: AuthUser | null) => void;
   userRole: UserRole;
   setUserRole: (role: UserRole) => void;
+  switchUserRole: (role: "driver" | "provider") => Promise<void>;
   currentDriver: Driver | null;
   setCurrentDriver: (driver: Driver | null) => void;
   currentProvider: Provider | null;
@@ -760,6 +761,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     ]).catch(() => {});
   };
 
+  const switchUserRole = async (role: "driver" | "provider"): Promise<void> => {
+    setUserRole(role);
+    try {
+      await apiRequest("PATCH", "/api/auth/role", { role });
+    } catch (err) {
+      console.warn("[switchUserRole] Failed to sync role to server:", err);
+    }
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -770,6 +780,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setAuthUser,
         userRole,
         setUserRole,
+        switchUserRole,
         currentDriver,
         setCurrentDriver,
         currentProvider,

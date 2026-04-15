@@ -374,6 +374,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ success: true });
   });
 
+  app.patch("/api/auth/role", async (req: Request, res: Response) => {
+    const token = extractToken(req.headers["authorization"]);
+    if (!token) return res.status(401).json({ error: "No token" });
+    try {
+      const user = await getUserByToken(token);
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
+      const { role } = req.body as { role: string };
+      if (role !== "driver" && role !== "provider") {
+        return res.status(400).json({ error: "role must be 'driver' or 'provider'" });
+      }
+      await pool.query(
+        "UPDATE auth_users SET role = $2, updated_at = NOW() WHERE id = $1",
+        [user.id, role]
+      );
+      console.log(`[AUTH] role switched userId=${user.id} newRole=${role}`);
+      res.json({ success: true, userId: user.id, role });
+    } catch (err) {
+      console.error("[auth/role]", err);
+      res.status(500).json({ error: "Database error" });
+    }
+  });
+
   app.patch("/api/auth/push-token", async (req: Request, res: Response) => {
     const token = extractToken(req.headers["authorization"]);
     if (!token) return res.status(401).json({ error: "No token" });
