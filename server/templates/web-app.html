@@ -393,25 +393,25 @@
           <div class="view-title">EV Services</div>
           <div class="view-sub">Specialized services for electric vehicles</div>
           <div class="service-grid">
-            <div class="service-btn" onclick="selectServiceAndRequest({name:'Mobile EV Charging',price:85,eta:25,emoji:'&#128268;'})">
+            <div class="service-btn" onclick="selectServiceAndRequest({name:'Mobile EV Charging',price:10,eta:15,emoji:'&#128268;'})">
               <div class="svc-icon">&#128268;</div>
               <div class="svc-name">Mobile Charging</div>
-              <div class="svc-est">~$85</div>
+              <div class="svc-est">From $10</div>
             </div>
-            <div class="service-btn" onclick="selectServiceAndRequest({name:'EV-Safe Tow',price:120,eta:20,emoji:'&#128690;'})">
+            <div class="service-btn" onclick="selectServiceAndRequest({name:'EV-Safe Tow',price:84,eta:20,emoji:'&#128690;'})">
               <div class="svc-icon">&#128690;</div>
               <div class="svc-name">EV-Safe Tow</div>
-              <div class="svc-est">~$120</div>
+              <div class="svc-est">From $84</div>
             </div>
-            <div class="service-btn" onclick="selectServiceAndRequest({name:'Battery Diagnostic',price:60,eta:20,emoji:'&#9889;'})">
+            <div class="service-btn" onclick="selectServiceAndRequest({name:'Battery Diagnostic',price:75,eta:20,emoji:'&#9889;'})">
               <div class="svc-icon">&#9889;</div>
-              <div class="svc-name">Battery Check</div>
-              <div class="svc-est">~$60</div>
+              <div class="svc-name">Battery Diagnostic</div>
+              <div class="svc-est">From $75</div>
             </div>
-            <div class="service-btn" onclick="selectServiceAndRequest({name:'Range Emergency',price:95,eta:30,emoji:'&#9888;'})">
+            <div class="service-btn" onclick="selectServiceAndRequest({name:'Range Emergency',price:25,eta:30,emoji:'&#9888;'})">
               <div class="svc-icon">&#9888;</div>
               <div class="svc-name">Range Emergency</div>
-              <div class="svc-est">~$95</div>
+              <div class="svc-est">From $25</div>
             </div>
           </div>
         </div>
@@ -488,12 +488,12 @@
   let selectedService = null;
 
   const SERVICES = [
-    { name: "Flat Tire", price: 65, eta: 15, emoji: "&#128739;" },
-    { name: "Jump Start", price: 55, eta: 12, emoji: "&#9889;" },
-    { name: "Towing", price: 110, eta: 20, emoji: "&#128664;" },
-    { name: "Fuel Delivery", price: 60, eta: 18, emoji: "&#9981;" },
-    { name: "Lockout", price: 75, eta: 15, emoji: "&#128273;" },
-    { name: "Minor Repair", price: 85, eta: 25, emoji: "&#128295;" },
+    { name: "Flat Tire",     price: 40,  display: "$40",       eta: 15, emoji: "&#128739;" },
+    { name: "Jump Start",    price: 30,  display: "$30",       eta: 12, emoji: "&#9889;" },
+    { name: "Towing",        price: 85,  display: "From $85",  eta: 20, emoji: "&#128664;" },
+    { name: "Fuel Delivery", price: 10,  display: "From $10",  eta: 18, emoji: "&#9981;" },
+    { name: "Lockout",       price: 55,  display: "$55",       eta: 15, emoji: "&#128273;" },
+    { name: "OBD Diagnostic",price: 21,  display: "$21",       eta: 25, emoji: "&#128187;" },
   ];
 
   function toast(msg, duration) {
@@ -616,7 +616,7 @@
       `<div class="service-btn" onclick="selectServiceItem(${i})" id="svc-${i}">
         <div class="svc-icon">${s.emoji}</div>
         <div class="svc-name">${s.name}</div>
-        <div class="svc-est">~$${s.price}</div>
+        <div class="svc-est">${s.display || ('~$' + s.price)}</div>
       </div>`
     ).join("");
   }
