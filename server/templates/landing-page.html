@@ -1,213 +1,633 @@
-<!doctype html>
-<html>
-  <head>
-    <title>APP_NAME_PLACEHOLDER</title>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <style>
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        max-width: 500px;
-        margin: 50px auto;
-        padding: 20px;
-        text-align: center;
-      }
-      .loading {
-        display: none;
-        font-size: 18px;
-        color: #666;
-        margin: 60px 0;
-      }
-      .spinner {
-        border: 3px solid #f3f3f3;
-        border-top: 3px solid #333;
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        animation: spin 1s linear infinite;
-        margin: 20px auto;
-      }
-      @keyframes spin {
-        0% {
-          transform: rotate(0deg);
-        }
-        100% {
-          transform: rotate(360deg);
-        }
-      }
-      .content {
-        display: block;
-      }
-      .qr-code {
-        width: 250px;
-        height: 250px;
-        margin: 30px auto;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        padding: 15px;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ServiceMe — On-Demand Roadside Assistance</title>
+  <meta name="description" content="Connect with nearby roadside assistance providers in minutes. Flat tires, jump starts, towing, fuel delivery, lockouts & EV services. Download ServiceMe today." />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        canvas {
-          width: 100%;
-          height: 100%;
-        }
-      }
-      .platform-links {
-        margin: 30px 0;
-      }
-      .platform-link {
-        display: block;
-        padding: 14px 24px;
-        margin: 12px auto;
-        max-width: 300px;
-        font-size: 16px;
-        border: 1px solid #000;
-        border-radius: 8px;
-        text-decoration: none;
-        color: #000;
-        background: white;
-        min-height: 40px;
-        box-sizing: border-box;
-      }
-      .platform-link:hover {
-        background: #f5f5f5;
-      }
-      .download-links {
-        margin-top: 40px;
-        padding-top: 30px;
-        border-top: 1px solid #ddd;
-      }
-      .install-button {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 12px 16px;
-        margin: 0 6px;
-        font-size: 14px;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        text-decoration: none;
-        color: #333;
-        background: white;
-        min-height: 40px;
-        box-sizing: border-box;
-      }
-      .install-button:hover {
-        background: #f5f5f5;
-      }
-      .store-icon {
-        width: 16px;
-        height: 16px;
-        margin-right: 6px;
-        border-radius: 0px;
-      }
-      .app-store-icon {
-        border-radius: 4px;
-      }
-      .install-text {
-        color: #999;
-        font-size: 14px;
-        margin-bottom: 10px;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="loading" id="loading">
-      <div class="spinner"></div>
-      <div>Opening in Expo Go...</div>
-    </div>
+    :root {
+      --navy: #0A0E27;
+      --navy2: #111428;
+      --cyan: #00D4FF;
+      --coral: #FF6B6B;
+      --text: #ffffff;
+      --muted: rgba(255,255,255,0.6);
+      --card: rgba(255,255,255,0.05);
+      --border: rgba(255,255,255,0.1);
+    }
 
-    <div class="content" id="content">
-      <div class="qr-code" id="qr-code"></div>
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--navy);
+      color: var(--text);
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
 
-      <div class="platform-links">
-        <a href="exp://EXPS_URL_PLACEHOLDER" class="platform-link">Open APP_NAME_PLACEHOLDER in Expo Go</a>
+    /* ── Nav ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 40px;
+      background: rgba(10,14,39,0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .nav-logo-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--cyan), var(--coral));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 900; color: #fff;
+    }
+    .nav-logo-text { font-size: 18px; font-weight: 800; color: #fff; }
+    .nav-links { display: flex; align-items: center; gap: 32px; }
+    .nav-links a { color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 500; transition: color .2s; }
+    .nav-links a:hover { color: #fff; }
+    .nav-cta {
+      background: var(--cyan); color: var(--navy); padding: 9px 22px;
+      border-radius: 100px; font-size: 14px; font-weight: 700; text-decoration: none;
+      transition: opacity .2s;
+    }
+    .nav-cta:hover { opacity: .85; }
+
+    /* ── Hero ── */
+    .hero {
+      min-height: 100vh; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 120px 24px 80px;
+      position: relative; overflow: hidden; text-align: center;
+    }
+    .hero-bg {
+      position: absolute; inset: 0; z-index: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,212,255,0.12) 0%, transparent 70%),
+                  radial-gradient(ellipse 60% 40% at 80% 80%, rgba(255,107,107,0.08) 0%, transparent 60%);
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.25);
+      color: var(--cyan); padding: 6px 16px; border-radius: 100px;
+      font-size: 13px; font-weight: 600; margin-bottom: 24px; position: relative; z-index: 1;
+    }
+    .hero-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--cyan); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.2)} }
+    .hero h1 {
+      font-size: clamp(40px, 7vw, 80px);
+      font-weight: 900; line-height: 1.08;
+      letter-spacing: -2px; position: relative; z-index: 1;
+      margin-bottom: 24px;
+    }
+    .hero h1 span { color: var(--cyan); }
+    .hero p {
+      font-size: clamp(16px, 2vw, 20px); color: var(--muted);
+      max-width: 540px; margin: 0 auto 40px; position: relative; z-index: 1;
+    }
+    .hero-buttons {
+      display: flex; flex-wrap: wrap; gap: 16px;
+      justify-content: center; position: relative; z-index: 1; margin-bottom: 48px;
+    }
+    .btn-store {
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+      color: #fff; padding: 14px 24px; border-radius: 14px;
+      text-decoration: none; transition: all .2s; backdrop-filter: blur(10px);
+    }
+    .btn-store:hover { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.3); transform: translateY(-2px); }
+    .btn-store-icon { font-size: 28px; }
+    .btn-store-text { text-align: left; }
+    .btn-store-sub { font-size: 10px; color: var(--muted); line-height: 1; }
+    .btn-store-name { font-size: 16px; font-weight: 700; line-height: 1.4; }
+
+    .hero-note { position: relative; z-index: 1; color: var(--muted); font-size: 13px; }
+    .hero-note a { color: var(--cyan); text-decoration: none; }
+
+    /* floating phone mockup */
+    .hero-visual {
+      position: relative; z-index: 1; margin-top: 60px;
+      display: flex; align-items: flex-end; justify-content: center; gap: 20px;
+    }
+    .phone {
+      width: 200px; border-radius: 32px; overflow: hidden;
+      box-shadow: 0 40px 80px rgba(0,0,0,0.6);
+      border: 2px solid rgba(255,255,255,0.1);
+      background: #111428;
+      animation: float 4s ease-in-out infinite;
+    }
+    .phone:nth-child(2) { width: 230px; animation-delay: -.5s; margin-bottom: 0; }
+    .phone:nth-child(1), .phone:nth-child(3) { margin-bottom: -40px; opacity: .7; }
+    .phone:nth-child(3) { animation-delay: -1s; }
+    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+    .phone-screen {
+      width: 100%; aspect-ratio: 9/19;
+      background: linear-gradient(180deg, #0A0E27 0%, #111428 100%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 20px 12px; gap: 12px;
+    }
+    .phone-top-bar {
+      width: 100%; display: flex; justify-content: space-between; align-items: center;
+      padding: 0 4px; margin-bottom: 4px;
+    }
+    .phone-time { font-size: 10px; font-weight: 700; color: #fff; }
+    .phone-icons { display: flex; gap: 4px; }
+    .phone-icon { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.4); }
+    .phone-title { font-size: 13px; font-weight: 800; color: #fff; }
+    .phone-subtitle { font-size: 9px; color: rgba(255,255,255,0.5); }
+    .phone-map-placeholder {
+      width: 100%; height: 80px; border-radius: 12px;
+      background: linear-gradient(135deg, rgba(0,212,255,0.1), rgba(255,107,107,0.1));
+      border: 1px solid rgba(255,255,255,0.08);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+    .phone-service-btn {
+      width: 100%; padding: 8px; border-radius: 10px;
+      background: var(--cyan); color: var(--navy);
+      font-size: 10px; font-weight: 800; text-align: center;
+    }
+    .phone-chips { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+    .phone-chip {
+      background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.2);
+      color: var(--cyan); border-radius: 100px; padding: 3px 8px; font-size: 8px; font-weight: 600;
+    }
+
+    /* ── Stats ── */
+    .stats-bar {
+      background: rgba(255,255,255,0.03); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+      padding: 32px 24px;
+    }
+    .stats-inner {
+      max-width: 900px; margin: 0 auto;
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; text-align: center;
+    }
+    .stat h3 { font-size: 36px; font-weight: 900; color: var(--cyan); line-height: 1; }
+    .stat p { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+    /* ── Sections ── */
+    section { padding: 100px 24px; }
+    .section-inner { max-width: 1100px; margin: 0 auto; }
+    .section-label {
+      display: inline-flex; align-items: center; gap: 8px;
+      color: var(--cyan); font-size: 12px; font-weight: 700; letter-spacing: 2px;
+      text-transform: uppercase; margin-bottom: 16px;
+    }
+    .section-label::before { content: ""; width: 20px; height: 2px; background: var(--cyan); }
+    h2 { font-size: clamp(28px, 4vw, 48px); font-weight: 900; line-height: 1.1; letter-spacing: -1px; margin-bottom: 16px; }
+    h2 span { color: var(--cyan); }
+    .section-sub { font-size: 17px; color: var(--muted); max-width: 500px; line-height: 1.6; }
+
+    /* ── How It Works ── */
+    .steps-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; margin-top: 56px;
+    }
+    .step-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 20px; padding: 32px; position: relative; overflow: hidden;
+      transition: border-color .2s, transform .2s;
+    }
+    .step-card:hover { border-color: rgba(0,212,255,0.3); transform: translateY(-4px); }
+    .step-num {
+      position: absolute; right: 20px; top: 20px;
+      font-size: 64px; font-weight: 900; color: rgba(255,255,255,0.04); line-height: 1;
+    }
+    .step-icon { font-size: 36px; margin-bottom: 16px; }
+    .step-card h3 { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
+    .step-card p { color: var(--muted); font-size: 14px; line-height: 1.6; }
+
+    /* ── Services ── */
+    .services-section { background: var(--navy2); }
+    .services-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px; margin-top: 48px;
+    }
+    .service-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 24px 20px;
+      display: flex; align-items: center; gap: 14px;
+      transition: all .2s;
+    }
+    .service-card:hover { background: rgba(0,212,255,0.06); border-color: rgba(0,212,255,0.25); }
+    .service-icon { font-size: 28px; flex-shrink: 0; }
+    .service-name { font-size: 14px; font-weight: 700; }
+    .service-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    /* ── Dual Mode ── */
+    .dual-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 56px;
+    }
+    .dual-card {
+      border-radius: 24px; padding: 40px; position: relative; overflow: hidden;
+    }
+    .dual-card.driver { background: linear-gradient(135deg, rgba(0,212,255,0.1) 0%, rgba(0,212,255,0.03) 100%); border: 1px solid rgba(0,212,255,0.2); }
+    .dual-card.provider { background: linear-gradient(135deg, rgba(255,107,107,0.1) 0%, rgba(255,107,107,0.03) 100%); border: 1px solid rgba(255,107,107,0.2); }
+    .dual-tag {
+      display: inline-block; padding: 4px 14px; border-radius: 100px;
+      font-size: 12px; font-weight: 700; margin-bottom: 20px;
+    }
+    .dual-card.driver .dual-tag { background: rgba(0,212,255,0.15); color: var(--cyan); }
+    .dual-card.provider .dual-tag { background: rgba(255,107,107,0.15); color: var(--coral); }
+    .dual-card h3 { font-size: 26px; font-weight: 900; margin-bottom: 12px; }
+    .dual-card p { color: var(--muted); font-size: 15px; line-height: 1.6; margin-bottom: 24px; }
+    .dual-features { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .dual-features li { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+    .dual-features li::before { content: ""; width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .dual-card.driver .dual-features li::before { background: var(--cyan); }
+    .dual-card.provider .dual-features li::before { background: var(--coral); }
+
+    /* ── Waitlist ── */
+    .waitlist-section {
+      background: linear-gradient(135deg, rgba(0,212,255,0.06) 0%, rgba(255,107,107,0.04) 100%);
+      border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    }
+    .waitlist-inner {
+      max-width: 600px; margin: 0 auto; text-align: center;
+    }
+    .waitlist-form {
+      display: flex; gap: 12px; margin-top: 32px; flex-wrap: wrap;
+    }
+    .waitlist-input {
+      flex: 1; min-width: 200px; padding: 14px 20px;
+      background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+      border-radius: 12px; color: #fff; font-size: 15px; outline: none;
+      transition: border-color .2s;
+    }
+    .waitlist-input:focus { border-color: var(--cyan); }
+    .waitlist-input::placeholder { color: var(--muted); }
+    .waitlist-select {
+      padding: 14px 20px; background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border); border-radius: 12px;
+      color: #fff; font-size: 15px; cursor: pointer; outline: none;
+    }
+    .waitlist-select option { background: #1a1d27; }
+    .waitlist-btn {
+      background: var(--cyan); color: var(--navy); padding: 14px 28px;
+      border: none; border-radius: 12px; font-size: 15px; font-weight: 800;
+      cursor: pointer; white-space: nowrap; transition: opacity .2s;
+    }
+    .waitlist-btn:hover { opacity: .85; }
+    .waitlist-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .waitlist-success {
+      display: none; background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3);
+      border-radius: 12px; padding: 16px; color: #22c55e; font-weight: 600; margin-top: 16px;
+    }
+    .waitlist-error { color: var(--coral); font-size: 13px; margin-top: 10px; }
+    .waitlist-privacy { font-size: 12px; color: var(--muted); margin-top: 16px; }
+
+    /* ── Download ── */
+    .download-section { text-align: center; }
+    .download-inner { max-width: 600px; margin: 0 auto; }
+    .download-buttons {
+      display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-top: 40px;
+    }
+
+    /* ── Footer ── */
+    footer {
+      background: rgba(0,0,0,0.3); border-top: 1px solid var(--border);
+      padding: 40px 24px; text-align: center;
+    }
+    .footer-inner { max-width: 900px; margin: 0 auto; }
+    .footer-logo { font-size: 20px; font-weight: 900; color: var(--cyan); margin-bottom: 16px; }
+    .footer-links { display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; margin-bottom: 24px; }
+    .footer-links a { color: var(--muted); text-decoration: none; font-size: 13px; transition: color .2s; }
+    .footer-links a:hover { color: #fff; }
+    .footer-copy { color: var(--muted); font-size: 12px; }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      nav { padding: 14px 20px; }
+      .nav-links { display: none; }
+      .stats-inner { grid-template-columns: 1fr 1fr; }
+      .steps-grid { grid-template-columns: 1fr; }
+      .dual-grid { grid-template-columns: 1fr; }
+      .hero-visual { display: none; }
+      .hero { padding: 100px 20px 60px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+  <a class="nav-logo" href="#">
+    <div class="nav-logo-icon">S</div>
+    <span class="nav-logo-text">ServiceMe</span>
+  </a>
+  <div class="nav-links">
+    <a href="#how-it-works">How It Works</a>
+    <a href="#services">Services</a>
+    <a href="#earn">Earn With Us</a>
+    <a href="#waitlist">Early Access</a>
+  </div>
+  <a href="#waitlist" class="nav-cta">Join Waitlist</a>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-bg"></div>
+
+  <div class="hero-badge">
+    <div class="hero-badge-dot"></div>
+    Live in your city soon
+  </div>
+
+  <h1>Roadside Help,<br /><span>Minutes Away</span></h1>
+  <p>Connect with verified nearby providers for flat tires, jump starts, towing, fuel delivery, lockouts, and EV services — anytime, anywhere.</p>
+
+  <div class="hero-buttons">
+    <a href="#waitlist" class="btn-store">
+      <span class="btn-store-icon">&#xF8FF;</span>
+      <div class="btn-store-text">
+        <div class="btn-store-sub">Download on the</div>
+        <div class="btn-store-name">App Store</div>
       </div>
+    </a>
+    <a href="#waitlist" class="btn-store">
+      <span class="btn-store-icon" style="font-size:24px;">&#9654;</span>
+      <div class="btn-store-text">
+        <div class="btn-store-sub">Get it on</div>
+        <div class="btn-store-name">Google Play</div>
+      </div>
+    </a>
+  </div>
 
-      <div class="download-links">
-        <div class="install-text">Install Expo Go to Run</div>
-        <div>
-          <a
-            href="https://apps.apple.com/app/id982107779"
-            class="install-button"
-            target="_blank"
-            ><img
-              src="https://apps.apple.com/assets/images/favicon/favicon-apps-48-fad34e0d87e86dcf72ded1faff4ba9d0.png"
-              class="app-store-icon store-icon"
-              alt=""
-            />App Store</a
-          >
-          <a
-            href="https://play.google.com/store/apps/details?id=host.exp.exponent"
-            class="install-button"
-            target="_blank"
-            ><img
-              src="https://www.gstatic.com/android/market_images/web/favicon_v3.ico"
-              class="store-icon"
-              alt=""
-            />Google Play</a
-          >
+  <div class="hero-note">Already have the app? <a href="exps://EXPS_URL_PLACEHOLDER">Open in Expo Go</a></div>
+
+  <div class="hero-visual">
+    <div class="phone">
+      <div class="phone-screen">
+        <div class="phone-top-bar">
+          <span class="phone-time">9:41</span>
+          <div class="phone-icons"><div class="phone-icon"></div><div class="phone-icon"></div><div class="phone-icon"></div></div>
+        </div>
+        <div class="phone-title">Nearby Help</div>
+        <div class="phone-map-placeholder">&#128205;</div>
+        <div class="phone-chips">
+          <div class="phone-chip">Tow Truck</div>
+          <div class="phone-chip">Jump Start</div>
         </div>
       </div>
     </div>
+    <div class="phone">
+      <div class="phone-screen">
+        <div class="phone-top-bar">
+          <span class="phone-time">9:41</span>
+          <div class="phone-icons"><div class="phone-icon"></div><div class="phone-icon"></div><div class="phone-icon"></div></div>
+        </div>
+        <div class="phone-title" style="font-size:15px;">ServiceMe</div>
+        <div class="phone-subtitle">Roadside Assistance</div>
+        <div class="phone-map-placeholder" style="height:100px;">&#128664;</div>
+        <div class="phone-service-btn">Request Service</div>
+        <div class="phone-chips">
+          <div class="phone-chip">Flat Tire</div>
+          <div class="phone-chip">Fuel</div>
+          <div class="phone-chip">Lockout</div>
+          <div class="phone-chip">EV</div>
+        </div>
+      </div>
+    </div>
+    <div class="phone">
+      <div class="phone-screen">
+        <div class="phone-top-bar">
+          <span class="phone-time">9:41</span>
+          <div class="phone-icons"><div class="phone-icon"></div><div class="phone-icon"></div><div class="phone-icon"></div></div>
+        </div>
+        <div class="phone-title">Provider Jobs</div>
+        <div class="phone-map-placeholder">&#128188;</div>
+        <div class="phone-service-btn" style="background: rgba(255,107,107,0.9);">Accept Job</div>
+        <div class="phone-chips">
+          <div class="phone-chip" style="border-color:rgba(255,107,107,0.3);color:#FF6B6B;">Earn $45</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
-    <script src="https://unpkg.com/qr-code-styling@1.6.0/lib/qr-code-styling.js"></script>
-    <script>
-      (function () {
-        const ua = navigator.userAgent;
-        const loadingEl = document.getElementById("loading");
-        const contentEl = document.getElementById("content");
+<!-- Stats -->
+<div class="stats-bar">
+  <div class="stats-inner">
+    <div class="stat"><h3>2 min</h3><p>Average response time</p></div>
+    <div class="stat"><h3>50+</h3><p>Services offered</p></div>
+    <div class="stat"><h3>24/7</h3><p>Around the clock</p></div>
+    <div class="stat"><h3>$0</h3><p>Signup fee, ever</p></div>
+  </div>
+</div>
 
-        const isAndroid = /Android/i.test(ua);
+<!-- How It Works -->
+<section id="how-it-works">
+  <div class="section-inner">
+    <div class="section-label">How It Works</div>
+    <h2>Help in <span>3 simple steps</span></h2>
+    <p class="section-sub">From breakdown to back on the road — fast, transparent, and stress-free.</p>
 
-        const isIOS =
-          /iPhone|iPad|iPod/i.test(ua) ||
-          (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-num">01</div>
+        <div class="step-icon">&#128205;</div>
+        <h3>Describe Your Issue</h3>
+        <p>Tell us what happened — flat tire, dead battery, out of fuel, locked out, or something else. Our AI assistant helps diagnose the problem and recommends the right service.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">02</div>
+        <div class="step-icon">&#128664;</div>
+        <h3>Match With a Provider</h3>
+        <p>We instantly connect you with verified providers nearby. See their ratings, estimated arrival time, and exact location on the map in real time.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">03</div>
+        <div class="step-icon">&#9989;</div>
+        <h3>Back on the Road</h3>
+        <p>Your provider arrives, fixes the issue, and you're done. Pay securely in-app. Rate your experience. Keep a digital receipt — all in one place.</p>
+      </div>
+    </div>
+  </div>
+</section>
 
-        const deepLink = "exp://EXPS_URL_PLACEHOLDER";
+<!-- Services -->
+<section id="services" class="services-section">
+  <div class="section-inner">
+    <div class="section-label">Services</div>
+    <h2>Everything you need, <span>covered</span></h2>
+    <p class="section-sub">From everyday roadside emergencies to specialized EV support — we've got you.</p>
 
-        const qrCode = new QRCodeStyling({
-          width: 500,
-          height: 500,
-          data: deepLink,
-          image: "assets/images/icon.png",
-          dotsOptions: {
-            color: "#000000",
-            type: "rounded",
-          },
-          backgroundOptions: {
-            color: "#ffffff",
-          },
-          imageOptions: {
-            crossOrigin: "anonymous",
-            margin: 8,
-            imageSize: 0.4,
-            borderRadius: 8,
-          },
-          cornersSquareOptions: {
-            type: "extra-rounded",
-          },
-          cornersDotOptions: {
-            type: "dot",
-          },
-          qrOptions: {
-            errorCorrectionLevel: "H",
-          },
-        });
+    <div class="services-grid">
+      <div class="service-card">
+        <div class="service-icon">&#128739;</div>
+        <div><div class="service-name">Flat Tire</div><div class="service-desc">Spare change or patch</div></div>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">&#9889;</div>
+        <div><div class="service-name">Jump Start</div><div class="service-desc">Dead battery rescue</div></div>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">&#128664;</div>
+        <div><div class="service-name">Towing</div><div class="service-desc">Local or long-distance</div></div>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">&#9981;</div>
+        <div><div class="service-name">Fuel Delivery</div><div class="service-desc">Gas, diesel, or AdBlue</div></div>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">&#128273;</div>
+        <div><div class="service-name">Lockout</div><div class="service-desc">Keys locked inside</div></div>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">&#128268;</div>
+        <div><div class="service-name">EV Charging</div><div class="service-desc">Mobile charge delivery</div></div>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">&#128690;</div>
+        <div><div class="service-name">EV-Safe Tow</div><div class="service-desc">Flatbed for electric vehicles</div></div>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">&#128295;</div>
+        <div><div class="service-name">Minor Repairs</div><div class="service-desc">On-site quick fixes</div></div>
+      </div>
+    </div>
+  </div>
+</section>
 
-        qrCode.append(document.getElementById("qr-code"));
+<!-- Dual Mode -->
+<section id="earn">
+  <div class="section-inner">
+    <div class="section-label">Built for Everyone</div>
+    <h2>Driver or provider — <span>we've got you</span></h2>
+    <p class="section-sub">One app, two powerful modes. Switch roles anytime.</p>
 
-        if (isAndroid || isIOS) {
-          loadingEl.style.display = "block";
-          contentEl.style.display = "none";
+    <div class="dual-grid">
+      <div class="dual-card driver">
+        <div class="dual-tag">For Drivers</div>
+        <h3>Get Help Fast</h3>
+        <p>When you're stuck on the side of the road, every minute matters. ServiceMe connects you with verified help nearby in seconds.</p>
+        <ul class="dual-features">
+          <li>Real-time GPS tracking of your provider</li>
+          <li>AI-powered issue diagnosis</li>
+          <li>Emergency SOS with contact alerts</li>
+          <li>Transparent pricing upfront</li>
+          <li>Secure in-app payment</li>
+          <li>Full service history & receipts</li>
+        </ul>
+      </div>
+      <div class="dual-card provider">
+        <div class="dual-tag">For Providers</div>
+        <h3>Earn on Your Terms</h3>
+        <p>Whether you're a roadside pro or just getting started — accept jobs near you, set your own hours, and get paid quickly.</p>
+        <ul class="dual-features">
+          <li>No experience required to start</li>
+          <li>Set your own availability</li>
+          <li>Keep 85% of every job</li>
+          <li>Stripe Connect instant payouts</li>
+          <li>Priority jobs for verified providers</li>
+          <li>EV-certified service opportunities</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
 
-          window.location.href = deepLink;
+<!-- Waitlist -->
+<section id="waitlist" class="waitlist-section">
+  <div class="waitlist-inner">
+    <div class="section-label" style="justify-content:center">Early Access</div>
+    <h2>Be the <span>first to know</span></h2>
+    <p class="section-sub" style="margin:0 auto">Join our waitlist and get early access when ServiceMe launches in your city. No spam — just launch updates.</p>
 
-          setTimeout(function () {
-            loadingEl.style.display = "none";
-            contentEl.style.display = "block";
-          }, 500);
-        }
-      })();
-    </script>
-  </body>
+    <form class="waitlist-form" id="waitlist-form" onsubmit="submitWaitlist(event)">
+      <input class="waitlist-input" type="email" id="waitlist-email" placeholder="Your email address" required />
+      <select class="waitlist-select" id="waitlist-role">
+        <option value="driver">I need help (Driver)</option>
+        <option value="provider">I want to earn (Provider)</option>
+        <option value="both">Both</option>
+      </select>
+      <button class="waitlist-btn" type="submit" id="waitlist-btn">Join Waitlist</button>
+    </form>
+
+    <div class="waitlist-success" id="waitlist-success">
+      You're on the list! We'll reach out as soon as ServiceMe is live in your area.
+    </div>
+    <div class="waitlist-error" id="waitlist-error"></div>
+    <div class="waitlist-privacy">We respect your privacy. Unsubscribe anytime.</div>
+  </div>
+</section>
+
+<!-- Download -->
+<section class="download-section">
+  <div class="download-inner">
+    <div class="section-label" style="justify-content:center">Download</div>
+    <h2>Get <span>ServiceMe</span> today</h2>
+    <p class="section-sub" style="margin:0 auto">Available on iOS and Android. Free to download, no subscription required for drivers.</p>
+    <div class="download-buttons">
+      <a href="#waitlist" class="btn-store">
+        <span class="btn-store-icon">&#xF8FF;</span>
+        <div class="btn-store-text">
+          <div class="btn-store-sub">Download on the</div>
+          <div class="btn-store-name">App Store</div>
+        </div>
+      </a>
+      <a href="#waitlist" class="btn-store">
+        <span class="btn-store-icon" style="font-size:24px;">&#9654;</span>
+        <div class="btn-store-text">
+          <div class="btn-store-sub">Get it on</div>
+          <div class="btn-store-name">Google Play</div>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-logo">ServiceMe</div>
+    <div class="footer-links">
+      <a href="#how-it-works">How It Works</a>
+      <a href="#services">Services</a>
+      <a href="#earn">Earn With Us</a>
+      <a href="#waitlist">Waitlist</a>
+      <a href="/privacy">Privacy Policy</a>
+      <a href="/admin">Admin</a>
+    </div>
+    <div class="footer-copy">&copy; 2026 ServiceMe. All rights reserved.</div>
+  </div>
+</footer>
+
+<script>
+  async function submitWaitlist(e) {
+    e.preventDefault();
+    const email = document.getElementById("waitlist-email").value.trim();
+    const role = document.getElementById("waitlist-role").value;
+    const btn = document.getElementById("waitlist-btn");
+    const success = document.getElementById("waitlist-success");
+    const error = document.getElementById("waitlist-error");
+
+    if (!email) return;
+    btn.disabled = true;
+    btn.textContent = "Joining...";
+    error.textContent = "";
+
+    try {
+      const res = await fetch("/api/waitlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, role }),
+      });
+      if (res.ok) {
+        document.getElementById("waitlist-form").style.display = "none";
+        success.style.display = "block";
+      } else {
+        const data = await res.json().catch(() => ({}));
+        error.textContent = data.error || "Something went wrong. Try again.";
+        btn.disabled = false;
+        btn.textContent = "Join Waitlist";
+      }
+    } catch {
+      error.textContent = "Could not connect. Check your connection and try again.";
+      btn.disabled = false;
+      btn.textContent = "Join Waitlist";
+    }
+  }
+</script>
+</body>
 </html>

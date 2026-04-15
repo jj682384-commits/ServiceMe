@@ -610,6 +610,176 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── Admin: users ──────────────────────────────────────────────────────────────
+
+  app.get("/api/admin/users", adminAuth, async (_req: Request, res: Response) => {
+    try {
+      const { rows } = await pool.query(
+        `SELECT id, name, email, role, stripe_customer_id, push_token, created_at
+         FROM auth_users ORDER BY created_at DESC`
+      );
+      res.json(rows);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.delete("/api/admin/users/:id", adminAuth, async (req: Request, res: Response) => {
+    try {
+      await pool.query("DELETE FROM sessions WHERE user_id = $1", [req.params.id]);
+      const { rowCount } = await pool.query("DELETE FROM auth_users WHERE id = $1", [req.params.id]);
+      if (!rowCount) return res.status(404).json({ error: "User not found" });
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── Admin: jobs ───────────────────────────────────────────────────────────────
+
+  app.get("/api/admin/jobs", adminAuth, async (_req: Request, res: Response) => {
+    try {
+      const { rows } = await pool.query(
+        `SELECT id, service_type, status, estimated_cost, total_cost, tip,
+                driver, provider, created_at, is_express, is_ev, is_emergency,
+                receipt_number, location
+         FROM jobs ORDER BY created_at DESC LIMIT 200`
+      );
+      res.json(rows);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── Admin: earnings & payouts ─────────────────────────────────────────────────
+
+  app.get("/api/admin/earnings", adminAuth, async (_req: Request, res: Response) => {
+    try {
+      const payoutsQ = pool.query(
+        `SELECT pp.*, p.name as provider_name FROM provider_payouts pp
+         LEFT JOIN providers p ON p.id = pp.provider_id
+         ORDER BY pp.created_at DESC LIMIT 200`
+      );
+      const balancesQ = pool.query(
+        `SELECT id, name, email, earnings_balance, stripe_account_id FROM providers ORDER BY earnings_balance DESC`
+      );
+      const revenueQ = pool.query(
+        `SELECT COALESCE(SUM(service_fee),0) as total_fees,
+                COALESCE(SUM(total_cost),0) as total_volume,
+                COUNT(*) as total_jobs,
+                COUNT(*) FILTER (WHERE status='completed') as completed_jobs
+         FROM jobs`
+      );
+      const [payouts, balances, revenue] = await Promise.all([payoutsQ, balancesQ, revenueQ]);
+      res.json({ payouts: payouts.rows, balances: balances.rows, stats: revenue.rows[0] });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── Admin: reports ────────────────────────────────────────────────────────────
+
+  app.get("/api/admin/reports", adminAuth, async (_req: Request, res: Response) => {
+    try {
+      const { rows } = await pool.query(
+        `SELECT id, category, description, user_id, user_role, created_at
+         FROM reports ORDER BY created_at DESC LIMIT 200`
+      );
+      res.json(rows);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── Admin: push notifications ─────────────────────────────────────────────────
+
+  app.post("/api/admin/notify", adminAuth, async (req: Request, res: Response) => {
+    const { title, body, target } = req.body as { title: string; body: string; target: "all" | "drivers" | "providers" };
+    if (!title || !body) return res.status(400).json({ error: "title and body required" });
+    try {
+      let tokens: string[] = [];
+      if (target === "drivers" || target === "all") {
+        const { rows } = await pool.query(
+          `SELECT push_token FROM auth_users WHERE push_token IS NOT NULL AND push_token != ''`
+        );
+        tokens = tokens.concat(rows.map((r: { push_token: string }) => r.push_token));
+      }
+      if (target === "providers" || target === "all") {
+        const { rows } = await pool.query(
+          `SELECT push_token FROM providers WHERE push_token IS NOT NULL AND push_token != ''`
+        );
+        tokens = tokens.concat(rows.map((r: { push_token: string }) => r.push_token));
+      }
+      if (tokens.length === 0) return res.json({ sent: 0, message: "No registered push tokens found" });
+      const chunks: string[][] = [];
+      for (let i = 0; i < tokens.length; i += 100) chunks.push(tokens.slice(i, i + 100));
+      let sent = 0;
+      for (const chunk of chunks) {
+        const messages = chunk.map(to => ({ to, title, body, sound: "default" }));
+        try {
+          const r = await fetch("https://exp.host/--/api/v2/push/send", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            body: JSON.stringify(messages),
+          });
+          if (r.ok) sent += chunk.length;
+        } catch { /* continue */ }
+      }
+      res.json({ sent, total: tokens.length });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── Admin: announcements / waitlist ──────────────────────────────────────────
+
+  app.get("/api/admin/waitlist", adminAuth, async (_req: Request, res: Response) => {
+    try {
+      const { rows } = await pool.query(
+        `SELECT id, email, role, created_at FROM waitlist ORDER BY created_at DESC`
+      );
+      res.json(rows);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── Waitlist signup (public) ──────────────────────────────────────────────────
+
+  app.post("/api/waitlist", async (req: Request, res: Response) => {
+    const { email, role } = req.body as { email?: string; role?: string };
+    if (!email || !email.includes("@")) return res.status(400).json({ error: "Valid email required" });
+    try {
+      await pool.query(
+        `CREATE TABLE IF NOT EXISTS waitlist (
+          id SERIAL PRIMARY KEY,
+          email VARCHAR(255) UNIQUE NOT NULL,
+          role VARCHAR(50),
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        )`
+      );
+      await pool.query(
+        `INSERT INTO waitlist (email, role) VALUES ($1, $2) ON CONFLICT (email) DO UPDATE SET role = $2`,
+        [email.toLowerCase().trim(), role || "driver"]
+      );
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── Web App routes ────────────────────────────────────────────────────────────
+
+  app.get("/app", (_req: Request, res: Response) => {
+    const webAppPath = path.resolve(process.cwd(), "server", "templates", "web-app.html");
+    if (fs.existsSync(webAppPath)) {
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.send(fs.readFileSync(webAppPath, "utf-8"));
+    } else {
+      res.status(404).send("Web app not found");
+    }
+  });
+
   // ── Provider verification ─────────────────────────────────────────────────────
 
   app.post("/api/providers/:id/verification", async (req: Request, res: Response) => {

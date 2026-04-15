@@ -7,141 +7,215 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg: #0f1117;
-      --surface: #1a1d27;
-      --surface2: #222536;
-      --border: #2d3148;
+      --bg: #0a0d18;
+      --surface: #111428;
+      --surface2: #1a1d2e;
+      --surface3: #222540;
+      --border: rgba(255,255,255,0.08);
       --text: #e8eaf6;
-      --muted: #8b92b8;
-      --primary: #6c8bff;
+      --muted: rgba(232,234,246,0.5);
+      --cyan: #00D4FF;
+      --coral: #FF6B6B;
       --success: #22c55e;
       --warning: #f59e0b;
       --danger: #ef4444;
-      --radius: 10px;
+      --purple: #a78bfa;
+      --radius: 12px;
     }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; }
 
     /* ── Login ── */
-    #login-screen {
-      display: flex; align-items: center; justify-content: center; min-height: 100vh;
-    }
+    #login-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
     .login-card {
-      background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
-      padding: 40px; width: 100%; max-width: 380px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; padding: 44px; width: 100%; max-width: 400px;
+      box-shadow: 0 40px 80px rgba(0,0,0,0.5);
     }
-    .login-card h1 { font-size: 22px; margin-bottom: 6px; }
+    .login-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
+    .login-logo-icon {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: linear-gradient(135deg, var(--cyan), #0066cc);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; font-weight: 900; color: #fff;
+    }
+    .login-logo-text { font-size: 20px; font-weight: 800; }
+    .login-sub { font-size: 12px; color: var(--muted); margin-left: 2px; }
+    .login-card h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
     .login-card p { color: var(--muted); font-size: 14px; margin-bottom: 28px; }
-    .field label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 6px; letter-spacing: .5px; }
-    .field input {
+    .field label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 6px; letter-spacing: .8px; text-transform: uppercase; }
+    .field input, .field select, .field textarea {
       width: 100%; padding: 12px 14px; background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 8px; color: var(--text); font-size: 15px; outline: none;
+      border-radius: 8px; color: var(--text); font-size: 14px; outline: none; font-family: inherit;
     }
-    .field input:focus { border-color: var(--primary); }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--cyan); }
     .field { margin-bottom: 18px; }
     .btn {
-      display: inline-flex; align-items: center; gap: 6px; padding: 11px 20px;
-      border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: none;
-      transition: opacity .15s;
+      display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px;
+      border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; border: none;
+      transition: opacity .15s; font-family: inherit; text-decoration: none;
     }
-    .btn:hover { opacity: .85; }
-    .btn:disabled { opacity: .5; cursor: not-allowed; }
-    .btn-primary { background: var(--primary); color: #fff; width: 100%; justify-content: center; }
+    .btn:hover { opacity: .82; }
+    .btn:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-primary { background: var(--cyan); color: #0a0d18; width: 100%; justify-content: center; padding: 13px; }
     .btn-success { background: var(--success); color: #fff; }
     .btn-danger { background: var(--danger); color: #fff; }
+    .btn-warning { background: var(--warning); color: #000; }
     .btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 6px; }
     .error-msg { color: var(--danger); font-size: 13px; margin-top: 10px; text-align: center; }
+    .success-msg { color: var(--success); font-size: 13px; margin-top: 10px; text-align: center; }
 
     /* ── Dashboard ── */
-    #dashboard { display: none; }
-    .topbar {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 16px 28px; background: var(--surface); border-bottom: 1px solid var(--border);
-      position: sticky; top: 0; z-index: 10;
+    #dashboard { display: none; min-height: 100vh; }
+    .sidebar {
+      position: fixed; left: 0; top: 0; bottom: 0; width: 220px;
+      background: var(--surface); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; z-index: 50;
     }
-    .topbar-left { display: flex; align-items: center; gap: 12px; }
-    .topbar-logo { font-size: 18px; font-weight: 700; color: var(--primary); }
-    .topbar-sub { font-size: 13px; color: var(--muted); }
-    .topbar-right { display: flex; align-items: center; gap: 12px; }
-    .refresh-indicator { font-size: 12px; color: var(--muted); }
+    .sidebar-logo { padding: 20px 20px 16px; border-bottom: 1px solid var(--border); }
+    .sidebar-logo-row { display: flex; align-items: center; gap: 10px; }
+    .sidebar-logo-icon {
+      width: 34px; height: 34px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--cyan), #0066cc);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 900; color: #fff;
+    }
+    .sidebar-logo-text { font-size: 16px; font-weight: 800; }
+    .sidebar-version { font-size: 10px; color: var(--muted); margin-top: 2px; }
+    .sidebar-nav { flex: 1; padding: 12px 10px; overflow-y: auto; }
+    .nav-section { font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; padding: 8px 10px 4px; }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px;
+      cursor: pointer; color: var(--muted); font-size: 13px; font-weight: 500;
+      transition: all .15s; margin-bottom: 2px;
+    }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { background: rgba(0,212,255,0.12); color: var(--cyan); }
+    .nav-item .nav-icon { width: 18px; text-align: center; font-size: 15px; flex-shrink: 0; }
+    .nav-badge {
+      margin-left: auto; background: var(--warning); color: #000;
+      border-radius: 100px; padding: 2px 7px; font-size: 10px; font-weight: 800;
+    }
+    .nav-badge.red { background: var(--danger); color: #fff; }
+    .sidebar-footer { padding: 12px 10px; border-top: 1px solid var(--border); }
 
-    .main { padding: 28px; max-width: 1100px; margin: 0 auto; }
+    .main-content { margin-left: 220px; padding: 28px; min-height: 100vh; }
+    .page { display: none; }
+    .page.active { display: block; }
 
-    /* stats */
-    .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+    .page-header { margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .page-title { font-size: 22px; font-weight: 900; }
+    .page-sub { font-size: 13px; color: var(--muted); margin-top: 3px; }
+    .page-actions { display: flex; gap: 10px; align-items: center; }
+
+    /* ── Stats ── */
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
     .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
-    .stat-label { font-size: 12px; color: var(--muted); font-weight: 600; letter-spacing: .5px; margin-bottom: 6px; }
-    .stat-value { font-size: 28px; font-weight: 700; }
-    .stat-value.pending { color: var(--warning); }
-    .stat-value.verified { color: var(--success); }
-    .stat-value.not-started { color: var(--muted); }
+    .stat-label { font-size: 11px; color: var(--muted); font-weight: 700; letter-spacing: .6px; text-transform: uppercase; margin-bottom: 8px; }
+    .stat-value { font-size: 28px; font-weight: 900; line-height: 1; }
+    .stat-value.cyan { color: var(--cyan); }
+    .stat-value.success { color: var(--success); }
+    .stat-value.warning { color: var(--warning); }
+    .stat-value.muted { color: var(--muted); }
+    .stat-value.coral { color: var(--coral); }
+    .stat-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
 
-    /* tabs */
-    .tabs { display: flex; gap: 4px; margin-bottom: 20px; }
-    .tab {
-      padding: 8px 18px; border-radius: 6px; font-size: 14px; font-weight: 500;
-      cursor: pointer; border: 1px solid transparent; background: transparent; color: var(--muted);
+    /* ── Tables ── */
+    .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .table-toolbar {
+      padding: 14px 20px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
     }
-    .tab.active { background: var(--surface); border-color: var(--border); color: var(--text); }
-    .tab:hover:not(.active) { color: var(--text); }
-
-    /* provider cards */
-    .provider-list { display: flex; flex-direction: column; gap: 16px; }
-    .provider-card {
-      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-      padding: 20px; transition: border-color .15s;
+    .search-input {
+      flex: 1; min-width: 200px; padding: 9px 14px; background: var(--surface2);
+      border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 13px; outline: none;
     }
-    .provider-card.pending { border-left: 3px solid var(--warning); }
-    .provider-card.verified { border-left: 3px solid var(--success); }
-    .provider-card.not-started { border-left: 3px solid var(--muted); }
+    .search-input:focus { border-color: var(--cyan); }
+    .filter-select {
+      padding: 9px 12px; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); font-size: 13px; cursor: pointer; outline: none;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      text-align: left; padding: 11px 16px; font-size: 11px; font-weight: 700;
+      color: var(--muted); letter-spacing: .5px; text-transform: uppercase;
+      border-bottom: 1px solid var(--border); background: var(--surface2);
+    }
+    td { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+    .td-name { font-weight: 700; }
+    .td-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
-    .card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
-    .card-name { font-size: 16px; font-weight: 700; }
-    .card-meta { font-size: 13px; color: var(--muted); margin-top: 3px; }
+    /* ── Badges ── */
     .badge {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 9px; border-radius: 100px; font-size: 11px; font-weight: 700;
     }
     .badge.pending { background: rgba(245,158,11,.15); color: var(--warning); }
     .badge.verified { background: rgba(34,197,94,.15); color: var(--success); }
-    .badge.not-started { background: rgba(139,146,184,.15); color: var(--muted); }
+    .badge.not-started { background: rgba(255,255,255,.08); color: var(--muted); }
+    .badge.completed { background: rgba(34,197,94,.15); color: var(--success); }
+    .badge.accepted { background: rgba(0,212,255,.15); color: var(--cyan); }
+    .badge.cancelled { background: rgba(239,68,68,.12); color: var(--danger); }
+    .badge.driver { background: rgba(0,212,255,.12); color: var(--cyan); }
+    .badge.provider { background: rgba(255,107,107,.12); color: var(--coral); }
+    .badge.ev { background: rgba(167,139,250,.12); color: var(--purple); }
+    .badge.express { background: rgba(245,158,11,.12); color: var(--warning); }
 
-    .card-details { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 20px; margin-bottom: 14px; }
-    .detail-item { font-size: 13px; }
-    .detail-label { color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: .4px; margin-bottom: 2px; }
-
-    .docs-section { margin-bottom: 16px; }
-    .docs-title { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: .5px; margin-bottom: 8px; }
-    .docs-list { display: flex; flex-wrap: wrap; gap: 8px; }
-    .doc-chip {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 4px 10px; border-radius: 6px; font-size: 12px;
-      border: 1px solid var(--border);
+    /* ── Provider cards ── */
+    .provider-list { display: flex; flex-direction: column; gap: 14px; }
+    .provider-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px; transition: border-color .15s;
     }
+    .provider-card.pending { border-left: 3px solid var(--warning); }
+    .provider-card.verified { border-left: 3px solid var(--success); }
+    .provider-card.not_started { border-left: 3px solid rgba(255,255,255,.12); }
+    .card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+    .card-name { font-size: 15px; font-weight: 800; }
+    .card-meta { font-size: 12px; color: var(--muted); margin-top: 3px; }
+    .card-details { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 20px; margin-bottom: 14px; }
+    .detail-item { font-size: 12px; }
+    .detail-label { color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; margin-bottom: 2px; }
+    .docs-section { margin-bottom: 14px; }
+    .docs-title { font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: .5px; text-transform: uppercase; margin-bottom: 8px; }
+    .docs-list { display: flex; flex-wrap: wrap; gap: 6px; }
+    .doc-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 6px; font-size: 11px; border: 1px solid var(--border); }
     .doc-chip.uploaded { border-color: rgba(34,197,94,.4); color: var(--success); background: rgba(34,197,94,.08); }
     .doc-chip.missing { color: var(--muted); }
-
-    .submitted-at { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
-    .rejection-note { 
-      font-size: 13px; color: var(--danger); background: rgba(239,68,68,.08);
-      border: 1px solid rgba(239,68,68,.2); border-radius: 6px; padding: 10px 12px; margin-bottom: 12px;
-    }
-
+    .rejection-note { font-size: 12px; color: var(--danger); background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.2); border-radius: 6px; padding: 10px 12px; margin-bottom: 12px; }
     .card-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    .reject-input {
-      flex: 1; min-width: 200px; padding: 9px 12px; background: var(--surface2);
-      border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 13px;
-    }
-    .reject-input:focus { outline: none; border-color: var(--danger); }
+    .reject-input { flex: 1; min-width: 180px; padding: 8px 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 12px; outline: none; }
 
-    .empty-state {
-      text-align: center; padding: 60px 20px; color: var(--muted);
+    .filter-tabs { display: flex; gap: 4px; margin-bottom: 16px; flex-wrap: wrap; }
+    .ftab {
+      padding: 7px 16px; border-radius: 8px; font-size: 13px; font-weight: 600;
+      cursor: pointer; border: 1px solid transparent; background: transparent; color: var(--muted); font-family: inherit;
     }
-    .empty-state p { font-size: 15px; margin-top: 8px; }
+    .ftab.active { background: var(--surface); border-color: var(--border); color: var(--text); }
 
-    @media (max-width: 700px) {
+    /* ── Notifications ── */
+    .notify-form { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; max-width: 600px; }
+    .notify-form h3 { font-size: 16px; font-weight: 800; margin-bottom: 20px; }
+
+    /* ── Empty ── */
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
+    .empty-state .empty-icon { font-size: 40px; margin-bottom: 12px; }
+    .empty-state p { font-size: 14px; }
+
+    /* ── Loading ── */
+    .loading { display: flex; align-items: center; justify-content: center; padding: 60px; gap: 12px; color: var(--muted); }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .sidebar { width: 180px; }
+      .main-content { margin-left: 180px; padding: 20px; }
+    }
+    @media (max-width: 640px) {
+      .sidebar { display: none; }
+      .main-content { margin-left: 0; }
       .stats-row { grid-template-columns: 1fr 1fr; }
-      .card-details { grid-template-columns: 1fr; }
-      .main { padding: 16px; }
     }
   </style>
 </head>
@@ -150,10 +224,16 @@
 <!-- Login -->
 <div id="login-screen">
   <div class="login-card">
-    <h1>ServiceMe Admin</h1>
-    <p>Sign in to review provider verifications</p>
+    <div class="login-logo">
+      <div class="login-logo-icon">S</div>
+      <div>
+        <div class="login-logo-text">ServiceMe</div>
+        <div class="login-sub">Admin Dashboard</div>
+      </div>
+    </div>
+    <p>Sign in to manage your platform.</p>
     <div class="field">
-      <label>ADMIN PASSWORD</label>
+      <label>Admin Password</label>
       <input type="password" id="password-input" placeholder="Enter admin password" onkeydown="if(event.key==='Enter')login()" />
     </div>
     <button class="btn btn-primary" onclick="login()" id="login-btn">Sign In</button>
@@ -163,86 +243,291 @@
 
 <!-- Dashboard -->
 <div id="dashboard">
-  <div class="topbar">
-    <div class="topbar-left">
-      <span class="topbar-logo">ServiceMe</span>
-      <span class="topbar-sub">Provider Admin</span>
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-row">
+        <div class="sidebar-logo-icon">S</div>
+        <div>
+          <div class="sidebar-logo-text">ServiceMe</div>
+          <div class="sidebar-version">Admin Panel</div>
+        </div>
+      </div>
     </div>
-    <div class="topbar-right">
-      <span class="refresh-indicator" id="refresh-text">Auto-refreshes every 30s</span>
-      <button class="btn btn-ghost" onclick="loadProviders()">Refresh</button>
-      <button class="btn btn-ghost" onclick="signOut()">Sign Out</button>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Overview</div>
+      <div class="nav-item active" onclick="showPage('overview')" id="nav-overview">
+        <span class="nav-icon">&#9776;</span> Dashboard
+      </div>
+      <div class="nav-section">Users</div>
+      <div class="nav-item" onclick="showPage('providers')" id="nav-providers">
+        <span class="nav-icon">&#128736;</span> Providers
+        <span class="nav-badge" id="badge-pending" style="display:none">0</span>
+      </div>
+      <div class="nav-item" onclick="showPage('users')" id="nav-users">
+        <span class="nav-icon">&#128100;</span> Drivers
+      </div>
+      <div class="nav-section">Operations</div>
+      <div class="nav-item" onclick="showPage('jobs')" id="nav-jobs">
+        <span class="nav-icon">&#128203;</span> Jobs
+      </div>
+      <div class="nav-item" onclick="showPage('earnings')" id="nav-earnings">
+        <span class="nav-icon">&#128176;</span> Earnings
+      </div>
+      <div class="nav-item" onclick="showPage('reports')" id="nav-reports">
+        <span class="nav-icon">&#9888;</span> Reports
+        <span class="nav-badge red" id="badge-reports" style="display:none">0</span>
+      </div>
+      <div class="nav-section">Growth</div>
+      <div class="nav-item" onclick="showPage('waitlist')" id="nav-waitlist">
+        <span class="nav-icon">&#128233;</span> Waitlist
+      </div>
+      <div class="nav-item" onclick="showPage('notify')" id="nav-notify">
+        <span class="nav-icon">&#128276;</span> Notifications
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="signOut()">Sign Out</button>
     </div>
   </div>
 
-  <div class="main">
-    <div class="stats-row">
-      <div class="stat-card">
-        <div class="stat-label">TOTAL PROVIDERS</div>
-        <div class="stat-value" id="stat-total">0</div>
+  <!-- Main -->
+  <div class="main-content">
+
+    <!-- Overview -->
+    <div class="page active" id="page-overview">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Dashboard</div>
+          <div class="page-sub" id="overview-time">Loading...</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="loadAll()">&#8635; Refresh</button>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">PENDING REVIEW</div>
-        <div class="stat-value pending" id="stat-pending">0</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">VERIFIED</div>
-        <div class="stat-value verified" id="stat-verified">0</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">NOT STARTED</div>
-        <div class="stat-value not-started" id="stat-not-started">0</div>
+      <div class="stats-row" id="overview-stats">
+        <div class="stat-card"><div class="stat-label">Total Drivers</div><div class="stat-value cyan" id="ov-drivers">—</div></div>
+        <div class="stat-card"><div class="stat-label">Total Providers</div><div class="stat-value cyan" id="ov-providers">—</div></div>
+        <div class="stat-card"><div class="stat-label">Pending Verification</div><div class="stat-value warning" id="ov-pending">—</div></div>
+        <div class="stat-card"><div class="stat-label">Total Jobs</div><div class="stat-value" id="ov-jobs">—</div></div>
+        <div class="stat-card"><div class="stat-label">Completed Jobs</div><div class="stat-value success" id="ov-completed">—</div></div>
+        <div class="stat-card"><div class="stat-label">Platform Revenue</div><div class="stat-value coral" id="ov-revenue">—</div></div>
+        <div class="stat-card"><div class="stat-label">Total Volume</div><div class="stat-value" id="ov-volume">—</div></div>
+        <div class="stat-card"><div class="stat-label">Waitlist Signups</div><div class="stat-value purple" style="color:var(--purple)" id="ov-waitlist">—</div></div>
       </div>
     </div>
 
-    <div class="tabs">
-      <button class="tab active" onclick="setTab('all')" id="tab-all">All</button>
-      <button class="tab" onclick="setTab('pending')" id="tab-pending">Pending</button>
-      <button class="tab" onclick="setTab('verified')" id="tab-verified">Verified</button>
-      <button class="tab" onclick="setTab('not_started')" id="tab-not-started">Not Started</button>
+    <!-- Providers -->
+    <div class="page" id="page-providers">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Providers</div>
+          <div class="page-sub">Review and manage provider verifications</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="loadProviders()">&#8635; Refresh</button>
+      </div>
+      <div class="filter-tabs">
+        <button class="ftab active" onclick="setProviderTab('all')" id="ftab-all">All</button>
+        <button class="ftab" onclick="setProviderTab('pending')" id="ftab-pending">Pending</button>
+        <button class="ftab" onclick="setProviderTab('verified')" id="ftab-verified">Verified</button>
+        <button class="ftab" onclick="setProviderTab('not_started')" id="ftab-not-started">Not Started</button>
+      </div>
+      <div class="provider-list" id="provider-list">
+        <div class="loading">Loading providers...</div>
+      </div>
     </div>
 
-    <div class="provider-list" id="provider-list">
-      <div class="empty-state"><p>Loading providers...</p></div>
+    <!-- Drivers / Users -->
+    <div class="page" id="page-users">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Drivers</div>
+          <div class="page-sub">All registered driver accounts</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="loadUsers()">&#8635; Refresh</button>
+      </div>
+      <div class="table-wrap">
+        <div class="table-toolbar">
+          <input class="search-input" placeholder="Search by name or email..." oninput="filterUsers(this.value)" />
+        </div>
+        <table>
+          <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Stripe</th><th>Push Token</th><th>Joined</th><th></th></tr></thead>
+          <tbody id="users-table-body"></tbody>
+        </table>
+      </div>
     </div>
+
+    <!-- Jobs -->
+    <div class="page" id="page-jobs">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Jobs</div>
+          <div class="page-sub">All service requests (last 200)</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="loadJobs()">&#8635; Refresh</button>
+      </div>
+      <div class="table-wrap">
+        <div class="table-toolbar">
+          <input class="search-input" placeholder="Search service type or ID..." oninput="filterJobs(this.value)" />
+          <select class="filter-select" onchange="filterJobsByStatus(this.value)">
+            <option value="">All statuses</option>
+            <option value="pending">Pending</option>
+            <option value="accepted">Accepted</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+        <table>
+          <thead><tr><th>ID</th><th>Service</th><th>Status</th><th>Driver</th><th>Provider</th><th>Amount</th><th>Flags</th><th>Date</th></tr></thead>
+          <tbody id="jobs-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Earnings -->
+    <div class="page" id="page-earnings">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Earnings</div>
+          <div class="page-sub">Platform revenue, provider balances, and payout history</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="loadEarnings()">&#8635; Refresh</button>
+      </div>
+      <div class="stats-row" id="earnings-stats"></div>
+      <div style="margin-bottom:20px">
+        <div class="page-title" style="font-size:16px;margin-bottom:14px">Provider Balances</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Provider</th><th>Balance</th><th>Stripe Connect</th></tr></thead>
+            <tbody id="balances-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <div>
+        <div class="page-title" style="font-size:16px;margin-bottom:14px">Payout History</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Provider</th><th>Amount</th><th>Fee</th><th>Net</th><th>Type</th><th>Status</th><th>Date</th></tr></thead>
+            <tbody id="payouts-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reports -->
+    <div class="page" id="page-reports">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Reports</div>
+          <div class="page-sub">User-submitted problem reports</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="loadReports()">&#8635; Refresh</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Category</th><th>Description</th><th>User</th><th>Role</th><th>Date</th></tr></thead>
+          <tbody id="reports-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Waitlist -->
+    <div class="page" id="page-waitlist">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Waitlist</div>
+          <div class="page-sub">Email signups from the landing page</div>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-ghost btn-sm" onclick="exportWaitlist()">&#8681; Export CSV</button>
+          <button class="btn btn-ghost btn-sm" onclick="loadWaitlist()">&#8635; Refresh</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-toolbar">
+          <input class="search-input" placeholder="Search email..." oninput="filterWaitlist(this.value)" />
+          <select class="filter-select" onchange="filterWaitlistByRole(this.value)">
+            <option value="">All roles</option>
+            <option value="driver">Driver</option>
+            <option value="provider">Provider</option>
+            <option value="both">Both</option>
+          </select>
+        </div>
+        <table>
+          <thead><tr><th>#</th><th>Email</th><th>Interested As</th><th>Signed Up</th></tr></thead>
+          <tbody id="waitlist-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Notifications -->
+    <div class="page" id="page-notify">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Push Notifications</div>
+          <div class="page-sub">Send announcements to drivers and/or providers</div>
+        </div>
+      </div>
+      <div class="notify-form">
+        <h3>Send Notification</h3>
+        <div class="field">
+          <label>Target Audience</label>
+          <select id="notify-target">
+            <option value="all">Everyone (Drivers + Providers)</option>
+            <option value="drivers">Drivers only</option>
+            <option value="providers">Providers only</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Title</label>
+          <input type="text" id="notify-title" placeholder="e.g. ServiceMe is now live in your city!" maxlength="80" />
+        </div>
+        <div class="field">
+          <label>Message</label>
+          <textarea id="notify-body" rows="3" placeholder="Write your announcement..." maxlength="200" style="resize:vertical"></textarea>
+        </div>
+        <button class="btn btn-primary" style="width:auto;padding:12px 28px" onclick="sendNotification()">Send Notification</button>
+        <div class="error-msg" id="notify-error"></div>
+        <div class="success-msg" id="notify-success"></div>
+      </div>
+    </div>
+
   </div>
 </div>
 
 <script>
   let token = localStorage.getItem("sm_admin_token") || "";
-  let allProviders = [];
-  let currentTab = "all";
-  let refreshTimer = null;
+  let allProviders = [], allUsers = [], allJobs = [], allWaitlist = [], allReports = [];
+  let providerTab = "all";
+  let jobStatusFilter = "";
+  let waitlistRoleFilter = "";
+  let autoRefreshTimer = null;
 
-  const DOC_LABELS = {
-    photoId: "Photo ID",
-    selfie: "Selfie",
-    businessLicense: "Business License",
-    ownerId: "Owner ID",
-    insurance: "Insurance",
-  };
+  const DOC_LABELS = { photoId:"Photo ID", selfie:"Selfie", businessLicense:"Business License", ownerId:"Owner ID", insurance:"Insurance" };
+  const REQUIRED_DOCS = { independent:["photoId","selfie"], shop:["businessLicense","ownerId","insurance"] };
 
-  const REQUIRED_DOCS = {
-    independent: ["photoId", "selfie"],
-    shop: ["businessLicense", "ownerId", "insurance"],
-  };
-
-  function getBase() {
-    return window.location.origin;
+  function esc(str) {
+    if (!str) return "—";
+    return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
   }
+  function fmtDate(str) {
+    if (!str) return "—";
+    return new Date(str).toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric", hour:"2-digit", minute:"2-digit" });
+  }
+  function fmtMoney(val) {
+    if (val == null) return "—";
+    return "$" + Number(val).toFixed(2);
+  }
+  function getBase() { return window.location.origin; }
 
+  // ── Auth ──
   async function login() {
     const password = document.getElementById("password-input").value;
     const btn = document.getElementById("login-btn");
     const err = document.getElementById("login-error");
     if (!password) { err.textContent = "Please enter the admin password."; return; }
-    btn.disabled = true;
-    btn.textContent = "Signing in...";
-    err.textContent = "";
+    btn.disabled = true; btn.textContent = "Signing in..."; err.textContent = "";
     try {
       const res = await fetch(`${getBase()}/api/admin/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),
       });
       const data = await res.json();
@@ -250,18 +535,13 @@
       token = data.token;
       localStorage.setItem("sm_admin_token", token);
       showDashboard();
-    } catch {
-      err.textContent = "Could not reach the server. Try again.";
-    } finally {
-      btn.disabled = false;
-      btn.textContent = "Sign In";
-    }
+    } catch { err.textContent = "Could not reach the server."; }
+    finally { btn.disabled = false; btn.textContent = "Sign In"; }
   }
 
   function signOut() {
-    token = "";
-    localStorage.removeItem("sm_admin_token");
-    clearInterval(refreshTimer);
+    token = ""; localStorage.removeItem("sm_admin_token");
+    clearInterval(autoRefreshTimer);
     document.getElementById("dashboard").style.display = "none";
     document.getElementById("login-screen").style.display = "flex";
     document.getElementById("password-input").value = "";
@@ -269,174 +549,306 @@
 
   function showDashboard() {
     document.getElementById("login-screen").style.display = "none";
-    document.getElementById("dashboard").style.display = "block";
-    loadProviders();
-    clearInterval(refreshTimer);
-    refreshTimer = setInterval(loadProviders, 30000);
+    document.getElementById("dashboard").style.display = "flex";
+    loadAll();
+    clearInterval(autoRefreshTimer);
+    autoRefreshTimer = setInterval(loadAll, 60000);
   }
 
+  // ── Navigation ──
+  function showPage(id) {
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+    document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
+    document.getElementById(`page-${id}`).classList.add("active");
+    document.getElementById(`nav-${id}`).classList.add("active");
+    if (id === "providers") loadProviders();
+    if (id === "users") loadUsers();
+    if (id === "jobs") loadJobs();
+    if (id === "earnings") loadEarnings();
+    if (id === "reports") loadReports();
+    if (id === "waitlist") loadWaitlist();
+  }
+
+  // ── Load All ──
+  async function loadAll() {
+    document.getElementById("overview-time").textContent = "Last updated " + new Date().toLocaleTimeString();
+    await Promise.all([loadProviders(), loadUsers(), loadJobs(), loadEarnings(), loadReports(), loadWaitlist()]);
+    updateOverview();
+  }
+
+  function updateOverview() {
+    const pending = allProviders.filter(p => p.verificationStatus === "pending").length;
+    document.getElementById("ov-drivers").textContent = allUsers.length;
+    document.getElementById("ov-providers").textContent = allProviders.length;
+    document.getElementById("ov-pending").textContent = pending;
+    document.getElementById("ov-jobs").textContent = allJobs.length;
+    document.getElementById("ov-completed").textContent = allJobs.filter(j => j.status === "completed").length;
+    document.getElementById("ov-waitlist").textContent = allWaitlist.length;
+    if (pending > 0) { document.getElementById("badge-pending").style.display = "inline"; document.getElementById("badge-pending").textContent = pending; }
+    if (allReports.length > 0) { document.getElementById("badge-reports").style.display = "inline"; document.getElementById("badge-reports").textContent = allReports.length; }
+  }
+
+  // ── Providers ──
   async function loadProviders() {
-    document.getElementById("refresh-text").textContent = "Refreshing...";
     try {
-      const res = await fetch(`${getBase()}/api/admin/providers`, {
-        headers: { "Authorization": `Bearer ${token}` },
-      });
+      const res = await fetch(`${getBase()}/api/admin/providers`, { headers: { Authorization: `Bearer ${token}` } });
       if (res.status === 401) { signOut(); return; }
-      allProviders = await res.json();
-      updateStats();
+      const raw = await res.json();
+      allProviders = raw.map(p => ({
+        id: p.id, name: p.name, email: p.email, phone: p.phone,
+        providerType: p.provider_type || p.providerType,
+        verificationStatus: p.verification_status || p.verificationStatus || "not_started",
+        verificationDocuments: p.verification_documents || p.verificationDocuments,
+        verificationSubmittedAt: p.verification_submitted_at || p.verificationSubmittedAt,
+        verificationNotes: p.verification_notes || p.verificationNotes,
+        vehicleMake: p.vehicle_make || p.vehicleMake,
+        vehicleModel: p.vehicle_model || p.vehicleModel,
+        licensePlate: p.license_plate || p.licensePlate,
+        servicesOffered: p.services_offered || p.servicesOffered || [],
+        rating: p.rating, reviewCount: p.review_count || p.reviewCount,
+        earningsBalance: p.earnings_balance || 0,
+        stripeAccountId: p.stripe_account_id || p.stripeAccountId,
+      }));
       renderProviders();
-    } catch {
-      document.getElementById("provider-list").innerHTML = '<div class="empty-state"><p>Failed to load providers. Check your connection.</p></div>';
-    } finally {
-      const now = new Date().toLocaleTimeString();
-      document.getElementById("refresh-text").textContent = `Last updated ${now}`;
+    } catch (e) {
+      document.getElementById("provider-list").innerHTML = '<div class="empty-state"><div class="empty-icon">&#9888;</div><p>Failed to load providers.</p></div>';
     }
   }
 
-  function updateStats() {
-    document.getElementById("stat-total").textContent = allProviders.length;
-    document.getElementById("stat-pending").textContent = allProviders.filter(p => p.verificationStatus === "pending").length;
-    document.getElementById("stat-verified").textContent = allProviders.filter(p => p.verificationStatus === "verified").length;
-    document.getElementById("stat-not-started").textContent = allProviders.filter(p => p.verificationStatus === "not_started").length;
-  }
-
-  function setTab(tab) {
-    currentTab = tab;
-    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-    document.getElementById(`tab-${tab.replace("_", "-")}`).classList.add("active");
+  function setProviderTab(tab) {
+    providerTab = tab;
+    document.querySelectorAll(".ftab").forEach(t => t.classList.remove("active"));
+    document.getElementById(`ftab-${tab.replace("_", "-")}`).classList.add("active");
     renderProviders();
   }
 
   function renderProviders() {
-    const filtered = currentTab === "all"
-      ? allProviders
-      : allProviders.filter(p => p.verificationStatus === currentTab);
-
+    const filtered = providerTab === "all" ? allProviders : allProviders.filter(p => p.verificationStatus === providerTab);
     const list = document.getElementById("provider-list");
-    if (filtered.length === 0) {
-      list.innerHTML = '<div class="empty-state"><p>No providers in this category.</p></div>';
-      return;
-    }
-
-    list.innerHTML = filtered.map(p => buildCard(p)).join("");
+    if (filtered.length === 0) { list.innerHTML = '<div class="empty-state"><div class="empty-icon">&#128100;</div><p>No providers in this category.</p></div>'; return; }
+    list.innerHTML = filtered.map(p => buildProviderCard(p)).join("");
   }
 
-  function buildCard(p) {
+  function buildProviderCard(p) {
     const status = p.verificationStatus || "not_started";
     const badgeLabel = status === "verified" ? "Verified" : status === "pending" ? "Pending Review" : "Not Started";
-    const submittedDate = p.verificationSubmittedAt
-      ? `Submitted ${new Date(p.verificationSubmittedAt).toLocaleString()}`
-      : "";
-
-    const requiredDocs = REQUIRED_DOCS[p.providerType] || REQUIRED_DOCS.independent;
-    const docsHtml = requiredDocs.map(key => {
-      const uploaded = p.verificationDocuments && p.verificationDocuments[key];
-      return `<span class="doc-chip ${uploaded ? "uploaded" : "missing"}">${uploaded ? "&#10003;" : "&#x25cb;"} ${DOC_LABELS[key] || key}</span>`;
+    const docs = REQUIRED_DOCS[p.providerType] || REQUIRED_DOCS.independent;
+    const docsHtml = docs.map(key => {
+      const up = p.verificationDocuments && p.verificationDocuments[key];
+      return `<span class="doc-chip ${up ? "uploaded" : "missing"}">${up ? "&#10003;" : "&#9675;"} ${DOC_LABELS[key] || key}</span>`;
     }).join("");
-
-    const rejectionNote = p.verificationNotes
-      ? `<div class="rejection-note">Previous rejection note: ${escHtml(p.verificationNotes)}</div>` : "";
-
-    const actionsHtml = status === "pending" ? `
-      <input class="reject-input" id="note-${p.id}" placeholder="Rejection reason (optional)" />
-      <button class="btn btn-success" onclick="approveProvider('${p.id}')">Approve</button>
-      <button class="btn btn-danger" onclick="rejectProvider('${p.id}')">Reject</button>
-    ` : status === "not_started" ? `
-      <span style="font-size:13px;color:var(--muted)">Awaiting document submission</span>
-    ` : `
-      <button class="btn btn-danger" onclick="revokeProvider('${p.id}')">Revoke Verification</button>
-    `;
-
-    return `
-      <div class="provider-card ${status}" id="card-${p.id}">
-        <div class="card-header">
-          <div>
-            <div class="card-name">${escHtml(p.name)}</div>
-            <div class="card-meta">${escHtml(p.email)} &bull; ${escHtml(p.phone || "No phone")} &bull; ${p.providerType === "shop" ? "Business / Shop" : "Independent"}</div>
-          </div>
-          <span class="badge ${status}">${badgeLabel}</span>
-        </div>
-
-        <div class="card-details">
-          <div class="detail-item">
-            <div class="detail-label">VEHICLE</div>
-            ${escHtml(p.vehicleMake || "—")} ${escHtml(p.vehicleModel || "")} &bull; ${escHtml(p.licensePlate || "No plate")}
-          </div>
-          <div class="detail-item">
-            <div class="detail-label">SERVICES</div>
-            ${(p.servicesOffered || []).map(s => s.replace(/_/g," ")).join(", ") || "None"}
-          </div>
-          <div class="detail-item">
-            <div class="detail-label">RATING</div>
-            ${p.rating ? `${p.rating.toFixed(1)} (${p.reviewCount} reviews)` : "No reviews yet"}
-          </div>
-        </div>
-
-        <div class="docs-section">
-          <div class="docs-title">DOCUMENTS</div>
-          <div class="docs-list">${docsHtml}</div>
-        </div>
-
-        ${submittedDate ? `<div class="submitted-at">${submittedDate}</div>` : ""}
-        ${rejectionNote}
-
-        <div class="card-actions">${actionsHtml}</div>
+    const submittedDate = p.verificationSubmittedAt ? `Submitted ${fmtDate(p.verificationSubmittedAt)}` : "";
+    const rejNote = p.verificationNotes ? `<div class="rejection-note">Previous note: ${esc(p.verificationNotes)}</div>` : "";
+    const actionsHtml = status === "pending"
+      ? `<input class="reject-input" id="note-${p.id}" placeholder="Rejection reason (optional)" /><button class="btn btn-success btn-sm" onclick="approveProvider('${p.id}')">Approve</button><button class="btn btn-danger btn-sm" onclick="rejectProvider('${p.id}')">Reject</button>`
+      : status === "not_started" ? `<span style="font-size:12px;color:var(--muted)">Awaiting documents</span>`
+      : `<button class="btn btn-danger btn-sm" onclick="revokeProvider('${p.id}')">Revoke</button>`;
+    return `<div class="provider-card ${status}" id="card-${p.id}">
+      <div class="card-header">
+        <div><div class="card-name">${esc(p.name)}</div><div class="card-meta">${esc(p.email)} &bull; ${esc(p.phone || "No phone")} &bull; ${p.providerType === "shop" ? "Business / Shop" : "Independent"}</div></div>
+        <span class="badge ${status}">${badgeLabel}</span>
       </div>
-    `;
+      <div class="card-details">
+        <div class="detail-item"><div class="detail-label">Vehicle</div>${esc(p.vehicleMake)} ${esc(p.vehicleModel)} &bull; ${esc(p.licensePlate || "No plate")}</div>
+        <div class="detail-item"><div class="detail-label">Services</div>${(p.servicesOffered || []).slice(0,4).map(s=>s.replace(/_/g," ")).join(", ") || "None"}</div>
+        <div class="detail-item"><div class="detail-label">Rating</div>${p.rating ? `${Number(p.rating).toFixed(1)} (${p.reviewCount} reviews)` : "No reviews"}</div>
+        <div class="detail-item"><div class="detail-label">Balance</div>${fmtMoney(p.earningsBalance)} ${p.stripeAccountId ? '&bull; <span style="color:var(--success);font-size:11px">Stripe &#10003;</span>' : ''}</div>
+      </div>
+      <div class="docs-section"><div class="docs-title">Documents</div><div class="docs-list">${docsHtml}</div></div>
+      ${submittedDate ? `<div style="font-size:11px;color:var(--muted);margin-bottom:12px">${submittedDate}</div>` : ""}
+      ${rejNote}
+      <div class="card-actions">${actionsHtml}</div>
+    </div>`;
   }
 
   async function approveProvider(id) {
-    if (!confirm("Approve this provider? They will be marked as ID Verified.")) return;
+    if (!confirm("Approve this provider?")) return;
     try {
-      const res = await fetch(`${getBase()}/api/admin/providers/${id}/approve`, {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
-      });
+      const res = await fetch(`${getBase()}/api/admin/providers/${id}/approve`, { method:"POST", headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"} });
       if (!res.ok) throw new Error();
-      await loadProviders();
-    } catch {
-      alert("Failed to approve provider. Try again.");
-    }
+      loadProviders();
+    } catch { alert("Failed to approve. Try again."); }
   }
-
   async function rejectProvider(id) {
-    const noteInput = document.getElementById(`note-${id}`);
-    const notes = noteInput ? noteInput.value.trim() : "";
-    if (!confirm("Reject this provider? Their documents will be cleared and they will need to resubmit.")) return;
+    const notes = document.getElementById(`note-${id}`)?.value.trim() || "";
+    if (!confirm("Reject this provider?")) return;
     try {
-      const res = await fetch(`${getBase()}/api/admin/providers/${id}/reject`, {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ notes }),
-      });
+      const res = await fetch(`${getBase()}/api/admin/providers/${id}/reject`, { method:"POST", headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"}, body:JSON.stringify({notes}) });
       if (!res.ok) throw new Error();
-      await loadProviders();
-    } catch {
-      alert("Failed to reject provider. Try again.");
-    }
+      loadProviders();
+    } catch { alert("Failed to reject. Try again."); }
   }
-
   async function revokeProvider(id) {
-    if (!confirm("Revoke this provider's verification? They will need to resubmit documents.")) return;
+    if (!confirm("Revoke this provider's verification?")) return;
     try {
-      const res = await fetch(`${getBase()}/api/admin/providers/${id}/reject`, {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ notes: "Verification revoked by admin. Please resubmit your documents." }),
-      });
+      await fetch(`${getBase()}/api/admin/providers/${id}/reject`, { method:"POST", headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"}, body:JSON.stringify({notes:"Verification revoked by admin. Please resubmit."}) });
+      loadProviders();
+    } catch { alert("Failed to revoke. Try again."); }
+  }
+
+  // ── Users ──
+  async function loadUsers() {
+    try {
+      const res = await fetch(`${getBase()}/api/admin/users`, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.status === 401) { signOut(); return; }
+      allUsers = await res.json();
+      renderUsers(allUsers);
+    } catch {}
+  }
+  function filterUsers(q) {
+    const filtered = allUsers.filter(u => `${u.name} ${u.email}`.toLowerCase().includes(q.toLowerCase()));
+    renderUsers(filtered);
+  }
+  function renderUsers(users) {
+    const body = document.getElementById("users-table-body");
+    if (!users.length) { body.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">&#128100;</div><p>No drivers found.</p></div></td></tr>`; return; }
+    body.innerHTML = users.map(u => `<tr>
+      <td><div class="td-name">${esc(u.name)}</div></td>
+      <td>${esc(u.email)}</td>
+      <td><span class="badge ${u.role}">${u.role || "driver"}</span></td>
+      <td><span style="font-size:11px;color:${u.stripe_customer_id ? "var(--success)" : "var(--muted)"}">${u.stripe_customer_id ? "&#10003; Connected" : "Not linked"}</span></td>
+      <td><span style="font-size:11px;color:${u.push_token ? "var(--success)" : "var(--muted)"}">${u.push_token ? "&#10003; Registered" : "None"}</span></td>
+      <td style="color:var(--muted);font-size:12px">${fmtDate(u.created_at)}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}','${esc(u.name)}')">Remove</button></td>
+    </tr>`).join("");
+  }
+  async function deleteUser(id, name) {
+    if (!confirm(`Remove driver "${name}"? This cannot be undone.`)) return;
+    try {
+      const res = await fetch(`${getBase()}/api/admin/users/${id}`, { method:"DELETE", headers:{Authorization:`Bearer ${token}`} });
       if (!res.ok) throw new Error();
-      await loadProviders();
-    } catch {
-      alert("Failed to revoke verification. Try again.");
-    }
+      loadUsers();
+    } catch { alert("Failed to remove user."); }
   }
 
-  function escHtml(str) {
-    if (!str) return "";
-    return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  // ── Jobs ──
+  async function loadJobs() {
+    try {
+      const res = await fetch(`${getBase()}/api/admin/jobs`, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.status === 401) { signOut(); return; }
+      allJobs = await res.json();
+      renderJobs(allJobs);
+    } catch {}
+  }
+  function filterJobs(q) { renderJobs(allJobs.filter(j => `${j.id} ${j.service_type}`.toLowerCase().includes(q.toLowerCase()) && (!jobStatusFilter || j.status === jobStatusFilter))); }
+  function filterJobsByStatus(s) { jobStatusFilter = s; renderJobs(allJobs.filter(j => (!s || j.status === s))); }
+  function renderJobs(jobs) {
+    const body = document.getElementById("jobs-table-body");
+    if (!jobs.length) { body.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">&#128203;</div><p>No jobs found.</p></div></td></tr>`; return; }
+    body.innerHTML = jobs.map(j => {
+      const driverName = j.driver?.name || "—";
+      const providerName = j.provider?.name || "—";
+      const flags = [j.is_express && "express", j.is_ev && "ev", j.is_emergency && "emergency"].filter(Boolean);
+      return `<tr>
+        <td style="font-size:11px;color:var(--muted);font-family:monospace">${j.id.slice(0,8)}</td>
+        <td>${esc((j.service_type || "").replace(/_/g," "))}</td>
+        <td><span class="badge ${j.status}">${j.status}</span></td>
+        <td>${esc(driverName)}</td>
+        <td>${esc(providerName)}</td>
+        <td>${fmtMoney(j.total_cost || j.estimated_cost)}</td>
+        <td>${flags.map(f => `<span class="badge ${f}" style="margin-right:3px">${f}</span>`).join("")}</td>
+        <td style="color:var(--muted);font-size:12px">${fmtDate(j.created_at)}</td>
+      </tr>`;
+    }).join("");
   }
 
-  // Auto-login if token exists
+  // ── Earnings ──
+  async function loadEarnings() {
+    try {
+      const res = await fetch(`${getBase()}/api/admin/earnings`, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.status === 401) { signOut(); return; }
+      const data = await res.json();
+      const s = data.stats || {};
+      document.getElementById("ov-revenue").textContent = fmtMoney(s.total_fees);
+      document.getElementById("ov-volume").textContent = fmtMoney(s.total_volume);
+      document.getElementById("earnings-stats").innerHTML = `
+        <div class="stat-card"><div class="stat-label">Total Volume</div><div class="stat-value cyan">${fmtMoney(s.total_volume)}</div><div class="stat-sub">Gross across all jobs</div></div>
+        <div class="stat-card"><div class="stat-label">Platform Revenue</div><div class="stat-value coral">${fmtMoney(s.total_fees)}</div><div class="stat-sub">Service fees collected</div></div>
+        <div class="stat-card"><div class="stat-label">Total Jobs</div><div class="stat-value">${s.total_jobs || 0}</div></div>
+        <div class="stat-card"><div class="stat-label">Completed Jobs</div><div class="stat-value success">${s.completed_jobs || 0}</div></div>
+      `;
+      const balBody = document.getElementById("balances-table-body");
+      if (!data.balances?.length) { balBody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:24px">No providers yet</td></tr>`; }
+      else { balBody.innerHTML = data.balances.map(b => `<tr><td><div class="td-name">${esc(b.name)}</div><div class="td-sub">${esc(b.email)}</div></td><td><strong>${fmtMoney(b.earnings_balance)}</strong></td><td><span style="color:${b.stripe_account_id ? "var(--success)" : "var(--muted)"}">${b.stripe_account_id ? "&#10003; Connected" : "Not connected"}</span></td></tr>`).join(""); }
+      const payBody = document.getElementById("payouts-table-body");
+      if (!data.payouts?.length) { payBody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">No payouts yet</td></tr>`; }
+      else { payBody.innerHTML = data.payouts.map(p => `<tr><td>${esc(p.provider_name || p.provider_id)}</td><td>${fmtMoney(p.amount)}</td><td>${fmtMoney(p.fee)}</td><td>${fmtMoney(p.net_amount)}</td><td><span class="badge ${p.payout_type === "instant" ? "express" : "accepted"}">${p.payout_type}</span></td><td><span class="badge completed">${p.status}</span></td><td style="color:var(--muted);font-size:12px">${fmtDate(p.created_at)}</td></tr>`).join(""); }
+    } catch {}
+  }
+
+  // ── Reports ──
+  async function loadReports() {
+    try {
+      const res = await fetch(`${getBase()}/api/admin/reports`, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.status === 401) { signOut(); return; }
+      allReports = await res.json();
+      const body = document.getElementById("reports-table-body");
+      if (!allReports.length) { body.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">&#10003;</div><p>No reports — everything looks good!</p></div></td></tr>`; return; }
+      body.innerHTML = allReports.map(r => `<tr>
+        <td style="font-size:11px;color:var(--muted)">${r.id}</td>
+        <td><span class="badge ${r.category === "emergency" ? "cancelled" : "accepted"}">${esc(r.category)}</span></td>
+        <td style="max-width:300px">${esc(r.description)}</td>
+        <td style="font-size:12px">${esc(r.user_id || "—")}</td>
+        <td><span class="badge ${r.user_role}">${r.user_role || "—"}</span></td>
+        <td style="color:var(--muted);font-size:12px">${fmtDate(r.created_at)}</td>
+      </tr>`).join("");
+    } catch {}
+  }
+
+  // ── Waitlist ──
+  async function loadWaitlist() {
+    try {
+      const res = await fetch(`${getBase()}/api/admin/waitlist`, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.status === 401) { signOut(); return; }
+      allWaitlist = await res.json();
+      renderWaitlist(allWaitlist);
+    } catch {}
+  }
+  function filterWaitlist(q) { renderWaitlist(allWaitlist.filter(w => w.email.toLowerCase().includes(q.toLowerCase()) && (!waitlistRoleFilter || w.role === waitlistRoleFilter))); }
+  function filterWaitlistByRole(r) { waitlistRoleFilter = r; renderWaitlist(allWaitlist.filter(w => (!r || w.role === r))); }
+  function renderWaitlist(list) {
+    const body = document.getElementById("waitlist-table-body");
+    if (!list.length) { body.innerHTML = `<tr><td colspan="4"><div class="empty-state"><div class="empty-icon">&#128233;</div><p>No waitlist signups yet.</p></div></td></tr>`; return; }
+    body.innerHTML = list.map((w, i) => `<tr>
+      <td style="color:var(--muted)">${i+1}</td>
+      <td><strong>${esc(w.email)}</strong></td>
+      <td><span class="badge ${w.role === "provider" ? "provider" : w.role === "both" ? "ev" : "driver"}">${w.role || "driver"}</span></td>
+      <td style="color:var(--muted);font-size:12px">${fmtDate(w.created_at)}</td>
+    </tr>`).join("");
+  }
+  function exportWaitlist() {
+    if (!allWaitlist.length) { alert("No waitlist data to export."); return; }
+    const csv = ["Email,Role,Date", ...allWaitlist.map(w => `${w.email},${w.role || "driver"},${new Date(w.created_at).toISOString()}`)].join("\n");
+    const a = document.createElement("a");
+    a.href = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
+    a.download = `serviceme-waitlist-${Date.now()}.csv`;
+    a.click();
+  }
+
+  // ── Notifications ──
+  async function sendNotification() {
+    const title = document.getElementById("notify-title").value.trim();
+    const body = document.getElementById("notify-body").value.trim();
+    const target = document.getElementById("notify-target").value;
+    const errEl = document.getElementById("notify-error");
+    const sucEl = document.getElementById("notify-success");
+    errEl.textContent = ""; sucEl.textContent = "";
+    if (!title || !body) { errEl.textContent = "Title and message are required."; return; }
+    if (!confirm(`Send "${title}" to ${target === "all" ? "all users" : target + " only"}?`)) return;
+    try {
+      const res = await fetch(`${getBase()}/api/admin/notify`, {
+        method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ title, body, target }),
+      });
+      const data = await res.json();
+      if (!res.ok) { errEl.textContent = data.error || "Failed to send."; return; }
+      sucEl.textContent = `Notification sent to ${data.sent} device(s). (${data.total} tokens found)`;
+      document.getElementById("notify-title").value = "";
+      document.getElementById("notify-body").value = "";
+    } catch { errEl.textContent = "Network error. Try again."; }
+  }
+
+  // ── Auto-login ──
   if (token) { showDashboard(); }
 </script>
 </body>

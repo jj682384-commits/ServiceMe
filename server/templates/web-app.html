@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ServiceMe — Web App</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy: #0A0E27;
+      --navy2: #111428;
+      --card: #161A35;
+      --card2: #1C2040;
+      --border: rgba(255,255,255,0.08);
+      --cyan: #00D4FF;
+      --coral: #FF6B6B;
+      --text: #ffffff;
+      --muted: rgba(255,255,255,0.55);
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+    html, body { height: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--navy); color: var(--text); overflow: hidden; font-size: 14px;
+    }
+
+    /* ── App Shell ── */
+    #app { height: 100vh; display: flex; flex-direction: column; }
+
+    /* ── Auth Screen ── */
+    #auth-screen {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      padding: 24px; background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,212,255,0.08) 0%, transparent 70%);
+    }
+    .auth-box { width: 100%; max-width: 420px; }
+    .auth-logo { text-align: center; margin-bottom: 32px; }
+    .auth-logo-icon {
+      width: 64px; height: 64px; border-radius: 20px;
+      background: linear-gradient(135deg, var(--cyan), #0066cc);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 30px; font-weight: 900; color: #fff; margin: 0 auto 12px;
+    }
+    .auth-logo h1 { font-size: 26px; font-weight: 900; }
+    .auth-logo p { color: var(--muted); font-size: 14px; margin-top: 4px; }
+    .auth-tabs { display: flex; background: rgba(255,255,255,0.05); border-radius: 12px; padding: 4px; margin-bottom: 24px; }
+    .auth-tab {
+      flex: 1; padding: 10px; border-radius: 8px; font-size: 14px; font-weight: 700;
+      cursor: pointer; border: none; background: transparent; color: var(--muted); font-family: inherit; transition: all .2s;
+    }
+    .auth-tab.active { background: var(--card2); color: var(--text); }
+    .role-picker { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+    .role-card {
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px 12px; text-align: center; cursor: pointer;
+      transition: all .2s;
+    }
+    .role-card.selected { border-color: var(--cyan); background: rgba(0,212,255,0.08); }
+    .role-card .role-icon { font-size: 28px; margin-bottom: 6px; }
+    .role-card .role-name { font-size: 13px; font-weight: 800; }
+    .role-card .role-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .field label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 6px; letter-spacing: .6px; text-transform: uppercase; }
+    .field input {
+      width: 100%; padding: 13px 16px; background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+      border-radius: 10px; color: var(--text); font-size: 14px; outline: none; font-family: inherit;
+    }
+    .field input:focus { border-color: var(--cyan); }
+    .field { margin-bottom: 16px; }
+    .btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%; padding: 14px; border-radius: 12px;
+      font-size: 15px; font-weight: 800; cursor: pointer; border: none; font-family: inherit;
+      transition: opacity .15s;
+    }
+    .btn:hover { opacity: .85; }
+    .btn:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-cyan { background: var(--cyan); color: var(--navy); }
+    .btn-coral { background: var(--coral); color: #fff; }
+    .btn-ghost { background: rgba(255,255,255,0.06); color: var(--text); border: 1px solid var(--border); }
+    .btn-sm { padding: 9px 16px; font-size: 13px; border-radius: 8px; width: auto; }
+    .auth-error { color: var(--danger); font-size: 13px; text-align: center; margin-top: 12px; }
+
+    /* ── App Bar ── */
+    #app-bar {
+      display: none; background: var(--card); border-bottom: 1px solid var(--border);
+      padding: 12px 20px; align-items: center; justify-content: space-between; gap: 12px; flex-shrink: 0;
+    }
+    .app-bar-left { display: flex; align-items: center; gap: 10px; }
+    .app-bar-logo { font-size: 16px; font-weight: 900; color: var(--cyan); }
+    .app-bar-user { font-size: 13px; color: var(--muted); }
+    .app-bar-right { display: flex; gap: 10px; align-items: center; }
+    .mode-chip {
+      padding: 4px 12px; border-radius: 100px; font-size: 11px; font-weight: 800;
+      background: rgba(0,212,255,0.12); color: var(--cyan); border: 1px solid rgba(0,212,255,0.2);
+    }
+    .mode-chip.provider { background: rgba(255,107,107,0.12); color: var(--coral); border-color: rgba(255,107,107,0.2); }
+
+    /* ── Main App ── */
+    #main-app {
+      display: none; flex: 1; overflow: hidden;
+    }
+    .app-layout { display: flex; height: 100%; }
+
+    /* ── Sidebar ── */
+    .app-sidebar {
+      width: 220px; background: var(--card); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; flex-shrink: 0;
+    }
+    .sidebar-section { padding: 20px 12px 8px; font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+    .sidebar-item {
+      display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px;
+      cursor: pointer; color: var(--muted); font-size: 13px; font-weight: 600;
+      margin: 0 6px 2px; transition: all .15s;
+    }
+    .sidebar-item:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+    .sidebar-item.active { background: rgba(0,212,255,0.1); color: var(--cyan); }
+    .sidebar-item.active.provider-mode { background: rgba(255,107,107,0.1); color: var(--coral); }
+    .sidebar-icon { width: 20px; text-align: center; font-size: 16px; }
+    .sidebar-footer { margin-top: auto; padding: 12px; border-top: 1px solid var(--border); }
+
+    /* ── Content ── */
+    .app-content { flex: 1; overflow-y: auto; padding: 24px; }
+    .view { display: none; }
+    .view.active { display: block; }
+    .view-title { font-size: 20px; font-weight: 900; margin-bottom: 4px; }
+    .view-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+
+    /* ── Cards ── */
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+    .card h3 { font-size: 15px; font-weight: 800; margin-bottom: 10px; }
+    .card p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+    .card-row { display: flex; align-items: center; gap: 12px; }
+    .card-icon { font-size: 32px; flex-shrink: 0; }
+    .card-info { flex: 1; }
+
+    /* ── Service Request ── */
+    .service-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+    .service-btn {
+      background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+      padding: 20px 14px; text-align: center; cursor: pointer; transition: all .2s;
+    }
+    .service-btn:hover, .service-btn.selected { border-color: var(--cyan); background: rgba(0,212,255,0.08); }
+    .service-btn .svc-icon { font-size: 28px; margin-bottom: 8px; }
+    .service-btn .svc-name { font-size: 13px; font-weight: 700; }
+    .service-btn .svc-est { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    .request-form { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .web-input {
+      width: 100%; padding: 12px 14px; background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+      border-radius: 10px; color: var(--text); font-size: 14px; outline: none; font-family: inherit;
+    }
+    .web-input:focus { border-color: var(--cyan); }
+    .price-preview {
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(0,212,255,0.06); border: 1px solid rgba(0,212,255,0.15);
+      border-radius: 12px; padding: 16px 18px; margin-bottom: 16px;
+    }
+    .price-label { font-size: 13px; color: var(--muted); }
+    .price-value { font-size: 22px; font-weight: 900; color: var(--cyan); }
+
+    /* ── Jobs (provider) ── */
+    .job-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+      padding: 20px; margin-bottom: 14px; transition: border-color .2s;
+    }
+    .job-card:hover { border-color: rgba(255,107,107,0.3); }
+    .job-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+    .job-type { font-size: 16px; font-weight: 900; text-transform: capitalize; }
+    .job-price { font-size: 20px; font-weight: 900; color: var(--coral); }
+    .job-detail { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    .job-actions { display: flex; gap: 10px; margin-top: 14px; }
+
+    /* ── History ── */
+    .history-item {
+      display: flex; align-items: center; gap: 14px;
+      background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+      padding: 16px; margin-bottom: 10px;
+    }
+    .history-icon { font-size: 28px; }
+    .history-info { flex: 1; }
+    .history-name { font-size: 14px; font-weight: 700; }
+    .history-date { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .history-amount { font-size: 16px; font-weight: 800; }
+
+    /* ── Profile ── */
+    .profile-header {
+      background: linear-gradient(135deg, rgba(0,212,255,0.08), rgba(0,212,255,0.03));
+      border: 1px solid rgba(0,212,255,0.15); border-radius: 20px;
+      padding: 28px; margin-bottom: 20px; display: flex; align-items: center; gap: 20px;
+    }
+    .profile-avatar {
+      width: 64px; height: 64px; border-radius: 20px;
+      background: linear-gradient(135deg, var(--cyan), #0066cc);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px; font-weight: 900; flex-shrink: 0;
+    }
+    .profile-name { font-size: 20px; font-weight: 900; }
+    .profile-email { font-size: 13px; color: var(--muted); margin-top: 3px; }
+    .profile-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: rgba(0,212,255,0.12); border: 1px solid rgba(0,212,255,0.2);
+      color: var(--cyan); padding: 4px 12px; border-radius: 100px;
+      font-size: 11px; font-weight: 700; margin-top: 8px;
+    }
+
+    /* ── SOS Banner ── */
+    .sos-banner {
+      background: linear-gradient(135deg, rgba(239,68,68,0.15), rgba(239,68,68,0.05));
+      border: 1px solid rgba(239,68,68,0.25); border-radius: 14px;
+      padding: 16px 20px; display: flex; align-items: center; gap: 14px; margin-bottom: 20px;
+    }
+    .sos-icon { font-size: 28px; }
+    .sos-text h4 { font-size: 14px; font-weight: 800; color: var(--danger); }
+    .sos-text p { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: var(--card2); border: 1px solid var(--border); color: var(--text);
+      padding: 12px 24px; border-radius: 100px; font-size: 13px; font-weight: 600;
+      z-index: 999; opacity: 0; transition: opacity .3s; pointer-events: none;
+      max-width: 90vw; text-align: center;
+    }
+    #toast.show { opacity: 1; }
+
+    /* ── Badge ── */
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 9px; border-radius: 100px; font-size: 11px; font-weight: 700;
+    }
+    .badge.completed { background: rgba(34,197,94,.15); color: var(--success); }
+    .badge.pending { background: rgba(245,158,11,.15); color: var(--warning); }
+    .badge.cancelled { background: rgba(239,68,68,.12); color: var(--danger); }
+
+    /* ── Responsive ── */
+    @media (max-width: 680px) {
+      .app-sidebar { display: none; }
+      .form-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- Auth Screen -->
+  <div id="auth-screen">
+    <div class="auth-box">
+      <div class="auth-logo">
+        <div class="auth-logo-icon">S</div>
+        <h1>ServiceMe</h1>
+        <p>On-demand roadside assistance</p>
+      </div>
+
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="switchAuthTab('signin')" id="tab-signin">Sign In</button>
+        <button class="auth-tab" onclick="switchAuthTab('signup')" id="tab-signup">Sign Up</button>
+      </div>
+
+      <!-- Sign In -->
+      <div id="auth-signin">
+        <div class="field"><label>Email</label><input type="email" id="si-email" placeholder="you@example.com" /></div>
+        <div class="field"><label>Password</label><input type="password" id="si-password" placeholder="Your password" onkeydown="if(event.key==='Enter')signIn()" /></div>
+        <button class="btn btn-cyan" onclick="signIn()" id="si-btn">Sign In</button>
+      </div>
+
+      <!-- Sign Up -->
+      <div id="auth-signup" style="display:none">
+        <div class="role-picker">
+          <div class="role-card selected" id="role-driver" onclick="selectRole('driver')">
+            <div class="role-icon">&#128664;</div>
+            <div class="role-name">Driver</div>
+            <div class="role-desc">I need help</div>
+          </div>
+          <div class="role-card" id="role-provider" onclick="selectRole('provider')">
+            <div class="role-icon">&#128736;</div>
+            <div class="role-name">Provider</div>
+            <div class="role-desc">I want to earn</div>
+          </div>
+        </div>
+        <div class="field"><label>Full Name</label><input type="text" id="su-name" placeholder="John Smith" /></div>
+        <div class="field"><label>Email</label><input type="email" id="su-email" placeholder="you@example.com" /></div>
+        <div class="field"><label>Password</label><input type="password" id="su-password" placeholder="Create a password (min 6 chars)" /></div>
+        <button class="btn btn-cyan" onclick="signUp()" id="su-btn">Create Account</button>
+      </div>
+
+      <div class="auth-error" id="auth-error"></div>
+    </div>
+  </div>
+
+  <!-- App Bar -->
+  <div id="app-bar">
+    <div class="app-bar-left">
+      <span class="app-bar-logo">ServiceMe</span>
+      <span class="app-bar-user" id="bar-user-name"></span>
+    </div>
+    <div class="app-bar-right">
+      <span class="mode-chip" id="bar-mode-chip">Driver</span>
+      <button class="btn btn-ghost btn-sm" onclick="logout()" style="width:auto">Sign Out</button>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <div id="main-app">
+    <div class="app-layout">
+
+      <!-- Sidebar -->
+      <div class="app-sidebar" id="app-sidebar">
+        <!-- Driver nav -->
+        <div id="driver-nav">
+          <div class="sidebar-section">Driver</div>
+          <div class="sidebar-item active" onclick="showView('request')" id="nav-request"><span class="sidebar-icon">&#128205;</span> Request Help</div>
+          <div class="sidebar-item" onclick="showView('history')" id="nav-history"><span class="sidebar-icon">&#128203;</span> History</div>
+          <div class="sidebar-item" onclick="showView('ev')" id="nav-ev"><span class="sidebar-icon">&#9889;</span> EV Services</div>
+          <div class="sidebar-item" onclick="showView('profile')" id="nav-profile"><span class="sidebar-icon">&#128100;</span> Profile</div>
+        </div>
+        <!-- Provider nav -->
+        <div id="provider-nav" style="display:none">
+          <div class="sidebar-section">Provider</div>
+          <div class="sidebar-item provider-mode active" onclick="showView('jobs')" id="nav-jobs"><span class="sidebar-icon">&#128188;</span> Available Jobs</div>
+          <div class="sidebar-item" onclick="showView('earnings-view')" id="nav-earnings-view"><span class="sidebar-icon">&#128176;</span> Earnings</div>
+          <div class="sidebar-item" onclick="showView('profile')" id="nav-profile-p"><span class="sidebar-icon">&#128100;</span> Profile</div>
+        </div>
+        <div class="sidebar-footer">
+          <button class="btn btn-ghost btn-sm" onclick="logout()" style="width:100%">Sign Out</button>
+        </div>
+      </div>
+
+      <!-- Content -->
+      <div class="app-content">
+
+        <!-- Request Help (Driver) -->
+        <div class="view active" id="view-request">
+          <div class="view-title">Request Help</div>
+          <div class="view-sub">What do you need assistance with?</div>
+
+          <div class="sos-banner">
+            <div class="sos-icon">&#128680;</div>
+            <div class="sos-text">
+              <h4>Emergency? Use our app for one-tap SOS</h4>
+              <p>The mobile app has GPS sharing, emergency contacts, and instant dispatch.</p>
+            </div>
+          </div>
+
+          <div class="service-grid" id="service-grid"></div>
+
+          <div class="request-form" id="request-form" style="display:none">
+            <h3 id="request-title">Flat Tire</h3>
+            <div class="price-preview">
+              <div><div class="price-label">Estimated cost</div><div class="price-value" id="request-price">$0</div></div>
+              <div style="text-align:right"><div class="price-label">ETA</div><div style="font-size:16px;font-weight:800;color:var(--text)" id="request-eta">~15 min</div></div>
+            </div>
+            <div class="form-row" style="margin-bottom:14px">
+              <div class="field" style="margin:0"><label>Your Location / Address</label><input class="web-input" type="text" id="req-location" placeholder="123 Main St, City, State" /></div>
+              <div class="field" style="margin:0"><label>Additional Notes</label><input class="web-input" type="text" id="req-notes" placeholder="e.g. Silver Toyota, right lane" /></div>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <button class="btn btn-cyan" style="flex:1;min-width:160px" onclick="submitRequest()">Request Service</button>
+              <button class="btn btn-ghost btn-sm" onclick="cancelRequest()">Cancel</button>
+            </div>
+          </div>
+
+          <div id="request-success" style="display:none">
+            <div class="card" style="border-color:rgba(34,197,94,0.3);background:rgba(34,197,94,0.05)">
+              <div style="text-align:center;padding:20px">
+                <div style="font-size:48px;margin-bottom:16px">&#10003;</div>
+                <h3 style="font-size:20px;margin-bottom:8px;color:var(--success)">Request Submitted!</h3>
+                <p>Your service request has been sent. Download the ServiceMe app to track your provider in real time, chat with them, and manage your service.</p>
+                <div style="margin-top:24px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+                  <a href="#" onclick="resetRequest()" class="btn btn-cyan" style="width:auto;padding:12px 24px;text-decoration:none">New Request</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- History (Driver) -->
+        <div class="view" id="view-history">
+          <div class="view-title">Service History</div>
+          <div class="view-sub">Your past roadside assistance requests</div>
+          <div id="history-list">
+            <div class="card" style="text-align:center;padding:48px 24px">
+              <div style="font-size:40px;margin-bottom:12px">&#128203;</div>
+              <p>Your service history will appear here after you use ServiceMe. Download the app for the full experience.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- EV Services -->
+        <div class="view" id="view-ev">
+          <div class="view-title">EV Services</div>
+          <div class="view-sub">Specialized services for electric vehicles</div>
+          <div class="service-grid">
+            <div class="service-btn" onclick="selectServiceAndRequest({name:'Mobile EV Charging',price:85,eta:25,emoji:'&#128268;'})">
+              <div class="svc-icon">&#128268;</div>
+              <div class="svc-name">Mobile Charging</div>
+              <div class="svc-est">~$85</div>
+            </div>
+            <div class="service-btn" onclick="selectServiceAndRequest({name:'EV-Safe Tow',price:120,eta:20,emoji:'&#128690;'})">
+              <div class="svc-icon">&#128690;</div>
+              <div class="svc-name">EV-Safe Tow</div>
+              <div class="svc-est">~$120</div>
+            </div>
+            <div class="service-btn" onclick="selectServiceAndRequest({name:'Battery Diagnostic',price:60,eta:20,emoji:'&#9889;'})">
+              <div class="svc-icon">&#9889;</div>
+              <div class="svc-name">Battery Check</div>
+              <div class="svc-est">~$60</div>
+            </div>
+            <div class="service-btn" onclick="selectServiceAndRequest({name:'Range Emergency',price:95,eta:30,emoji:'&#9888;'})">
+              <div class="svc-icon">&#9888;</div>
+              <div class="svc-name">Range Emergency</div>
+              <div class="svc-est">~$95</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Profile -->
+        <div class="view" id="view-profile">
+          <div class="view-title">Profile</div>
+          <div class="view-sub">Your account details</div>
+          <div class="profile-header" id="profile-header">
+            <div class="profile-avatar" id="profile-initial">?</div>
+            <div>
+              <div class="profile-name" id="profile-name">Loading...</div>
+              <div class="profile-email" id="profile-email"></div>
+              <div class="profile-badge" id="profile-role-badge">Driver</div>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Get the Full Experience</h3>
+            <p>The web app gives you core access to ServiceMe. Download the mobile app for real-time GPS tracking, push notifications, emergency SOS, in-app chat, vehicle profiles, payment management, and more.</p>
+            <div style="display:flex;gap:12px;margin-top:16px;flex-wrap:wrap">
+              <a href="https://apps.apple.com" class="btn btn-ghost btn-sm" style="text-decoration:none">&#xF8FF; App Store</a>
+              <a href="https://play.google.com" class="btn btn-ghost btn-sm" style="text-decoration:none">&#9654; Google Play</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Available Jobs (Provider) -->
+        <div class="view" id="view-jobs">
+          <div class="view-title">Available Jobs</div>
+          <div class="view-sub">Nearby service requests waiting for a provider</div>
+          <div id="jobs-list">
+            <div class="card" style="text-align:center;padding:40px">
+              <div style="font-size:40px;margin-bottom:12px">&#128188;</div>
+              <p>No jobs available right now. New requests will appear here automatically.</p>
+              <button class="btn btn-ghost btn-sm" style="margin-top:16px" onclick="loadProviderJobs()">Refresh</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Earnings (Provider) -->
+        <div class="view" id="view-earnings-view">
+          <div class="view-title">Earnings</div>
+          <div class="view-sub">Your balance and payout history</div>
+          <div class="card" id="earnings-card">
+            <div style="text-align:center;padding:16px">
+              <div style="font-size:13px;color:var(--muted);margin-bottom:8px">AVAILABLE BALANCE</div>
+              <div style="font-size:48px;font-weight:900;color:var(--success)" id="earnings-amount">$0.00</div>
+              <p style="margin-top:12px">Cash out through the mobile app. Download ServiceMe to set up Stripe Connect and manage your payouts.</p>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Get Paid Faster</h3>
+            <p>Download the ServiceMe app to connect your bank account via Stripe, view full earnings history, and cash out anytime — standard (free, 1-2 days) or instant (30 min, small fee).</p>
+            <div style="display:flex;gap:12px;margin-top:14px;flex-wrap:wrap">
+              <a href="https://apps.apple.com" class="btn btn-ghost btn-sm" style="text-decoration:none">&#xF8FF; App Store</a>
+              <a href="https://play.google.com" class="btn btn-ghost btn-sm" style="text-decoration:none">&#9654; Google Play</a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+  const BASE = window.location.origin;
+  let userToken = localStorage.getItem("sm_web_token") || "";
+  let currentUser = null;
+  let selectedRole = "driver";
+  let selectedService = null;
+
+  const SERVICES = [
+    { name: "Flat Tire", price: 65, eta: 15, emoji: "&#128739;" },
+    { name: "Jump Start", price: 55, eta: 12, emoji: "&#9889;" },
+    { name: "Towing", price: 110, eta: 20, emoji: "&#128664;" },
+    { name: "Fuel Delivery", price: 60, eta: 18, emoji: "&#9981;" },
+    { name: "Lockout", price: 75, eta: 15, emoji: "&#128273;" },
+    { name: "Minor Repair", price: 85, eta: 25, emoji: "&#128295;" },
+  ];
+
+  function toast(msg, duration) {
+    const el = document.getElementById("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    setTimeout(() => el.classList.remove("show"), duration || 3000);
+  }
+
+  // ── Auth ──
+  function switchAuthTab(tab) {
+    document.getElementById("auth-signin").style.display = tab === "signin" ? "block" : "none";
+    document.getElementById("auth-signup").style.display = tab === "signup" ? "block" : "none";
+    document.getElementById("tab-signin").classList.toggle("active", tab === "signin");
+    document.getElementById("tab-signup").classList.toggle("active", tab === "signup");
+    document.getElementById("auth-error").textContent = "";
+  }
+
+  function selectRole(role) {
+    selectedRole = role;
+    document.getElementById("role-driver").classList.toggle("selected", role === "driver");
+    document.getElementById("role-provider").classList.toggle("selected", role === "provider");
+  }
+
+  async function signIn() {
+    const email = document.getElementById("si-email").value.trim();
+    const password = document.getElementById("si-password").value;
+    const btn = document.getElementById("si-btn");
+    const err = document.getElementById("auth-error");
+    err.textContent = "";
+    if (!email || !password) { err.textContent = "Please enter your email and password."; return; }
+    btn.disabled = true; btn.textContent = "Signing in...";
+    try {
+      const res = await fetch(`${BASE}/api/auth/signin`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) { err.textContent = data.error || "Invalid credentials."; return; }
+      userToken = data.token;
+      localStorage.setItem("sm_web_token", userToken);
+      currentUser = data.user;
+      enterApp();
+    } catch { err.textContent = "Could not connect. Try again."; }
+    finally { btn.disabled = false; btn.textContent = "Sign In"; }
+  }
+
+  async function signUp() {
+    const name = document.getElementById("su-name").value.trim();
+    const email = document.getElementById("su-email").value.trim();
+    const password = document.getElementById("su-password").value;
+    const btn = document.getElementById("su-btn");
+    const err = document.getElementById("auth-error");
+    err.textContent = "";
+    if (!name || !email || !password) { err.textContent = "All fields are required."; return; }
+    if (password.length < 6) { err.textContent = "Password must be at least 6 characters."; return; }
+    btn.disabled = true; btn.textContent = "Creating account...";
+    try {
+      const res = await fetch(`${BASE}/api/auth/signup`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password, role: selectedRole }),
+      });
+      const data = await res.json();
+      if (!res.ok) { err.textContent = data.error || "Failed to create account."; return; }
+      userToken = data.token;
+      localStorage.setItem("sm_web_token", userToken);
+      currentUser = data.user;
+      enterApp();
+    } catch { err.textContent = "Could not connect. Try again."; }
+    finally { btn.disabled = false; btn.textContent = "Create Account"; }
+  }
+
+  function enterApp() {
+    document.getElementById("auth-screen").style.display = "none";
+    document.getElementById("app-bar").style.display = "flex";
+    document.getElementById("main-app").style.display = "flex";
+    const role = currentUser?.role || "driver";
+    document.getElementById("bar-user-name").textContent = currentUser?.name || "";
+    const chip = document.getElementById("bar-mode-chip");
+    chip.textContent = role === "provider" ? "Provider Mode" : "Driver Mode";
+    chip.className = "mode-chip" + (role === "provider" ? " provider" : "");
+    document.getElementById("driver-nav").style.display = role === "driver" ? "block" : "none";
+    document.getElementById("provider-nav").style.display = role === "provider" ? "block" : "none";
+    if (role === "provider") {
+      showView("jobs");
+      loadProviderJobs();
+      loadProviderEarnings();
+    } else {
+      showView("request");
+      buildServiceGrid();
+    }
+    updateProfile();
+  }
+
+  function logout() {
+    userToken = "";
+    localStorage.removeItem("sm_web_token");
+    currentUser = null;
+    document.getElementById("auth-screen").style.display = "flex";
+    document.getElementById("app-bar").style.display = "none";
+    document.getElementById("main-app").style.display = "none";
+    document.getElementById("si-email").value = "";
+    document.getElementById("si-password").value = "";
+  }
+
+  // ── Navigation ──
+  function showView(id) {
+    document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+    document.querySelectorAll(".sidebar-item").forEach(n => n.classList.remove("active"));
+    const view = document.getElementById(`view-${id}`);
+    if (view) view.classList.add("active");
+    const nav = document.getElementById(`nav-${id}`);
+    if (nav) nav.classList.add("active");
+  }
+
+  // ── Services ──
+  function buildServiceGrid() {
+    const grid = document.getElementById("service-grid");
+    grid.innerHTML = SERVICES.map((s, i) =>
+      `<div class="service-btn" onclick="selectServiceItem(${i})" id="svc-${i}">
+        <div class="svc-icon">${s.emoji}</div>
+        <div class="svc-name">${s.name}</div>
+        <div class="svc-est">~$${s.price}</div>
+      </div>`
+    ).join("");
+  }
+
+  function selectServiceItem(i) {
+    document.querySelectorAll(".service-btn").forEach(b => b.classList.remove("selected"));
+    document.getElementById(`svc-${i}`)?.classList.add("selected");
+    const svc = SERVICES[i];
+    selectServiceAndRequest(svc);
+  }
+
+  function selectServiceAndRequest(svc) {
+    selectedService = svc;
+    document.getElementById("request-form").style.display = "block";
+    document.getElementById("request-title").textContent = svc.name;
+    document.getElementById("request-price").textContent = `$${svc.price}`;
+    document.getElementById("request-eta").textContent = `~${svc.eta} min`;
+    document.getElementById("request-success").style.display = "none";
+    if (document.getElementById("view-ev").classList.contains("active")) {
+      showView("request");
+    }
+    document.getElementById("request-form").scrollIntoView({ behavior: "smooth" });
+  }
+
+  function cancelRequest() {
+    document.getElementById("request-form").style.display = "none";
+    document.querySelectorAll(".service-btn").forEach(b => b.classList.remove("selected"));
+    selectedService = null;
+  }
+
+  function resetRequest() {
+    cancelRequest();
+    document.getElementById("request-success").style.display = "none";
+  }
+
+  async function submitRequest() {
+    if (!selectedService) { toast("Please select a service first."); return; }
+    const location = document.getElementById("req-location").value.trim();
+    const notes = document.getElementById("req-notes").value.trim();
+    if (!location) { toast("Please enter your location."); return; }
+    try {
+      const res = await fetch(`${BASE}/api/jobs`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${userToken}` },
+        body: JSON.stringify({
+          serviceType: selectedService.name.toLowerCase().replace(/ /g, "_"),
+          location: { address: location, latitude: 0, longitude: 0 },
+          notes: notes,
+          estimatedCost: selectedService.price,
+          driver: currentUser ? { id: currentUser.id, name: currentUser.name, email: currentUser.email } : {},
+        }),
+      });
+      if (res.ok) {
+        document.getElementById("request-form").style.display = "none";
+        document.getElementById("request-success").style.display = "block";
+        document.getElementById("request-success").scrollIntoView({ behavior: "smooth" });
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast(data.error || "Failed to submit request. Try again.");
+      }
+    } catch { toast("Network error. Check your connection."); }
+  }
+
+  // ── Provider Jobs ──
+  async function loadProviderJobs() {
+    try {
+      const res = await fetch(`${BASE}/api/jobs/pending`, { headers: { Authorization: `Bearer ${userToken}` } });
+      const jobs = await res.json();
+      const list = document.getElementById("jobs-list");
+      if (!jobs.length) {
+        list.innerHTML = '<div class="card" style="text-align:center;padding:40px"><div style="font-size:40px;margin-bottom:12px">&#128188;</div><p>No jobs available right now.</p><button class="btn btn-ghost btn-sm" style="margin-top:16px" onclick="loadProviderJobs()">Refresh</button></div>';
+        return;
+      }
+      list.innerHTML = jobs.slice(0, 10).map(j => `<div class="job-card">
+        <div class="job-header">
+          <div>
+            <div class="job-type">${(j.serviceType || j.service_type || "").replace(/_/g," ")}</div>
+            <div class="job-detail">&#128205; ${(j.location?.address || "Unknown location")}</div>
+            ${j.notes ? `<div class="job-detail">&#128172; ${j.notes}</div>` : ""}
+          </div>
+          <div class="job-price">$${j.estimatedCost || j.estimated_cost || 0}</div>
+        </div>
+        <div class="job-actions">
+          <button class="btn btn-coral btn-sm" style="flex:1" onclick="acceptJob('${j.id}')">Accept Job</button>
+          <button class="btn btn-ghost btn-sm" onclick="toast('Job skipped')">Skip</button>
+        </div>
+      </div>`).join("");
+    } catch { toast("Could not load jobs."); }
+  }
+
+  async function acceptJob(id) {
+    try {
+      const res = await fetch(`${BASE}/api/jobs/${id}/accept`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${userToken}` },
+        body: JSON.stringify({ provider: currentUser }),
+      });
+      if (res.ok) {
+        toast("Job accepted! Download the app to communicate with the driver.");
+        loadProviderJobs();
+      } else {
+        toast("Could not accept job — it may have been taken.");
+      }
+    } catch { toast("Network error."); }
+  }
+
+  // ── Provider Earnings ──
+  async function loadProviderEarnings() {
+    if (!currentUser) return;
+    try {
+      const providerId = currentUser.providerId || currentUser.id;
+      const res = await fetch(`${BASE}/api/providers/${providerId}/earnings`, { headers: { Authorization: `Bearer ${userToken}` } });
+      if (res.ok) {
+        const data = await res.json();
+        const balance = data.earningsBalance ?? data.earnings_balance ?? 0;
+        document.getElementById("earnings-amount").textContent = `$${Number(balance).toFixed(2)}`;
+      }
+    } catch {}
+  }
+
+  // ── Profile ──
+  function updateProfile() {
+    if (!currentUser) return;
+    const role = currentUser.role || "driver";
+    document.getElementById("profile-initial").textContent = (currentUser.name || "?")[0].toUpperCase();
+    document.getElementById("profile-name").textContent = currentUser.name || "—";
+    document.getElementById("profile-email").textContent = currentUser.email || "—";
+    document.getElementById("profile-role-badge").textContent = role === "provider" ? "Service Provider" : "Driver";
+    if (role === "provider") document.getElementById("profile-role-badge").style.background = "rgba(255,107,107,0.12)";
+  }
+
+  // ── Auto-login ──
+  async function tryAutoLogin() {
+    if (!userToken) return;
+    try {
+      const res = await fetch(`${BASE}/api/auth/me`, { headers: { Authorization: `Bearer ${userToken}` } });
+      if (res.ok) {
+        const data = await res.json();
+        currentUser = data.user || data;
+        enterApp();
+      } else {
+        userToken = ""; localStorage.removeItem("sm_web_token");
+      }
+    } catch {}
+  }
+
+  // ── Init ──
+  buildServiceGrid();
+  tryAutoLogin();
+</script>
+</body>
+</html>

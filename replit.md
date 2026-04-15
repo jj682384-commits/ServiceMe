@@ -3,6 +3,25 @@
 ## Overview
 ServiceMe is a cross-platform mobile application designed to connect drivers needing roadside assistance with nearby service providers. It offers a dual-user interface for both drivers seeking help (e.g., flat tires, jump starts, towing, fuel delivery, lockouts) and individuals or professionals providing these services. The core value proposition is to provide fast, proximity-based connections with real-time communication and service tracking. The project aims to empower individuals to become service providers, fostering a gig-economy model similar to Uber, emphasizing "Earn Helping Others," "No experience needed," and "Work on your own schedule." The business vision is to become a leading platform for on-demand roadside assistance, offering market potential through its flexible provider model and comprehensive service offerings, including specialized EV services.
 
+## Web Presence
+
+### Landing Page (`/`)
+Full marketing page with hero section, animated phone mockups, stats bar, "How It Works" (3 steps), all services grid (8 services), dual Driver/Provider section, email waitlist signup form (calls `/api/waitlist`), App Store/Google Play download CTAs, and footer. Waitlist emails stored in `waitlist` table (auto-created).
+
+### Web App (`/app`)
+Browser-accessible version of ServiceMe. Drivers can sign in/up, select a service (flat tire, jump start, towing, fuel, lockout, minor repair, EV services), submit a request with address, and see history. Providers can sign in, view available jobs from the live queue, accept them, and see their earnings balance. Uses the same auth and API as the mobile app.
+
+### Admin Dashboard (`/admin`)
+Full-featured admin panel with sidebar navigation:
+- **Overview** — stats (drivers, providers, pending verifications, jobs, revenue, volume, waitlist count)
+- **Providers** — verification workflow (approve/reject/revoke) with document review, filterable by status
+- **Drivers** — all registered driver accounts; remove users
+- **Jobs** — last 200 jobs with status filter and search
+- **Earnings** — platform revenue stats, provider balances, full payout history
+- **Reports** — user-submitted problem reports
+- **Waitlist** — email list with CSV export, filterable by role
+- **Notifications** — send push notifications to drivers, providers, or everyone
+
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
