@@ -1038,6 +1038,10 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
 
   app.get("/api/jobs/pending", async (_req: Request, res: Response) => {
     try {
+      // Auto-expire jobs older than 30 minutes so stale requests never linger
+      await pool.query(
+        "UPDATE jobs SET status = 'expired' WHERE status = 'pending' AND created_at::timestamptz < NOW() - INTERVAL '30 minutes'"
+      ).catch(() => {});
       const { rows } = await pool.query<JobRow>(
         "SELECT * FROM jobs WHERE status = 'pending' ORDER BY created_at ASC"
       );
