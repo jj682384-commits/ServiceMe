@@ -68,11 +68,12 @@
     }
     .auth-logo { text-align: center; margin-bottom: 36px; }
     .auth-logo-icon {
-      width: 72px; height: 72px; border-radius: 22px;
-      background: linear-gradient(135deg, var(--cyan), #0055CC);
+      width: 80px; height: 80px; border-radius: 24px;
+      background: linear-gradient(145deg, #0A0E27, #0D1440);
       display: flex; align-items: center; justify-content: center;
-      font-size: 32px; font-weight: 900; color: #fff; margin: 0 auto 14px;
-      box-shadow: 0 12px 40px rgba(0,212,255,0.35), 0 0 0 1px rgba(0,212,255,0.2);
+      margin: 0 auto 14px;
+      box-shadow: 0 12px 40px rgba(0,212,255,0.3), 0 0 0 1px rgba(0,212,255,0.15);
+      overflow: hidden;
     }
     .auth-logo h1 { font-size: 28px; font-weight: 900; letter-spacing: -.5px; }
     .auth-logo p { color: var(--muted); font-size: 14px; margin-top: 5px; }
@@ -182,10 +183,11 @@
     }
     .sidebar-logo-icon {
       width: 32px; height: 32px; border-radius: 10px;
-      background: linear-gradient(135deg, var(--cyan), #0055CC);
+      background: linear-gradient(145deg, #0A0E27, #0D1440);
       display: flex; align-items: center; justify-content: center;
-      font-size: 14px; font-weight: 900; color: #fff; flex-shrink: 0;
+      flex-shrink: 0;
       box-shadow: 0 4px 12px rgba(0,212,255,0.3);
+      overflow: hidden;
     }
     .sidebar-logo-text { font-size: 15px; font-weight: 900; color: var(--text); }
     .sidebar-section {
@@ -559,7 +561,24 @@
   <div id="auth-screen">
     <div class="auth-box">
       <div class="auth-logo">
-        <div class="auth-logo-icon">S</div>
+        <div class="auth-logo-icon">
+          <svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M26 4L8 11V26C8 36.5 16 45.5 26 48C36 45.5 44 36.5 44 26V11L26 4Z" fill="url(#shield-grad)" stroke="rgba(0,212,255,0.4)" stroke-width="1"/>
+            <path d="M26 10L13 15.5V26C13 33.5 18.5 40 26 42C33.5 40 39 33.5 39 26V15.5L26 10Z" fill="url(#inner-grad)" opacity="0.85"/>
+            <path d="M26 22L28.5 27H33L29 30L30.5 35L26 32L21.5 35L23 30L19 27H23.5L26 22Z" fill="white" opacity="0.95"/>
+            <defs>
+              <linearGradient id="shield-grad" x1="26" y1="4" x2="26" y2="48" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#00D4FF"/>
+                <stop offset="0.5" stop-color="#FF6B6B"/>
+                <stop offset="1" stop-color="#0088CC"/>
+              </linearGradient>
+              <linearGradient id="inner-grad" x1="26" y1="10" x2="26" y2="42" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#00AADD"/>
+                <stop offset="1" stop-color="#0055AA"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
         <h1>ResqRide</h1>
         <p>On-demand roadside assistance</p>
       </div>
@@ -621,7 +640,9 @@
       <!-- Sidebar -->
       <div class="app-sidebar" id="app-sidebar">
         <div class="sidebar-logo-area">
-          <div class="sidebar-logo-icon">S</div>
+          <div class="sidebar-logo-icon">
+          <svg width="22" height="22" viewBox="0 0 52 52" fill="none"><path d="M26 4L8 11V26C8 36.5 16 45.5 26 48C36 45.5 44 36.5 44 26V11L26 4Z" fill="url(#sg2)"/><path d="M26 22L28.5 27H33L29 30L30.5 35L26 32L21.5 35L23 30L19 27H23.5L26 22Z" fill="white" opacity="0.95"/><defs><linearGradient id="sg2" x1="26" y1="4" x2="26" y2="48" gradientUnits="userSpaceOnUse"><stop stop-color="#00D4FF"/><stop offset="0.5" stop-color="#FF6B6B"/><stop offset="1" stop-color="#0088CC"/></linearGradient></defs></svg>
+        </div>
           <span class="sidebar-logo-text">ResqRide</span>
         </div>
 

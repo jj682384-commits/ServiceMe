@@ -40,9 +40,10 @@
     .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
     .nav-logo-icon {
       width: 36px; height: 36px; border-radius: 10px;
-      background: linear-gradient(135deg, var(--cyan), var(--coral));
+      background: linear-gradient(145deg, #0A0E27, #0D1440);
       display: flex; align-items: center; justify-content: center;
-      font-size: 18px; font-weight: 900; color: #fff;
+      box-shadow: 0 4px 14px rgba(0,212,255,0.3);
+      overflow: hidden;
     }
     .nav-logo-text { font-size: 18px; font-weight: 800; color: #fff; }
     .nav-links { display: flex; align-items: center; gap: 32px; }
@@ -312,7 +313,7 @@
 <!-- Nav -->
 <nav>
   <a class="nav-logo" href="#">
-    <div class="nav-logo-icon">S</div>
+    <div class="nav-logo-icon"><svg width="24" height="24" viewBox="0 0 52 52" fill="none"><path d="M26 4L8 11V26C8 36.5 16 45.5 26 48C36 45.5 44 36.5 44 26V11L26 4Z" fill="url(#lg1)"/><path d="M26 22L28.5 27H33L29 30L30.5 35L26 32L21.5 35L23 30L19 27H23.5L26 22Z" fill="white" opacity="0.95"/><defs><linearGradient id="lg1" x1="26" y1="4" x2="26" y2="48" gradientUnits="userSpaceOnUse"><stop stop-color="#00D4FF"/><stop offset="0.5" stop-color="#FF6B6B"/><stop offset="1" stop-color="#0088CC"/></linearGradient></defs></svg></div>
     <span class="nav-logo-text">ResqRide</span>
   </a>
   <div class="nav-links">
