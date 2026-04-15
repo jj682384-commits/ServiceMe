@@ -482,6 +482,80 @@
     .ev-svc-name { font-size: 13px; font-weight: 800; }
     .ev-svc-est { font-size: 11px; color: var(--purple); margin-top: 4px; font-weight: 700; }
 
+    /* ── Fuel Picker ── */
+    .fuel-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+    .fuel-tab {
+      flex: 1; padding: 9px 0; border-radius: 12px; border: 1.5px solid var(--border);
+      background: var(--card); color: var(--muted); font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: all .2s; font-family: inherit;
+    }
+    .fuel-tab.active { background: rgba(0,212,255,0.1); border-color: var(--cyan); color: var(--cyan); }
+    .fuel-grid { display: flex; flex-direction: column; gap: 8px; }
+    .fuel-pill {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px; border-radius: 14px; border: 1.5px solid var(--border);
+      background: var(--card); cursor: pointer; transition: all .2s;
+    }
+    .fuel-pill.selected { border-color: var(--cyan); background: rgba(0,212,255,0.08); }
+    .fuel-pill-label { font-size: 15px; font-weight: 800; color: var(--text); }
+    .fuel-pill.selected .fuel-pill-label { color: var(--cyan); }
+    .fuel-pill-desc { font-size: 12px; color: var(--muted); }
+
+    /* ── Add-on Card ── */
+    .addon-card {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 16px; border-radius: 16px; border: 2px solid var(--border);
+      background: var(--card); cursor: pointer; transition: all .2s;
+    }
+    .addon-card.checked { border-color: var(--coral); background: rgba(255,83,65,0.07); }
+    .addon-icon { font-size: 24px; flex-shrink: 0; }
+    .addon-body { flex: 1; min-width: 0; }
+    .addon-title { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+    .addon-price { color: var(--coral); }
+    .addon-desc { font-size: 12px; color: var(--muted); }
+    .addon-checkbox {
+      width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--border);
+      flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+      transition: all .2s;
+    }
+    .addon-card.checked .addon-checkbox { background: var(--coral); border-color: var(--coral); }
+    .addon-checkbox::after { content: ''; display: none; width: 6px; height: 10px; border: 2px solid #fff; border-top: none; border-left: none; transform: rotate(45deg) translate(-1px,-1px); }
+    .addon-card.checked .addon-checkbox::after { display: block; }
+
+    /* ── EV Charge Level Cards ── */
+    .ev-charge-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+    .ev-charge-card {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 16px 18px; border-radius: 16px; border: 2px solid var(--border);
+      background: var(--card); cursor: pointer; transition: all .2s;
+    }
+    .ev-charge-card.selected { border-color: rgba(167,139,250,0.7); background: rgba(167,139,250,0.1); }
+    .ev-charge-left { flex: 1; min-width: 0; }
+    .ev-charge-label { font-size: 15px; font-weight: 800; }
+    .ev-charge-card.selected .ev-charge-label { color: #a78bfa; }
+    .ev-charge-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .ev-charge-desc { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .ev-charge-price { font-size: 18px; font-weight: 900; color: #a78bfa; flex-shrink: 0; }
+
+    /* ── EV Tow Options ── */
+    .ev-tow-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+    .ev-tow-card {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px; border-radius: 16px; border: 2px solid var(--border);
+      background: var(--card); cursor: pointer; transition: all .2s;
+    }
+    .ev-tow-card.selected { border-color: rgba(167,139,250,0.7); background: rgba(167,139,250,0.1); }
+    .ev-tow-label { font-size: 14px; font-weight: 800; }
+    .ev-tow-card.selected .ev-tow-label { color: #a78bfa; }
+    .ev-tow-desc { font-size: 12px; color: var(--muted); margin-top: 3px; }
+    .ev-tow-price { font-size: 16px; font-weight: 900; color: #a78bfa; }
+    .ev-dest-grid { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+    .ev-dest-pill {
+      padding: 10px 14px; border-radius: 12px; border: 1.5px solid var(--border);
+      background: var(--card); cursor: pointer; font-size: 13px; font-weight: 700; transition: all .2s;
+    }
+    .ev-dest-pill.selected { border-color: rgba(167,139,250,0.6); background: rgba(167,139,250,0.1); color: #a78bfa; }
+
     /* ── Toast ── */
     #toast {
       position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(0);
@@ -712,16 +786,57 @@
 
           <div class="request-form" id="request-form" style="display:none">
             <h3 id="request-title">Flat Tire</h3>
-            <div class="price-preview">
+
+            <!-- Jump Start: Battery Health Check add-on -->
+            <div id="addon-battery-panel" style="display:none;margin-bottom:16px">
+              <div class="section-label" style="margin-top:0;margin-bottom:10px">Optional Add-On</div>
+              <label class="addon-card" id="battery-addon-card" onclick="toggleBatteryCheckUI()">
+                <div class="addon-icon">&#9889;</div>
+                <div class="addon-body">
+                  <div class="addon-title">Battery Health Check <span class="addon-price">+$8.00</span></div>
+                  <div class="addon-desc">Technician tests battery health, cold-cranking amps, and charging system</div>
+                </div>
+                <input type="checkbox" id="battery-check-toggle" style="display:none" onchange="toggleBatteryCheck(this.checked)" />
+                <div class="addon-checkbox" id="battery-check-box"></div>
+              </label>
+            </div>
+
+            <!-- Fuel Delivery: Amount picker -->
+            <div id="fuel-picker-panel" style="display:none;margin-bottom:16px">
+              <div class="section-label" style="margin-top:0;margin-bottom:10px">How much fuel do you need?</div>
+              <div class="fuel-tabs">
+                <button id="fuel-tab-preset" class="fuel-tab active" onclick="switchFuelTab('preset')">Choose Amount</button>
+                <button id="fuel-tab-custom" class="fuel-tab" onclick="switchFuelTab('custom')">Enter Custom</button>
+              </div>
+              <div id="fuel-amount-grid" class="fuel-grid"></div>
+              <div id="fuel-custom-section" style="display:none;margin-top:10px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="font-size:22px;font-weight:700;color:var(--cyan)">$</span>
+                  <input class="web-input" type="number" id="fuel-custom-input" placeholder="Enter amount" min="1" max="999" style="flex:1" oninput="onCustomFuelInput(this.value)" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Price summary -->
+            <div class="price-preview" style="margin-bottom:16px">
               <div>
-                <div class="price-label">Estimated Cost</div>
+                <div class="price-label">Service</div>
                 <div class="price-value" id="request-price">$0</div>
               </div>
-              <div>
-                <div class="price-label" style="text-align:right">ETA</div>
+              <div style="text-align:center">
+                <div class="price-label">Service Fee</div>
+                <div style="font-size:15px;font-weight:600;color:var(--text-muted)">$2.99</div>
+              </div>
+              <div style="text-align:right">
+                <div class="price-label">ETA</div>
                 <div class="price-eta" id="request-eta">~15 min</div>
               </div>
             </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-top:1px solid rgba(255,255,255,0.07);margin-bottom:16px">
+              <span style="font-size:14px;font-weight:600;opacity:0.7">Total</span>
+              <span style="font-size:18px;font-weight:700;color:var(--cyan)" id="request-total">$0.00</span>
+            </div>
+
             <div class="form-row" style="margin-bottom:16px">
               <div class="input-group">
                 <label class="input-label">Your Location / Address</label>
@@ -771,29 +886,64 @@
             <div class="view-title">EV Services</div>
             <div class="view-sub">Specialized roadside assistance for electric vehicles</div>
           </div>
-          <div class="section-label">EV-Specific Services</div>
-          <div class="service-grid">
-            <div class="ev-service-btn" onclick="selectServiceAndRequest({name:'Mobile EV Charging',price:10,eta:15,emoji:'&#128268;'})">
-              <div class="ev-svc-icon-wrap">&#128268;</div>
-              <div class="ev-svc-name">Mobile Charging</div>
-              <div class="ev-svc-est">From $10</div>
+
+          <!-- Mobile EV Charging -->
+          <div class="section-label">Mobile EV Charging</div>
+          <div class="ev-charge-grid" id="ev-charge-grid">
+            <div class="ev-charge-card selected" onclick="selectChargeLevel(0)" id="ev-charge-0">
+              <div class="ev-charge-left">
+                <div class="ev-charge-label">Quick Boost</div>
+                <div class="ev-charge-meta">10 kWh &bull; ~15 min</div>
+                <div class="ev-charge-desc">Get enough charge to reach the nearest station</div>
+              </div>
+              <div class="ev-charge-price">$10</div>
             </div>
-            <div class="ev-service-btn" onclick="selectServiceAndRequest({name:'EV-Safe Tow',price:84,eta:20,emoji:'&#128690;'})">
-              <div class="ev-svc-icon-wrap">&#128690;</div>
-              <div class="ev-svc-name">EV-Safe Tow</div>
-              <div class="ev-svc-est">From $84</div>
+            <div class="ev-charge-card" onclick="selectChargeLevel(1)" id="ev-charge-1">
+              <div class="ev-charge-left">
+                <div class="ev-charge-label">Half Charge</div>
+                <div class="ev-charge-meta">25 kWh &bull; ~35 min</div>
+                <div class="ev-charge-desc">Enough for about 80 miles of range</div>
+              </div>
+              <div class="ev-charge-price">$24</div>
             </div>
-            <div class="ev-service-btn" onclick="selectServiceAndRequest({name:'Battery Diagnostic',price:75,eta:20,emoji:'&#9889;'})">
-              <div class="ev-svc-icon-wrap">&#9889;</div>
-              <div class="ev-svc-name">Battery Diagnostic</div>
-              <div class="ev-svc-est">From $75</div>
-            </div>
-            <div class="ev-service-btn" onclick="selectServiceAndRequest({name:'Range Emergency',price:25,eta:30,emoji:'&#9888;'})">
-              <div class="ev-svc-icon-wrap">&#9888;</div>
-              <div class="ev-svc-name">Range Emergency</div>
-              <div class="ev-svc-est">From $25</div>
+            <div class="ev-charge-card" onclick="selectChargeLevel(2)" id="ev-charge-2">
+              <div class="ev-charge-left">
+                <div class="ev-charge-label">Full Charge</div>
+                <div class="ev-charge-meta">50 kWh &bull; ~60 min</div>
+                <div class="ev-charge-desc">Top off your battery to near full capacity</div>
+              </div>
+              <div class="ev-charge-price">$44</div>
             </div>
           </div>
+          <button class="btn btn-cyan" style="margin-bottom:24px" onclick="submitEvCharge()">&#128268; Request Mobile Charging</button>
+
+          <!-- EV-Safe Tow -->
+          <div class="section-label">EV-Safe Tow</div>
+          <div class="ev-tow-grid" id="ev-tow-grid">
+            <div class="ev-tow-card" onclick="selectTowType(0)" id="ev-tow-0">
+              <div>
+                <div class="ev-tow-label">Flatbed Transport</div>
+                <div class="ev-tow-desc">All four wheels off the ground. Safest option for all EVs.</div>
+              </div>
+              <div class="ev-tow-price">$127</div>
+            </div>
+            <div class="ev-tow-card selected" onclick="selectTowType(1)" id="ev-tow-1">
+              <div>
+                <div class="ev-tow-label">Wheel-Lift Tow</div>
+                <div class="ev-tow-desc">Front or rear wheels lifted. For short-distance tows.</div>
+              </div>
+              <div class="ev-tow-price">$84</div>
+            </div>
+          </div>
+          <div class="section-label">Destination</div>
+          <div class="ev-dest-grid" id="ev-dest-grid">
+            <div class="ev-dest-pill selected" onclick="selectTowDest(0)" id="ev-dest-0">&#128267; Nearest Charging Station</div>
+            <div class="ev-dest-pill" onclick="selectTowDest(1)" id="ev-dest-1">&#128295; Nearest EV Service Center</div>
+            <div class="ev-dest-pill" onclick="selectTowDest(2)" id="ev-dest-2">&#127968; My Home Address</div>
+            <div class="ev-dest-pill" onclick="selectTowDest(3)" id="ev-dest-3">&#128205; Custom Destination</div>
+          </div>
+          <button class="btn btn-cyan" style="margin-bottom:24px" onclick="submitEvTow()">&#128690; Request EV Tow</button>
+
           <div class="glass-card" style="background:linear-gradient(135deg,rgba(167,139,250,0.08),rgba(167,139,250,0.03));border-color:rgba(167,139,250,0.2)">
             <h3 style="color:var(--purple)">&#9889; EV Owner Benefits</h3>
             <p>ResqRide providers are EV-certified and use non-conductive towing equipment. We support all major EV brands including Tesla, Rivian, Ford, and GM.</p>
@@ -979,17 +1129,54 @@
   let currentUser = null;
   let selectedRole = "driver";
   let selectedService = null;
+  let addBatteryCheck = false;
+  let selectedFuelIndex = 2;
+  let useCustomFuel = false;
+  let customFuelAmount = "";
+
+  const SERVICE_FEE = 2.99;
 
   const SERVICES = [
-    { name: "Flat Tire",      price: 40,  display: "$40",       eta: 15, emoji: "&#128739;" },
-    { name: "Jump Start",     price: 30,  display: "$30",       eta: 12, emoji: "&#9889;" },
-    { name: "Towing",         price: 85,  display: "From $85",  eta: 20, emoji: "&#128664;" },
-    { name: "Fuel Delivery",  price: 10,  display: "From $10",  eta: 18, emoji: "&#9981;" },
-    { name: "Lockout",        price: 55,  display: "$55",       eta: 15, emoji: "&#128273;" },
-    { name: "OBD Diagnostic", price: 21,  display: "$21",       eta: 25, emoji: "&#128187;" },
+    { name: "Flat Tire",      type: "flat_tire",      price: 40,  display: "$40",       eta: 15, emoji: "&#128739;" },
+    { name: "Jump Start",     type: "jump_start",     price: 30,  display: "$30",       eta: 12, emoji: "&#9889;" },
+    { name: "Fuel Delivery",  type: "fuel",           price: 0,   display: "From $10",  eta: 18, emoji: "&#9981;" },
+    { name: "Lockout",        type: "lockout",        price: 55,  display: "$55",       eta: 15, emoji: "&#128273;" },
+    { name: "OBD Diagnostic", type: "obd_diagnostic", price: 21,  display: "$21",       eta: 25, emoji: "&#128187;" },
   ];
 
-  const SVC_ICONS = { "Flat Tire":"&#128739;","Jump Start":"&#9889;","Towing":"&#128664;","Fuel Delivery":"&#9981;","Lockout":"&#128273;","OBD Diagnostic":"&#128187;" };
+  const FUEL_AMOUNTS = [
+    { label: "$10", desc: "Just enough to reach a station",  price: 10 },
+    { label: "$15", desc: "Short trip covered",              price: 15 },
+    { label: "$20", desc: "About 60–90 miles of range",      price: 20 },
+    { label: "$25", desc: "A solid fill for most cars",      price: 25 },
+    { label: "$30", desc: "Comfortable fill for most cars",  price: 30 },
+    { label: "$35", desc: "More than enough for the day",    price: 35 },
+    { label: "$40", desc: "Half tank for most vehicles",     price: 40 },
+    { label: "$45", desc: "Nearly a full tank",              price: 45 },
+    { label: "$50", desc: "Get back on the road worry-free", price: 50 },
+  ];
+
+  const SVC_ICONS = { "Flat Tire":"&#128739;","Jump Start":"&#9889;","Fuel Delivery":"&#9981;","Lockout":"&#128273;","OBD Diagnostic":"&#128187;" };
+
+  function getEffectivePrice() {
+    if (!selectedService) return 0;
+    if (selectedService.type === "fuel") {
+      if (useCustomFuel) return parseFloat(customFuelAmount) || 0;
+      return FUEL_AMOUNTS[selectedFuelIndex].price;
+    }
+    let p = selectedService.price;
+    if (selectedService.type === "jump_start" && addBatteryCheck) p += 8;
+    return p;
+  }
+
+  function updatePriceDisplay() {
+    const base = getEffectivePrice();
+    const total = base + SERVICE_FEE;
+    const priceEl = document.getElementById("request-price");
+    const totalEl = document.getElementById("request-total");
+    if (priceEl) priceEl.textContent = `$${base.toFixed(0)}`;
+    if (totalEl) totalEl.textContent = `$${total.toFixed(2)}`;
+  }
 
   function toast(msg, duration) {
     const el = document.getElementById("toast");
@@ -1122,19 +1309,173 @@
 
   function selectServiceAndRequest(svc) {
     selectedService = svc;
+    addBatteryCheck = false;
+    selectedFuelIndex = 2;
+    useCustomFuel = false;
+    customFuelAmount = "";
     document.getElementById("request-form").style.display = "block";
     document.getElementById("request-title").textContent = svc.name;
-    document.getElementById("request-price").textContent = `$${svc.price}`;
     document.getElementById("request-eta").textContent = `~${svc.eta} min`;
     document.getElementById("request-success").style.display = "none";
+
+    // Jump Start add-on panel
+    const addOnPanel = document.getElementById("addon-battery-panel");
+    addOnPanel.style.display = svc.type === "jump_start" ? "block" : "none";
+    const battChk = document.getElementById("battery-check-toggle");
+    if (battChk) { battChk.checked = false; }
+
+    // Fuel picker panel
+    const fuelPanel = document.getElementById("fuel-picker-panel");
+    fuelPanel.style.display = svc.type === "fuel" ? "block" : "none";
+    renderFuelPicker();
+
+    updatePriceDisplay();
     if (document.getElementById("view-ev").classList.contains("active")) showView("request");
     setTimeout(() => document.getElementById("request-form").scrollIntoView({ behavior: "smooth" }), 50);
+  }
+
+  function renderFuelPicker() {
+    const grid = document.getElementById("fuel-amount-grid");
+    if (!grid) return;
+    grid.innerHTML = FUEL_AMOUNTS.map((f, i) =>
+      `<div class="fuel-pill ${i === selectedFuelIndex && !useCustomFuel ? 'selected' : ''}" onclick="selectFuelAmount(${i})">
+        <div class="fuel-pill-label">${f.label}</div>
+        <div class="fuel-pill-desc">${f.desc}</div>
+      </div>`
+    ).join("");
+    const customSection = document.getElementById("fuel-custom-section");
+    const customInput = document.getElementById("fuel-custom-input");
+    if (customSection) customSection.style.display = useCustomFuel ? "block" : "none";
+    const customTab = document.getElementById("fuel-tab-custom");
+    const presetTab = document.getElementById("fuel-tab-preset");
+    if (customTab) customTab.classList.toggle("active", useCustomFuel);
+    if (presetTab) presetTab.classList.toggle("active", !useCustomFuel);
+  }
+
+  function selectFuelAmount(i) {
+    selectedFuelIndex = i;
+    useCustomFuel = false;
+    customFuelAmount = "";
+    renderFuelPicker();
+    updatePriceDisplay();
+  }
+
+  function switchFuelTab(mode) {
+    useCustomFuel = mode === "custom";
+    if (!useCustomFuel) customFuelAmount = "";
+    renderFuelPicker();
+    updatePriceDisplay();
+  }
+
+  function onCustomFuelInput(val) {
+    customFuelAmount = val;
+    updatePriceDisplay();
+  }
+
+  function toggleBatteryCheck(checked) {
+    addBatteryCheck = checked;
+    updatePriceDisplay();
+  }
+
+  // ── Battery Check toggle UI ──
+  function toggleBatteryCheckUI() {
+    const chk = document.getElementById("battery-check-toggle");
+    const card = document.getElementById("battery-addon-card");
+    chk.checked = !chk.checked;
+    addBatteryCheck = chk.checked;
+    card.classList.toggle("checked", addBatteryCheck);
+    updatePriceDisplay();
+  }
+
+  // ── EV Section ──
+  const EV_CHARGE_LEVELS = [
+    { label: "Quick Boost",  kwh: "10 kWh", time: "~15 min", price: 10, desc: "Get enough charge to reach the nearest station" },
+    { label: "Half Charge",  kwh: "25 kWh", time: "~35 min", price: 24, desc: "Enough for about 80 miles of range" },
+    { label: "Full Charge",  kwh: "50 kWh", time: "~60 min", price: 44, desc: "Top off your battery to near full capacity" },
+  ];
+  const EV_TOW_TYPES = [
+    { label: "Flatbed Transport", desc: "All four wheels off the ground. Safest option for all EVs.", price: 127 },
+    { label: "Wheel-Lift Tow",   desc: "Front or rear wheels lifted. For short-distance tows.",     price: 84  },
+  ];
+  const EV_DEST_LABELS = [
+    "Nearest Charging Station", "Nearest EV Service Center", "My Home Address", "Custom Destination"
+  ];
+  let selectedChargeLevel = 0;
+  let selectedTowType = 1;
+  let selectedTowDest = 0;
+  const EV_SVC_FEE = 2.99;
+
+  function selectChargeLevel(i) {
+    selectedChargeLevel = i;
+    for (let j = 0; j < 3; j++) {
+      document.getElementById(`ev-charge-${j}`)?.classList.toggle("selected", j === i);
+    }
+  }
+
+  function selectTowType(i) {
+    selectedTowType = i;
+    for (let j = 0; j < 2; j++) {
+      document.getElementById(`ev-tow-${j}`)?.classList.toggle("selected", j === i);
+    }
+  }
+
+  function selectTowDest(i) {
+    selectedTowDest = i;
+    for (let j = 0; j < 4; j++) {
+      document.getElementById(`ev-dest-${j}`)?.classList.toggle("selected", j === i);
+    }
+  }
+
+  async function submitEvCharge() {
+    if (!userToken) { toast("Please sign in first."); return; }
+    const level = EV_CHARGE_LEVELS[selectedChargeLevel];
+    try {
+      const res = await fetch(`${BASE}/api/jobs`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${userToken}` },
+        body: JSON.stringify({
+          serviceType: "fuel",
+          location: { address: "Current Location", latitude: 0, longitude: 0 },
+          notes: `EV Mobile Charging — ${level.label} (${level.kwh}, ${level.time})`,
+          estimatedCost: level.price,
+          driver: currentUser ? { id: currentUser.id, name: currentUser.name, email: currentUser.email } : {},
+        }),
+      });
+      if (res.ok) { toast(`EV Charging request sent! ${level.label} — $${level.price + EV_SVC_FEE} total`); }
+      else { const d = await res.json().catch(() => ({})); toast(d.error || "Failed to submit."); }
+    } catch { toast("Network error. Check your connection."); }
+  }
+
+  async function submitEvTow() {
+    if (!userToken) { toast("Please sign in first."); return; }
+    const tow = EV_TOW_TYPES[selectedTowType];
+    const dest = EV_DEST_LABELS[selectedTowDest];
+    try {
+      const res = await fetch(`${BASE}/api/jobs`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${userToken}` },
+        body: JSON.stringify({
+          serviceType: "tow",
+          location: { address: "Current Location", latitude: 0, longitude: 0 },
+          notes: `EV Tow — ${tow.label} to ${dest}`,
+          estimatedCost: tow.price,
+          driver: currentUser ? { id: currentUser.id, name: currentUser.name, email: currentUser.email } : {},
+        }),
+      });
+      if (res.ok) { toast(`EV Tow request sent! ${tow.label} — $${tow.price + EV_SVC_FEE} total`); }
+      else { const d = await res.json().catch(() => ({})); toast(d.error || "Failed to submit."); }
+    } catch { toast("Network error. Check your connection."); }
   }
 
   function cancelRequest() {
     document.getElementById("request-form").style.display = "none";
     document.querySelectorAll(".service-btn").forEach(b => b.classList.remove("selected"));
+    document.querySelectorAll(".ev-service-btn").forEach(b => b.classList.remove("selected"));
     selectedService = null;
+    addBatteryCheck = false;
+    selectedFuelIndex = 2;
+    useCustomFuel = false;
+    customFuelAmount = "";
   }
 
   function resetRequest() {
@@ -1147,15 +1488,20 @@
     const location = document.getElementById("req-location").value.trim();
     const notes = document.getElementById("req-notes").value.trim();
     if (!location) { toast("Please enter your location."); return; }
+    const price = getEffectivePrice();
+    if (selectedService.type === "fuel" && price <= 0) { toast("Please select or enter a fuel amount."); return; }
+    const extraNotes = (selectedService.type === "jump_start" && addBatteryCheck)
+      ? (notes ? notes + "\n[Battery Health Check included]" : "[Battery Health Check included]")
+      : notes;
     try {
       const res = await fetch(`${BASE}/api/jobs`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${userToken}` },
         body: JSON.stringify({
-          serviceType: selectedService.name.toLowerCase().replace(/ /g, "_"),
+          serviceType: selectedService.type,
           location: { address: location, latitude: 0, longitude: 0 },
-          notes,
-          estimatedCost: selectedService.price,
+          notes: extraNotes,
+          estimatedCost: price,
           driver: currentUser ? { id: currentUser.id, name: currentUser.name, email: currentUser.email } : {},
         }),
       });
