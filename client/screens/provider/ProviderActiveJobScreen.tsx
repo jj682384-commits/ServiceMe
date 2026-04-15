@@ -191,8 +191,8 @@ export default function ProviderActiveJobScreen() {
 
   const config    = statusConfig[activeRequest.status] ?? statusConfig.accepted;
   const canAdvance = ADVANCE_STATUSES.includes(activeRequest.status);
-  const customerLat = activeRequest.location.latitude  || 37.7849;
-  const customerLng = activeRequest.location.longitude || -122.4094;
+  const customerLat = activeRequest.location.latitude  || 0;
+  const customerLng = activeRequest.location.longitude || 0;
 
   const mapMarkers = [{
     id: "user",

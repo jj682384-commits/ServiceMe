@@ -300,8 +300,8 @@ export default function ActiveServiceScreen() {
   }
 
   // ── Map markers ──────────────────────────────────────────────────────────────
-  const userLat      = activeRequest.location.latitude  || 37.7849;
-  const userLng      = activeRequest.location.longitude || -122.4094;
+  const userLat      = activeRequest.location.latitude  || 0;
+  const userLng      = activeRequest.location.longitude || 0;
   const providerLat  = providerLocation?.latitude  || activeRequest.provider?.location?.latitude  || userLat + 0.01;
   const providerLng  = providerLocation?.longitude || activeRequest.provider?.location?.longitude || userLng + 0.01;
 

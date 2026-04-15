@@ -267,7 +267,11 @@ export default function ServiceRequestScreen() {
           avatarPreset: currentDriver.avatarPreset,
         }
       : undefined;
-    const coords = userLocation ?? { latitude: 37.7849, longitude: -122.4094 };
+    if (!userLocation) {
+      Alert.alert("Location Unavailable", "Enable location access in your device settings to submit a service request.");
+      return;
+    }
+    const coords = userLocation;
     const newRequest: ServiceRequest = {
       id: requestId,
       serviceType: selectedService,

@@ -87,10 +87,14 @@ export default function EVTowScreen() {
 
   const handleReviewAndPay = async () => {
     if (isProcessing) return;
+    if (!userLocation) {
+      Alert.alert("Location Unavailable", "Enable location access in your device settings to submit a tow request.");
+      return;
+    }
     setIsProcessing(true);
 
     const jobId = `req-${Date.now()}`;
-    const coords = userLocation ?? { latitude: 37.7849, longitude: -122.4094 };
+    const coords = userLocation;
 
     // Step 1 — Create payment intent on server
     try {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, StyleSheet, Pressable, TextInput } from "react-native";
+import { View, StyleSheet, Pressable, TextInput, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Feather } from "@expo/vector-icons";
@@ -141,7 +141,12 @@ export default function TowRequestScreen() {
 
     setIsSubmitting(true);
 
-    const coords = userLocation ?? { latitude: 37.7849, longitude: -122.4094 };
+    if (!userLocation) {
+      Alert.alert("Location Unavailable", "Enable location access in your device settings to submit a tow request.");
+      setIsSubmitting(false);
+      return;
+    }
+    const coords = userLocation;
     const driverInfo = currentDriver
       ? { id: currentDriver.id, name: currentDriver.name, phone: currentDriver.phone, email: currentDriver.email, avatarPreset: currentDriver.avatarPreset }
       : undefined;

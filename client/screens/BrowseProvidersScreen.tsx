@@ -163,7 +163,7 @@ export default function BrowseProvidersScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const { theme } = useTheme();
-  const { isPreferredProvider } = useApp();
+  const { isPreferredProvider, userLocation } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const [sortBy, setSortBy] = useState<SortOption>("nearest");
@@ -179,18 +179,29 @@ export default function BrowseProvidersScreen() {
       setIsLoading(true);
       setFetchError(false);
       try {
-        let lat = 37.7849;
-        let lng = -122.4094;
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status === "granted") {
-          const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-          lat = pos.coords.latitude;
-          lng = pos.coords.longitude;
+        let lat: number | undefined;
+        let lng: number | undefined;
+
+        // Use location already obtained by the map screen if available
+        if (userLocation) {
+          lat = userLocation.latitude;
+          lng = userLocation.longitude;
+        } else {
+          // Try to get location fresh (without assuming any default coordinates)
+          const { status } = await Location.requestForegroundPermissionsAsync();
+          if (status === "granted") {
+            const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+            lat = pos.coords.latitude;
+            lng = pos.coords.longitude;
+          }
         }
+
         const url = new URL("/api/providers/nearby", getApiUrl());
-        url.searchParams.set("lat", String(lat));
-        url.searchParams.set("lng", String(lng));
-        url.searchParams.set("radius", "50");
+        if (lat !== undefined && lng !== undefined) {
+          url.searchParams.set("lat", String(lat));
+          url.searchParams.set("lng", String(lng));
+          url.searchParams.set("radius", "50");
+        }
         const res = await fetch(url.toString());
         if (!res.ok) throw new Error("fetch failed");
         const data = await res.json();
@@ -202,7 +213,7 @@ export default function BrowseProvidersScreen() {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [userLocation?.latitude, userLocation?.longitude]);
 
   const filteredAndSorted = useMemo(() => {
     let result = [...allProviders];

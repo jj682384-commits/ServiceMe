@@ -40,7 +40,7 @@ export async function registerProviderOnServer(provider: {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...provider,
-        location: provider.location ?? { latitude: 37.7849, longitude: -122.4094 },
+        ...(provider.location ? { location: provider.location } : {}),
       }),
     });
   } catch {

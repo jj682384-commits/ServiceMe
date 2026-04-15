@@ -435,18 +435,36 @@ export default function DriverMapScreen() {
     [navigation],
   );
 
+  const [locating, setLocating] = useState(false);
+
   useEffect(() => {
     if (permission?.granted && Platform.OS !== "web") {
+      setLocating(true);
       (async () => {
         try {
           const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
           setUserLocation({ latitude: location.coords.latitude, longitude: location.coords.longitude });
         } catch {
-          setUserLocation({ latitude: 37.7849, longitude: -122.4094 });
+          // Failed to get location — leave userLocation null; user can retry
+        } finally {
+          setLocating(false);
         }
       })();
     } else if (Platform.OS === "web") {
-      setUserLocation({ latitude: 37.7849, longitude: -122.4094 });
+      if (typeof navigator !== "undefined" && navigator.geolocation) {
+        setLocating(true);
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            setUserLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+            setLocating(false);
+          },
+          () => {
+            // Browser geolocation denied or failed — leave null
+            setLocating(false);
+          },
+          { timeout: 10000, enableHighAccuracy: false }
+        );
+      }
     }
   }, [permission?.granted, setUserLocation]);
 
@@ -574,21 +592,43 @@ export default function DriverMapScreen() {
       color: p.isBusy ? COLOR_BUSY : isPreferredProvider(p.id) ? COLOR_PREFERRED : COLOR_FREE,
     }));
 
-  const mapCenter = userLocation ?? { latitude: 37.7849, longitude: -122.4094 };
-
   return (
     <ThemedView style={styles.container}>
-      {hasPermission ? (
+      {!hasPermission ? (
+        renderPermissionRequest()
+      ) : locating || !userLocation ? (
+        <View style={[styles.locatingContainer, { backgroundColor: theme.backgroundSecondary }]}>
+          <Feather name="navigation" size={36} color={theme.primary} />
+          <ThemedText type="body" style={{ color: theme.textSecondary, marginTop: Spacing.md, textAlign: "center" }}>
+            {locating ? "Getting your location…" : "Could not get your location.\nCheck that location access is enabled."}
+          </ThemedText>
+          {!locating && (
+            <Pressable
+              onPress={() => {
+                if (Platform.OS !== "web") {
+                  setLocating(true);
+                  Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
+                    .then((loc) => setUserLocation({ latitude: loc.coords.latitude, longitude: loc.coords.longitude }))
+                    .catch(() => {})
+                    .finally(() => setLocating(false));
+                }
+              }}
+              style={[styles.permissionButton, { backgroundColor: theme.primary, marginTop: Spacing.lg }]}
+            >
+              <Feather name="refresh-cw" size={16} color="#FFFFFF" />
+              <ThemedText type="body" style={{ color: "#FFFFFF", fontWeight: "600", marginLeft: Spacing.sm }}>Retry</ThemedText>
+            </Pressable>
+          )}
+        </View>
+      ) : (
         <GoogleMapView
-          latitude={mapCenter.latitude}
-          longitude={mapCenter.longitude}
+          latitude={userLocation.latitude}
+          longitude={userLocation.longitude}
           markers={providerMarkers}
           onMarkerPress={handleMarkerPress}
           showsUserLocation={!isWeb && !!permission?.granted}
           fallback={<WebMapPlaceholder providers={filteredProviders} />}
         />
-      ) : (
-        renderPermissionRequest()
       )}
 
       {/* Top search bar */}
@@ -884,6 +924,9 @@ export default function DriverMapScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   loadingContainer: { flex: 1, alignItems: "center", justifyContent: "center" },
+  locatingContainer: {
+    flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: Spacing["2xl"],
+  },
   permissionContainer: {
     flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: Spacing["2xl"],
   },
