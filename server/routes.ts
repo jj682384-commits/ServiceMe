@@ -589,13 +589,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/admin", (_req: Request, res: Response) => {
-    const adminPage = path.resolve(process.cwd(), "server", "templates", "admin.html");
-    if (fs.existsSync(adminPage)) {
-      res.setHeader("Content-Type", "text/html; charset=utf-8");
-      res.send(fs.readFileSync(adminPage, "utf-8"));
-    } else {
-      res.status(404).send("Admin page not found");
-    }
+    res.redirect(301, "/");
   });
 
   // ── Admin auth ────────────────────────────────────────────────────────────────
