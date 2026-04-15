@@ -258,6 +258,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ALTER TABLE providers
       ADD COLUMN IF NOT EXISTS payout_bank_info JSONB DEFAULT NULL
   `).catch(() => {});
+  await pool.query(`
+    ALTER TABLE providers
+      ADD COLUMN IF NOT EXISTS earnings_balance NUMERIC(10,2) DEFAULT 0
+  `).catch(() => {});
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS provider_payouts (
+      id TEXT PRIMARY KEY,
+      provider_id TEXT NOT NULL,
+      amount NUMERIC(10,2) NOT NULL,
+      fee NUMERIC(10,2) NOT NULL DEFAULT 0,
+      net_amount NUMERIC(10,2) NOT NULL,
+      payout_type TEXT NOT NULL DEFAULT 'standard',
+      status TEXT NOT NULL DEFAULT 'pending',
+      bank_last4 TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `).catch(() => {});
 
   function getSmartcarRedirectUri(): string {
     const prodDomain = process.env.REPLIT_INTERNAL_APP_DOMAIN;
@@ -953,6 +970,97 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
     }
   });
 
+  // ── Provider Earnings & Payouts ───────────────────────────────────────────────
+
+  app.get("/api/providers/:id/earnings", async (req: Request, res: Response) => {
+    try {
+      const { rows: provRows } = await pool.query<{ earnings_balance: number; payout_bank_info: Record<string, unknown> | null }>(
+        "SELECT earnings_balance, payout_bank_info FROM providers WHERE id = $1",
+        [req.params.id]
+      );
+      if (!provRows.length) return res.status(404).json({ error: "Provider not found" });
+      const { rows: payoutRows } = await pool.query(
+        "SELECT * FROM provider_payouts WHERE provider_id = $1 ORDER BY created_at DESC LIMIT 50",
+        [req.params.id]
+      );
+      res.json({
+        balance: Number(provRows[0].earnings_balance ?? 0),
+        payouts: payoutRows.map((p) => ({
+          id: p.id,
+          amount: Number(p.amount),
+          fee: Number(p.fee),
+          netAmount: Number(p.net_amount),
+          payoutType: p.payout_type,
+          status: p.status,
+          bankLast4: p.bank_last4,
+          createdAt: p.created_at,
+        })),
+      });
+    } catch (err) {
+      console.error("[earnings GET]", err);
+      res.status(500).json({ error: "Database error" });
+    }
+  });
+
+  app.post("/api/providers/:id/payout", async (req: Request, res: Response) => {
+    const { amount, payoutType } = req.body as { amount?: number; payoutType?: string };
+    if (!amount || typeof amount !== "number" || amount <= 0) {
+      return res.status(400).json({ error: "Valid amount required" });
+    }
+    if (!["instant", "standard"].includes(payoutType ?? "")) {
+      return res.status(400).json({ error: "payoutType must be 'instant' or 'standard'" });
+    }
+    const MIN_PAYOUT = 5;
+    if (amount < MIN_PAYOUT) {
+      return res.status(400).json({ error: `Minimum payout is $${MIN_PAYOUT}` });
+    }
+    try {
+      const { rows: provRows } = await pool.query<{ earnings_balance: number; payout_bank_info: Record<string, unknown> | null }>(
+        "SELECT earnings_balance, payout_bank_info FROM providers WHERE id = $1",
+        [req.params.id]
+      );
+      if (!provRows.length) return res.status(404).json({ error: "Provider not found" });
+      const balance = Number(provRows[0].earnings_balance ?? 0);
+      if (amount > balance) {
+        return res.status(400).json({ error: "Amount exceeds available balance" });
+      }
+      const bankInfo = provRows[0].payout_bank_info as Record<string, string> | null;
+      if (!bankInfo) {
+        return res.status(400).json({ error: "Add a bank account before requesting a payout" });
+      }
+      const fee = payoutType === "instant" ? Math.round(amount * 0.015 * 100) / 100 : 0;
+      const netAmount = Math.round((amount - fee) * 100) / 100;
+      const payoutId = `payout-${Date.now()}`;
+      const bankLast4 = (bankInfo.accountNumber as string)?.slice(-4) ?? null;
+
+      await pool.query(
+        `INSERT INTO provider_payouts (id, provider_id, amount, fee, net_amount, payout_type, status, bank_last4)
+         VALUES ($1, $2, $3, $4, $5, $6, 'pending', $7)`,
+        [payoutId, req.params.id, amount, fee, netAmount, payoutType, bankLast4]
+      );
+      await pool.query(
+        "UPDATE providers SET earnings_balance = earnings_balance - $2 WHERE id = $1",
+        [req.params.id, amount]
+      );
+      res.json({
+        payout: {
+          id: payoutId,
+          amount,
+          fee,
+          netAmount,
+          payoutType,
+          status: "pending",
+          bankLast4,
+          createdAt: new Date().toISOString(),
+        },
+        newBalance: Math.max(0, balance - amount),
+      });
+    } catch (err) {
+      console.error("[payout POST]", err);
+      res.status(500).json({ error: "Database error" });
+    }
+  });
+
   // ── Jobs ──────────────────────────────────────────────────────────────────────
 
   app.post("/api/jobs", async (req: Request, res: Response) => {
@@ -1230,7 +1338,7 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
 
       broadcastJobUpdate(job as JobRecord);
 
-      // Stripe Connect transfer — pay provider their cut after tip is finalised
+      // Credit provider's earnings balance + attempt Stripe Connect transfer
       const providerId = (job.provider as Record<string, unknown> | undefined)?.id as string | undefined;
       if (providerId) {
         try {
@@ -1238,12 +1346,23 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
             "SELECT stripe_account_id, accepts_priority_jobs FROM providers WHERE id = $1",
             [providerId]
           );
+          const gross = job.totalCost ?? job.estimatedCost ?? 0;
+          const feeRate = (job.isExpress && provRows[0]?.accepts_priority_jobs) ? 0.10 : 0.15;
+          const tipAmt = typeof job.tip === "number" ? job.tip : 0;
+          const netAmount = Math.round((gross * (1 - feeRate) + tipAmt) * 100) / 100;
+
+          // Always credit the in-app earnings balance so providers can cash out anytime
+          if (netAmount > 0) {
+            await pool.query(
+              "UPDATE providers SET earnings_balance = COALESCE(earnings_balance, 0) + $2 WHERE id = $1",
+              [providerId, netAmount]
+            ).catch((e) => console.error("[earnings_balance credit]", e.message));
+          }
+
+          // Attempt Stripe Connect transfer if the provider has an account
           const provStripeId = provRows[0]?.stripe_account_id;
           if (provStripeId) {
-            const gross = job.totalCost ?? job.estimatedCost ?? 0;
-            const feeRate = (job.isExpress && provRows[0]?.accepts_priority_jobs) ? 0.10 : 0.15;
-            const tipAmt = typeof job.tip === "number" ? job.tip : 0;
-            const netCents = Math.round((gross * (1 - feeRate) + tipAmt) * 100);
+            const netCents = Math.round(netAmount * 100);
             if (netCents > 50) {
               const stripe = await getUncachableStripeClient();
               await stripe.transfers.create({

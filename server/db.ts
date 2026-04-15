@@ -39,6 +39,20 @@ export interface ProviderRow {
   ev_services: string[];
   accepts_priority_jobs: boolean;
   payout_bank_info: PayoutBankInfo | null;
+  earnings_balance: number | null;
+  stripe_account_id?: string | null;
+}
+
+export interface PayoutRow {
+  id: string;
+  provider_id: string;
+  amount: number;
+  fee: number;
+  net_amount: number;
+  payout_type: string;
+  status: string;
+  bank_last4: string | null;
+  created_at: string;
 }
 
 export interface JobRow {

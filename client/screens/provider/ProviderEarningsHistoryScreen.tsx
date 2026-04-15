@@ -1,15 +1,28 @@
 import React, { useMemo, useEffect, useState } from "react";
-import { View, StyleSheet, FlatList, Pressable, Alert } from "react-native";
+import {
+  View,
+  StyleSheet,
+  FlatList,
+  Pressable,
+  Alert,
+  Modal,
+  TextInput,
+  ActivityIndicator,
+} from "react-native";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceType, ServiceRequest } from "@/context/AppContext";
-import { getApiUrl } from "@/lib/query-client";
+import { apiRequest, getApiUrl } from "@/lib/query-client";
 import { Spacing, BorderRadius } from "@/constants/theme";
+import { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 const PLATFORM_FEE_STANDARD = 0.15;
 const PLATFORM_FEE_PRIORITY = 0.10;
@@ -38,8 +51,6 @@ const serviceTypeIcons: Record<ServiceType, keyof typeof Feather.glyphMap> = {
   other: "tool",
 };
 
-type PayoutStatus = "paid" | "processing" | "pending";
-
 interface EarningEntry {
   id: string;
   request: ServiceRequest;
@@ -48,25 +59,36 @@ interface EarningEntry {
   feeRate: number;
   net: number;
   tip: number;
-  status: PayoutStatus;
-  payoutDate?: Date;
 }
 
-function getPayoutStatus(job: ServiceRequest, index: number): { status: PayoutStatus; payoutDate?: Date } {
-  if (index > 1) return { status: "paid", payoutDate: new Date(job.createdAt.getTime() + 7 * 24 * 60 * 60 * 1000) };
-  if (index === 1) return { status: "processing" };
-  return { status: "pending" };
+interface PayoutRecord {
+  id: string;
+  amount: number;
+  fee: number;
+  netAmount: number;
+  payoutType: "instant" | "standard";
+  status: string;
+  bankLast4: string | null;
+  createdAt: string;
 }
 
-const statusConfig: Record<PayoutStatus, { label: string; color: string; icon: keyof typeof Feather.glyphMap }> = {
-  paid: { label: "Paid", color: "#10B981", icon: "check-circle" },
-  processing: { label: "Processing", color: "#F59E0B", icon: "clock" },
-  pending: { label: "Pending", color: "#6B7280", icon: "circle" },
-};
+interface EarningsData {
+  balance: number;
+  payouts: PayoutRecord[];
+}
+
+interface SavedBankAccount {
+  bankName: string;
+  accountType: "checking" | "savings";
+  accountHolderName: string;
+  routingLast4: string;
+  accountLast4: string;
+}
+
+type PayoutType = "instant" | "standard";
 
 function EarningCard({ entry }: { entry: EarningEntry }) {
   const { theme } = useTheme();
-  const status = statusConfig[entry.status];
   const formatDate = (d: Date) =>
     d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
@@ -80,8 +102,6 @@ function EarningCard({ entry }: { entry: EarningEntry }) {
         `Tip: $${entry.tip.toFixed(2)}`,
         `Platform fee (${Math.round(entry.feeRate * 100)}%): -$${entry.fee.toFixed(2)}`,
         `Net payout: $${entry.net.toFixed(2)}`,
-        `Status: ${status.label}`,
-        entry.payoutDate ? `Paid on: ${formatDate(entry.payoutDate)}` : "",
       ]
         .filter(Boolean)
         .join("\n"),
@@ -123,18 +143,48 @@ function EarningCard({ entry }: { entry: EarningEntry }) {
         </View>
       </View>
 
-      <View style={styles.cardRight}>
-        <ThemedText type="h4" style={{ color: theme.success }}>
-          ${entry.net.toFixed(2)}
+      <ThemedText type="h4" style={{ color: theme.success }}>
+        +${entry.net.toFixed(2)}
+      </ThemedText>
+    </Pressable>
+  );
+}
+
+function PayoutCard({ payout }: { payout: PayoutRecord }) {
+  const { theme } = useTheme();
+  const date = new Date(payout.createdAt);
+  const label = date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  const isInstant = payout.payoutType === "instant";
+
+  return (
+    <View style={[styles.payoutCard, { backgroundColor: theme.backgroundDefault }]}>
+      <View style={[styles.payoutCardIcon, { backgroundColor: theme.primary + "15" }]}>
+        <Feather name={isInstant ? "zap" : "clock"} size={18} color={theme.primary} />
+      </View>
+      <View style={styles.cardContent}>
+        <ThemedText type="body" style={{ fontWeight: "600" }}>
+          {isInstant ? "Instant Transfer" : "Standard Transfer"}
         </ThemedText>
-        <View style={styles.statusBadge}>
-          <Feather name={status.icon} size={10} color={status.color} />
-          <ThemedText type="small" style={{ color: status.color, fontWeight: "600", fontSize: 10, marginLeft: 3 }}>
-            {status.label}
+        <ThemedText type="small" style={{ color: theme.textSecondary }}>
+          {label}{payout.bankLast4 ? ` · •••• ${payout.bankLast4}` : ""}
+        </ThemedText>
+        {payout.fee > 0 ? (
+          <ThemedText type="small" style={{ color: theme.textSecondary }}>
+            Fee: ${payout.fee.toFixed(2)}
+          </ThemedText>
+        ) : null}
+      </View>
+      <View style={{ alignItems: "flex-end", gap: 4 }}>
+        <ThemedText type="body" style={{ fontWeight: "700", color: theme.text }}>
+          ${payout.netAmount.toFixed(2)}
+        </ThemedText>
+        <View style={[styles.statusBadge, { backgroundColor: theme.warning + "20" }]}>
+          <ThemedText type="small" style={{ color: theme.warning, fontWeight: "600", fontSize: 10 }}>
+            Processing
           </ThemedText>
         </View>
       </View>
-    </Pressable>
+    </View>
   );
 }
 
@@ -143,9 +193,98 @@ export default function ProviderEarningsHistoryScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
   const { requestHistory, currentProvider, updateHistoryEntry } = useApp();
+  const queryClient = useQueryClient();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
-  // Map of jobId → tip amount fetched from server (so driver's tip shows correctly)
   const [serverTips, setServerTips] = useState<Record<string, number>>({});
+  const [showCashOut, setShowCashOut] = useState(false);
+  const [payoutType, setPayoutType] = useState<PayoutType>("standard");
+  const [amountText, setAmountText] = useState("");
+
+  const earningsKey = `/api/providers/${currentProvider?.id}/earnings`;
+  const bankKey = `/api/providers/${currentProvider?.id}/payout-bank`;
+
+  const { data: earningsData, isLoading: earningsLoading } = useQuery<EarningsData>({
+    queryKey: [earningsKey],
+    enabled: !!currentProvider?.id,
+    refetchInterval: 15000,
+  });
+
+  const { data: bankData } = useQuery<{ bankAccount: SavedBankAccount | null }>({
+    queryKey: [bankKey],
+    enabled: !!currentProvider?.id,
+  });
+
+  const balance = earningsData?.balance ?? 0;
+  const payoutHistory = earningsData?.payouts ?? [];
+  const savedBank = bankData?.bankAccount ?? null;
+
+  useEffect(() => {
+    if (balance > 0) setAmountText(balance.toFixed(2));
+  }, [balance]);
+
+  const payoutAmount = parseFloat(amountText) || 0;
+  const fee = payoutType === "instant" ? Math.round(payoutAmount * 0.015 * 100) / 100 : 0;
+  const netAmount = Math.max(0, payoutAmount - fee);
+
+  const payoutMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", `/api/providers/${currentProvider!.id}/payout`, {
+        amount: payoutAmount,
+        payoutType,
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error ?? "Payout failed");
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: [earningsKey] });
+      setShowCashOut(false);
+      const arrivalMsg = payoutType === "instant"
+        ? "Funds will arrive within 30 minutes."
+        : "Funds will arrive in 1-2 business days.";
+      Alert.alert(
+        "Transfer Submitted",
+        `$${netAmount.toFixed(2)} is on its way to your bank. ${arrivalMsg}`
+      );
+    },
+    onError: (e: Error) => Alert.alert("Transfer Failed", e.message),
+  });
+
+  const handleCashOut = () => {
+    if (!savedBank) {
+      Alert.alert(
+        "No Bank Account",
+        "Add a bank account in Payout Settings before cashing out.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Add Bank", onPress: () => navigation.navigate("ProviderPaymentSettings") },
+        ]
+      );
+      return;
+    }
+    if (balance < 5) {
+      Alert.alert("Balance Too Low", "Minimum cash out is $5.00.");
+      return;
+    }
+    setAmountText(balance.toFixed(2));
+    setPayoutType("standard");
+    setShowCashOut(true);
+  };
+
+  const handleConfirm = () => {
+    if (payoutAmount < 5) {
+      Alert.alert("Amount Too Low", "Minimum cash out is $5.00.");
+      return;
+    }
+    if (payoutAmount > balance) {
+      Alert.alert("Amount Too High", `Maximum is $${balance.toFixed(2)}.`);
+      return;
+    }
+    payoutMutation.mutate();
+  };
 
   const completedJobs = useMemo(
     () =>
@@ -168,13 +307,11 @@ export default function ProviderEarningsHistoryScreen() {
             const job = await res.json();
             if (typeof job.tip === "number") {
               results[r.id] = job.tip;
-              // Write tip back into local history so dashboard totals stay accurate
               if (r.tip !== job.tip) {
                 updateHistoryEntry(r.id, { tip: job.tip, totalCost: job.totalCost });
               }
             }
-          } catch {
-          }
+          } catch {}
         }),
       );
       setServerTips((prev) => ({ ...prev, ...results }));
@@ -183,14 +320,13 @@ export default function ProviderEarningsHistoryScreen() {
   }, [completedJobs.length]);
 
   const entries = useMemo<EarningEntry[]>(() => {
-    return completedJobs.map((r, i) => {
+    return completedJobs.map((r) => {
       const gross = r.estimatedCost || 0;
       const tip = serverTips[r.id] !== undefined ? serverTips[r.id] : Math.max(0, (r.tip || 0));
       const feeRate = getPlatformFee(r.isExpress, currentProvider?.acceptsPriorityJobs);
       const fee = gross * feeRate;
       const net = gross - fee + tip;
-      const { status, payoutDate } = getPayoutStatus(r, i);
-      return { id: r.id, request: r, gross, fee, feeRate, net, tip, status, payoutDate };
+      return { id: r.id, request: r, gross, fee, feeRate, net, tip };
     });
   }, [completedJobs, serverTips, currentProvider?.acceptsPriorityJobs]);
 
@@ -211,15 +347,54 @@ export default function ProviderEarningsHistoryScreen() {
     .reduce((s, e) => s + e.net, 0);
 
   const allTimeNet = entries.reduce((s, e) => s + e.net, 0);
-  const pendingNet = entries
-    .filter((e) => e.status === "pending" || e.status === "processing")
-    .reduce((s, e) => s + e.net, 0);
-
-  const nextPayoutDate = new Date();
-  nextPayoutDate.setDate(nextPayoutDate.getDate() + ((5 - nextPayoutDate.getDay() + 7) % 7 || 7));
 
   const renderHeader = () => (
     <View>
+      {/* ── Cash-Out Hero Card ── */}
+      <View style={[styles.balanceCard, { backgroundColor: theme.success }]}>
+        <View style={styles.balanceTop}>
+          <View>
+            <ThemedText type="small" style={{ color: "rgba(255,255,255,0.8)", fontWeight: "600" }}>
+              AVAILABLE BALANCE
+            </ThemedText>
+            {earningsLoading ? (
+              <ActivityIndicator color="#FFFFFF" style={{ marginTop: 8 }} />
+            ) : (
+              <ThemedText style={{ color: "#FFFFFF", fontSize: 44, fontWeight: "800", marginTop: 4 }}>
+                ${balance.toFixed(2)}
+              </ThemedText>
+            )}
+          </View>
+          <Pressable
+            onPress={handleCashOut}
+            disabled={earningsLoading}
+            style={({ pressed }) => [
+              styles.cashOutBtn,
+              { opacity: pressed || earningsLoading ? 0.8 : 1 },
+            ]}
+          >
+            <Feather name="arrow-up-circle" size={16} color={theme.success} />
+            <ThemedText type="small" style={{ color: theme.success, fontWeight: "800" }}>
+              Cash Out
+            </ThemedText>
+          </Pressable>
+        </View>
+        <ThemedText type="small" style={{ color: "rgba(255,255,255,0.7)", marginTop: Spacing.sm }}>
+          Minimum $5.00 · Instant (1.5% fee) or Standard (free, 1-2 days)
+        </ThemedText>
+      </View>
+
+      {/* ── Payout History ── */}
+      {payoutHistory.length > 0 ? (
+        <View style={{ marginBottom: Spacing.md }}>
+          <ThemedText type="small" style={[styles.sectionLabel, { color: theme.textSecondary }]}>
+            TRANSFER HISTORY
+          </ThemedText>
+          {payoutHistory.map((p) => <PayoutCard key={p.id} payout={p} />)}
+        </View>
+      ) : null}
+
+      {/* ── Summary Grid ── */}
       <View style={styles.summaryGrid}>
         <View style={[styles.summaryCard, { backgroundColor: theme.backgroundDefault }]}>
           <Feather name="trending-up" size={16} color={theme.secondary} />
@@ -250,25 +425,6 @@ export default function ProviderEarningsHistoryScreen() {
         </View>
       </View>
 
-      <View style={[styles.payoutBanner, { backgroundColor: theme.success + "12", borderColor: theme.success + "30" }]}>
-        <View style={styles.payoutBannerLeft}>
-          <View style={[styles.payoutIcon, { backgroundColor: theme.success + "20" }]}>
-            <Feather name="dollar-sign" size={18} color={theme.success} />
-          </View>
-          <View>
-            <ThemedText type="body" style={{ fontWeight: "600", color: theme.success }}>
-              Next Payout
-            </ThemedText>
-            <ThemedText type="small" style={{ color: theme.textSecondary }}>
-              {nextPayoutDate.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}
-            </ThemedText>
-          </View>
-        </View>
-        <ThemedText type="h4" style={{ color: theme.success }}>
-          ${pendingNet.toFixed(2)}
-        </ThemedText>
-      </View>
-
       {entries.length > 0 ? (
         <View style={styles.feeNotice}>
           <Feather name="info" size={12} color={theme.textSecondary} />
@@ -281,7 +437,7 @@ export default function ProviderEarningsHistoryScreen() {
       ) : null}
 
       {entries.length > 0 ? (
-        <ThemedText type="small" style={[styles.listHeader, { color: theme.textSecondary }]}>
+        <ThemedText type="small" style={[styles.sectionLabel, { color: theme.textSecondary }]}>
           COMPLETED JOBS
         </ThemedText>
       ) : null}
@@ -303,26 +459,193 @@ export default function ProviderEarningsHistoryScreen() {
         }}
         scrollIndicatorInsets={{ bottom: insets.bottom }}
         ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Feather name="dollar-sign" size={48} color={theme.textSecondary} />
-            <ThemedText type="h4" style={{ marginTop: Spacing.lg, textAlign: "center" }}>
-              No Earnings Yet
-            </ThemedText>
-            <ThemedText
-              type="body"
-              style={{ color: theme.textSecondary, textAlign: "center", marginTop: Spacing.sm }}
-            >
-              Accept and complete jobs to start earning. Your earnings history will appear here.
-            </ThemedText>
-          </View>
+          !entries.length ? (
+            <View style={styles.emptyState}>
+              <Feather name="dollar-sign" size={48} color={theme.textSecondary} />
+              <ThemedText type="h4" style={{ marginTop: Spacing.lg, textAlign: "center" }}>
+                No Earnings Yet
+              </ThemedText>
+              <ThemedText type="body" style={{ color: theme.textSecondary, textAlign: "center", marginTop: Spacing.sm }}>
+                Accept and complete jobs to start earning. Your balance will appear here automatically.
+              </ThemedText>
+            </View>
+          ) : null
         }
       />
+
+      {/* ── Cash-Out Modal ── */}
+      <Modal
+        visible={showCashOut}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowCashOut(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalSheet, { backgroundColor: theme.backgroundDefault }]}>
+            <View style={styles.modalHandle} />
+
+            <View style={styles.modalHeader}>
+              <ThemedText type="h3" style={{ fontWeight: "700" }}>Cash Out</ThemedText>
+              <Pressable onPress={() => setShowCashOut(false)}>
+                <Feather name="x" size={22} color={theme.textSecondary} />
+              </Pressable>
+            </View>
+
+            {/* Amount */}
+            <ThemedText type="small" style={[styles.inputLabel, { color: theme.textSecondary }]}>
+              AMOUNT
+            </ThemedText>
+            <View style={[styles.amountRow, { backgroundColor: theme.backgroundSecondary, borderColor: theme.border }]}>
+              <ThemedText type="h3" style={{ color: theme.textSecondary, fontWeight: "700" }}>$</ThemedText>
+              <TextInput
+                style={[styles.amountInput, { color: theme.text }]}
+                value={amountText}
+                onChangeText={setAmountText}
+                keyboardType="decimal-pad"
+                placeholder="0.00"
+                placeholderTextColor={theme.textSecondary}
+              />
+              <Pressable onPress={() => setAmountText(balance.toFixed(2))}>
+                <ThemedText type="small" style={{ color: theme.secondary, fontWeight: "700" }}>Max</ThemedText>
+              </Pressable>
+            </View>
+            <ThemedText type="small" style={{ color: theme.textSecondary, marginBottom: Spacing.lg }}>
+              Available: ${balance.toFixed(2)}
+            </ThemedText>
+
+            {/* Payout type */}
+            <ThemedText type="small" style={[styles.inputLabel, { color: theme.textSecondary }]}>
+              TRANSFER SPEED
+            </ThemedText>
+            <View style={styles.typeRow}>
+              <Pressable
+                onPress={() => setPayoutType("standard")}
+                style={[
+                  styles.typeBtn,
+                  {
+                    backgroundColor: payoutType === "standard" ? theme.primary : theme.backgroundSecondary,
+                    borderColor: payoutType === "standard" ? theme.primary : theme.border,
+                  },
+                ]}
+              >
+                <Feather name="clock" size={16} color={payoutType === "standard" ? "#FFF" : theme.textSecondary} />
+                <View>
+                  <ThemedText type="body" style={{ fontWeight: "700", color: payoutType === "standard" ? "#FFF" : theme.text }}>
+                    Standard
+                  </ThemedText>
+                  <ThemedText type="small" style={{ color: payoutType === "standard" ? "rgba(255,255,255,0.8)" : theme.textSecondary }}>
+                    1-2 days · Free
+                  </ThemedText>
+                </View>
+              </Pressable>
+              <Pressable
+                onPress={() => setPayoutType("instant")}
+                style={[
+                  styles.typeBtn,
+                  {
+                    backgroundColor: payoutType === "instant" ? theme.secondary : theme.backgroundSecondary,
+                    borderColor: payoutType === "instant" ? theme.secondary : theme.border,
+                  },
+                ]}
+              >
+                <Feather name="zap" size={16} color={payoutType === "instant" ? "#FFF" : theme.textSecondary} />
+                <View>
+                  <ThemedText type="body" style={{ fontWeight: "700", color: payoutType === "instant" ? "#FFF" : theme.text }}>
+                    Instant
+                  </ThemedText>
+                  <ThemedText type="small" style={{ color: payoutType === "instant" ? "rgba(255,255,255,0.8)" : theme.textSecondary }}>
+                    ~30 min · 1.5% fee
+                  </ThemedText>
+                </View>
+              </Pressable>
+            </View>
+
+            {/* Fee breakdown */}
+            <View style={[styles.breakdownBox, { backgroundColor: theme.backgroundSecondary, borderColor: theme.border }]}>
+              <View style={styles.breakdownRow}>
+                <ThemedText type="small" style={{ color: theme.textSecondary }}>Transfer amount</ThemedText>
+                <ThemedText type="small" style={{ fontWeight: "600" }}>${payoutAmount.toFixed(2)}</ThemedText>
+              </View>
+              {fee > 0 ? (
+                <View style={styles.breakdownRow}>
+                  <ThemedText type="small" style={{ color: theme.textSecondary }}>Instant fee (1.5%)</ThemedText>
+                  <ThemedText type="small" style={{ color: theme.error, fontWeight: "600" }}>−${fee.toFixed(2)}</ThemedText>
+                </View>
+              ) : null}
+              <View style={[styles.breakdownRow, { borderTopWidth: 1, borderTopColor: theme.border, marginTop: Spacing.sm, paddingTop: Spacing.sm }]}>
+                <ThemedText type="body" style={{ fontWeight: "700" }}>You receive</ThemedText>
+                <ThemedText type="body" style={{ color: theme.success, fontWeight: "800" }}>${netAmount.toFixed(2)}</ThemedText>
+              </View>
+            </View>
+
+            {/* Destination */}
+            {savedBank ? (
+              <View style={[styles.destRow, { backgroundColor: theme.backgroundSecondary, borderColor: theme.border }]}>
+                <Feather name="home" size={14} color={theme.textSecondary} />
+                <ThemedText type="small" style={{ color: theme.textSecondary, flex: 1 }}>
+                  To: {savedBank.bankName} {savedBank.accountType === "checking" ? "Checking" : "Savings"} •••• {savedBank.accountLast4}
+                </ThemedText>
+              </View>
+            ) : null}
+
+            {/* Actions */}
+            <View style={styles.modalActions}>
+              <Pressable
+                onPress={() => setShowCashOut(false)}
+                style={({ pressed }) => [styles.modalBtn, { backgroundColor: theme.backgroundSecondary, opacity: pressed ? 0.7 : 1 }]}
+              >
+                <ThemedText type="body" style={{ fontWeight: "600" }}>Cancel</ThemedText>
+              </Pressable>
+              <Pressable
+                onPress={handleConfirm}
+                disabled={payoutMutation.isPending}
+                style={({ pressed }) => [
+                  styles.modalBtn,
+                  { flex: 1, backgroundColor: theme.success, opacity: pressed || payoutMutation.isPending ? 0.7 : 1 },
+                ]}
+              >
+                {payoutMutation.isPending ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <ThemedText type="body" style={{ color: "#FFFFFF", fontWeight: "800" }}>
+                    Transfer ${netAmount.toFixed(2)}
+                  </ThemedText>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  balanceCard: {
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.xl,
+    marginBottom: Spacing.lg,
+  },
+  balanceTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+  cashOutBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.sm,
+  },
+  sectionLabel: {
+    fontWeight: "600",
+    marginBottom: Spacing.sm,
+    marginTop: Spacing.xs,
+  },
   summaryGrid: {
     flexDirection: "row",
     gap: Spacing.sm,
@@ -334,36 +657,11 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     alignItems: "center",
   },
-  payoutBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: Spacing.md,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    marginBottom: Spacing.md,
-  },
-  payoutBannerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.md,
-  },
-  payoutIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: BorderRadius.sm,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   feeNotice: {
     flexDirection: "row",
     gap: Spacing.xs,
     alignItems: "flex-start",
     marginBottom: Spacing.md,
-  },
-  listHeader: {
-    fontWeight: "600",
-    marginBottom: Spacing.xs,
   },
   card: {
     flexDirection: "row",
@@ -371,6 +669,21 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     borderRadius: BorderRadius.md,
     gap: Spacing.md,
+  },
+  payoutCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    gap: Spacing.md,
+    marginBottom: Spacing.sm,
+  },
+  payoutCardIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: BorderRadius.sm,
+    alignItems: "center",
+    justifyContent: "center",
   },
   cardIcon: {
     width: 44,
@@ -387,18 +700,104 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
   },
-  cardRight: {
-    alignItems: "flex-end",
-    gap: Spacing.xs,
-  },
   statusBadge: {
-    flexDirection: "row",
-    alignItems: "center",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.full,
   },
   emptyState: {
     alignItems: "center",
     justifyContent: "center",
     paddingTop: 80,
     paddingHorizontal: Spacing.xl,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0,0,0,0.45)",
+  },
+  modalSheet: {
+    borderTopLeftRadius: BorderRadius.xl,
+    borderTopRightRadius: BorderRadius.xl,
+    paddingBottom: 36,
+    paddingHorizontal: Spacing.lg,
+  },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "rgba(128,128,128,0.4)",
+    alignSelf: "center",
+    marginVertical: Spacing.md,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: Spacing.lg,
+  },
+  inputLabel: {
+    fontWeight: "600",
+    marginBottom: Spacing.sm,
+  },
+  amountRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    marginBottom: Spacing.sm,
+  },
+  amountInput: {
+    flex: 1,
+    fontSize: 28,
+    fontWeight: "700",
+  },
+  typeRow: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+    marginBottom: Spacing.lg,
+  },
+  typeBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+  },
+  breakdownBox: {
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    marginBottom: Spacing.md,
+    gap: Spacing.xs,
+  },
+  breakdownRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  destRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    marginBottom: Spacing.lg,
+  },
+  modalActions: {
+    flexDirection: "row",
+    gap: Spacing.md,
+  },
+  modalBtn: {
+    borderRadius: BorderRadius.md,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

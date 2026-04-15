@@ -1,19 +1,18 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   StyleSheet,
   Pressable,
   Alert,
   TextInput,
-  Switch,
-  Modal,
   ActivityIndicator,
 } from "react-native";
-import Slider from "@react-native-community/slider";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -22,6 +21,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { apiRequest } from "@/lib/query-client";
+import { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 interface SavedBankAccount {
   bankName: string;
@@ -33,16 +33,13 @@ interface SavedBankAccount {
 
 type PayoutSchedule = "daily" | "weekly" | "instant";
 
-function jobFeeRate(r: { isExpress?: boolean }, acceptsPriority?: boolean): number {
-  return r.isExpress && acceptsPriority ? 0.10 : 0.15;
-}
-
 export default function ProviderPaymentSettingsScreen() {
   const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
-  const { requestHistory, currentProvider } = useApp();
+  const { currentProvider } = useApp();
   const queryClient = useQueryClient();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const bankQueryKey = `/api/providers/${currentProvider?.id}/payout-bank`;
 
@@ -79,62 +76,17 @@ export default function ProviderPaymentSettingsScreen() {
     onError: () => Alert.alert("Error", "Could not remove bank account. Please try again."),
   });
 
-  const completedJobs = requestHistory.filter(
-    (r) => r.provider?.id === currentProvider?.id && r.status === "completed"
-  );
   const acceptsPriority = currentProvider?.acceptsPriorityJobs;
-  const totalGross = completedJobs.reduce((s, r) => s + (r.totalCost || r.estimatedCost || 0), 0);
-  const totalFees = completedJobs.reduce((s, r) => s + (r.totalCost || r.estimatedCost || 0) * jobFeeRate(r, acceptsPriority), 0);
-  const totalNet = totalGross - totalFees;
-  const pendingBalance = completedJobs
-    .slice(0, 2)
-    .reduce((s, r) => s + (r.totalCost || r.estimatedCost || 0) * (1 - jobFeeRate(r, acceptsPriority)), 0);
-  const availableBalance = Math.max(0, totalNet - pendingBalance);
 
   const [payoutSchedule, setPayoutSchedule] = useState<PayoutSchedule>("weekly");
-  const [instantPayoutEnabled, setInstantPayoutEnabled] = useState(false);
-  const [minimumThreshold, setMinimumThreshold] = useState("25");
   const [taxSSN, setTaxSSN] = useState("");
   const [showSSN, setShowSSN] = useState(false);
-  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
-  const [withdrawAmount, setWithdrawAmount] = useState(0);
-
   const [showAddForm, setShowAddForm] = useState(false);
   const [bankName, setBankName] = useState("");
   const [accountHolderName, setAccountHolderName] = useState("");
   const [routingNumber, setRoutingNumber] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
   const [accountType, setAccountType] = useState<"checking" | "savings">("checking");
-
-  useEffect(() => {
-    setWithdrawAmount(availableBalance);
-  }, [availableBalance]);
-
-  const PRESETS = [10, 25, 50, 100];
-
-  const handleTransfer = () => {
-    if (availableBalance < 1) {
-      Alert.alert("No Funds Available", "You don't have any funds available for transfer right now.");
-      return;
-    }
-    setWithdrawAmount(availableBalance);
-    setShowWithdrawModal(true);
-  };
-
-  const handleConfirmTransfer = () => {
-    if (withdrawAmount < 1) {
-      Alert.alert("Amount Too Low", "Please select at least $1 to transfer.");
-      return;
-    }
-    setShowWithdrawModal(false);
-    const destination = savedBank
-      ? `${savedBank.bankName} •••• ${savedBank.accountLast4}`
-      : "your payout account";
-    Alert.alert(
-      "Transfer Initiated",
-      `$${withdrawAmount.toFixed(2)} will arrive in ${destination} within 1-2 business days.`
-    );
-  };
 
   const scheduleOptions: { key: PayoutSchedule; label: string; sublabel: string }[] = [
     { key: "daily", label: "Daily", sublabel: "Every business day" },
@@ -152,7 +104,29 @@ export default function ProviderPaymentSettingsScreen() {
         }}
         scrollIndicatorInsets={{ bottom: insets.bottom }}
       >
-        {/* Payout Info Card */}
+        {/* ── Earnings & Cash Out Link ── */}
+        <Pressable
+          onPress={() => navigation.navigate("ProviderEarningsHistory")}
+          style={({ pressed }) => [
+            styles.earningsLink,
+            { backgroundColor: theme.success, opacity: pressed ? 0.9 : 1 },
+          ]}
+        >
+          <View style={[styles.earningsLinkIcon, { backgroundColor: "rgba(255,255,255,0.2)" }]}>
+            <Feather name="trending-up" size={22} color="#FFFFFF" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <ThemedText type="body" style={{ color: "#FFFFFF", fontWeight: "800" }}>
+              Earnings & Cash Out
+            </ThemedText>
+            <ThemedText type="small" style={{ color: "rgba(255,255,255,0.85)", marginTop: 2 }}>
+              View balance and transfer funds anytime
+            </ThemedText>
+          </View>
+          <Feather name="chevron-right" size={20} color="rgba(255,255,255,0.8)" />
+        </Pressable>
+
+        {/* ── How Payouts Work ── */}
         <View style={[styles.payoutInfoCard, { backgroundColor: theme.secondary + "12", borderColor: theme.secondary + "30" }]}>
           <View style={styles.payoutInfoRow}>
             <View style={[styles.payoutInfoIcon, { backgroundColor: theme.secondary + "20" }]}>
@@ -163,7 +137,7 @@ export default function ProviderPaymentSettingsScreen() {
                 How Payouts Work
               </ThemedText>
               <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: 2, lineHeight: 18 }}>
-                Earnings from completed jobs are paid out weekly. ServiceMe charges a {acceptsPriority ? "10–15" : "15"}% platform fee — you keep the rest plus 100% of tips.
+                Earnings are credited to your balance instantly when a job is finalized. Cash out anytime — Standard (free, 1-2 days) or Instant (30 min, 1.5% fee).
               </ThemedText>
             </View>
           </View>
@@ -171,8 +145,8 @@ export default function ProviderPaymentSettingsScreen() {
           <View style={styles.payoutInfoSteps}>
             {[
               { icon: "check-circle" as const, text: "Complete a service request" },
-              { icon: "clock" as const, text: "Earnings appear in your balance" },
-              { icon: "credit-card" as const, text: "Paid out every Friday automatically" },
+              { icon: "zap" as const, text: "Earnings added to your balance immediately" },
+              { icon: "arrow-up-circle" as const, text: "Cash out on your schedule, anytime" },
             ].map((step, i) => (
               <View key={i} style={styles.payoutInfoStep}>
                 <Feather name={step.icon} size={14} color={theme.secondary} />
@@ -184,7 +158,7 @@ export default function ProviderPaymentSettingsScreen() {
           </View>
         </View>
 
-        {/* Bank Account Section */}
+        {/* ── Bank Account ── */}
         <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
           <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
             PAYOUT BANK ACCOUNT
@@ -216,11 +190,7 @@ export default function ProviderPaymentSettingsScreen() {
                 onPress={() =>
                   Alert.alert("Remove Bank Account", "Are you sure you want to remove this bank account?", [
                     { text: "Cancel", style: "cancel" },
-                    {
-                      text: "Remove",
-                      style: "destructive",
-                      onPress: () => removeBankMutation.mutate(),
-                    },
+                    { text: "Remove", style: "destructive", onPress: () => removeBankMutation.mutate() },
                   ])
                 }
                 disabled={removeBankMutation.isPending}
@@ -257,9 +227,7 @@ export default function ProviderPaymentSettingsScreen() {
                 {savedBank ? "Update Bank Account" : "Add Bank Account"}
               </ThemedText>
 
-              <ThemedText type="small" style={[styles.inputLabel, { color: theme.textSecondary }]}>
-                Bank Name
-              </ThemedText>
+              <ThemedText type="small" style={[styles.inputLabel, { color: theme.textSecondary }]}>Bank Name</ThemedText>
               <TextInput
                 style={[styles.formInput, { backgroundColor: theme.backgroundSecondary, color: theme.text, borderColor: theme.border }]}
                 value={bankName}
@@ -269,9 +237,7 @@ export default function ProviderPaymentSettingsScreen() {
                 autoCapitalize="words"
               />
 
-              <ThemedText type="small" style={[styles.inputLabel, { color: theme.textSecondary }]}>
-                Account Holder Name
-              </ThemedText>
+              <ThemedText type="small" style={[styles.inputLabel, { color: theme.textSecondary }]}>Account Holder Name</ThemedText>
               <TextInput
                 style={[styles.formInput, { backgroundColor: theme.backgroundSecondary, color: theme.text, borderColor: theme.border }]}
                 value={accountHolderName}
@@ -281,9 +247,7 @@ export default function ProviderPaymentSettingsScreen() {
                 autoCapitalize="words"
               />
 
-              <ThemedText type="small" style={[styles.inputLabel, { color: theme.textSecondary }]}>
-                Account Type
-              </ThemedText>
+              <ThemedText type="small" style={[styles.inputLabel, { color: theme.textSecondary }]}>Account Type</ThemedText>
               <View style={styles.accountTypeRow}>
                 {(["checking", "savings"] as const).map((type) => (
                   <Pressable
@@ -304,9 +268,7 @@ export default function ProviderPaymentSettingsScreen() {
                 ))}
               </View>
 
-              <ThemedText type="small" style={[styles.inputLabel, { color: theme.textSecondary }]}>
-                Routing Number (9 digits)
-              </ThemedText>
+              <ThemedText type="small" style={[styles.inputLabel, { color: theme.textSecondary }]}>Routing Number (9 digits)</ThemedText>
               <TextInput
                 style={[styles.formInput, { backgroundColor: theme.backgroundSecondary, color: theme.text, borderColor: theme.border }]}
                 value={routingNumber}
@@ -318,9 +280,7 @@ export default function ProviderPaymentSettingsScreen() {
                 secureTextEntry
               />
 
-              <ThemedText type="small" style={[styles.inputLabel, { color: theme.textSecondary }]}>
-                Account Number
-              </ThemedText>
+              <ThemedText type="small" style={[styles.inputLabel, { color: theme.textSecondary }]}>Account Number</ThemedText>
               <TextInput
                 style={[styles.formInput, { backgroundColor: theme.backgroundSecondary, color: theme.text, borderColor: theme.border }]}
                 value={accountNumber}
@@ -355,66 +315,10 @@ export default function ProviderPaymentSettingsScreen() {
           ) : null}
         </View>
 
-        <View style={[styles.balanceCard, { backgroundColor: theme.success }]}>
-          <View style={styles.balanceRow}>
-            <View>
-              <ThemedText type="small" style={{ color: "rgba(255,255,255,0.8)", fontWeight: "500" }}>
-                AVAILABLE BALANCE
-              </ThemedText>
-              <ThemedText type="h1" style={{ color: "#FFFFFF", marginTop: 4 }}>
-                ${availableBalance.toFixed(2)}
-              </ThemedText>
-              <ThemedText type="small" style={{ color: "rgba(255,255,255,0.75)", marginTop: 4 }}>
-                ${pendingBalance.toFixed(2)} pending
-              </ThemedText>
-            </View>
-            <Pressable
-              onPress={handleTransfer}
-              style={({ pressed }) => [
-                styles.transferButton,
-                { opacity: pressed ? 0.8 : 1 },
-              ]}
-            >
-              <Feather name="arrow-up-circle" size={16} color={theme.success} />
-              <ThemedText type="small" style={{ color: theme.success, fontWeight: "700" }}>
-                Transfer
-              </ThemedText>
-            </Pressable>
-          </View>
-          <View style={styles.balanceBreakdown}>
-            <View style={styles.balanceBreakdownItem}>
-              <ThemedText type="small" style={{ color: "rgba(255,255,255,0.7)" }}>
-                Gross Earned
-              </ThemedText>
-              <ThemedText type="body" style={{ color: "#FFFFFF", fontWeight: "600" }}>
-                ${totalGross.toFixed(2)}
-              </ThemedText>
-            </View>
-            <View style={styles.balanceBreakdownDivider} />
-            <View style={styles.balanceBreakdownItem}>
-              <ThemedText type="small" style={{ color: "rgba(255,255,255,0.7)" }}>
-                Platform Fee ({acceptsPriority ? "10–15" : "15"}%)
-              </ThemedText>
-              <ThemedText type="body" style={{ color: "rgba(255,255,255,0.85)", fontWeight: "600" }}>
-                -${totalFees.toFixed(2)}
-              </ThemedText>
-            </View>
-            <View style={styles.balanceBreakdownDivider} />
-            <View style={styles.balanceBreakdownItem}>
-              <ThemedText type="small" style={{ color: "rgba(255,255,255,0.7)" }}>
-                Net Earnings
-              </ThemedText>
-              <ThemedText type="body" style={{ color: "#FFFFFF", fontWeight: "600" }}>
-                ${totalNet.toFixed(2)}
-              </ThemedText>
-            </View>
-          </View>
-        </View>
-
-
+        {/* ── Payout Schedule ── */}
         <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
           <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
-            PAYOUT SCHEDULE
+            DEFAULT PAYOUT SCHEDULE
           </ThemedText>
           {scheduleOptions.map((option, i) => (
             <Pressable
@@ -429,12 +333,7 @@ export default function ProviderPaymentSettingsScreen() {
                 <ThemedText type="body" style={{ fontWeight: "500" }}>{option.label}</ThemedText>
                 <ThemedText type="small" style={{ color: theme.textSecondary }}>{option.sublabel}</ThemedText>
               </View>
-              <View
-                style={[
-                  styles.radioOuter,
-                  { borderColor: payoutSchedule === option.key ? theme.secondary : theme.border },
-                ]}
-              >
+              <View style={[styles.radioOuter, { borderColor: payoutSchedule === option.key ? theme.secondary : theme.border }]}>
                 {payoutSchedule === option.key ? (
                   <View style={[styles.radioInner, { backgroundColor: theme.secondary }]} />
                 ) : null}
@@ -443,46 +342,7 @@ export default function ProviderPaymentSettingsScreen() {
           ))}
         </View>
 
-        <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
-          <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
-            PAYOUT PREFERENCES
-          </ThemedText>
-
-          <View style={[styles.preferenceRow, { borderTopColor: theme.border, borderTopWidth: 1 }]}>
-            <View style={styles.preferenceInfo}>
-              <ThemedText type="body" style={{ fontWeight: "500" }}>Instant Payout</ThemedText>
-              <ThemedText type="small" style={{ color: theme.textSecondary }}>
-                Withdraw instantly for 1.5% fee
-              </ThemedText>
-            </View>
-            <Switch
-              value={instantPayoutEnabled}
-              onValueChange={setInstantPayoutEnabled}
-              trackColor={{ false: theme.border, true: theme.secondary }}
-              thumbColor="#FFFFFF"
-            />
-          </View>
-
-          <View style={[styles.preferenceRow, { borderTopColor: theme.border, borderTopWidth: 1 }]}>
-            <View style={styles.preferenceInfo}>
-              <ThemedText type="body" style={{ fontWeight: "500" }}>Minimum Threshold</ThemedText>
-              <ThemedText type="small" style={{ color: theme.textSecondary }}>
-                Only pay out when balance exceeds this
-              </ThemedText>
-            </View>
-            <View style={styles.thresholdInput}>
-              <ThemedText type="body" style={{ color: theme.textSecondary }}>$</ThemedText>
-              <TextInput
-                style={{ color: theme.text, fontSize: 16, fontWeight: "600", minWidth: 40, textAlign: "right" }}
-                value={minimumThreshold}
-                onChangeText={setMinimumThreshold}
-                keyboardType="number-pad"
-                maxLength={4}
-              />
-            </View>
-          </View>
-        </View>
-
+        {/* ── Tax Information ── */}
         <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
           <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
             TAX INFORMATION
@@ -558,157 +418,31 @@ export default function ProviderPaymentSettingsScreen() {
           <ThemedText type="small" style={{ color: theme.primary, flex: 1, lineHeight: 18 }}>
             {acceptsPriority
               ? "ServiceMe charges a 10% fee on priority jobs and 15% on standard jobs. Tips are always fee-free — you keep 100%."
-              : "ServiceMe charges a 15% platform fee on every completed job. You keep 85% of the service fee plus 100% of all tips. Enable Accept Priority Requests in your profile to earn a reduced 10% fee on express jobs."}
+              : "ServiceMe charges a 15% platform fee on every completed job. You keep 85% of the service fee plus 100% of all tips."}
           </ThemedText>
         </View>
       </KeyboardAwareScrollViewCompat>
-
-      <Modal
-        visible={showWithdrawModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowWithdrawModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalSheet, { backgroundColor: theme.backgroundDefault }]}>
-            <View style={styles.modalHandle} />
-
-            <View style={styles.modalHeader}>
-              <ThemedText type="h3" style={{ fontWeight: "700" }}>Withdraw Funds</ThemedText>
-              <Pressable onPress={() => setShowWithdrawModal(false)}>
-                <Feather name="x" size={22} color={theme.textSecondary} />
-              </Pressable>
-            </View>
-
-            <View style={[styles.amountDisplay, { backgroundColor: theme.backgroundSecondary, borderColor: theme.border }]}>
-              <ThemedText type="small" style={{ color: theme.textSecondary, fontWeight: "500", marginBottom: 4 }}>
-                WITHDRAW AMOUNT
-              </ThemedText>
-              <ThemedText type="h1" style={{ color: theme.success, fontWeight: "800", fontSize: 48 }}>
-                ${withdrawAmount.toFixed(2)}
-              </ThemedText>
-              <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: 4 }}>
-                of ${availableBalance.toFixed(2)} available
-              </ThemedText>
-            </View>
-
-            <View style={styles.sliderWrapper}>
-              <ThemedText type="small" style={{ color: theme.textSecondary, marginBottom: Spacing.sm }}>
-                Drag to choose an amount
-              </ThemedText>
-              <Slider
-                style={styles.slider}
-                minimumValue={1}
-                maximumValue={Math.max(availableBalance, 1)}
-                step={1}
-                value={withdrawAmount}
-                onValueChange={(val) => setWithdrawAmount(Math.round(val))}
-                minimumTrackTintColor={theme.success}
-                maximumTrackTintColor={theme.border}
-                thumbTintColor={theme.success}
-              />
-              <View style={styles.sliderLabels}>
-                <ThemedText type="small" style={{ color: theme.textSecondary }}>$1</ThemedText>
-                <ThemedText type="small" style={{ color: theme.textSecondary }}>${Math.max(availableBalance, 1).toFixed(0)}</ThemedText>
-              </View>
-            </View>
-
-            <View style={styles.presetsRow}>
-              {PRESETS.filter((p) => p <= availableBalance).map((preset) => (
-                <Pressable
-                  key={preset}
-                  onPress={() => setWithdrawAmount(preset)}
-                  style={({ pressed }) => [
-                    styles.presetChip,
-                    {
-                      backgroundColor: withdrawAmount === preset ? theme.success : theme.backgroundSecondary,
-                      borderColor: withdrawAmount === preset ? theme.success : theme.border,
-                      opacity: pressed ? 0.7 : 1,
-                    },
-                  ]}
-                >
-                  <ThemedText
-                    type="small"
-                    style={{ fontWeight: "700", color: withdrawAmount === preset ? "#FFFFFF" : theme.text }}
-                  >
-                    ${preset}
-                  </ThemedText>
-                </Pressable>
-              ))}
-              <Pressable
-                onPress={() => setWithdrawAmount(availableBalance)}
-                style={({ pressed }) => [
-                  styles.presetChip,
-                  {
-                    backgroundColor: withdrawAmount === availableBalance ? theme.success : theme.backgroundSecondary,
-                    borderColor: withdrawAmount === availableBalance ? theme.success : theme.border,
-                    opacity: pressed ? 0.7 : 1,
-                  },
-                ]}
-              >
-                <ThemedText
-                  type="small"
-                  style={{ fontWeight: "700", color: withdrawAmount === availableBalance ? "#FFFFFF" : theme.text }}
-                >
-                  All
-                </ThemedText>
-              </Pressable>
-            </View>
-
-            {savedBank ? (
-              <View style={[styles.destinationRow, { backgroundColor: theme.backgroundSecondary, borderColor: theme.border }]}>
-                <Feather name="home" size={16} color={theme.textSecondary} />
-                <ThemedText type="small" style={{ color: theme.textSecondary, flex: 1 }}>
-                  To: {savedBank.bankName} {savedBank.accountType === "checking" ? "Checking" : "Savings"} •••• {savedBank.accountLast4}
-                </ThemedText>
-              </View>
-            ) : (
-              <Pressable
-                onPress={() => { setShowWithdrawModal(false); setTimeout(() => setShowAddForm(true), 400); }}
-                style={[styles.destinationRow, { backgroundColor: theme.warning + "15", borderColor: theme.warning + "40" }]}
-              >
-                <Feather name="alert-circle" size={16} color={theme.warning} />
-                <ThemedText type="small" style={{ color: theme.warning, flex: 1 }}>
-                  Add a bank account to enable transfers — tap to add
-                </ThemedText>
-              </Pressable>
-            )}
-
-            <View style={styles.modalActions}>
-              <Pressable
-                onPress={() => setShowWithdrawModal(false)}
-                style={({ pressed }) => [
-                  styles.modalActionButton,
-                  { backgroundColor: theme.backgroundSecondary, opacity: pressed ? 0.7 : 1 },
-                ]}
-              >
-                <ThemedText type="body" style={{ fontWeight: "600" }}>Cancel</ThemedText>
-              </Pressable>
-              <Pressable
-                onPress={handleConfirmTransfer}
-                style={({ pressed }) => [
-                  styles.modalActionButton,
-                  {
-                    backgroundColor: theme.success,
-                    flex: 1,
-                    opacity: pressed ? 0.7 : 1,
-                  },
-                ]}
-              >
-                <ThemedText type="body" style={{ fontWeight: "700", color: "#FFFFFF" }}>
-                  Transfer ${withdrawAmount.toFixed(2)}
-                </ThemedText>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  earningsLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.lg,
+    marginBottom: Spacing.lg,
+  },
+  earningsLinkIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: BorderRadius.sm,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   payoutInfoCard: {
     borderRadius: BorderRadius.md,
     padding: Spacing.md,
@@ -815,41 +549,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xl,
     borderRadius: BorderRadius.xs,
   },
-  balanceCard: {
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.xl,
-    marginBottom: Spacing.lg,
-  },
-  balanceRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-  },
-  transferButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.xs,
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.sm,
-  },
-  balanceBreakdown: {
-    flexDirection: "row",
-    marginTop: Spacing.lg,
-    paddingTop: Spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.25)",
-  },
-  balanceBreakdownItem: {
-    flex: 1,
-    alignItems: "center",
-    gap: 2,
-  },
-  balanceBreakdownDivider: {
-    width: 1,
-    backgroundColor: "rgba(255,255,255,0.25)",
-  },
   section: {
     borderRadius: BorderRadius.md,
     marginBottom: Spacing.lg,
@@ -882,19 +581,6 @@ const styles = StyleSheet.create({
     height: 11,
     borderRadius: 6,
   },
-  preferenceRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    gap: Spacing.md,
-  },
-  preferenceInfo: { flex: 1, gap: 2 },
-  thresholdInput: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 2,
-  },
   taxRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -915,81 +601,5 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: Spacing.xl,
     alignItems: "flex-start",
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "flex-end",
-    backgroundColor: "rgba(0,0,0,0.45)",
-  },
-  modalSheet: {
-    borderTopLeftRadius: BorderRadius.xl,
-    borderTopRightRadius: BorderRadius.xl,
-    paddingBottom: 36,
-    paddingHorizontal: Spacing.lg,
-  },
-  modalHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "rgba(128,128,128,0.4)",
-    alignSelf: "center",
-    marginVertical: Spacing.md,
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: Spacing.lg,
-  },
-  amountDisplay: {
-    alignItems: "center",
-    paddingVertical: Spacing.xl,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    marginBottom: Spacing.lg,
-  },
-  sliderWrapper: {
-    marginBottom: Spacing.lg,
-  },
-  slider: {
-    width: "100%",
-    height: 44,
-  },
-  sliderLabels: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: -Spacing.xs,
-  },
-  presetsRow: {
-    flexDirection: "row",
-    gap: Spacing.sm,
-    marginBottom: Spacing.lg,
-    flexWrap: "wrap",
-  },
-  presetChip: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-  },
-  destinationRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-    padding: Spacing.md,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    marginBottom: Spacing.lg,
-  },
-  modalActions: {
-    flexDirection: "row",
-    gap: Spacing.md,
-  },
-  modalActionButton: {
-    borderRadius: BorderRadius.md,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    alignItems: "center",
-    justifyContent: "center",
   },
 });
