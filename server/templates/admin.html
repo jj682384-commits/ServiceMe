@@ -349,7 +349,7 @@
           <input class="search-input" placeholder="Search by name or email..." oninput="filterUsers(this.value)" />
         </div>
         <table>
-          <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Stripe</th><th>Push Token</th><th>Joined</th><th></th></tr></thead>
+          <thead><tr><th>Name</th><th>Email</th><th>Stripe</th><th>Push Token</th><th>Joined</th><th></th></tr></thead>
           <tbody id="users-table-body"></tbody>
         </table>
       </div>
@@ -578,7 +578,7 @@
 
   function updateOverview() {
     const pending = allProviders.filter(p => p.verificationStatus === "pending").length;
-    document.getElementById("ov-drivers").textContent = allUsers.length;
+    document.getElementById("ov-drivers").textContent = allUsers.filter(u => u.role !== "provider").length;
     document.getElementById("ov-providers").textContent = allProviders.length;
     document.getElementById("ov-pending").textContent = pending;
     document.getElementById("ov-jobs").textContent = allJobs.length;
@@ -696,16 +696,17 @@
     } catch {}
   }
   function filterUsers(q) {
-    const filtered = allUsers.filter(u => `${u.name} ${u.email}`.toLowerCase().includes(q.toLowerCase()));
+    const drivers = allUsers.filter(u => u.role !== "provider");
+    const filtered = drivers.filter(u => `${u.name} ${u.email}`.toLowerCase().includes(q.toLowerCase()));
     renderUsers(filtered);
   }
   function renderUsers(users) {
+    const drivers = users.filter(u => u.role !== "provider");
     const body = document.getElementById("users-table-body");
-    if (!users.length) { body.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">&#128100;</div><p>No drivers found.</p></div></td></tr>`; return; }
-    body.innerHTML = users.map(u => `<tr>
+    if (!drivers.length) { body.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">&#128100;</div><p>No drivers found.</p></div></td></tr>`; return; }
+    body.innerHTML = drivers.map(u => `<tr>
       <td><div class="td-name">${esc(u.name)}</div></td>
       <td>${esc(u.email)}</td>
-      <td><span class="badge ${u.role}">${u.role || "driver"}</span></td>
       <td><span style="font-size:11px;color:${u.stripe_customer_id ? "var(--success)" : "var(--muted)"}">${u.stripe_customer_id ? "&#10003; Connected" : "Not linked"}</span></td>
       <td><span style="font-size:11px;color:${u.push_token ? "var(--success)" : "var(--muted)"}">${u.push_token ? "&#10003; Registered" : "None"}</span></td>
       <td style="color:var(--muted);font-size:12px">${fmtDate(u.created_at)}</td>
