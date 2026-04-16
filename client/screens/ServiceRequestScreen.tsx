@@ -11,7 +11,6 @@ import Animated, {
   useSharedValue,
   withSpring,
   withRepeat,
-  withSequence,
   withTiming,
   FadeInDown,
   FadeIn,
@@ -200,13 +199,11 @@ export default function ServiceRequestScreen() {
   const zapGlow = useSharedValue(0);
   useEffect(() => {
     zapScale.value = withSpring(1, { damping: 10, stiffness: 180 });
+    // Reverse mode eliminates the gap between repeats — no lag
     zapGlow.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 900, easing: REasing.inOut(REasing.sin) }),
-        withTiming(0.4, { duration: 900, easing: REasing.inOut(REasing.sin) }),
-      ),
+      withTiming(1, { duration: 1100, easing: REasing.inOut(REasing.sin) }),
       -1,
-      false,
+      true,
     );
   }, []);
   const zapIconStyle = useAnimatedStyle(() => ({
@@ -1090,12 +1087,22 @@ export default function ServiceRequestScreen() {
           ) : (
             <>
               <Feather
-                name={isScheduled ? "calendar" : isUsingFree && totalCost === 0 ? "gift" : "credit-card"}
+                name={
+                  !selectedService
+                    ? "zap"
+                    : isScheduled
+                    ? "calendar"
+                    : isUsingFree && totalCost === 0
+                    ? "gift"
+                    : "credit-card"
+                }
                 size={20}
                 color="#FFFFFF"
               />
               <ThemedText type="body" style={styles.submitButtonText}>
-                {isScheduled
+                {!selectedService
+                  ? "Select a service above"
+                  : isScheduled
                   ? "Schedule Service"
                   : isUsingFree && totalCost === 0
                   ? "Dispatch Free Service"
