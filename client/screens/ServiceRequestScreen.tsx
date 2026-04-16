@@ -10,6 +10,12 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
+  withRepeat,
+  withSequence,
+  withTiming,
+  FadeInDown,
+  FadeIn,
+  Easing as REasing,
 } from "react-native-reanimated";
 import * as Location from "expo-location";
 import { useStripe } from "@/lib/stripe";
@@ -188,6 +194,29 @@ export default function ServiceRequestScreen() {
       if (submitTimerRef.current) clearTimeout(submitTimerRef.current);
     };
   }, []);
+
+  // Zap hero icon pulse animation — runs on screen mount
+  const zapScale = useSharedValue(0);
+  const zapGlow = useSharedValue(0);
+  useEffect(() => {
+    zapScale.value = withSpring(1, { damping: 10, stiffness: 180 });
+    zapGlow.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 900, easing: REasing.inOut(REasing.sin) }),
+        withTiming(0.4, { duration: 900, easing: REasing.inOut(REasing.sin) }),
+      ),
+      -1,
+      false,
+    );
+  }, []);
+  const zapIconStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: zapScale.value }],
+    opacity: zapScale.value,
+  }));
+  const zapGlowStyle = useAnimatedStyle(() => ({
+    opacity: zapGlow.value,
+    transform: [{ scale: 0.85 + zapGlow.value * 0.15 }],
+  }));
 
   const [isExpress, setIsExpress] = useState(false);
   const [selectedFuelIndex, setSelectedFuelIndex] = useState(2);
@@ -413,19 +442,62 @@ export default function ServiceRequestScreen() {
           </View>
         )}
 
-        <ThemedText type="h4" style={styles.sectionTitle}>
-          What do you need? {nearbyProviders.length}+ providers nearby
-        </ThemedText>
-        <View style={styles.serviceGrid}>
-          {serviceTypes.map((service) => (
-            <ServiceTypeCard
-              key={service.type}
-              {...service}
-              discountedPrice={isPremium ? service.price * (1 - premiumDiscount) : undefined}
-              isPremium={isPremium}
-              isSelected={selectedService === service.type}
-              onPress={() => setSelectedService(service.type)}
+        {/* Hero section — zap icon pops in on mount with a glowing pulse */}
+        <Animated.View
+          entering={FadeInDown.duration(380).springify().damping(18)}
+          style={styles.heroSection}
+        >
+          <View style={styles.heroIconWrap}>
+            <Animated.View
+              style={[
+                styles.heroGlowRing,
+                { backgroundColor: theme.primary + "30" },
+                zapGlowStyle,
+              ]}
             />
+            <Animated.View
+              style={[
+                styles.heroIconCircle,
+                { backgroundColor: theme.primary + "18" },
+                zapIconStyle,
+              ]}
+            >
+              <Feather name="zap" size={32} color={theme.primary} />
+            </Animated.View>
+          </View>
+          <ThemedText type="h2" style={[styles.heroTitle, { color: theme.text }]}>
+            Get help fast
+          </ThemedText>
+          <ThemedText type="body" style={[styles.heroSubtitle, { color: theme.textSecondary }]}>
+            {nearbyProviders.length > 0
+              ? `${nearbyProviders.length}+ providers ready nearby`
+              : "Pick a service to get started"}
+          </ThemedText>
+        </Animated.View>
+
+        <Animated.View entering={FadeIn.delay(180).duration(300)}>
+          <ThemedText
+            type="small"
+            style={{ color: theme.textSecondary, fontWeight: "700", fontSize: 12, letterSpacing: 0.8, textTransform: "uppercase", marginTop: Spacing.sm, marginBottom: Spacing.md }}
+          >
+            What do you need?
+          </ThemedText>
+        </Animated.View>
+        <View style={styles.serviceGrid}>
+          {serviceTypes.map((service, i) => (
+            <Animated.View
+              key={service.type}
+              entering={FadeInDown.delay(220 + i * 70).springify().damping(14).stiffness(160)}
+              style={{ width: "31%" }}
+            >
+              <ServiceTypeCard
+                {...service}
+                discountedPrice={isPremium ? service.price * (1 - premiumDiscount) : undefined}
+                isPremium={isPremium}
+                isSelected={selectedService === service.type}
+                onPress={() => setSelectedService(service.type)}
+              />
+            </Animated.View>
           ))}
         </View>
 
@@ -1048,13 +1120,48 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
     marginTop: Spacing.lg,
   },
+  heroSection: {
+    alignItems: "center",
+    paddingVertical: Spacing.lg,
+    marginBottom: Spacing.sm,
+  },
+  heroIconWrap: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: Spacing.md,
+    width: 80,
+    height: 80,
+  },
+  heroGlowRing: {
+    position: "absolute",
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+  },
+  heroIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  heroTitle: {
+    fontWeight: "800",
+    fontSize: 26,
+    textAlign: "center",
+    marginBottom: Spacing.xs,
+  },
+  heroSubtitle: {
+    textAlign: "center",
+    fontSize: 14,
+  },
   serviceGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: Spacing.md,
   },
   serviceCard: {
-    width: "31%",
+    width: "100%",
     aspectRatio: 1,
     borderRadius: BorderRadius.md,
     alignItems: "center",

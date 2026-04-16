@@ -14,7 +14,7 @@ import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, Easing, interpolate, runOnJS } from "react-native-reanimated";
+import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, withSequence, Easing, interpolate, runOnJS } from "react-native-reanimated";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import * as Location from "expo-location";
 import * as Haptics from "expo-haptics";
@@ -424,6 +424,41 @@ export default function DriverMapScreen() {
   const handleFabPressIn = () => { fabScale.value = withSpring(0.95, { damping: 15, stiffness: 150 }); };
   const handleFabPressOut = () => { fabScale.value = withSpring(1, { damping: 15, stiffness: 150 }); };
 
+  // "Get Help Fast" button — dedicated spring-launch animation
+  const helpBtnScale = useSharedValue(1);
+  const helpRippleScale = useSharedValue(0);
+  const helpRippleOpacity = useSharedValue(0);
+
+  const helpBtnAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: helpBtnScale.value }],
+  }));
+  const helpRippleStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: helpRippleScale.value }],
+    opacity: helpRippleOpacity.value,
+  }));
+
+  const pressHelpFast = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
+    setActiveAction("service");
+    // Spring-launch: snap up then release
+    helpBtnScale.value = withSequence(
+      withSpring(1.22, { damping: 8, stiffness: 600 }),
+      withSpring(1, { damping: 12, stiffness: 300 }),
+    );
+    // Ripple burst from the button outward
+    helpRippleScale.value = 0;
+    helpRippleOpacity.value = 0.55;
+    helpRippleScale.value = withTiming(3.6, { duration: 700, easing: Easing.out(Easing.quad) });
+    helpRippleOpacity.value = withTiming(0, { duration: 700, easing: Easing.out(Easing.quad) }, () => {
+      helpRippleScale.value = 0;
+    });
+    // Navigate after the peak of the spring (190ms)
+    setTimeout(() => {
+      navigation.navigate("ServiceRequest" as any);
+      setTimeout(() => setActiveAction(null), 400);
+    }, 190);
+  }, [navigation, helpBtnScale, helpRippleScale, helpRippleOpacity]);
+
   // Quick-action row tap — haptic + highlight + instant navigation
   const pressAction = useCallback(
     (action: "diagnose" | "tow" | "service", route: keyof RootStackParamList) => {
@@ -811,10 +846,20 @@ export default function DriverMapScreen() {
       {/* Persistent quick-action row — always visible (no active request, no quick card) */}
       {(!activeRequest || activeRequest.status === "completed" || activeRequest.status === "cancelled") &&
       !selectedProvider ? (
+        <View style={[styles.actionRowWrap, { bottom: tabBarHeight + Spacing.lg }]}>
+          {/* Ripple burst — expands from the "Get Help Fast" button area */}
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.helpRippleRing,
+              { backgroundColor: theme.primary },
+              helpRippleStyle,
+            ]}
+          />
         <View
           style={[
             styles.actionRow,
-            { bottom: tabBarHeight + Spacing.lg, backgroundColor: theme.backgroundDefault, ...Shadows.md },
+            { backgroundColor: theme.backgroundDefault, ...Shadows.md },
           ]}
         >
           {/* Diagnose chip */}
@@ -875,9 +920,9 @@ export default function DriverMapScreen() {
 
           <View style={[styles.actionDivider, { backgroundColor: theme.border }]} />
 
-          {/* Get Help Fast chip — always filled as the CTA */}
-          <Pressable
-            onPress={() => pressAction("service", "ServiceRequest")}
+          {/* Get Help Fast chip — always filled as the CTA, with spring-launch animation */}
+          <AnimatedPressable
+            onPress={pressHelpFast}
             style={[
               styles.actionChipPrimary,
               {
@@ -885,8 +930,8 @@ export default function DriverMapScreen() {
                   activeAction === "service"
                     ? theme.primaryDark ?? theme.primary
                     : theme.primary,
-                transform: [{ scale: activeAction === "service" ? 0.95 : 1 }],
               },
+              helpBtnAnimStyle,
             ]}
           >
             <Feather name="zap" size={15} color="#FFF" />
@@ -896,7 +941,8 @@ export default function DriverMapScreen() {
             >
               Get Help Fast
             </ThemedText>
-          </Pressable>
+          </AnimatedPressable>
+        </View>
         </View>
       ) : null}
 
@@ -1044,11 +1090,28 @@ const styles = StyleSheet.create({
   },
   fabText: { color: "#FFFFFF", fontWeight: "700" },
   // Persistent horizontal quick-action row
+  actionRowWrap: {
+    position: "absolute",
+    left: Spacing.lg,
+    right: Spacing.lg,
+    height: ACTION_ROW_H,
+    overflow: "visible",
+    zIndex: 50,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  helpRippleRing: {
+    position: "absolute",
+    width: ACTION_ROW_H,
+    height: ACTION_ROW_H,
+    borderRadius: ACTION_ROW_H / 2,
+    right: 0,
+    zIndex: -1,
+  },
   actionRow: {
-    position: "absolute", left: Spacing.lg, right: Spacing.lg,
     flexDirection: "row", alignItems: "center",
     borderRadius: BorderRadius.full, overflow: "hidden",
-    height: ACTION_ROW_H,
+    height: ACTION_ROW_H, alignSelf: "stretch",
   },
   actionChip: {
     flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center",
