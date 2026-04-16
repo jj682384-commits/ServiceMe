@@ -858,20 +858,24 @@ export default function DriverMapScreen() {
       {/* Persistent quick-action row — always visible (no active request, no quick card) */}
       {(!activeRequest || activeRequest.status === "completed" || activeRequest.status === "cancelled") &&
       !selectedProvider ? (
-        <View style={[styles.actionRowWrap, { bottom: tabBarHeight + Spacing.lg }]}>
-          {/* Ripple burst — expands from the "Get Help Fast" button area */}
+        <>
+          {/* Ripple burst — screen-level overlay, never interferes with the row layout */}
           <Animated.View
             pointerEvents="none"
             style={[
               styles.helpRippleRing,
-              { backgroundColor: theme.primary },
+              {
+                backgroundColor: theme.primary,
+                bottom: tabBarHeight + Spacing.lg,
+                right: Spacing.lg,
+              },
               helpRippleStyle,
             ]}
           />
         <View
           style={[
             styles.actionRow,
-            { backgroundColor: theme.backgroundDefault, ...Shadows.md },
+            { bottom: tabBarHeight + Spacing.lg, backgroundColor: theme.backgroundDefault, ...Shadows.md },
           ]}
         >
           {/* Diagnose chip */}
@@ -955,7 +959,7 @@ export default function DriverMapScreen() {
             </ThemedText>
           </AnimatedPressable>
         </View>
-        </View>
+        </>
       ) : null}
 
       {/* Quick request card (appears when marker tapped) */}
@@ -1102,28 +1106,18 @@ const styles = StyleSheet.create({
   },
   fabText: { color: "#FFFFFF", fontWeight: "700" },
   // Persistent horizontal quick-action row
-  actionRowWrap: {
-    position: "absolute",
-    left: Spacing.lg,
-    right: Spacing.lg,
-    height: ACTION_ROW_H,
-    overflow: "visible",
-    zIndex: 50,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   helpRippleRing: {
     position: "absolute",
     width: ACTION_ROW_H,
     height: ACTION_ROW_H,
     borderRadius: ACTION_ROW_H / 2,
-    right: 0,
-    zIndex: -1,
+    zIndex: 49,
   },
   actionRow: {
+    position: "absolute", left: Spacing.lg, right: Spacing.lg,
     flexDirection: "row", alignItems: "center",
     borderRadius: BorderRadius.full, overflow: "hidden",
-    height: ACTION_ROW_H, alignSelf: "stretch",
+    height: ACTION_ROW_H, zIndex: 50,
   },
   actionChip: {
     flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center",
