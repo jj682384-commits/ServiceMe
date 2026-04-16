@@ -278,7 +278,7 @@ ResqRide provides the Service on an "AS IS" and "AS AVAILABLE" basis. We make no
 - The accuracy of information on the platform
 - That the Service will meet your specific requirements
 
-IN NO EVENT SHALL SERVICEME BE LIABLE FOR:
+IN NO EVENT SHALL RESQRIDE BE LIABLE FOR:
 - Any indirect, incidental, special, or consequential damages
 - Loss of profits, data, or business opportunities
 - Damages exceeding the amount paid for services in the past 12 months
