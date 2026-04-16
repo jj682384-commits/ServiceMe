@@ -135,8 +135,8 @@ export default function WelcomeScreen() {
         <Animated.View entering={FadeInDown.delay(200).duration(600).springify()} style={styles.header}>
           <ThemedText type="small" style={styles.tagline}>ROADSIDE ASSISTANCE</ThemedText>
           <View style={styles.titleRow}>
-            <ThemedText type="h1" style={styles.titleMain}>Service</ThemedText>
-            <ThemedText type="h1" style={[styles.titleAccent, { color: theme.secondary }]}>Me</ThemedText>
+            <ThemedText type="h1" style={styles.titleMain}>Resq</ThemedText>
+            <ThemedText type="h1" style={[styles.titleAccent, { color: theme.secondary }]}>Ride</ThemedText>
           </View>
           <ThemedText type="body" style={styles.subtitle}>Help is always closer than you think</ThemedText>
           <View style={styles.noBadge}>
