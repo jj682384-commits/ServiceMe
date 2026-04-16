@@ -12,9 +12,9 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, withSequence, Easing, interpolate, runOnJS } from "react-native-reanimated";
+import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, withSequence, cancelAnimation, Easing, interpolate, runOnJS } from "react-native-reanimated";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import * as Location from "expo-location";
 import * as Haptics from "expo-haptics";
@@ -436,6 +436,18 @@ export default function DriverMapScreen() {
     transform: [{ scale: helpRippleScale.value }],
     opacity: helpRippleOpacity.value,
   }));
+
+  // Reset button animation when the screen re-focuses (e.g. back from ServiceRequest)
+  useFocusEffect(
+    useCallback(() => {
+      cancelAnimation(helpBtnScale);
+      cancelAnimation(helpRippleScale);
+      cancelAnimation(helpRippleOpacity);
+      helpBtnScale.value = 1;
+      helpRippleScale.value = 0;
+      helpRippleOpacity.value = 0;
+    }, [helpBtnScale, helpRippleScale, helpRippleOpacity]),
+  );
 
   const pressHelpFast = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
