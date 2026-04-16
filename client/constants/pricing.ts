@@ -1,7 +1,7 @@
 import type { ServiceType } from "@/context/AppContext";
 
-export const SERVICE_FEE = 2.95;
-export const EXPRESS_FEE = 19.95;
+export const SERVICE_FEE = 3.99;
+export const EXPRESS_FEE = 9.99;
 
 export const COMPETITOR_PRICES: Record<ServiceType, { low: number; high: number }> = {
   flat_tire: { low: 120, high: 180 },

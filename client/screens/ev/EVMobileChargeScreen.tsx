@@ -32,7 +32,7 @@ const CHARGE_LEVELS = [
   { label: "Full Charge", kwh: "50 kWh", time: "~60 min", price: 44, desc: "Top off your battery to near full capacity" },
 ];
 
-const SERVICE_FEE = 2.99;
+const SERVICE_FEE = 3.99;
 
 export default function EVMobileChargeScreen() {
   const insets = useSafeAreaInsets();

@@ -1732,7 +1732,7 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
             [providerId]
           );
           const gross = job.totalCost ?? job.estimatedCost ?? 0;
-          const feeRate = (job.isExpress && provRows[0]?.accepts_priority_jobs) ? 0.10 : 0.15;
+          const feeRate = (job.isExpress && provRows[0]?.accepts_priority_jobs) ? 0.10 : 0.20;
           const tipAmt = typeof job.tip === "number" ? job.tip : 0;
           const netAmount = Math.round((gross * (1 - feeRate) + tipAmt) * 100) / 100;
 

@@ -23,8 +23,8 @@ import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-const SERVICE_FEE = 2.95;
-const EXPRESS_FEE = 19.95;
+const SERVICE_FEE = 3.99;
+const EXPRESS_FEE = 9.99;
 
 type VehicleSize = "compact" | "sedan" | "suv" | "truck" | "commercial";
 
