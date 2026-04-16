@@ -1,5 +1,6 @@
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
+import Constants from "expo-constants";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -47,9 +48,17 @@ export async function initNotifications(): Promise<string | null> {
   }
 
   try {
-    const token = await Notifications.getExpoPushTokenAsync();
+    const projectId =
+      (Constants.easConfig as { projectId?: string } | null)?.projectId ??
+      (Constants.expoConfig?.extra as { eas?: { projectId?: string } } | undefined)?.eas?.projectId;
+    const token = await Notifications.getExpoPushTokenAsync(
+      projectId ? { projectId } : {}
+    );
+    console.log("[PUSH] Token registered:", token.data?.slice(0, 30) + "...");
     return token.data;
-  } catch {
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn("[PUSH] Push token unavailable:", msg);
     return null;
   }
 }
@@ -79,6 +88,14 @@ export async function notifySOSActivated() {
     "Emergency dispatch is active. Help is on the way. Stay safe.",
     { screen: "EmergencyMode" },
     "emergency"
+  );
+}
+
+export async function notifyProviderAccepted(providerName: string, eta: number) {
+  await scheduleNotification(
+    "Provider Found",
+    `${providerName} accepted your request — ETA ~${eta} min`,
+    { screen: "ActiveService" }
   );
 }
 

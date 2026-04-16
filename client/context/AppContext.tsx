@@ -431,6 +431,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           historyRaw,
           contactsRaw,
           bgPrefRaw,
+          activeRequestRaw,
           savedToken,
         ] = await Promise.all([
           AsyncStorage.getItem("currentDriver"),
@@ -441,6 +442,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           AsyncStorage.getItem("requestHistory"),
           AsyncStorage.getItem("emergencyContacts"),
           AsyncStorage.getItem("backgroundPreferences"),
+          AsyncStorage.getItem("activeRequest"),
           loadAuthToken(),
         ]);
         if (savedToken) setAuthToken(savedToken);
@@ -458,6 +460,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
         if (contactsRaw) setEmergencyContacts(JSON.parse(contactsRaw));
         if (bgPrefRaw) setBackgroundPreferences(JSON.parse(bgPrefRaw));
+        if (activeRequestRaw) {
+          const ar = JSON.parse(activeRequestRaw) as ServiceRequest;
+          // Only restore if not in a terminal state
+          if (ar.status !== "completed" && ar.status !== "cancelled") {
+            setActiveRequest({ ...ar, createdAt: new Date(ar.createdAt) });
+          }
+        }
       } catch {}
       _setPersisted(true);
     })();
@@ -505,6 +514,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!_persisted) return;
     AsyncStorage.setItem("backgroundPreferences", JSON.stringify(backgroundPreferences)).catch(() => {});
   }, [backgroundPreferences, _persisted]);
+
+  useEffect(() => {
+    if (!_persisted) return;
+    if (activeRequest && activeRequest.status !== "completed" && activeRequest.status !== "cancelled") {
+      AsyncStorage.setItem("activeRequest", JSON.stringify(activeRequest)).catch(() => {});
+    } else {
+      AsyncStorage.removeItem("activeRequest").catch(() => {});
+    }
+  }, [activeRequest, _persisted]);
 
   const setBackgroundMode = (mode: BackgroundMode) => {
     setBackgroundPreferences((prev) => ({ ...prev, mode }));
@@ -758,6 +776,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       "paymentMethods",
       "requestHistory",
       "emergencyContacts",
+      "activeRequest",
     ]).catch(() => {});
   };
 

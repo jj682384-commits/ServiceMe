@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { getApiUrl } from "@/lib/query-client";
 import { useApp, ServiceStatus, Provider } from "@/context/AppContext";
 import {
+  notifyProviderAccepted,
   notifyProviderEnRoute,
   notifyProviderArrived,
   notifyServiceComplete,
@@ -153,7 +154,8 @@ export function useActiveJobTracker() {
 
     const providerName = activeRequest.provider?.name ?? "Your provider";
     const serviceLabel = SERVICE_LABELS[activeRequest.serviceType] ?? "service";
-    if      (status === "en_route")  notifyProviderEnRoute(providerName, activeRequest.eta ?? 8);
+    if      (status === "accepted")  notifyProviderAccepted(providerName, activeRequest.eta ?? 8);
+    else if (status === "en_route")  notifyProviderEnRoute(providerName, activeRequest.eta ?? 8);
     else if (status === "arrived")   notifyProviderArrived(providerName);
     else if (status === "completed") notifyServiceComplete(serviceLabel);
   }, [activeRequest?.status]);

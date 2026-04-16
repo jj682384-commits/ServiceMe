@@ -1595,13 +1595,18 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
         const driverToken = await getDriverPushToken(driverEmail).catch(() => null);
         if (driverToken) {
           const providerName = (job.provider as Record<string, unknown> | undefined)?.name as string || "A provider";
+          console.log(`[PUSH] Sending accepted notification to driver ${driverEmail}`);
           sendPush(
             [driverToken],
             "Provider Accepted Your Request",
             `${providerName} is on their way — ETA ~${job.eta ?? 8} mins`,
             { screen: "ActiveService" }
           );
+        } else {
+          console.log(`[PUSH] No push token for driver ${driverEmail} — skipping accepted notification`);
         }
+      } else {
+        console.log(`[PUSH] No driver email on job ${jobId} — cannot send accepted notification`);
       }
 
       res.json(job);
@@ -1651,9 +1656,14 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
         if (driverEmail) {
           const driverToken = await getDriverPushToken(driverEmail).catch(() => null);
           if (driverToken) {
+            console.log(`[PUSH] Sending ${status} notification to driver ${driverEmail}`);
             sendPush([driverToken], pushInfo.title, pushInfo.body, { screen: "ActiveService" },
               { priority: status === "cancelled" ? "high" : "normal" });
+          } else {
+            console.log(`[PUSH] No push token for driver ${driverEmail} — skipping ${status} notification`);
           }
+        } else {
+          console.log(`[PUSH] No driver email on job ${req.params.id} — cannot send ${status} notification`);
         }
       }
 
