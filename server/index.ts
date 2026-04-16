@@ -132,7 +132,7 @@ function getAppName(): string {
   }
 }
 
-async function serveExpoManifest(platform: string, res: Response) {
+async function serveExpoManifest(platform: string, req: Request, res: Response) {
   const manifestPath = path.resolve(
     process.cwd(),
     "static-build",
@@ -149,10 +149,31 @@ async function serveExpoManifest(platform: string, res: Response) {
         },
       });
       const body = await metroRes.text();
+      // Determine the public-facing host from the incoming request
+      const publicDomain = req.header("x-forwarded-host") || req.header("host") || "";
+      let finalBody = body;
+      if (publicDomain) {
+        try {
+          const manifest = JSON.parse(body);
+          if (manifest.launchAsset?.url) {
+            const origUrl = new URL(manifest.launchAsset.url);
+            manifest.launchAsset.url = `https://${publicDomain}${origUrl.pathname}${origUrl.search}`;
+          }
+          if (manifest.extra?.expoGo?.debuggerHost) {
+            manifest.extra.expoGo.debuggerHost = publicDomain;
+          }
+          if (manifest.extra?.expoClient?.hostUri) {
+            manifest.extra.expoClient.hostUri = publicDomain;
+          }
+          finalBody = JSON.stringify(manifest);
+        } catch {
+          // leave body as-is if JSON parse fails
+        }
+      }
       res.setHeader("expo-protocol-version", "1");
       res.setHeader("expo-sfv-version", "0");
       res.setHeader("content-type", "application/json");
-      return res.send(body);
+      return res.send(finalBody);
     } catch {
       return res
         .status(503)
@@ -225,7 +246,7 @@ function configureExpoAndLanding(app: express.Application) {
     const platform = req.header("expo-platform");
     if (platform && (platform === "ios" || platform === "android")) {
       log(`[MANIFEST] Serving ${platform} manifest`);
-      serveExpoManifest(platform, res).catch(next);
+      serveExpoManifest(platform, req, res).catch(next);
       return;
     }
 
@@ -293,6 +314,23 @@ process.on("unhandledRejection", (reason) => {
 
   setupBodyParsing(app);
   setupRequestLogging(app);
+
+  // ── Metro bundle proxy — lets Expo Go download the live JS bundle via the public domain ──
+  app.get(["/client/index.bundle", "/index.bundle", "/:any/index.bundle"], async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const qs = Object.entries(req.query as Record<string, string>).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&");
+      const metroUrl = `http://localhost:8081${req.path}${qs ? `?${qs}` : ""}`;
+      log(`[METRO PROXY] ${metroUrl}`);
+      const metroRes = await fetch(metroUrl);
+      if (!metroRes.ok) return next();
+      const ct = metroRes.headers.get("content-type") || "application/javascript";
+      res.setHeader("content-type", ct);
+      const buf = await metroRes.arrayBuffer();
+      res.send(Buffer.from(buf));
+    } catch {
+      next();
+    }
+  });
 
   // ── Stripe publishable key endpoint ───────────────────────────────────────
   app.get("/api/stripe/publishable-key", async (_req: Request, res: Response) => {
