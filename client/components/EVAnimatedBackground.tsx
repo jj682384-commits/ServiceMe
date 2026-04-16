@@ -1,5 +1,5 @@
-import React, { useEffect } from "react";
-import { View, StyleSheet, Dimensions } from "react-native";
+import React, { useEffect, useMemo } from "react";
+import { View, StyleSheet, useWindowDimensions } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -12,8 +12,6 @@ import Animated, {
   cancelAnimation,
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
-
-const { width: SW, height: SH } = Dimensions.get("window");
 
 type ShapeType = "diamond" | "hexagon" | "streak" | "triangle" | "pill";
 
@@ -32,30 +30,6 @@ interface EVShapeConfig {
   rotation?: number;
 }
 
-const EV_SHAPE_CONFIGS_DARK: EVShapeConfig[] = [
-  { width: 220, height: 220, shape: "diamond", colors: ["#00FF88", "#00CC6A"], startX: -20, startY: SH * 0.08, driftX: 160, driftY: -40, duration: 3800, delay: 0, opacityRange: [0.04, 0.13], rotation: 45 },
-  { width: 280, height: 40, shape: "streak", colors: ["#00E5FF", "#0088CC"], startX: SW + 50, startY: SH * 0.28, driftX: -SW - 100, driftY: 30, duration: 3200, delay: 300, opacityRange: [0.03, 0.10] },
-  { width: 180, height: 200, shape: "hexagon", colors: ["#B44DFF", "#7C3AED"], startX: SW * 0.25, startY: SH * 0.65, driftX: 100, driftY: -110, duration: 4200, delay: 700, opacityRange: [0.03, 0.10] },
-  { width: 160, height: 160, shape: "triangle", colors: ["#4D7CFF", "#00E5FF"], startX: SW * 0.75, startY: SH * 0.1, driftX: -90, driftY: 100, duration: 3600, delay: 400, opacityRange: [0.03, 0.09] },
-  { width: 320, height: 50, shape: "streak", colors: ["#00FF88", "#00E5FF"], startX: -100, startY: SH * 0.5, driftX: SW + 200, driftY: 20, duration: 2800, delay: 1200, opacityRange: [0.02, 0.08] },
-  { width: 140, height: 140, shape: "diamond", colors: ["#B44DFF", "#FF4DA6"], startX: SW * 0.6, startY: SH * 0.82, driftX: -80, driftY: -90, duration: 3500, delay: 500, opacityRange: [0.03, 0.08], rotation: 30 },
-  { width: 200, height: 60, shape: "pill", colors: ["#00FF88", "#4D7CFF"], startX: SW * 0.8, startY: SH * 0.42, driftX: -130, driftY: -50, duration: 3000, delay: 200, opacityRange: [0.03, 0.09] },
-  { width: 150, height: 170, shape: "hexagon", colors: ["#00E5FF", "#B44DFF"], startX: SW * 0.05, startY: SH * 0.35, driftX: 110, driftY: 70, duration: 4000, delay: 900, opacityRange: [0.02, 0.07] },
-  { width: 240, height: 35, shape: "streak", colors: ["#B44DFF", "#00E5FF"], startX: SW * 0.3, startY: SH * 0.9, driftX: -SW * 0.6, driftY: -15, duration: 2600, delay: 1600, opacityRange: [0.02, 0.07] },
-];
-
-const EV_SHAPE_CONFIGS_LIGHT: EVShapeConfig[] = [
-  { width: 220, height: 220, shape: "diamond", colors: ["#6EE7B7", "#34D399"], startX: -20, startY: SH * 0.08, driftX: 160, driftY: -40, duration: 3800, delay: 0, opacityRange: [0.08, 0.20], rotation: 45 },
-  { width: 280, height: 40, shape: "streak", colors: ["#67E8F9", "#22D3EE"], startX: SW + 50, startY: SH * 0.28, driftX: -SW - 100, driftY: 30, duration: 3200, delay: 300, opacityRange: [0.06, 0.16] },
-  { width: 180, height: 200, shape: "hexagon", colors: ["#C4B5FD", "#A78BFA"], startX: SW * 0.25, startY: SH * 0.65, driftX: 100, driftY: -110, duration: 4200, delay: 700, opacityRange: [0.06, 0.15] },
-  { width: 160, height: 160, shape: "triangle", colors: ["#93C5FD", "#60A5FA"], startX: SW * 0.75, startY: SH * 0.1, driftX: -90, driftY: 100, duration: 3600, delay: 400, opacityRange: [0.06, 0.14] },
-  { width: 320, height: 50, shape: "streak", colors: ["#6EE7B7", "#67E8F9"], startX: -100, startY: SH * 0.5, driftX: SW + 200, driftY: 20, duration: 2800, delay: 1200, opacityRange: [0.05, 0.12] },
-  { width: 140, height: 140, shape: "diamond", colors: ["#C4B5FD", "#F9A8D4"], startX: SW * 0.6, startY: SH * 0.82, driftX: -80, driftY: -90, duration: 3500, delay: 500, opacityRange: [0.06, 0.14], rotation: 30 },
-  { width: 200, height: 60, shape: "pill", colors: ["#6EE7B7", "#93C5FD"], startX: SW * 0.8, startY: SH * 0.42, driftX: -130, driftY: -50, duration: 3000, delay: 200, opacityRange: [0.06, 0.14] },
-  { width: 150, height: 170, shape: "hexagon", colors: ["#67E8F9", "#C4B5FD"], startX: SW * 0.05, startY: SH * 0.35, driftX: 110, driftY: 70, duration: 4000, delay: 900, opacityRange: [0.05, 0.12] },
-  { width: 240, height: 35, shape: "streak", colors: ["#C4B5FD", "#67E8F9"], startX: SW * 0.3, startY: SH * 0.9, driftX: -SW * 0.6, driftY: -15, duration: 2600, delay: 1600, opacityRange: [0.05, 0.12] },
-];
-
 interface ScanLineConfig {
   startY: number;
   duration: number;
@@ -63,12 +37,42 @@ interface ScanLineConfig {
   width: number;
 }
 
-const SCAN_LINES: ScanLineConfig[] = [
-  { startY: SH * 0.12, duration: 3500, delay: 0, width: SW * 0.8 },
-  { startY: SH * 0.38, duration: 4200, delay: 1200, width: SW * 0.6 },
-  { startY: SH * 0.65, duration: 3000, delay: 2500, width: SW * 0.7 },
-  { startY: SH * 0.88, duration: 3800, delay: 800, width: SW * 0.5 },
-];
+function buildDarkConfigs(SW: number, SH: number): EVShapeConfig[] {
+  return [
+    { width: 220, height: 220, shape: "diamond", colors: ["#00FF88", "#00CC6A"], startX: -20, startY: SH * 0.08, driftX: 160, driftY: -40, duration: 3800, delay: 0, opacityRange: [0.04, 0.13], rotation: 45 },
+    { width: 280, height: 40, shape: "streak", colors: ["#00E5FF", "#0088CC"], startX: SW + 50, startY: SH * 0.28, driftX: -SW - 100, driftY: 30, duration: 3200, delay: 300, opacityRange: [0.03, 0.10] },
+    { width: 180, height: 200, shape: "hexagon", colors: ["#B44DFF", "#7C3AED"], startX: SW * 0.25, startY: SH * 0.65, driftX: 100, driftY: -110, duration: 4200, delay: 700, opacityRange: [0.03, 0.10] },
+    { width: 160, height: 160, shape: "triangle", colors: ["#4D7CFF", "#00E5FF"], startX: SW * 0.75, startY: SH * 0.1, driftX: -90, driftY: 100, duration: 3600, delay: 400, opacityRange: [0.03, 0.09] },
+    { width: 320, height: 50, shape: "streak", colors: ["#00FF88", "#00E5FF"], startX: -100, startY: SH * 0.5, driftX: SW + 200, driftY: 20, duration: 2800, delay: 1200, opacityRange: [0.02, 0.08] },
+    { width: 140, height: 140, shape: "diamond", colors: ["#B44DFF", "#FF4DA6"], startX: SW * 0.6, startY: SH * 0.82, driftX: -80, driftY: -90, duration: 3500, delay: 500, opacityRange: [0.03, 0.08], rotation: 30 },
+    { width: 200, height: 60, shape: "pill", colors: ["#00FF88", "#4D7CFF"], startX: SW * 0.8, startY: SH * 0.42, driftX: -130, driftY: -50, duration: 3000, delay: 200, opacityRange: [0.03, 0.09] },
+    { width: 150, height: 170, shape: "hexagon", colors: ["#00E5FF", "#B44DFF"], startX: SW * 0.05, startY: SH * 0.35, driftX: 110, driftY: 70, duration: 4000, delay: 900, opacityRange: [0.02, 0.07] },
+    { width: 240, height: 35, shape: "streak", colors: ["#B44DFF", "#00E5FF"], startX: SW * 0.3, startY: SH * 0.9, driftX: -SW * 0.6, driftY: -15, duration: 2600, delay: 1600, opacityRange: [0.02, 0.07] },
+  ];
+}
+
+function buildLightConfigs(SW: number, SH: number): EVShapeConfig[] {
+  return [
+    { width: 220, height: 220, shape: "diamond", colors: ["#6EE7B7", "#34D399"], startX: -20, startY: SH * 0.08, driftX: 160, driftY: -40, duration: 3800, delay: 0, opacityRange: [0.08, 0.20], rotation: 45 },
+    { width: 280, height: 40, shape: "streak", colors: ["#67E8F9", "#22D3EE"], startX: SW + 50, startY: SH * 0.28, driftX: -SW - 100, driftY: 30, duration: 3200, delay: 300, opacityRange: [0.06, 0.16] },
+    { width: 180, height: 200, shape: "hexagon", colors: ["#C4B5FD", "#A78BFA"], startX: SW * 0.25, startY: SH * 0.65, driftX: 100, driftY: -110, duration: 4200, delay: 700, opacityRange: [0.06, 0.15] },
+    { width: 160, height: 160, shape: "triangle", colors: ["#93C5FD", "#60A5FA"], startX: SW * 0.75, startY: SH * 0.1, driftX: -90, driftY: 100, duration: 3600, delay: 400, opacityRange: [0.06, 0.14] },
+    { width: 320, height: 50, shape: "streak", colors: ["#6EE7B7", "#67E8F9"], startX: -100, startY: SH * 0.5, driftX: SW + 200, driftY: 20, duration: 2800, delay: 1200, opacityRange: [0.05, 0.12] },
+    { width: 140, height: 140, shape: "diamond", colors: ["#C4B5FD", "#F9A8D4"], startX: SW * 0.6, startY: SH * 0.82, driftX: -80, driftY: -90, duration: 3500, delay: 500, opacityRange: [0.06, 0.14], rotation: 30 },
+    { width: 200, height: 60, shape: "pill", colors: ["#6EE7B7", "#93C5FD"], startX: SW * 0.8, startY: SH * 0.42, driftX: -130, driftY: -50, duration: 3000, delay: 200, opacityRange: [0.06, 0.14] },
+    { width: 150, height: 170, shape: "hexagon", colors: ["#67E8F9", "#C4B5FD"], startX: SW * 0.05, startY: SH * 0.35, driftX: 110, driftY: 70, duration: 4000, delay: 900, opacityRange: [0.05, 0.12] },
+    { width: 240, height: 35, shape: "streak", colors: ["#C4B5FD", "#67E8F9"], startX: SW * 0.3, startY: SH * 0.9, driftX: -SW * 0.6, driftY: -15, duration: 2600, delay: 1600, opacityRange: [0.05, 0.12] },
+  ];
+}
+
+function buildScanLines(SW: number, SH: number): ScanLineConfig[] {
+  return [
+    { startY: SH * 0.12, duration: 3500, delay: 0, width: SW * 0.8 },
+    { startY: SH * 0.38, duration: 4200, delay: 1200, width: SW * 0.6 },
+    { startY: SH * 0.65, duration: 3000, delay: 2500, width: SW * 0.7 },
+    { startY: SH * 0.88, duration: 3800, delay: 800, width: SW * 0.5 },
+  ];
+}
 
 function ShapeInner({ shape, width, height, colors }: { shape: ShapeType; width: number; height: number; colors: string[] }) {
   if (shape === "diamond") {
@@ -174,7 +178,7 @@ function EVShape({ config }: { config: EVShapeConfig }) {
   );
 }
 
-function ScanLine({ config, isDark = true }: { config: ScanLineConfig; isDark?: boolean }) {
+function ScanLine({ config, SW, isDark = true }: { config: ScanLineConfig; SW: number; isDark?: boolean }) {
   const sweep = useSharedValue(0);
 
   useEffect(() => {
@@ -232,7 +236,7 @@ function ScanLine({ config, isDark = true }: { config: ScanLineConfig; isDark?: 
   );
 }
 
-function GridPulse({ isDark = true }: { isDark?: boolean }) {
+function GridPulse({ SW, SH, isDark = true }: { SW: number; SH: number; isDark?: boolean }) {
   const gridOpacity = useSharedValue(0);
 
   useEffect(() => {
@@ -296,16 +300,23 @@ function GridPulse({ isDark = true }: { isDark?: boolean }) {
 }
 
 export default function EVAnimatedBackground({ isDark = true }: { isDark?: boolean }) {
-  const configs = isDark ? EV_SHAPE_CONFIGS_DARK : EV_SHAPE_CONFIGS_LIGHT;
+  const { width: SW, height: SH } = useWindowDimensions();
+
+  const configs = useMemo(
+    () => (isDark ? buildDarkConfigs(SW, SH) : buildLightConfigs(SW, SH)),
+    [isDark, SW, SH]
+  );
+
+  const scanLines = useMemo(() => buildScanLines(SW, SH), [SW, SH]);
 
   return (
     <View style={[StyleSheet.absoluteFill, { overflow: "hidden", pointerEvents: "none" }]}>
-      <GridPulse isDark={isDark} />
+      <GridPulse SW={SW} SH={SH} isDark={isDark} />
       {configs.map((config, index) => (
         <EVShape key={`${isDark ? "d" : "l"}-${index}`} config={config} />
       ))}
-      {SCAN_LINES.map((config, index) => (
-        <ScanLine key={`scan-${index}`} config={config} isDark={isDark} />
+      {scanLines.map((config, index) => (
+        <ScanLine key={`scan-${index}`} config={config} SW={SW} isDark={isDark} />
       ))}
     </View>
   );

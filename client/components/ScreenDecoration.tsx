@@ -1,12 +1,11 @@
 import React from "react";
-import { StyleSheet, Dimensions } from "react-native";
+import { StyleSheet, useWindowDimensions } from "react-native";
 import Svg, { Circle, Line } from "react-native-svg";
 import { useTheme } from "@/hooks/useTheme";
 
-const { width: W, height: H } = Dimensions.get("window");
-
 export function ScreenDecoration() {
   const { theme, isDark } = useTheme();
+  const { width: W, height: H } = useWindowDimensions();
   const p = theme.primary;
   const s = theme.secondary ?? theme.primary;
   const base = isDark ? 1 : 2.2;

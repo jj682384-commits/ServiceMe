@@ -1,9 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { View, StyleSheet, Dimensions } from "react-native";
+import { View, StyleSheet, useWindowDimensions } from "react-native";
 import Svg, { Circle, Line, Defs, RadialGradient, Stop } from "react-native-svg";
 import { useFocusEffect } from "@react-navigation/native";
-
-const { width: W, height: H } = Dimensions.get("window");
 
 const PARTICLE_COUNT = 32;
 const CONNECT_DISTANCE = 180;
@@ -31,7 +29,7 @@ interface AnimatedBackgroundProps {
   isDark?: boolean;
 }
 
-function initParticles(): Particle[] {
+function initParticles(W: number, H: number): Particle[] {
   return Array.from({ length: PARTICLE_COUNT }, (_, i) => {
     const speed = 0.26 + Math.random() * 0.36;
     const angle = Math.random() * Math.PI * 2;
@@ -47,7 +45,7 @@ function initParticles(): Particle[] {
   });
 }
 
-function stepParticles(prev: Particle[]): Particle[] {
+function stepParticles(prev: Particle[], W: number, H: number): Particle[] {
   return prev.map(p => {
     let x = p.x + p.vx;
     let y = p.y + p.vy;
@@ -64,9 +62,18 @@ export default function AnimatedBackground({
   opacityBoost = 1,
   isDark = true,
 }: AnimatedBackgroundProps) {
-  const [particles, setParticles] = useState<Particle[]>(initParticles);
+  const { width: W, height: H } = useWindowDimensions();
+
+  const [particles, setParticles] = useState<Particle[]>(() => initParticles(W, H));
   const particleRef = useRef<Particle[]>(particles);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const dimsRef = useRef({ W, H });
+
+  useEffect(() => {
+    dimsRef.current = { W, H };
+    particleRef.current = initParticles(W, H);
+    setParticles([...particleRef.current]);
+  }, [W, H]);
 
   const stopAnimation = useCallback(() => {
     if (intervalRef.current !== null) {
@@ -78,7 +85,8 @@ export default function AnimatedBackground({
   const startAnimation = useCallback(() => {
     stopAnimation();
     intervalRef.current = setInterval(() => {
-      particleRef.current = stepParticles(particleRef.current);
+      const { W: w, H: h } = dimsRef.current;
+      particleRef.current = stepParticles(particleRef.current, w, h);
       setParticles([...particleRef.current]);
     }, FPS_INTERVAL);
   }, [stopAnimation]);
