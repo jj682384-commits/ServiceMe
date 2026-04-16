@@ -8,6 +8,7 @@ import {
   Linking,
   Alert,
   Animated as RNAnimated,
+  useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
@@ -347,6 +348,12 @@ function QuickRequestCard({
 export default function DriverMapScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
+  const { width: screenWidth } = useWindowDimensions();
+  // "Get Help Fast" is the rightmost flex:1 chip in a 3-chip row.
+  // Center of that button from the right edge of the screen:
+  const rowWidth = screenWidth - 2 * Spacing.lg;
+  const helpBtnCenterFromRight = Spacing.lg + rowWidth / 6;
+  const helpRippleRight = helpBtnCenterFromRight - ACTION_ROW_H / 2;
   const { theme } = useTheme();
   const { activeRequest, setUserLocation, userLocation, isPreferredProvider, setNearbyProviders } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -867,7 +874,7 @@ export default function DriverMapScreen() {
               {
                 backgroundColor: theme.primary,
                 bottom: tabBarHeight + Spacing.lg,
-                right: Spacing.lg,
+                right: helpRippleRight,
               },
               helpRippleStyle,
             ]}
