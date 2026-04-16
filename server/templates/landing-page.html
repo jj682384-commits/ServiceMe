@@ -201,19 +201,53 @@
     /* ── Services ── */
     .services-section { background: var(--navy2); }
     .services-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
       gap: 16px; margin-top: 48px;
     }
     .service-card {
       background: var(--card); border: 1px solid var(--border);
-      border-radius: 16px; padding: 24px 20px;
-      display: flex; align-items: center; gap: 14px;
-      transition: all .2s;
+      border-radius: 18px; padding: 22px 20px 20px;
+      display: flex; flex-direction: column; gap: 10px;
+      transition: all .2s; position: relative; overflow: hidden;
     }
-    .service-card:hover { background: rgba(0,212,255,0.06); border-color: rgba(0,212,255,0.25); }
-    .service-icon { font-size: 28px; flex-shrink: 0; }
-    .service-name { font-size: 14px; font-weight: 700; }
-    .service-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .service-card:hover { background: rgba(0,212,255,0.06); border-color: rgba(0,212,255,0.3); transform: translateY(-2px); }
+    .service-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+    .service-icon { font-size: 28px; flex-shrink: 0; line-height: 1; }
+    .service-price {
+      font-size: 11px; font-weight: 700; color: var(--cyan);
+      background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.2);
+      border-radius: 20px; padding: 3px 9px; white-space: nowrap; flex-shrink: 0;
+    }
+    .service-name { font-size: 15px; font-weight: 700; margin-top: 4px; }
+    .service-desc { font-size: 12px; color: var(--muted); line-height: 1.55; }
+    .service-addon {
+      font-size: 11px; color: rgba(0,212,255,0.8);
+      background: rgba(0,212,255,0.07); border-radius: 8px;
+      padding: 5px 9px; margin-top: 2px; display: inline-block;
+    }
+
+    /* EV services sub-section */
+    .ev-label {
+      display: flex; align-items: center; gap: 10px;
+      margin-top: 40px; margin-bottom: 6px;
+    }
+    .ev-label-text {
+      font-size: 11px; font-weight: 700; letter-spacing: .1em;
+      color: #4ade80; text-transform: uppercase;
+    }
+    .ev-label-line { flex: 1; height: 1px; background: rgba(74,222,128,0.2); }
+    .ev-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px; margin-top: 12px;
+    }
+    .service-card.ev {
+      border-color: rgba(74,222,128,0.2);
+    }
+    .service-card.ev:hover { background: rgba(74,222,128,0.05); border-color: rgba(74,222,128,0.4); }
+    .service-card.ev .service-price {
+      color: #4ade80; background: rgba(74,222,128,0.1); border-color: rgba(74,222,128,0.25);
+    }
+    .service-card.ev .service-addon { color: rgba(74,222,128,0.9); background: rgba(74,222,128,0.08); }
 
     /* ── Dual Mode ── */
     .dual-grid {
@@ -455,36 +489,77 @@
 
     <div class="services-grid">
       <div class="service-card">
-        <div class="service-icon">&#128739;</div>
-        <div><div class="service-name">Flat Tire</div><div class="service-desc">Spare change or patch</div></div>
+        <div class="service-card-top">
+          <div class="service-icon">&#128739;</div>
+          <div class="service-price">$40</div>
+        </div>
+        <div class="service-name">Flat Tire</div>
+        <div class="service-desc">We swap in your spare or patch the puncture on the spot — lug nuts torqued and pressure checked before we leave.</div>
       </div>
+
       <div class="service-card">
-        <div class="service-icon">&#9889;</div>
-        <div><div class="service-name">Jump Start</div><div class="service-desc">Dead battery rescue</div></div>
+        <div class="service-card-top">
+          <div class="service-icon">&#9889;</div>
+          <div class="service-price">From $30</div>
+        </div>
+        <div class="service-name">Jump Start</div>
+        <div class="service-desc">Professional jump start using commercial-grade booster cables. Provider connects safely and stays until the engine holds a charge.</div>
+        <div class="service-addon">+ Battery Health Check add-on available ($8)</div>
       </div>
+
       <div class="service-card">
-        <div class="service-icon">&#128664;</div>
-        <div><div class="service-name">Towing</div><div class="service-desc">Local or long-distance</div></div>
+        <div class="service-card-top">
+          <div class="service-icon">&#9981;</div>
+          <div class="service-price">From $10</div>
+        </div>
+        <div class="service-name">Fuel Delivery</div>
+        <div class="service-desc">Ran out of gas? Choose how many gallons you need — $10 to $50 presets or a custom amount. Gas or diesel delivered to your tank.</div>
       </div>
+
       <div class="service-card">
-        <div class="service-icon">&#9981;</div>
-        <div><div class="service-name">Fuel Delivery</div><div class="service-desc">Gas, diesel, or AdBlue</div></div>
+        <div class="service-card-top">
+          <div class="service-icon">&#128273;</div>
+          <div class="service-price">$55</div>
+        </div>
+        <div class="service-name">Lockout</div>
+        <div class="service-desc">Locked your keys inside? Our providers use professional slim-jim and air-wedge tools to get you back in quickly — no damage to your vehicle.</div>
       </div>
+
       <div class="service-card">
-        <div class="service-icon">&#128273;</div>
-        <div><div class="service-name">Lockout</div><div class="service-desc">Keys locked inside</div></div>
+        <div class="service-card-top">
+          <div class="service-icon">&#128296;</div>
+          <div class="service-price">$21</div>
+        </div>
+        <div class="service-name">OBD Diagnostic</div>
+        <div class="service-desc">Provider plugs in a scan tool to read your fault codes, explains what they mean in plain English, and recommends the right next step.</div>
       </div>
-      <div class="service-card">
-        <div class="service-icon">&#128268;</div>
-        <div><div class="service-name">EV Charging</div><div class="service-desc">Mobile charge delivery</div></div>
+    </div>
+
+    <div class="ev-label">
+      <div class="ev-label-line"></div>
+      <div class="ev-label-text">EV Services</div>
+      <div class="ev-label-line"></div>
+    </div>
+
+    <div class="ev-grid">
+      <div class="service-card ev">
+        <div class="service-card-top">
+          <div class="service-icon">&#128268;</div>
+          <div class="service-price">From $10</div>
+        </div>
+        <div class="service-name">EV Mobile Charging</div>
+        <div class="service-desc">A provider brings a portable DC charger directly to your EV. Choose the level of charge you need before they arrive.</div>
+        <div class="service-addon">Quick Boost 10kWh · Half Charge 25kWh · Full Charge 50kWh</div>
       </div>
-      <div class="service-card">
-        <div class="service-icon">&#128690;</div>
-        <div><div class="service-name">EV-Safe Tow</div><div class="service-desc">Flatbed for electric vehicles</div></div>
-      </div>
-      <div class="service-card">
-        <div class="service-icon">&#128295;</div>
-        <div><div class="service-name">Minor Repairs</div><div class="service-desc">On-site quick fixes</div></div>
+
+      <div class="service-card ev">
+        <div class="service-card-top">
+          <div class="service-icon">&#128690;</div>
+          <div class="service-price">From $84</div>
+        </div>
+        <div class="service-name">EV-Safe Tow</div>
+        <div class="service-desc">Towing that protects your EV's battery and drivetrain. Providers are trained on EV-safe rigging — no dragging the driven axle.</div>
+        <div class="service-addon">Flatbed / Rollback $127 · Wheel-Lift $84</div>
       </div>
     </div>
   </div>
