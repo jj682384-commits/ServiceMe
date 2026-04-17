@@ -19,9 +19,10 @@ export const DARK_BG  = "#04060E";
 export const LIGHT_BG = "#F5F7FA";
 
 // ─── tunables ────────────────────────────────────────────────────────────────
-const TICK_MS        = 66;  // ~15 fps — keeps the JS thread relaxed
-const EKG_SPEED      = 3.2;
-const PARTICLE_SPEED = 0.15;
+const TICK_MS        = 33;   // 30 fps — smooth without hammering the thread
+const EKG_SPEED      = 1.8;  // scaled down to match the faster tick
+const PARTICLE_SPEED = 0.22; // gentle drift — clearly visible at 30 fps
+const WOBBLE         = 0.008; // tiny random-walk nudge per tick (organic motion)
 const ARC_DIST       = 180;
 
 // ─── particle definitions (10 total) ─────────────────────────────────────────
@@ -95,11 +96,19 @@ function makeState(W: number, H: number): Anim {
 // ─── tick ────────────────────────────────────────────────────────────────────
 function nextState(prev: Anim, W: number, H: number): Anim {
   const particles = prev.particles.map(p => {
-    let { x, y, vx, vy } = p;
-    x += vx; y += vy;
+    // Tiny random-walk nudge keeps paths organic, not robotic straight lines
+    const nvx = p.vx + (Math.random() - 0.5) * WOBBLE * 2;
+    const nvy = p.vy + (Math.random() - 0.5) * WOBBLE * 2;
+    // Clamp speed so particles don't accelerate indefinitely
+    const spd = Math.sqrt(nvx * nvx + nvy * nvy);
+    const scale = spd > PARTICLE_SPEED * 1.6 ? (PARTICLE_SPEED * 1.6) / spd : 1;
+    const vx = nvx * scale;
+    const vy = nvy * scale;
+    let x = p.x + vx;
+    let y = p.y + vy;
     if (x < -40) x = W + 40; else if (x > W + 40) x = -40;
     if (y < -40) y = H + 40; else if (y > H + 40) y = -40;
-    return { ...p, x, y };
+    return { ...p, x, y, vx, vy };
   });
 
   const streaks = prev.streaks.map(s => {
@@ -185,8 +194,7 @@ export default function AnimatedBackground() {
     }
   }
 
-  // EKG at 12 % (above the card) and 84 % (below the card) so it's visible on every screen
-  const ekgTop = buildEkg(W, H * 0.12, anim.ekgOff);
+  // EKG at 84 % — below the card, always visible
   const ekgBot = buildEkg(W, H * 0.84, anim.ekgOff);
 
   // ambient glow radius — large enough to clearly tint each half of the screen
@@ -258,14 +266,10 @@ export default function AnimatedBackground() {
           );
         })}
 
-        {/* ── 5. EKG heartbeat — top + bottom lines, both visible above/below card ── */}
-        {[ekgTop, ekgBot].map((pts, i) => (
-          <React.Fragment key={`ekg${i}`}>
-            <Polyline points={pts} stroke="#0066FF" strokeWidth={7}   fill="none" strokeOpacity={0.12} />
-            <Polyline points={pts} stroke="#00DDFF" strokeWidth={2.2} fill="none" strokeOpacity={0.50} />
-            <Polyline points={pts} stroke="#FFFFFF"  strokeWidth={1.2} fill="none" strokeOpacity={0.80} />
-          </React.Fragment>
-        ))}
+        {/* ── 5. EKG heartbeat — bottom only, below the card ── */}
+        <Polyline points={ekgBot} stroke="#0066FF" strokeWidth={7}   fill="none" strokeOpacity={0.12} />
+        <Polyline points={ekgBot} stroke="#00DDFF" strokeWidth={2.2} fill="none" strokeOpacity={0.50} />
+        <Polyline points={ekgBot} stroke="#FFFFFF"  strokeWidth={1.2} fill="none" strokeOpacity={0.80} />
       </Svg>
     </View>
   );
