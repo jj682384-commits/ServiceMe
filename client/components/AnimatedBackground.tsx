@@ -8,7 +8,7 @@
  */
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { View, StyleSheet, useWindowDimensions } from "react-native";
-import Svg, { Circle, Line, Polyline, Defs, RadialGradient, Stop } from "react-native-svg";
+import Svg, { Circle, Line, Polyline, Rect, Defs, RadialGradient, LinearGradient, Stop } from "react-native-svg";
 import { useFocusEffect } from "@react-navigation/native";
 
 export const DARK_BG  = "#04060E";
@@ -213,6 +213,12 @@ export default function AnimatedBackground() {
             <Stop offset="0%"   stopColor="#FFFFFF" stopOpacity="0.9" />
             <Stop offset="100%" stopColor="#FFFFFF" stopOpacity="0"   />
           </RadialGradient>
+          {/* Fade-out overlay for rain streaks — transparent at top, opaque bg at bottom */}
+          <LinearGradient id="streakFade" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0%"   stopColor={DARK_BG} stopOpacity="0"   />
+            <Stop offset="60%"  stopColor={DARK_BG} stopOpacity="0"   />
+            <Stop offset="100%" stopColor={DARK_BG} stopOpacity="1"   />
+          </LinearGradient>
         </Defs>
 
         {/* ── 1. Energy rain (Option D) ──
@@ -239,6 +245,9 @@ export default function AnimatedBackground() {
             </React.Fragment>
           );
         })}
+
+        {/* ── streak bottom-fade overlay (sits on top of streaks, under particles) ── */}
+        <Rect x={0} y={0} width={W} height={H} fill="url(#streakFade)" />
 
         {/* ── 2. Connection arcs (C) ── */}
         {arcs.map((a, i) => (
