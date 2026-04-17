@@ -170,147 +170,7 @@ export interface PaymentMethod {
   cardholderName: string;
 }
 
-export type BackgroundMode = "animated" | "solid";
-export type BackgroundColorScheme = "default" | "ocean" | "sunset" | "aurora" | "midnight" | "ember" | "noir";
 
-export interface BackgroundPreferences {
-  mode: BackgroundMode;
-  colorScheme: BackgroundColorScheme;
-}
-
-export interface SchemeConfig {
-  label: string;
-  bgColor: string;
-  bgColorLight: string;
-  flashColor: string;
-  flashColorLight: string;
-  colors: string[][];
-  colorsLight: string[][];
-  opacityBoost: number;
-  opacityBoostLight: number;
-}
-
-export const BACKGROUND_SCHEMES: Record<BackgroundColorScheme, SchemeConfig> = {
-  default: {
-    label: "Cyber",
-    bgColor: "#04060E",
-    bgColorLight: "#F0F2F5",
-    flashColor: "#00AAFF",
-    flashColorLight: "#0055B3",
-    colors: [
-      ["#00AAFF", "#0050CC"], ["#D92222", "#B01A1A"], ["#7B2FFF", "#4800FF"],
-      ["#FF006E", "#CC0055"], ["#FFE000", "#FFA500"], ["#00FFD4", "#00AAAA"],
-    ],
-    colorsLight: [
-      ["#0055B3", "#003380"], ["#C4341E", "#9E2A17"], ["#5511AA", "#330088"],
-      ["#AA1155", "#880033"], ["#887700", "#665500"], ["#006677", "#004455"],
-    ],
-    opacityBoost: 1.2,
-    opacityBoostLight: 0.55,
-  },
-  ocean: {
-    label: "Deep Sea",
-    bgColor: "#000D18",
-    bgColorLight: "#BEE8F4",
-    flashColor: "#00E5FF",
-    flashColorLight: "#0066AA",
-    colors: [
-      ["#00E5FF", "#0080CC"], ["#00FF88", "#00CC66"], ["#1DE9B6", "#00AA80"],
-      ["#0066FF", "#0033CC"], ["#00FFCC", "#00AA99"], ["#40C4FF", "#007ACC"],
-    ],
-    colorsLight: [
-      ["#006688", "#004466"], ["#007755", "#005533"], ["#0055BB", "#003399"],
-      ["#008877", "#006655"], ["#0044AA", "#002288"], ["#006699", "#004477"],
-    ],
-    opacityBoost: 1.8,
-    opacityBoostLight: 0.6,
-  },
-  sunset: {
-    label: "Molten",
-    bgColor: "#180400",
-    bgColorLight: "#FFE4D0",
-    flashColor: "#FF6A00",
-    flashColorLight: "#C4341E",
-    colors: [
-      ["#FF6A00", "#CC3D00"], ["#FFD700", "#FFAA00"], ["#FF1744", "#CC0022"],
-      ["#FF4500", "#CC2200"], ["#FF006E", "#CC0055"], ["#FFA000", "#CC6600"],
-    ],
-    colorsLight: [
-      ["#CC4400", "#AA2200"], ["#AA7700", "#885500"], ["#CC1133", "#AA0011"],
-      ["#BB3300", "#992200"], ["#997700", "#775500"], ["#AA4400", "#882200"],
-    ],
-    opacityBoost: 2.0,
-    opacityBoostLight: 0.65,
-  },
-  aurora: {
-    label: "Aurora",
-    bgColor: "#010E08",
-    bgColorLight: "#D0F0E0",
-    flashColor: "#39FF14",
-    flashColorLight: "#047857",
-    colors: [
-      ["#39FF14", "#22CC00"], ["#00FF5E", "#00CC44"], ["#00FFD4", "#00AA99"],
-      ["#00DAFF", "#0050CC"], ["#8B00FF", "#5500CC"], ["#CCFF00", "#88BB00"],
-    ],
-    colorsLight: [
-      ["#117700", "#005500"], ["#006633", "#004422"], ["#008877", "#006655"],
-      ["#0077AA", "#005588"], ["#556600", "#334400"], ["#007744", "#005522"],
-    ],
-    opacityBoost: 1.8,
-    opacityBoostLight: 0.6,
-  },
-  midnight: {
-    label: "Galaxy",
-    bgColor: "#0A0018",
-    bgColorLight: "#E8D8F8",
-    flashColor: "#B400FF",
-    flashColorLight: "#7C3AED",
-    colors: [
-      ["#B400FF", "#7700CC"], ["#FF00C0", "#CC0088"], ["#4600FF", "#2200CC"],
-      ["#DA00FF", "#AA00CC"], ["#FF006E", "#CC0044"], ["#6600FF", "#3300CC"],
-    ],
-    colorsLight: [
-      ["#6600BB", "#440099"], ["#BB0077", "#880055"], ["#4400CC", "#2200AA"],
-      ["#990088", "#660066"], ["#8800CC", "#6600AA"], ["#5500BB", "#330099"],
-    ],
-    opacityBoost: 2.2,
-    opacityBoostLight: 0.6,
-  },
-  ember: {
-    label: "Inferno",
-    bgColor: "#1A0000",
-    bgColorLight: "#FFE0E0",
-    flashColor: "#FF2200",
-    flashColorLight: "#C4341E",
-    colors: [
-      ["#FF2200", "#CC0000"], ["#FF6600", "#CC3300"], ["#FF0050", "#CC0033"],
-      ["#FF9900", "#CC6600"], ["#CC0000", "#880000"], ["#FF4400", "#CC1100"],
-    ],
-    colorsLight: [
-      ["#BB1100", "#880000"], ["#BB4400", "#882200"], ["#AA0033", "#880022"],
-      ["#CC5500", "#AA3300"], ["#990000", "#660000"], ["#AA2200", "#881100"],
-    ],
-    opacityBoost: 2.0,
-    opacityBoostLight: 0.65,
-  },
-  noir: {
-    label: "Monochrome",
-    bgColor: "#030303",
-    bgColorLight: "#E8E8EC",
-    flashColor: "#E0E0E0",
-    flashColorLight: "#475569",
-    colors: [
-      ["#FFFFFF", "#CCCCCC"], ["#C0C0C0", "#888888"], ["#E8E8E8", "#BBBBBB"],
-      ["#A8A8A8", "#666666"], ["#D0D0D0", "#999999"], ["#F0F0F0", "#CCCCCC"],
-    ],
-    colorsLight: [
-      ["#333333", "#111111"], ["#555555", "#333333"], ["#444444", "#222222"],
-      ["#2A2A2A", "#111111"], ["#484848", "#282828"], ["#3A3A3A", "#1A1A1A"],
-    ],
-    opacityBoost: 2.5,
-    opacityBoostLight: 0.55,
-  },
-};
 
 export const PREFERRED_THRESHOLD = 3;
 
@@ -374,9 +234,6 @@ interface AppContextType {
   addPaymentMethod: (method: Omit<PaymentMethod, "id">) => void;
   removePaymentMethod: (id: string) => void;
   setDefaultPaymentMethod: (id: string) => void;
-  backgroundPreferences: BackgroundPreferences;
-  setBackgroundMode: (mode: BackgroundMode) => void;
-  setBackgroundColorScheme: (scheme: BackgroundColorScheme) => void;
   pendingJobs: ServiceRequest[];
   addPendingJob: (job: ServiceRequest) => void;
   useFreeService: () => void;
@@ -403,11 +260,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContact[]>([]);
   const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [backgroundPreferences, setBackgroundPreferences] = useState<BackgroundPreferences>({
-    mode: "animated",
-    colorScheme: "default",
-  });
-
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [pendingJobs, setPendingJobs] = useState<ServiceRequest[]>([]);
 
@@ -430,7 +282,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
           paymentsRaw,
           historyRaw,
           contactsRaw,
-          bgPrefRaw,
           activeRequestRaw,
           savedToken,
         ] = await Promise.all([
@@ -441,7 +292,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
           AsyncStorage.getItem("paymentMethods"),
           AsyncStorage.getItem("requestHistory"),
           AsyncStorage.getItem("emergencyContacts"),
-          AsyncStorage.getItem("backgroundPreferences"),
           AsyncStorage.getItem("activeRequest"),
           loadAuthToken(),
         ]);
@@ -459,7 +309,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
           );
         }
         if (contactsRaw) setEmergencyContacts(JSON.parse(contactsRaw));
-        if (bgPrefRaw) setBackgroundPreferences(JSON.parse(bgPrefRaw));
         if (activeRequestRaw) {
           const ar = JSON.parse(activeRequestRaw) as ServiceRequest;
           // Only restore if not in a terminal state
@@ -512,25 +361,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!_persisted) return;
-    AsyncStorage.setItem("backgroundPreferences", JSON.stringify(backgroundPreferences)).catch(() => {});
-  }, [backgroundPreferences, _persisted]);
-
-  useEffect(() => {
-    if (!_persisted) return;
     if (activeRequest && activeRequest.status !== "completed" && activeRequest.status !== "cancelled") {
       AsyncStorage.setItem("activeRequest", JSON.stringify(activeRequest)).catch(() => {});
     } else {
       AsyncStorage.removeItem("activeRequest").catch(() => {});
     }
   }, [activeRequest, _persisted]);
-
-  const setBackgroundMode = (mode: BackgroundMode) => {
-    setBackgroundPreferences((prev) => ({ ...prev, mode }));
-  };
-
-  const setBackgroundColorScheme = (scheme: BackgroundColorScheme) => {
-    setBackgroundPreferences((prev) => ({ ...prev, colorScheme: scheme }));
-  };
 
   const getProviderServiceCount = (providerId: string): number => {
     return requestHistory.filter(
@@ -845,9 +681,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         addPaymentMethod,
         removePaymentMethod,
         setDefaultPaymentMethod,
-        backgroundPreferences,
-        setBackgroundMode,
-        setBackgroundColorScheme,
         pendingJobs,
         addPendingJob,
         useFreeService,

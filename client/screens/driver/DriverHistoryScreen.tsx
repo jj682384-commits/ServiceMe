@@ -10,7 +10,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ThemedText } from "@/components/ThemedText";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { useTheme } from "@/hooks/useTheme";
-import { useApp, ServiceRequest, ServiceType, BACKGROUND_SCHEMES } from "@/context/AppContext";
+import { useApp, ServiceRequest, ServiceType } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
@@ -149,10 +149,8 @@ export default function DriverHistoryScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { theme, isDark } = useTheme();
-  const { requestHistory, backgroundPreferences } = useApp();
+  const { requestHistory } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const isAnimated = backgroundPreferences.mode === "animated";
-  const scheme = BACKGROUND_SCHEMES[backgroundPreferences.colorScheme];
 
   const displayHistory = requestHistory;
 
@@ -160,7 +158,7 @@ export default function DriverHistoryScreen() {
   const totalSpent = displayHistory.reduce((sum, r) => sum + (r.estimatedCost || 0), 0);
   const totalTimeSaved = displayHistory.reduce((sum, r) => sum + (r.timeSaved || 0), 0);
 
-  const cardBg = isAnimated ? theme.cardAnimatedBg : theme.backgroundSecondary;
+  const cardBg = theme.cardAnimatedBg;
 
   const renderHeader = () => (
     <View style={styles.headerSection}>
@@ -192,8 +190,8 @@ export default function DriverHistoryScreen() {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: isAnimated ? (isDark ? scheme.bgColor : scheme.bgColorLight) : theme.backgroundRoot }]}>
-      {isAnimated ? <AnimatedBackground customColors={isDark ? scheme.colors : scheme.colorsLight} opacityBoost={isDark ? scheme.opacityBoost : scheme.opacityBoostLight} flashColor={isDark ? scheme.flashColor : scheme.flashColorLight} isDark={isDark} /> : null}
+    <View style={[styles.container, { backgroundColor: isDark ? "#04060E" : theme.backgroundRoot }]}>
+      <AnimatedBackground />
       <FlatList
         data={displayHistory}
         keyExtractor={(item) => item.id}
@@ -201,7 +199,7 @@ export default function DriverHistoryScreen() {
           <HistoryItem
             item={item}
             onPress={() => navigation.navigate("ServiceDetail", { requestId: item.id })}
-            cardBg={isAnimated ? theme.cardAnimatedBg : theme.backgroundDefault}
+            cardBg={theme.cardAnimatedBg}
           />
         )}
         ListHeaderComponent={renderHeader}

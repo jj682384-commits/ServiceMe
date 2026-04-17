@@ -9,7 +9,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ThemedText } from "@/components/ThemedText";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { useTheme } from "@/hooks/useTheme";
-import { useApp, ServiceRequest, BACKGROUND_SCHEMES } from "@/context/AppContext";
+import { useApp, ServiceRequest } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
@@ -105,34 +105,14 @@ export default function DriverMessagesScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { theme, isDark } = useTheme();
-  const { requestHistory, backgroundPreferences } = useApp();
-  const isAnimated = backgroundPreferences.mode === "animated";
-  const scheme = BACKGROUND_SCHEMES[backgroundPreferences.colorScheme];
-  const cardBg = isAnimated ? theme.cardAnimatedBg : theme.backgroundDefault;
+  const { requestHistory } = useApp();
+  const cardBg = theme.cardAnimatedBg;
 
   const conversations = getConversations(requestHistory);
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: isAnimated
-            ? isDark
-              ? scheme.bgColor
-              : scheme.bgColorLight
-            : theme.backgroundRoot,
-        },
-      ]}
-    >
-      {isAnimated ? (
-        <AnimatedBackground
-          customColors={isDark ? scheme.colors : scheme.colorsLight}
-          opacityBoost={isDark ? scheme.opacityBoost : scheme.opacityBoostLight}
-          flashColor={isDark ? scheme.flashColor : scheme.flashColorLight}
-          isDark={isDark}
-        />
-      ) : null}
+    <View style={[styles.container, { backgroundColor: isDark ? "#04060E" : theme.backgroundRoot }]}>
+      <AnimatedBackground />
       <FlatList
         data={conversations}
         keyExtractor={(item) => item.id}

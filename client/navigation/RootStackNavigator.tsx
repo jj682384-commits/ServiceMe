@@ -36,7 +36,6 @@ import PaymentMethodsScreen from "@/screens/PaymentMethodsScreen";
 import BillingHistoryScreen from "@/screens/BillingHistoryScreen";
 import ServiceDetailScreen from "@/screens/ServiceDetailScreen";
 import ProviderSignUpScreen from "@/screens/ProviderSignUpScreen";
-import BackgroundSettingsScreen from "@/screens/BackgroundSettingsScreen";
 import ProviderActiveJobScreen from "@/screens/provider/ProviderActiveJobScreen";
 import ProviderPaymentSettingsScreen from "@/screens/provider/ProviderPaymentSettingsScreen";
 import ProviderEarningsHistoryScreen from "@/screens/provider/ProviderEarningsHistoryScreen";
@@ -78,7 +77,6 @@ export type RootStackParamList = {
   PaymentMethods: undefined;
   BillingHistory: undefined;
   ServiceDetail: { requestId: string };
-  BackgroundSettings: undefined;
   ProviderActiveJob: undefined;
   ProviderPaymentSettings: undefined;
   ProviderEarningsHistory: undefined;
@@ -339,13 +337,6 @@ export default function RootStackNavigator() {
         component={BillingHistoryScreen}
         options={{
           headerTitle: "Billing History",
-        }}
-      />
-      <Stack.Screen
-        name="BackgroundSettings"
-        component={BackgroundSettingsScreen}
-        options={{
-          headerTitle: "Background",
         }}
       />
       <Stack.Screen

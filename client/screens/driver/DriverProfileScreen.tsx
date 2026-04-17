@@ -10,7 +10,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ThemedText } from "@/components/ThemedText";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { useTheme } from "@/hooks/useTheme";
-import { useApp, BACKGROUND_SCHEMES } from "@/context/AppContext";
+import { useApp } from "@/context/AppContext";
 import { Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
@@ -89,10 +89,8 @@ export default function DriverProfileScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { theme, isDark } = useTheme();
-  const { currentDriver, setUserRole, logout, searchRadius, getTrialDaysRemaining, preferredProviders, backgroundPreferences } = useApp();
-  const isAnimated = backgroundPreferences.mode === "animated";
-  const scheme = BACKGROUND_SCHEMES[backgroundPreferences.colorScheme];
-  const sectionBg = isAnimated ? theme.cardAnimatedBg : theme.backgroundDefault;
+  const { currentDriver, setUserRole, logout, searchRadius, getTrialDaysRemaining, preferredProviders } = useApp();
+  const sectionBg = theme.cardAnimatedBg;
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
   const isPremium = currentDriver?.membership === "premium";
@@ -147,8 +145,8 @@ export default function DriverProfileScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: isAnimated ? (isDark ? scheme.bgColor : scheme.bgColorLight) : theme.backgroundRoot }]}>
-      {isAnimated ? <AnimatedBackground customColors={isDark ? scheme.colors : scheme.colorsLight} opacityBoost={isDark ? scheme.opacityBoost : scheme.opacityBoostLight} flashColor={isDark ? scheme.flashColor : scheme.flashColorLight} isDark={isDark} /> : null}
+    <View style={[styles.container, { backgroundColor: isDark ? "#04060E" : theme.backgroundRoot }]}>
+      <AnimatedBackground />
       <ScrollView
         contentContainerStyle={{
           paddingTop: Math.max(insets.top, Spacing["2xl"]) + Spacing.lg,
@@ -280,7 +278,6 @@ export default function DriverProfileScreen() {
             onValueChange={setNotificationsEnabled}
           />
           <MenuItem icon="map-pin" label="Search Radius" value={`${searchRadius} miles`} onPress={() => navigation.navigate("SearchRadius")} />
-          <MenuItem icon="layers" label="Background Style" value={backgroundPreferences.mode === "animated" ? "Motion" : "Solid"} onPress={() => navigation.navigate("BackgroundSettings")} />
         </View>
 
         <View style={[styles.section, { backgroundColor: sectionBg }]}>

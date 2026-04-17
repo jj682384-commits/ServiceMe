@@ -7,7 +7,7 @@ import { Feather } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { useTheme } from "@/hooks/useTheme";
-import { useApp, BACKGROUND_SCHEMES, ServiceRequest } from "@/context/AppContext";
+import { useApp, ServiceRequest } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { useProviderLocation, updateProviderAvailability, registerProviderOnServer } from "@/hooks/useProviderLocation";
 import { getApiUrl } from "@/lib/query-client";
@@ -56,11 +56,9 @@ export default function ProviderDashboardScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { theme, isDark } = useTheme();
-  const { currentProvider, setCurrentProvider, requestHistory, updateHistoryEntry, backgroundPreferences } = useApp();
+  const { currentProvider, setCurrentProvider, requestHistory, updateHistoryEntry } = useApp();
   const [isAvailable, setIsAvailable] = useState(currentProvider?.isAvailable ?? false);
-  const isAnimated = backgroundPreferences.mode === "animated";
-  const scheme = BACKGROUND_SCHEMES[backgroundPreferences.colorScheme];
-  const cardBg = isAnimated ? theme.cardAnimatedBg : theme.backgroundDefault;
+  const cardBg = theme.cardAnimatedBg;
 
   useProviderLocation(currentProvider?.id ?? null, isAvailable);
 
@@ -245,8 +243,8 @@ export default function ProviderDashboardScreen() {
   const hasAnyJobs = myJobs.length > 0;
 
   return (
-    <View style={[styles.container, { backgroundColor: isAnimated ? (isDark ? scheme.bgColor : scheme.bgColorLight) : theme.backgroundRoot }]}>
-      {isAnimated ? <AnimatedBackground customColors={isDark ? scheme.colors : scheme.colorsLight} opacityBoost={isDark ? scheme.opacityBoost : scheme.opacityBoostLight} flashColor={isDark ? scheme.flashColor : scheme.flashColorLight} isDark={isDark} /> : null}
+    <View style={[styles.container, { backgroundColor: isDark ? "#04060E" : theme.backgroundRoot }]}>
+      <AnimatedBackground />
 
       {tipBanner ? (
         <Animated.View
