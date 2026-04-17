@@ -1,33 +1,33 @@
 /**
- * AnimatedBackground  — C+D hybrid
+ * AnimatedBackground — C + D hybrid
  *
  * Layer stack (bottom → top):
- *   1. Ambient glow split  — large soft circles: fire-orange left, electric-blue right
- *   2. Energy streaks (D)  — thin vertical lines rising slowly, pinned to their side
- *   3. Constellation (C)   — 10 slow particles with radial-gradient halos + connection arcs
- *   4. EKG heartbeat       — scrolling pulse line through the vertical midpoint
+ *   1. Energy rain (D) — glowing vertical streaks, orange left / blue right
+ *   2. Constellation (C) — 10 slow drifting particles with halos + arcs
+ *   3. EKG heartbeat — single scrolling pulse line at the bottom
  */
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { View, StyleSheet, useWindowDimensions } from "react-native";
-import Svg, {
-  Circle, Line, Polyline,
-  Defs, RadialGradient, Stop,
-} from "react-native-svg";
+import Svg, { Circle, Line, Polyline, Defs, RadialGradient, Stop } from "react-native-svg";
 import { useFocusEffect } from "@react-navigation/native";
 
 export const DARK_BG  = "#04060E";
 export const LIGHT_BG = "#F5F7FA";
 
 // ─── tunables ────────────────────────────────────────────────────────────────
-const TICK_MS        = 33;   // 30 fps — smooth without hammering the thread
-const EKG_SPEED      = 1.8;  // scaled down to match the faster tick
-const PARTICLE_SPEED = 0.22; // gentle drift — clearly visible at 30 fps
-const WOBBLE         = 0.008; // tiny random-walk nudge per tick (organic motion)
+const TICK_MS        = 33;    // 30 fps
+const EKG_SPEED      = 1.8;
+const PARTICLE_SPEED = 0.22;
+const WOBBLE         = 0.008;
 const ARC_DIST       = 180;
 
-// ─── particle definitions (10 total) ─────────────────────────────────────────
-// Red particles bias to the left half; blue to the right half.
-// Radius is the bright core dot — the halo is 10× larger.
+// Rain streaks — 32 total, equally split left/right
+const STREAK_COUNT   = 32;
+// Streak fall speed range (px per tick, downward)
+const STREAK_SPD_MIN = 0.5;
+const STREAK_SPD_MAX = 1.4;
+
+// ─── particle definitions ────────────────────────────────────────────────────
 type Kind = "blue" | "red" | "white";
 const PDEFS: { kind: Kind; r: number; xBias: "left" | "right" | "any" }[] = [
   { kind: "blue",  r: 5.5, xBias: "right" },
@@ -42,32 +42,31 @@ const PDEFS: { kind: Kind; r: number; xBias: "left" | "right" | "any" }[] = [
   { kind: "white", r: 2,   xBias: "any"   },
 ];
 
-// ─── streak definitions (D sprinkle) ─────────────────────────────────────────
-const STREAK_COUNT = 9;
-
-// ─── types ───────────────────────────────────────────────────────────────────
-interface Particle { x: number; y: number; vx: number; vy: number; r: number; kind: Kind }
-interface Streak   { x: number; y: number; len: number; speed: number; op: number; fire: boolean }
-interface Anim     { particles: Particle[]; streaks: Streak[]; ekgOff: number }
-
-// ─── colour lookup ───────────────────────────────────────────────────────────
 const DOT_COLOR: Record<Kind, string> = {
   blue:  "#00AAFF",
   red:   "#FF5500",
   white: "#FFFFFF",
 };
 
+// ─── types ───────────────────────────────────────────────────────────────────
+interface Particle { x: number; y: number; vx: number; vy: number; r: number; kind: Kind }
+interface Streak {
+  x: number; y: number;
+  len: number; speed: number;
+  coreOp: number; glowOp: number;
+  fire: boolean; // true = left/orange, false = right/blue
+}
+interface Anim { particles: Particle[]; streaks: Streak[]; ekgOff: number }
+
 // ─── initialise ──────────────────────────────────────────────────────────────
 function makeState(W: number, H: number): Anim {
   const particles: Particle[] = PDEFS.map(d => {
     const angle = Math.random() * Math.PI * 2;
-    // bias x-start to the correct half, but allow drifting anywhere
     const xRange = d.xBias === "left"  ? [0, W * 0.55]
                  : d.xBias === "right" ? [W * 0.45, W]
                  : [0, W];
-    const x = xRange[0] + Math.random() * (xRange[1] - xRange[0]);
     return {
-      x,
+      x:  xRange[0] + Math.random() * (xRange[1] - xRange[0]),
       y:  Math.random() * H,
       vx: Math.cos(angle) * PARTICLE_SPEED,
       vy: Math.sin(angle) * PARTICLE_SPEED,
@@ -75,17 +74,19 @@ function makeState(W: number, H: number): Anim {
     };
   });
 
+  // Build streaks evenly split: first half fire, second half electric
   const streaks: Streak[] = Array.from({ length: STREAK_COUNT }, (_, i) => {
-    // alternate sides cleanly: even index = left (fire), odd = right (electric)
-    const fire = i % 2 === 0;
-    const xMin = fire ? 0 : W * 0.5;
-    const xMax = fire ? W * 0.5 : W;
+    const fire = i < STREAK_COUNT / 2;
+    // Spread within their half, with slight random scatter
+    const xMin = fire ? 0       : W * 0.50;
+    const xMax = fire ? W * 0.50 : W;
     return {
-      x:     xMin + Math.random() * (xMax - xMin),
-      y:     Math.random() * H,
-      len:   55 + Math.random() * 110,
-      speed: 0.20 + Math.random() * 0.30,
-      op:    0.05 + Math.random() * 0.10,
+      x:      xMin + Math.random() * (xMax - xMin),
+      y:      Math.random() * H,           // start anywhere vertically
+      len:    70 + Math.random() * 130,    // 70–200 px tall
+      speed:  STREAK_SPD_MIN + Math.random() * (STREAK_SPD_MAX - STREAK_SPD_MIN),
+      coreOp: 0.65 + Math.random() * 0.30, // 0.65–0.95 bright core
+      glowOp: 0.20 + Math.random() * 0.15, // 0.20–0.35 wide glow
       fire,
     };
   });
@@ -95,25 +96,23 @@ function makeState(W: number, H: number): Anim {
 
 // ─── tick ────────────────────────────────────────────────────────────────────
 function nextState(prev: Anim, W: number, H: number): Anim {
+  // Particles: organic drift with tiny random-walk wobble
   const particles = prev.particles.map(p => {
-    // Tiny random-walk nudge keeps paths organic, not robotic straight lines
     const nvx = p.vx + (Math.random() - 0.5) * WOBBLE * 2;
     const nvy = p.vy + (Math.random() - 0.5) * WOBBLE * 2;
-    // Clamp speed so particles don't accelerate indefinitely
     const spd = Math.sqrt(nvx * nvx + nvy * nvy);
-    const scale = spd > PARTICLE_SPEED * 1.6 ? (PARTICLE_SPEED * 1.6) / spd : 1;
-    const vx = nvx * scale;
-    const vy = nvy * scale;
-    let x = p.x + vx;
-    let y = p.y + vy;
+    const sc  = spd > PARTICLE_SPEED * 1.6 ? (PARTICLE_SPEED * 1.6) / spd : 1;
+    const vx  = nvx * sc, vy = nvy * sc;
+    let x = p.x + vx, y = p.y + vy;
     if (x < -40) x = W + 40; else if (x > W + 40) x = -40;
     if (y < -40) y = H + 40; else if (y > H + 40) y = -40;
     return { ...p, x, y, vx, vy };
   });
 
+  // Streaks: fall downward, wrap to top when they exit the bottom
   const streaks = prev.streaks.map(s => {
-    let y = s.y - s.speed;
-    if (y + s.len < 0) y = H + s.len;
+    let y = s.y + s.speed;
+    if (y > H + s.len) y = -s.len;
     return { ...s, y };
   });
 
@@ -121,28 +120,26 @@ function nextState(prev: Anim, W: number, H: number): Anim {
   return { particles, streaks, ekgOff };
 }
 
-// ─── EKG path builder ────────────────────────────────────────────────────────
+// ─── EKG path ────────────────────────────────────────────────────────────────
 function buildEkg(W: number, Y: number, off: number): string {
-  const C = W * 0.60; // cycle length — a bit wider so fewer spikes per screen
+  const C = W * 0.60;
   const h = 30;
-  // one cardiac cycle: flat → P-wave bump → QRS spike → T-wave → flat
   const seg: [number, number][] = [
     [0,          Y],
     [C * 0.18,   Y],
-    [C * 0.26,   Y - h * 0.18],   // P-wave
+    [C * 0.26,   Y - h * 0.18],
     [C * 0.30,   Y],
-    [C * 0.36,   Y - h * 0.10],   // pre-QRS
-    [C * 0.40,   Y - h],          // R peak
-    [C * 0.44,   Y + h * 0.60],   // S trough
+    [C * 0.36,   Y - h * 0.10],
+    [C * 0.40,   Y - h],
+    [C * 0.44,   Y + h * 0.60],
     [C * 0.48,   Y],
-    [C * 0.58,   Y - h * 0.22],   // T-wave
+    [C * 0.58,   Y - h * 0.22],
     [C * 0.66,   Y],
     [C,          Y],
   ];
   const pts: string[] = [];
-  for (let rep = -1; rep <= 2; rep++) {
+  for (let rep = -1; rep <= 2; rep++)
     for (const [px, py] of seg) pts.push(`${px + rep * C - off},${py}`);
-  }
   return pts.join(" ");
 }
 
@@ -150,9 +147,9 @@ function buildEkg(W: number, Y: number, off: number): string {
 export default function AnimatedBackground() {
   const { width: W, height: H } = useWindowDimensions();
 
-  const stateRef    = useRef<Anim>(makeState(W, H));
-  const dimsRef     = useRef({ W, H });
-  const timerRef    = useRef<ReturnType<typeof setInterval> | null>(null);
+  const stateRef  = useRef<Anim>(makeState(W, H));
+  const dimsRef   = useRef({ W, H });
+  const timerRef  = useRef<ReturnType<typeof setInterval> | null>(null);
   const [anim, setAnim] = useState<Anim>(stateRef.current);
 
   useEffect(() => {
@@ -177,7 +174,7 @@ export default function AnimatedBackground() {
   useFocusEffect(useCallback(() => { start(); return stop; }, [start, stop]));
   useEffect(() => () => stop(), [stop]);
 
-  // compute arcs (n=10 → 45 pairs max, trivially fast)
+  // Connection arcs
   const arcs: { x1: number; y1: number; x2: number; y2: number; col: string; op: number }[] = [];
   const ps = anim.particles;
   for (let i = 0; i < ps.length; i++) {
@@ -187,24 +184,21 @@ export default function AnimatedBackground() {
       const dx = ps[i].x - ps[j].x, dy = ps[i].y - ps[j].y;
       const d  = Math.sqrt(dx * dx + dy * dy);
       if (d < ARC_DIST) {
-        const op  = (1 - d / ARC_DIST) * 0.40;
-        const col = (ps[i].kind === "red" || ps[j].kind === "red") ? "#FF5500" : "#0066FF";
-        arcs.push({ x1: ps[i].x, y1: ps[i].y, x2: ps[j].x, y2: ps[j].y, col, op });
+        arcs.push({
+          x1: ps[i].x, y1: ps[i].y, x2: ps[j].x, y2: ps[j].y,
+          col: (ps[i].kind === "red" || ps[j].kind === "red") ? "#FF5500" : "#0066FF",
+          op:  (1 - d / ARC_DIST) * 0.40,
+        });
       }
     }
   }
 
-  // EKG at 84 % — below the card, always visible
-  const ekgBot = buildEkg(W, H * 0.84, anim.ekgOff);
-
-  // ambient glow radius — large enough to clearly tint each half of the screen
-  const GR = W * 0.75;
+  const ekg = buildEkg(W, H * 0.84, anim.ekgOff);
 
   return (
     <View style={styles.root} pointerEvents="none">
       <Svg width={W} height={H} style={StyleSheet.absoluteFillObject}>
         <Defs>
-          {/* particle halo gradients */}
           <RadialGradient id="halo_blue" cx="50%" cy="50%" r="50%">
             <Stop offset="0%"   stopColor="#00AAFF" stopOpacity="1"   />
             <Stop offset="40%"  stopColor="#0066FF" stopOpacity="0.5" />
@@ -221,31 +215,32 @@ export default function AnimatedBackground() {
           </RadialGradient>
         </Defs>
 
-        {/* ── 1. Ambient split glow ──
-              Centred at W*0.25 (fire) and W*0.75 (electric) so the glow
-              radiates clearly across each half without overflowing badly. */}
-        {/* fire – left half */}
-        <Circle cx={W * 0.25} cy={H * 0.38} r={GR * 1.00} fill="#FF4400" fillOpacity={0.06} />
-        <Circle cx={W * 0.25} cy={H * 0.38} r={GR * 0.60} fill="#FF4400" fillOpacity={0.08} />
-        <Circle cx={W * 0.25} cy={H * 0.38} r={GR * 0.28} fill="#FF6600" fillOpacity={0.13} />
-        {/* electric – right half */}
-        <Circle cx={W * 0.75} cy={H * 0.32} r={GR * 1.00} fill="#0055FF" fillOpacity={0.06} />
-        <Circle cx={W * 0.75} cy={H * 0.32} r={GR * 0.60} fill="#0066FF" fillOpacity={0.08} />
-        <Circle cx={W * 0.75} cy={H * 0.32} r={GR * 0.28} fill="#00AAFF" fillOpacity={0.13} />
+        {/* ── 1. Energy rain (Option D) ──
+            Each streak drawn twice: wide glow pass + thin bright core.
+            Fire/orange on the left half, electric/blue on the right half. */}
+        {anim.streaks.map((sk, i) => {
+          const fireCol = "#FF5500";
+          const elecCol = "#0088FF";
+          const col     = sk.fire ? fireCol : elecCol;
+          const x2      = sk.x;
+          const y1      = sk.y;
+          const y2      = sk.y + sk.len;
+          return (
+            <React.Fragment key={`sk${i}`}>
+              {/* outer glow */}
+              <Line x1={x2} y1={y1} x2={x2} y2={y2}
+                stroke={col} strokeWidth={9} strokeOpacity={sk.glowOp * 0.5} />
+              {/* inner glow */}
+              <Line x1={x2} y1={y1} x2={x2} y2={y2}
+                stroke={col} strokeWidth={4} strokeOpacity={sk.glowOp} />
+              {/* core */}
+              <Line x1={x2} y1={y1} x2={x2} y2={y2}
+                stroke={col} strokeWidth={1.8} strokeOpacity={sk.coreOp} />
+            </React.Fragment>
+          );
+        })}
 
-        {/* ── 2. Energy streaks (D sprinkle) ──
-              Thin vertical lines drifting upward — fire side = orange, electric side = blue */}
-        {anim.streaks.map((sk, i) => (
-          <Line key={`sk${i}`}
-            x1={sk.x} y1={sk.y}
-            x2={sk.x} y2={sk.y + sk.len}
-            stroke={sk.fire ? "#FF5500" : "#0077FF"}
-            strokeWidth={1.2}
-            strokeOpacity={sk.op}
-          />
-        ))}
-
-        {/* ── 3. Connection arcs ── */}
+        {/* ── 2. Connection arcs (C) ── */}
         {arcs.map((a, i) => (
           <Line key={`a${i}`}
             x1={a.x1} y1={a.y1} x2={a.x2} y2={a.y2}
@@ -253,8 +248,7 @@ export default function AnimatedBackground() {
           />
         ))}
 
-        {/* ── 4. Constellation particles ──
-              Each particle: large soft halo (10× core radius) + bright core dot */}
+        {/* ── 3. Constellation particles (C) ── */}
         {anim.particles.map((p, i) => {
           const haloR = p.r * (p.kind === "white" ? 6 : 10);
           const hId   = p.kind === "blue" ? "halo_blue" : p.kind === "red" ? "halo_red" : "halo_white";
@@ -266,10 +260,10 @@ export default function AnimatedBackground() {
           );
         })}
 
-        {/* ── 5. EKG heartbeat — bottom only, below the card ── */}
-        <Polyline points={ekgBot} stroke="#0066FF" strokeWidth={7}   fill="none" strokeOpacity={0.12} />
-        <Polyline points={ekgBot} stroke="#00DDFF" strokeWidth={2.2} fill="none" strokeOpacity={0.50} />
-        <Polyline points={ekgBot} stroke="#FFFFFF"  strokeWidth={1.2} fill="none" strokeOpacity={0.80} />
+        {/* ── 4. EKG heartbeat (bottom) ── */}
+        <Polyline points={ekg} stroke="#0066FF" strokeWidth={7}   fill="none" strokeOpacity={0.12} />
+        <Polyline points={ekg} stroke="#00DDFF" strokeWidth={2.2} fill="none" strokeOpacity={0.50} />
+        <Polyline points={ekg} stroke="#FFFFFF"  strokeWidth={1.2} fill="none" strokeOpacity={0.80} />
       </Svg>
     </View>
   );
