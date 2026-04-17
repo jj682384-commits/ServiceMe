@@ -193,7 +193,7 @@ export default function AnimatedBackground() {
     }
   }
 
-  const ekg = buildEkg(W, H * 0.84, anim.ekgOff);
+  const ekg = buildEkg(W, H * 0.92, anim.ekgOff);
 
   return (
     <View style={styles.root} pointerEvents="none">
