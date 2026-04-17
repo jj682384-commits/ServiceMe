@@ -1,263 +1,276 @@
+/**
+ * AnimatedBackground  — C+D hybrid
+ *
+ * Layer stack (bottom → top):
+ *   1. Ambient glow split  — large soft circles: fire-orange left, electric-blue right
+ *   2. Energy streaks (D)  — thin vertical lines rising slowly, pinned to their side
+ *   3. Constellation (C)   — 10 slow particles with radial-gradient halos + connection arcs
+ *   4. EKG heartbeat       — scrolling pulse line through the vertical midpoint
+ */
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { View, StyleSheet, useWindowDimensions } from "react-native";
-import Svg, { Circle, Line, Polyline, Defs, RadialGradient, Stop } from "react-native-svg";
+import Svg, {
+  Circle, Line, Polyline,
+  Defs, RadialGradient, Stop,
+} from "react-native-svg";
 import { useFocusEffect } from "@react-navigation/native";
 
 export const DARK_BG  = "#04060E";
 export const LIGHT_BG = "#F5F7FA";
 
-// ─── tunables ──────────────────────────────────────────────────────────────
-const TICK_MS        = 66;   // ~15 fps — light on JS thread
-const EKG_SPEED      = 3.5;
-const PARTICLE_SPEED = 0.18; // very slow drift
-const ARC_DIST       = 200;  // connection threshold
+// ─── tunables ────────────────────────────────────────────────────────────────
+const TICK_MS        = 66;  // ~15 fps — keeps the JS thread relaxed
+const EKG_SPEED      = 3.2;
+const PARTICLE_SPEED = 0.15;
+const ARC_DIST       = 180;
 
-// Option-C particles: 5 blue, 3 red, 2 white  (total 10)
-const PARTICLE_DEFS: { kind: "blue" | "red" | "white"; r: number }[] = [
-  { kind: "blue",  r: 5   },
-  { kind: "blue",  r: 3.5 },
-  { kind: "blue",  r: 6   },
-  { kind: "blue",  r: 4   },
-  { kind: "blue",  r: 7   },
-  { kind: "red",   r: 5.5 },
-  { kind: "red",   r: 4   },
-  { kind: "red",   r: 6.5 },
-  { kind: "white", r: 2.5 },
-  { kind: "white", r: 2   },
+// ─── particle definitions (10 total) ─────────────────────────────────────────
+// Red particles bias to the left half; blue to the right half.
+// Radius is the bright core dot — the halo is 10× larger.
+type Kind = "blue" | "red" | "white";
+const PDEFS: { kind: Kind; r: number; xBias: "left" | "right" | "any" }[] = [
+  { kind: "blue",  r: 5.5, xBias: "right" },
+  { kind: "blue",  r: 4,   xBias: "right" },
+  { kind: "blue",  r: 6.5, xBias: "right" },
+  { kind: "blue",  r: 3.5, xBias: "any"   },
+  { kind: "blue",  r: 7,   xBias: "right" },
+  { kind: "red",   r: 5,   xBias: "left"  },
+  { kind: "red",   r: 6,   xBias: "left"  },
+  { kind: "red",   r: 4,   xBias: "left"  },
+  { kind: "white", r: 2.5, xBias: "any"   },
+  { kind: "white", r: 2,   xBias: "any"   },
 ];
 
-// Option-D streaks: thin drifting energy lines
-const STREAK_COUNT = 8;
+// ─── streak definitions (D sprinkle) ─────────────────────────────────────────
+const STREAK_COUNT = 9;
 
-// ─── colour maps ───────────────────────────────────────────────────────────
-const COLOR: Record<"blue" | "red" | "white", string> = {
+// ─── types ───────────────────────────────────────────────────────────────────
+interface Particle { x: number; y: number; vx: number; vy: number; r: number; kind: Kind }
+interface Streak   { x: number; y: number; len: number; speed: number; op: number; fire: boolean }
+interface Anim     { particles: Particle[]; streaks: Streak[]; ekgOff: number }
+
+// ─── colour lookup ───────────────────────────────────────────────────────────
+const DOT_COLOR: Record<Kind, string> = {
   blue:  "#00AAFF",
-  red:   "#FF4400",
+  red:   "#FF5500",
   white: "#FFFFFF",
 };
-const HALO_COLOR: Record<"blue" | "red" | "white", string> = {
-  blue:  "#0066FF",
-  red:   "#D92222",
-  white: "#CCDDFF",
-};
 
-// ─── types ─────────────────────────────────────────────────────────────────
-interface Particle {
-  x: number; y: number; vx: number; vy: number;
-  r: number; kind: "blue" | "red" | "white";
-}
-
-interface Streak {
-  x: number; y: number; len: number;
-  speed: number; opacity: number;
-  color: string;
-}
-
-interface State {
-  particles: Particle[];
-  streaks:   Streak[];
-  ekgOff:    number;
-}
-
-// ─── init ──────────────────────────────────────────────────────────────────
-function make(W: number, H: number): State {
-  const particles: Particle[] = PARTICLE_DEFS.map(d => {
+// ─── initialise ──────────────────────────────────────────────────────────────
+function makeState(W: number, H: number): Anim {
+  const particles: Particle[] = PDEFS.map(d => {
     const angle = Math.random() * Math.PI * 2;
+    // bias x-start to the correct half, but allow drifting anywhere
+    const xRange = d.xBias === "left"  ? [0, W * 0.55]
+                 : d.xBias === "right" ? [W * 0.45, W]
+                 : [0, W];
+    const x = xRange[0] + Math.random() * (xRange[1] - xRange[0]);
     return {
-      x: Math.random() * W, y: Math.random() * H,
+      x,
+      y:  Math.random() * H,
       vx: Math.cos(angle) * PARTICLE_SPEED,
       vy: Math.sin(angle) * PARTICLE_SPEED,
       r: d.r, kind: d.kind,
     };
   });
 
-  const streaks: Streak[] = Array.from({ length: STREAK_COUNT }, () => ({
-    x:       Math.random() * W,
-    y:       Math.random() * H,
-    len:     60 + Math.random() * 120,
-    speed:   0.25 + Math.random() * 0.35,
-    opacity: 0.04 + Math.random() * 0.09,
-    color:   Math.random() < 0.55 ? "#0066FF" : "#FF4400",
-  }));
+  const streaks: Streak[] = Array.from({ length: STREAK_COUNT }, (_, i) => {
+    // alternate sides cleanly: even index = left (fire), odd = right (electric)
+    const fire = i % 2 === 0;
+    const xMin = fire ? 0 : W * 0.5;
+    const xMax = fire ? W * 0.5 : W;
+    return {
+      x:     xMin + Math.random() * (xMax - xMin),
+      y:     Math.random() * H,
+      len:   55 + Math.random() * 110,
+      speed: 0.20 + Math.random() * 0.30,
+      op:    0.05 + Math.random() * 0.10,
+      fire,
+    };
+  });
 
   return { particles, streaks, ekgOff: 0 };
 }
 
-function tick(prev: State, W: number, H: number): State {
+// ─── tick ────────────────────────────────────────────────────────────────────
+function nextState(prev: Anim, W: number, H: number): Anim {
   const particles = prev.particles.map(p => {
     let { x, y, vx, vy } = p;
     x += vx; y += vy;
-    if (x < -30) x = W + 30; else if (x > W + 30) x = -30;
-    if (y < -30) y = H + 30; else if (y > H + 30) y = -30;
+    if (x < -40) x = W + 40; else if (x > W + 40) x = -40;
+    if (y < -40) y = H + 40; else if (y > H + 40) y = -40;
     return { ...p, x, y };
   });
 
-  // streaks drift upward slowly
   const streaks = prev.streaks.map(s => {
     let y = s.y - s.speed;
     if (y + s.len < 0) y = H + s.len;
     return { ...s, y };
   });
 
-  const ekgOff = (prev.ekgOff + EKG_SPEED) % (W * 0.55);
+  const ekgOff = (prev.ekgOff + EKG_SPEED) % (W * 0.60);
   return { particles, streaks, ekgOff };
 }
 
-// ─── EKG polyline ──────────────────────────────────────────────────────────
-function ekgPoints(W: number, Y: number, off: number): string {
-  const cycle = W * 0.55;
-  const h = 28;
+// ─── EKG path builder ────────────────────────────────────────────────────────
+function buildEkg(W: number, Y: number, off: number): string {
+  const C = W * 0.60; // cycle length — a bit wider so fewer spikes per screen
+  const h = 30;
+  // one cardiac cycle: flat → P-wave bump → QRS spike → T-wave → flat
   const seg: [number, number][] = [
-    [0,            Y],
-    [cycle * 0.22, Y],
-    [cycle * 0.28, Y - h * 0.18],
-    [cycle * 0.31, Y - h],
-    [cycle * 0.345,Y + h * 0.65],
-    [cycle * 0.38, Y],
-    [cycle * 0.46, Y - h * 0.12],
-    [cycle * 0.50, Y],
-    [cycle * 0.72, Y],
-    [cycle * 0.78, Y - h * 0.18],
-    [cycle * 0.81, Y - h],
-    [cycle * 0.845,Y + h * 0.65],
-    [cycle * 0.88, Y],
-    [cycle * 0.96, Y - h * 0.12],
-    [cycle,        Y],
+    [0,          Y],
+    [C * 0.18,   Y],
+    [C * 0.26,   Y - h * 0.18],   // P-wave
+    [C * 0.30,   Y],
+    [C * 0.36,   Y - h * 0.10],   // pre-QRS
+    [C * 0.40,   Y - h],          // R peak
+    [C * 0.44,   Y + h * 0.60],   // S trough
+    [C * 0.48,   Y],
+    [C * 0.58,   Y - h * 0.22],   // T-wave
+    [C * 0.66,   Y],
+    [C,          Y],
   ];
   const pts: string[] = [];
   for (let rep = -1; rep <= 2; rep++) {
-    for (const [px, py] of seg) pts.push(`${px + rep * cycle - off},${py}`);
+    for (const [px, py] of seg) pts.push(`${px + rep * C - off},${py}`);
   }
   return pts.join(" ");
 }
 
-// ─── component ─────────────────────────────────────────────────────────────
+// ─── component ───────────────────────────────────────────────────────────────
 export default function AnimatedBackground() {
   const { width: W, height: H } = useWindowDimensions();
 
-  const stateRef   = useRef<State>(make(W, H));
-  const dimsRef    = useRef({ W, H });
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [s, setS]  = useState<State>(stateRef.current);
+  const stateRef    = useRef<Anim>(makeState(W, H));
+  const dimsRef     = useRef({ W, H });
+  const timerRef    = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [anim, setAnim] = useState<Anim>(stateRef.current);
 
   useEffect(() => {
-    dimsRef.current = { W, H };
-    stateRef.current = make(W, H);
-    setS({ ...stateRef.current });
+    dimsRef.current  = { W, H };
+    stateRef.current = makeState(W, H);
+    setAnim({ ...stateRef.current });
   }, [W, H]);
 
-  const stop  = useCallback(() => {
-    if (intervalRef.current !== null) { clearInterval(intervalRef.current); intervalRef.current = null; }
+  const stop = useCallback(() => {
+    if (timerRef.current !== null) { clearInterval(timerRef.current); timerRef.current = null; }
   }, []);
 
   const start = useCallback(() => {
     stop();
-    intervalRef.current = setInterval(() => {
+    timerRef.current = setInterval(() => {
       const { W: w, H: h } = dimsRef.current;
-      stateRef.current = tick(stateRef.current, w, h);
-      setS({ ...stateRef.current });
+      stateRef.current = nextState(stateRef.current, w, h);
+      setAnim({ ...stateRef.current });
     }, TICK_MS);
   }, [stop]);
 
   useFocusEffect(useCallback(() => { start(); return stop; }, [start, stop]));
   useEffect(() => () => stop(), [stop]);
 
-  // connection arcs (O(n²) but n=10 so trivially fast)
-  const arcs: { x1: number; y1: number; x2: number; y2: number; col: string; a: number }[] = [];
-  for (let i = 0; i < s.particles.length; i++) {
-    if (s.particles[i].kind === "white") continue;
-    for (let j = i + 1; j < s.particles.length; j++) {
-      if (s.particles[j].kind === "white") continue;
-      const dx = s.particles[i].x - s.particles[j].x;
-      const dy = s.particles[i].y - s.particles[j].y;
+  // compute arcs (n=10 → 45 pairs max, trivially fast)
+  const arcs: { x1: number; y1: number; x2: number; y2: number; col: string; op: number }[] = [];
+  const ps = anim.particles;
+  for (let i = 0; i < ps.length; i++) {
+    if (ps[i].kind === "white") continue;
+    for (let j = i + 1; j < ps.length; j++) {
+      if (ps[j].kind === "white") continue;
+      const dx = ps[i].x - ps[j].x, dy = ps[i].y - ps[j].y;
       const d  = Math.sqrt(dx * dx + dy * dy);
       if (d < ARC_DIST) {
-        const a = (1 - d / ARC_DIST) * 0.45;
-        const isRed = s.particles[i].kind === "red" || s.particles[j].kind === "red";
-        arcs.push({ x1: s.particles[i].x, y1: s.particles[i].y, x2: s.particles[j].x, y2: s.particles[j].y, col: isRed ? "#FF4400" : "#0066FF", a });
+        const op  = (1 - d / ARC_DIST) * 0.40;
+        const col = (ps[i].kind === "red" || ps[j].kind === "red") ? "#FF5500" : "#0066FF";
+        arcs.push({ x1: ps[i].x, y1: ps[i].y, x2: ps[j].x, y2: ps[j].y, col, op });
       }
     }
   }
 
-  const ekgY = H * 0.74;
-  const ekg  = ekgPoints(W, ekgY, s.ekgOff);
+  // EKG at 12 % (above the card) and 84 % (below the card) so it's visible on every screen
+  const ekgTop = buildEkg(W, H * 0.12, anim.ekgOff);
+  const ekgBot = buildEkg(W, H * 0.84, anim.ekgOff);
 
-  // ambient glow radius — fits nicely on any phone width
-  const gr = W * 0.52;
+  // ambient glow radius — large enough to clearly tint each half of the screen
+  const GR = W * 0.75;
 
   return (
-    <View style={st.root} pointerEvents="none">
+    <View style={styles.root} pointerEvents="none">
       <Svg width={W} height={H} style={StyleSheet.absoluteFillObject}>
         <Defs>
-          <RadialGradient id="gh_blue" cx="50%" cy="50%" r="50%">
-            <Stop offset="0%"   stopColor="#0066FF" stopOpacity="1" />
-            <Stop offset="45%"  stopColor="#0066FF" stopOpacity="0.4" />
-            <Stop offset="100%" stopColor="#0066FF" stopOpacity="0" />
+          {/* particle halo gradients */}
+          <RadialGradient id="halo_blue" cx="50%" cy="50%" r="50%">
+            <Stop offset="0%"   stopColor="#00AAFF" stopOpacity="1"   />
+            <Stop offset="40%"  stopColor="#0066FF" stopOpacity="0.5" />
+            <Stop offset="100%" stopColor="#0066FF" stopOpacity="0"   />
           </RadialGradient>
-          <RadialGradient id="gh_red" cx="50%" cy="50%" r="50%">
-            <Stop offset="0%"   stopColor="#FF4400" stopOpacity="1" />
-            <Stop offset="45%"  stopColor="#FF4400" stopOpacity="0.4" />
-            <Stop offset="100%" stopColor="#FF4400" stopOpacity="0" />
+          <RadialGradient id="halo_red" cx="50%" cy="50%" r="50%">
+            <Stop offset="0%"   stopColor="#FF6600" stopOpacity="1"   />
+            <Stop offset="40%"  stopColor="#FF4400" stopOpacity="0.5" />
+            <Stop offset="100%" stopColor="#D92222" stopOpacity="0"   />
           </RadialGradient>
-          <RadialGradient id="gh_white" cx="50%" cy="50%" r="50%">
-            <Stop offset="0%"   stopColor="#FFFFFF" stopOpacity="1" />
-            <Stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
+          <RadialGradient id="halo_white" cx="50%" cy="50%" r="50%">
+            <Stop offset="0%"   stopColor="#FFFFFF" stopOpacity="0.9" />
+            <Stop offset="100%" stopColor="#FFFFFF" stopOpacity="0"   />
           </RadialGradient>
         </Defs>
 
-        {/* ── Option-D sprinkle: drifting energy streaks ── */}
-        {s.streaks.map((sk, i) => (
+        {/* ── 1. Ambient split glow ──
+              Centred at W*0.25 (fire) and W*0.75 (electric) so the glow
+              radiates clearly across each half without overflowing badly. */}
+        {/* fire – left half */}
+        <Circle cx={W * 0.25} cy={H * 0.38} r={GR * 1.00} fill="#FF4400" fillOpacity={0.06} />
+        <Circle cx={W * 0.25} cy={H * 0.38} r={GR * 0.60} fill="#FF4400" fillOpacity={0.08} />
+        <Circle cx={W * 0.25} cy={H * 0.38} r={GR * 0.28} fill="#FF6600" fillOpacity={0.13} />
+        {/* electric – right half */}
+        <Circle cx={W * 0.75} cy={H * 0.32} r={GR * 1.00} fill="#0055FF" fillOpacity={0.06} />
+        <Circle cx={W * 0.75} cy={H * 0.32} r={GR * 0.60} fill="#0066FF" fillOpacity={0.08} />
+        <Circle cx={W * 0.75} cy={H * 0.32} r={GR * 0.28} fill="#00AAFF" fillOpacity={0.13} />
+
+        {/* ── 2. Energy streaks (D sprinkle) ──
+              Thin vertical lines drifting upward — fire side = orange, electric side = blue */}
+        {anim.streaks.map((sk, i) => (
           <Line key={`sk${i}`}
             x1={sk.x} y1={sk.y}
             x2={sk.x} y2={sk.y + sk.len}
-            stroke={sk.color}
-            strokeWidth={1}
-            strokeOpacity={sk.opacity}
+            stroke={sk.fire ? "#FF5500" : "#0077FF"}
+            strokeWidth={1.2}
+            strokeOpacity={sk.op}
           />
         ))}
 
-        {/* ── Ambient split: fire left / electric right ── */}
-        {/* fire — 3 concentric rings, upper-left */}
-        <Circle cx={W * 0.10} cy={H * 0.30} r={gr * 1.0} fill="#FF4400" fillOpacity={0.05} />
-        <Circle cx={W * 0.10} cy={H * 0.30} r={gr * 0.60} fill="#FF4400" fillOpacity={0.07} />
-        <Circle cx={W * 0.10} cy={H * 0.30} r={gr * 0.30} fill="#FF6600" fillOpacity={0.11} />
-        {/* electric — 3 concentric rings, upper-right */}
-        <Circle cx={W * 0.90} cy={H * 0.25} r={gr * 1.0} fill="#0055FF" fillOpacity={0.05} />
-        <Circle cx={W * 0.90} cy={H * 0.25} r={gr * 0.60} fill="#0066FF" fillOpacity={0.07} />
-        <Circle cx={W * 0.90} cy={H * 0.25} r={gr * 0.30} fill="#00AAFF" fillOpacity={0.11} />
-
-        {/* ── Option-C: connection arcs ── */}
+        {/* ── 3. Connection arcs ── */}
         {arcs.map((a, i) => (
-          <Line key={`a${i}`} x1={a.x1} y1={a.y1} x2={a.x2} y2={a.y2}
-            stroke={a.col} strokeWidth={1.0} strokeOpacity={a.a} />
+          <Line key={`a${i}`}
+            x1={a.x1} y1={a.y1} x2={a.x2} y2={a.y2}
+            stroke={a.col} strokeWidth={1.0} strokeOpacity={a.op}
+          />
         ))}
 
-        {/* ── Option-C: constellation particles ── */}
-        {s.particles.map((p, i) => {
-          const glowR = p.r * (p.kind === "white" ? 6 : 11);
-          const gId   = p.kind === "blue" ? "gh_blue" : p.kind === "red" ? "gh_red" : "gh_white";
+        {/* ── 4. Constellation particles ──
+              Each particle: large soft halo (10× core radius) + bright core dot */}
+        {anim.particles.map((p, i) => {
+          const haloR = p.r * (p.kind === "white" ? 6 : 10);
+          const hId   = p.kind === "blue" ? "halo_blue" : p.kind === "red" ? "halo_red" : "halo_white";
           return (
             <React.Fragment key={`p${i}`}>
-              <Circle cx={p.x} cy={p.y} r={glowR} fill={`url(#${gId})`} fillOpacity={0.50} />
-              <Circle cx={p.x} cy={p.y} r={p.r}   fill={COLOR[p.kind]}  fillOpacity={0.95} />
+              <Circle cx={p.x} cy={p.y} r={haloR} fill={`url(#${hId})`} fillOpacity={0.55} />
+              <Circle cx={p.x} cy={p.y} r={p.r}   fill={DOT_COLOR[p.kind]}  fillOpacity={1}    />
             </React.Fragment>
           );
         })}
 
-        {/* ── EKG heartbeat ── */}
-        {/* glow pass */}
-        <GlowPoly points={ekg} stroke="#0066FF" width={6} opacity={0.15} />
-        {/* bright line */}
-        <GlowPoly points={ekg} stroke="#FFFFFF"  width={1.6} opacity={0.70} />
+        {/* ── 5. EKG heartbeat — top + bottom lines, both visible above/below card ── */}
+        {[ekgTop, ekgBot].map((pts, i) => (
+          <React.Fragment key={`ekg${i}`}>
+            <Polyline points={pts} stroke="#0066FF" strokeWidth={7}   fill="none" strokeOpacity={0.12} />
+            <Polyline points={pts} stroke="#00DDFF" strokeWidth={2.2} fill="none" strokeOpacity={0.50} />
+            <Polyline points={pts} stroke="#FFFFFF"  strokeWidth={1.2} fill="none" strokeOpacity={0.80} />
+          </React.Fragment>
+        ))}
       </Svg>
     </View>
   );
 }
 
-function GlowPoly({ points, stroke, width, opacity }: { points: string; stroke: string; width: number; opacity: number }) {
-  return <Polyline points={points} stroke={stroke} strokeWidth={width} fill="none" strokeOpacity={opacity} />;
-}
-
-const st = StyleSheet.create({
+const styles = StyleSheet.create({
   root: { ...StyleSheet.absoluteFillObject, overflow: "hidden" },
 });
