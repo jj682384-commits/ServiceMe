@@ -7,15 +7,16 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg: #0a0d18;
-      --surface: #111428;
-      --surface2: #1a1d2e;
-      --surface3: #222540;
+      --bg: #04060E;
+      --surface: #080C18;
+      --surface2: #0D1428;
+      --surface3: #121C38;
       --border: rgba(255,255,255,0.08);
       --text: #e8eaf6;
       --muted: rgba(232,234,246,0.5);
-      --cyan: #00D4FF;
-      --coral: #FF6B6B;
+      --cyan: #0066FF;
+      --coral: #D92222;
+      --accent: #00AAFF;
       --success: #22c55e;
       --warning: #f59e0b;
       --danger: #ef4444;
@@ -34,9 +35,9 @@
     .login-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
     .login-logo-icon {
       width: 40px; height: 40px; border-radius: 12px;
-      background: linear-gradient(145deg, #0A0E27, #0D1440);
+      background: linear-gradient(145deg, #04060E, #0D1428);
       display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 4px 16px rgba(0,212,255,0.25);
+      box-shadow: 0 4px 16px rgba(0,102,255,0.25);
       overflow: hidden;
     }
     .login-logo-text { font-size: 20px; font-weight: 800; }
@@ -57,7 +58,7 @@
     }
     .btn:hover { opacity: .82; }
     .btn:disabled { opacity: .4; cursor: not-allowed; }
-    .btn-primary { background: var(--cyan); color: #0a0d18; width: 100%; justify-content: center; padding: 13px; }
+    .btn-primary { background: var(--cyan); color: #04060E; width: 100%; justify-content: center; padding: 13px; }
     .btn-success { background: var(--success); color: #fff; }
     .btn-danger { background: var(--danger); color: #fff; }
     .btn-warning { background: var(--warning); color: #000; }
@@ -77,9 +78,9 @@
     .sidebar-logo-row { display: flex; align-items: center; gap: 10px; }
     .sidebar-logo-icon {
       width: 34px; height: 34px; border-radius: 10px;
-      background: linear-gradient(145deg, #0A0E27, #0D1440);
+      background: linear-gradient(145deg, #04060E, #0D1428);
       display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 4px 12px rgba(0,212,255,0.25);
+      box-shadow: 0 4px 12px rgba(0,102,255,0.25);
       overflow: hidden;
     }
     .sidebar-logo-text { font-size: 16px; font-weight: 800; }
@@ -92,7 +93,7 @@
       transition: all .15s; margin-bottom: 2px;
     }
     .nav-item:hover { background: var(--surface2); color: var(--text); }
-    .nav-item.active { background: rgba(0,212,255,0.12); color: var(--cyan); }
+    .nav-item.active { background: rgba(0,102,255,0.12); color: var(--cyan); }
     .nav-item .nav-icon { width: 18px; text-align: center; font-size: 15px; flex-shrink: 0; }
     .nav-badge {
       margin-left: auto; background: var(--warning); color: #000;
@@ -158,10 +159,10 @@
     .badge.verified { background: rgba(34,197,94,.15); color: var(--success); }
     .badge.not-started { background: rgba(255,255,255,.08); color: var(--muted); }
     .badge.completed { background: rgba(34,197,94,.15); color: var(--success); }
-    .badge.accepted { background: rgba(0,212,255,.15); color: var(--cyan); }
+    .badge.accepted { background: rgba(0,102,255,.15); color: var(--cyan); }
     .badge.cancelled { background: rgba(239,68,68,.12); color: var(--danger); }
-    .badge.driver { background: rgba(0,212,255,.12); color: var(--cyan); }
-    .badge.provider { background: rgba(255,107,107,.12); color: var(--coral); }
+    .badge.driver { background: rgba(0,102,255,.12); color: var(--cyan); }
+    .badge.provider { background: rgba(217,34,34,.12); color: var(--coral); }
     .badge.ev { background: rgba(167,139,250,.12); color: var(--purple); }
     .badge.express { background: rgba(245,158,11,.12); color: var(--warning); }
 
@@ -227,9 +228,9 @@
 <div id="login-screen">
   <div class="login-card">
     <div class="login-logo">
-      <div class="login-logo-icon"><svg width="26" height="26" viewBox="0 0 52 52" fill="none"><path d="M26 4L8 11V26C8 36.5 16 45.5 26 48C36 45.5 44 36.5 44 26V11L26 4Z" fill="url(#ag1)"/><path d="M26 22L28.5 27H33L29 30L30.5 35L26 32L21.5 35L23 30L19 27H23.5L26 22Z" fill="white" opacity="0.95"/><defs><linearGradient id="ag1" x1="26" y1="4" x2="26" y2="48" gradientUnits="userSpaceOnUse"><stop stop-color="#00D4FF"/><stop offset="0.5" stop-color="#FF6B6B"/><stop offset="1" stop-color="#0088CC"/></linearGradient></defs></svg></div>
+      <div class="login-logo-icon"><img src="/assets/images/icon.png" alt="ResqRide" style="width:100%;height:100%;object-fit:cover;" /></div>
       <div>
-        <div class="login-logo-text">ResqRide</div>
+        <div class="login-logo-text"><span style="color:#fff;">Resq</span><span style="color:#00AAFF;">Ride</span></div>
         <div class="login-sub">Admin Dashboard</div>
       </div>
     </div>
@@ -249,9 +250,9 @@
   <div class="sidebar">
     <div class="sidebar-logo">
       <div class="sidebar-logo-row">
-        <div class="sidebar-logo-icon"><svg width="22" height="22" viewBox="0 0 52 52" fill="none"><path d="M26 4L8 11V26C8 36.5 16 45.5 26 48C36 45.5 44 36.5 44 26V11L26 4Z" fill="url(#ag2)"/><path d="M26 22L28.5 27H33L29 30L30.5 35L26 32L21.5 35L23 30L19 27H23.5L26 22Z" fill="white" opacity="0.95"/><defs><linearGradient id="ag2" x1="26" y1="4" x2="26" y2="48" gradientUnits="userSpaceOnUse"><stop stop-color="#00D4FF"/><stop offset="0.5" stop-color="#FF6B6B"/><stop offset="1" stop-color="#0088CC"/></linearGradient></defs></svg></div>
+        <div class="sidebar-logo-icon"><img src="/assets/images/icon.png" alt="ResqRide" style="width:100%;height:100%;object-fit:cover;" /></div>
         <div>
-          <div class="sidebar-logo-text">ResqRide</div>
+          <div class="sidebar-logo-text"><span style="color:#fff;">Resq</span><span style="color:#00AAFF;">Ride</span></div>
           <div class="sidebar-version">Admin Panel</div>
         </div>
       </div>

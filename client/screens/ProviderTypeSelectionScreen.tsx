@@ -118,7 +118,7 @@ export default function ProviderTypeSelectionScreen() {
             subtitle="Help others on your own schedule"
             features={["No experience needed", "Work when you want", "Use your own vehicle", "Quick signup process"]}
             onPress={() => handleSelectType("independent")}
-            gradientColors={["#00A8CC", "#0077B6"]}
+            gradientColors={["#0050CC", "#0077B6"]}
             recommended
             delay={300}
           />
@@ -128,7 +128,7 @@ export default function ProviderTypeSelectionScreen() {
             subtitle="Registered business with a team"
             features={["List your business", "Manage multiple vehicles", "Business analytics", "Priority placement"]}
             onPress={() => handleSelectType("shop")}
-            gradientColors={["#FF6B35", "#FF3D00"]}
+            gradientColors={["#D92222", "#B01A1A"]}
             delay={450}
           />
         </View>

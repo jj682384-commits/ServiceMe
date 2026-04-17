@@ -67,7 +67,7 @@ function ActionButton({ title, subtitle, icon, onPress, variant }: ActionButtonP
     >
       {isPrimary ? (
         <LinearGradient
-          colors={["#FF6B35", "#FF3D00"]}
+          colors={["#D92222", "#B01A1A"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={StyleSheet.absoluteFill}
@@ -140,7 +140,7 @@ export default function WelcomeScreen() {
           </View>
           <ThemedText type="body" style={styles.subtitle}>Help is always closer than you think</ThemedText>
           <View style={styles.noBadge}>
-            <Feather name="check-circle" size={13} color="#00D9FF" />
+            <Feather name="check-circle" size={13} color="#00AAFF" />
             <ThemedText type="small" style={styles.noBadgeText}>
               No membership required — pay only when you need us
             </ThemedText>

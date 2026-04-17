@@ -45,7 +45,7 @@ function InputField({
     <View style={styles.inputContainer}>
       <ThemedText type="small" style={styles.inputLabel}>{label}</ThemedText>
       <View style={[styles.inputWrapper, isFocused ? styles.inputWrapperFocused : null]}>
-        <Feather name={icon} size={18} color={isFocused ? "#00D9FF" : "rgba(255,255,255,0.4)"} />
+        <Feather name={icon} size={18} color={isFocused ? "#00AAFF" : "rgba(255,255,255,0.4)"} />
         <TextInput
           style={styles.input}
           value={value}
@@ -119,7 +119,7 @@ interface LegalDocumentCardProps {
 }
 
 function LegalDocumentCard({ doc, isAccepted, isExpanded, onToggleAccept, onToggleExpand }: LegalDocumentCardProps) {
-  const iconColor = doc.key === "liability" ? "#F59E0B" : "#00D9FF";
+  const iconColor = doc.key === "liability" ? "#F59E0B" : "#00AAFF";
 
   return (
     <View style={styles.legalCard}>
@@ -301,7 +301,7 @@ export default function SignUpScreen() {
             disabled={isLoading}
           >
             <LinearGradient
-              colors={allAccepted ? ["#FF6B35", "#FF3D00"] : ["rgba(255,255,255,0.1)", "rgba(255,255,255,0.05)"]}
+              colors={allAccepted ? ["#D92222", "#B01A1A"] : ["rgba(255,255,255,0.1)", "rgba(255,255,255,0.05)"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
@@ -321,7 +321,7 @@ export default function SignUpScreen() {
           <View style={styles.signInRow}>
             <ThemedText type="body" style={{ color: "rgba(255,255,255,0.5)" }}>Already have an account?</ThemedText>
             <Pressable onPress={() => navigation.navigate("SignIn")}>
-              <ThemedText type="body" style={{ color: "#00D9FF", fontWeight: "600" }}> Sign In</ThemedText>
+              <ThemedText type="body" style={{ color: "#00AAFF", fontWeight: "600" }}> Sign In</ThemedText>
             </Pressable>
           </View>
         </View>
@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
   legalSectionItem: { marginBottom: Spacing.sm },
   legalSectionHeading: { fontWeight: "600", marginBottom: 4, color: "rgba(255,255,255,0.7)" },
   legalSectionContent: { color: "rgba(255,255,255,0.45)", lineHeight: 20 },
-  fullDocLink: { marginTop: Spacing.sm, fontWeight: "500", fontStyle: "italic", color: "#00D9FF" },
+  fullDocLink: { marginTop: Spacing.sm, fontWeight: "500", fontStyle: "italic", color: "#00AAFF" },
   acceptRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 10, gap: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "rgba(255,255,255,0.08)" },
   acceptText: { flex: 1, color: "rgba(255,255,255,0.5)" },
   checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },

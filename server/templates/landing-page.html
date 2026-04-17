@@ -9,10 +9,12 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --navy: #0A0E27;
-      --navy2: #111428;
-      --cyan: #00D4FF;
-      --coral: #FF6B6B;
+      --navy: #04060E;
+      --navy2: #080C18;
+      --cyan: #0066FF;
+      --coral: #D92222;
+      --accent: #00AAFF;
+      --fire: #FF5500;
       --text: #ffffff;
       --muted: rgba(255,255,255,0.6);
       --card: rgba(255,255,255,0.05);
@@ -40,9 +42,9 @@
     .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
     .nav-logo-icon {
       width: 36px; height: 36px; border-radius: 10px;
-      background: linear-gradient(145deg, #0A0E27, #0D1440);
+      background: linear-gradient(145deg, #04060E, #0D1428);
       display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 4px 14px rgba(0,212,255,0.3);
+      box-shadow: 0 4px 14px rgba(0,102,255,0.3);
       overflow: hidden;
     }
     .nav-logo-text { font-size: 18px; font-weight: 800; color: #fff; }
@@ -65,12 +67,13 @@
     }
     .hero-bg {
       position: absolute; inset: 0; z-index: 0;
-      background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,212,255,0.12) 0%, transparent 70%),
-                  radial-gradient(ellipse 60% 40% at 80% 80%, rgba(255,107,107,0.08) 0%, transparent 60%);
+      background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,102,255,0.18) 0%, transparent 70%),
+                  radial-gradient(ellipse 60% 40% at 80% 80%, rgba(217,34,34,0.12) 0%, transparent 60%),
+                  radial-gradient(ellipse 50% 40% at 20% 70%, rgba(255,85,0,0.06) 0%, transparent 50%);
     }
     .hero-badge {
       display: inline-flex; align-items: center; gap: 8px;
-      background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.25);
+      background: rgba(0,102,255,0.1); border: 1px solid rgba(0,102,255,0.25);
       color: var(--cyan); padding: 6px 16px; border-radius: 100px;
       font-size: 13px; font-weight: 600; margin-bottom: 24px; position: relative; z-index: 1;
     }
@@ -115,7 +118,7 @@
       width: 200px; border-radius: 32px; overflow: hidden;
       box-shadow: 0 40px 80px rgba(0,0,0,0.6);
       border: 2px solid rgba(255,255,255,0.1);
-      background: #111428;
+      background: #080C18;
       animation: float 4s ease-in-out infinite;
     }
     .phone:nth-child(2) { width: 230px; animation-delay: -.5s; margin-bottom: 0; }
@@ -124,7 +127,7 @@
     @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
     .phone-screen {
       width: 100%; aspect-ratio: 9/19;
-      background: linear-gradient(180deg, #0A0E27 0%, #111428 100%);
+      background: linear-gradient(180deg, #04060E 0%, #080C18 100%);
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       padding: 20px 12px; gap: 12px;
     }
@@ -139,7 +142,7 @@
     .phone-subtitle { font-size: 9px; color: rgba(255,255,255,0.5); }
     .phone-map-placeholder {
       width: 100%; height: 80px; border-radius: 12px;
-      background: linear-gradient(135deg, rgba(0,212,255,0.1), rgba(255,107,107,0.1));
+      background: linear-gradient(135deg, rgba(0,102,255,0.1), rgba(217,34,34,0.1));
       border: 1px solid rgba(255,255,255,0.08);
       display: flex; align-items: center; justify-content: center;
       font-size: 22px;
@@ -151,7 +154,7 @@
     }
     .phone-chips { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
     .phone-chip {
-      background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.2);
+      background: rgba(0,102,255,0.1); border: 1px solid rgba(0,102,255,0.2);
       color: var(--cyan); border-radius: 100px; padding: 3px 8px; font-size: 8px; font-weight: 600;
     }
 
@@ -189,7 +192,7 @@
       border-radius: 20px; padding: 32px; position: relative; overflow: hidden;
       transition: border-color .2s, transform .2s;
     }
-    .step-card:hover { border-color: rgba(0,212,255,0.3); transform: translateY(-4px); }
+    .step-card:hover { border-color: rgba(0,102,255,0.3); transform: translateY(-4px); }
     .step-num {
       position: absolute; right: 20px; top: 20px;
       font-size: 64px; font-weight: 900; color: rgba(255,255,255,0.04); line-height: 1;
@@ -210,19 +213,19 @@
       display: flex; flex-direction: column; gap: 10px;
       transition: all .2s; position: relative; overflow: hidden;
     }
-    .service-card:hover { background: rgba(0,212,255,0.06); border-color: rgba(0,212,255,0.3); transform: translateY(-2px); }
+    .service-card:hover { background: rgba(0,102,255,0.06); border-color: rgba(0,102,255,0.3); transform: translateY(-2px); }
     .service-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
     .service-icon { font-size: 28px; flex-shrink: 0; line-height: 1; }
     .service-price {
       font-size: 11px; font-weight: 700; color: var(--cyan);
-      background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.2);
+      background: rgba(0,102,255,0.1); border: 1px solid rgba(0,102,255,0.2);
       border-radius: 20px; padding: 3px 9px; white-space: nowrap; flex-shrink: 0;
     }
     .service-name { font-size: 15px; font-weight: 700; margin-top: 4px; }
     .service-desc { font-size: 12px; color: var(--muted); line-height: 1.55; }
     .service-addon {
-      font-size: 11px; color: rgba(0,212,255,0.8);
-      background: rgba(0,212,255,0.07); border-radius: 8px;
+      font-size: 11px; color: rgba(0,102,255,0.8);
+      background: rgba(0,102,255,0.07); border-radius: 8px;
       padding: 5px 9px; margin-top: 2px; display: inline-block;
     }
 
@@ -256,14 +259,14 @@
     .dual-card {
       border-radius: 24px; padding: 40px; position: relative; overflow: hidden;
     }
-    .dual-card.driver { background: linear-gradient(135deg, rgba(0,212,255,0.1) 0%, rgba(0,212,255,0.03) 100%); border: 1px solid rgba(0,212,255,0.2); }
-    .dual-card.provider { background: linear-gradient(135deg, rgba(255,107,107,0.1) 0%, rgba(255,107,107,0.03) 100%); border: 1px solid rgba(255,107,107,0.2); }
+    .dual-card.driver { background: linear-gradient(135deg, rgba(0,102,255,0.1) 0%, rgba(0,102,255,0.03) 100%); border: 1px solid rgba(0,102,255,0.2); }
+    .dual-card.provider { background: linear-gradient(135deg, rgba(217,34,34,0.1) 0%, rgba(217,34,34,0.03) 100%); border: 1px solid rgba(217,34,34,0.2); }
     .dual-tag {
       display: inline-block; padding: 4px 14px; border-radius: 100px;
       font-size: 12px; font-weight: 700; margin-bottom: 20px;
     }
-    .dual-card.driver .dual-tag { background: rgba(0,212,255,0.15); color: var(--cyan); }
-    .dual-card.provider .dual-tag { background: rgba(255,107,107,0.15); color: var(--coral); }
+    .dual-card.driver .dual-tag { background: rgba(0,102,255,0.15); color: var(--cyan); }
+    .dual-card.provider .dual-tag { background: rgba(217,34,34,0.15); color: var(--coral); }
     .dual-card h3 { font-size: 26px; font-weight: 900; margin-bottom: 12px; }
     .dual-card p { color: var(--muted); font-size: 15px; line-height: 1.6; margin-bottom: 24px; }
     .dual-features { list-style: none; display: flex; flex-direction: column; gap: 10px; }
@@ -274,7 +277,7 @@
 
     /* ── Waitlist ── */
     .waitlist-section {
-      background: linear-gradient(135deg, rgba(0,212,255,0.06) 0%, rgba(255,107,107,0.04) 100%);
+      background: linear-gradient(135deg, rgba(0,102,255,0.06) 0%, rgba(217,34,34,0.04) 100%);
       border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
     }
     .waitlist-inner {
@@ -296,7 +299,7 @@
       border: 1px solid var(--border); border-radius: 12px;
       color: #fff; font-size: 15px; cursor: pointer; outline: none;
     }
-    .waitlist-select option { background: #1a1d27; }
+    .waitlist-select option { background: #0D1428; }
     .waitlist-btn {
       background: var(--cyan); color: var(--navy); padding: 14px 28px;
       border: none; border-radius: 12px; font-size: 15px; font-weight: 800;
@@ -347,8 +350,8 @@
 <!-- Nav -->
 <nav>
   <a class="nav-logo" href="#">
-    <div class="nav-logo-icon"><svg width="24" height="24" viewBox="0 0 52 52" fill="none"><path d="M26 4L8 11V26C8 36.5 16 45.5 26 48C36 45.5 44 36.5 44 26V11L26 4Z" fill="url(#lg1)"/><path d="M26 22L28.5 27H33L29 30L30.5 35L26 32L21.5 35L23 30L19 27H23.5L26 22Z" fill="white" opacity="0.95"/><defs><linearGradient id="lg1" x1="26" y1="4" x2="26" y2="48" gradientUnits="userSpaceOnUse"><stop stop-color="#00D4FF"/><stop offset="0.5" stop-color="#FF6B6B"/><stop offset="1" stop-color="#0088CC"/></linearGradient></defs></svg></div>
-    <span class="nav-logo-text">ResqRide</span>
+    <div class="nav-logo-icon"><img src="/assets/images/icon.png" alt="ResqRide" style="width:100%;height:100%;object-fit:cover;" /></div>
+    <span class="nav-logo-text"><span style="color:#fff;font-weight:900;">Resq</span><span style="color:#00AAFF;font-weight:900;">Ride</span></span>
   </a>
   <div class="nav-links">
     <a href="#how-it-works">How It Works</a>
@@ -431,9 +434,9 @@
         </div>
         <div class="phone-title">Provider Jobs</div>
         <div class="phone-map-placeholder">&#128188;</div>
-        <div class="phone-service-btn" style="background: rgba(255,107,107,0.9);">Accept Job</div>
+        <div class="phone-service-btn" style="background: rgba(217,34,34,0.9);">Accept Job</div>
         <div class="phone-chips">
-          <div class="phone-chip" style="border-color:rgba(255,107,107,0.3);color:#FF6B6B;">Earn $45</div>
+          <div class="phone-chip" style="border-color:rgba(217,34,34,0.3);color:#D92222;">Earn $45</div>
         </div>
       </div>
     </div>
@@ -656,7 +659,10 @@
 <!-- Footer -->
 <footer>
   <div class="footer-inner">
-    <div class="footer-logo">ResqRide</div>
+    <div class="footer-logo" style="display:flex;align-items:center;justify-content:center;gap:10px;">
+      <img src="/assets/images/icon.png" alt="ResqRide" style="width:32px;height:32px;border-radius:8px;object-fit:cover;" />
+      <span><span style="color:#fff;">Resq</span><span style="color:#00AAFF;">Ride</span></span>
+    </div>
     <div class="footer-links">
       <a href="#how-it-works">How It Works</a>
       <a href="#services">Services</a>

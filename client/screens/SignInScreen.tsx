@@ -45,7 +45,7 @@ function InputField({
     <View style={styles.inputContainer}>
       <ThemedText type="small" style={styles.inputLabel}>{label}</ThemedText>
       <View style={[styles.inputWrapper, isFocused ? styles.inputWrapperFocused : null]}>
-        <Feather name={icon} size={18} color={isFocused ? "#00D9FF" : "rgba(255,255,255,0.4)"} />
+        <Feather name={icon} size={18} color={isFocused ? "#00AAFF" : "rgba(255,255,255,0.4)"} />
         <TextInput
           style={styles.input}
           value={value}
@@ -173,7 +173,7 @@ export default function SignInScreen() {
           <InputField label="Email Address" value={email} onChangeText={setEmail} placeholder="Enter your email" icon="mail" keyboardType="email-address" autoCapitalize="none" />
           <InputField label="Password" value={password} onChangeText={setPassword} placeholder="Enter your password" icon="lock" secureTextEntry autoCapitalize="none" />
           <Pressable style={styles.forgotPassword}>
-            <ThemedText type="small" style={{ color: "#00D9FF" }}>Forgot Password?</ThemedText>
+            <ThemedText type="small" style={{ color: "#00AAFF" }}>Forgot Password?</ThemedText>
           </Pressable>
         </View>
 
@@ -185,7 +185,7 @@ export default function SignInScreen() {
             onPressOut={() => { scale.value = withSpring(1); }}
             disabled={isLoading}
           >
-            <LinearGradient colors={["#FF6B35", "#FF3D00"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[StyleSheet.absoluteFill, { borderRadius: 16 }]} />
+            <LinearGradient colors={["#D92222", "#B01A1A"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[StyleSheet.absoluteFill, { borderRadius: 16 }]} />
             <ThemedText type="body" style={styles.signInButtonText}>
               {isLoading ? "Signing In..." : "Sign In"}
             </ThemedText>
@@ -196,7 +196,7 @@ export default function SignInScreen() {
           <View style={styles.signUpRow}>
             <ThemedText type="body" style={{ color: "rgba(255,255,255,0.5)" }}>Don't have an account?</ThemedText>
             <Pressable onPress={() => navigation.navigate("SignUp")}>
-              <ThemedText type="body" style={{ color: "#00D9FF", fontWeight: "600" }}> Sign Up</ThemedText>
+              <ThemedText type="body" style={{ color: "#00AAFF", fontWeight: "600" }}> Sign Up</ThemedText>
             </Pressable>
           </View>
         </View>

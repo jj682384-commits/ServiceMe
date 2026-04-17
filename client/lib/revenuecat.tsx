@@ -182,7 +182,7 @@ const modalStyles = StyleSheet.create({
     fontWeight: "700",
   },
   product: {
-    color: "#00D9FF",
+    color: "#00AAFF",
     fontSize: 16,
     fontWeight: "600",
   },
@@ -204,7 +204,7 @@ const modalStyles = StyleSheet.create({
     alignItems: "center",
   },
   confirmBtn: {
-    backgroundColor: "#00D9FF",
+    backgroundColor: "#00AAFF",
   },
   cancelBtn: {
     backgroundColor: "rgba(255,255,255,0.1)",

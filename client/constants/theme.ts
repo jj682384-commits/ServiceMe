@@ -1,10 +1,10 @@
 import { Platform } from "react-native";
 
-const electricCyan = "#00D9FF";
-const electricCyanDark = "#00A8CC";
-const vibrantCoral = "#FF6B35";
-const coralDark = "#E54B1B";
-const brightLime = "#39FF14";
+const electricBlue = "#0066FF";
+const electricBlueDark = "#0050CC";
+const electricRed = "#D92222";
+const electricRedDark = "#B01A1A";
+const electricCyan = "#00AAFF";
 
 export const Colors = {
   light: {
@@ -34,26 +34,26 @@ export const Colors = {
   dark: {
     text: "#F0F2F5",
     textSecondary: "#B4BAC4",
-    buttonText: "#0F1419",
+    buttonText: "#FFFFFF",
     tabIconDefault: "#6B7280",
     tabIconSelected: electricCyan,
     link: electricCyan,
-    primary: vibrantCoral,
-    primaryDark: coralDark,
-    primaryLight: "#FF8C5A",
-    secondary: electricCyan,
-    secondaryDark: electricCyanDark,
-    accent: brightLime,
+    primary: electricRed,
+    primaryDark: electricRedDark,
+    primaryLight: "#FF4444",
+    secondary: electricBlue,
+    secondaryDark: electricBlueDark,
+    accent: electricCyan,
     success: "#00E676",
     warning: "#FFB300",
     error: "#FF5252",
-    backgroundRoot: "#0A0E27",
-    backgroundDefault: "#0F1419",
-    backgroundSecondary: "#151D35",
-    backgroundTertiary: "#1A2442",
-    border: "#242E52",
-    glassmorphic: "rgba(15, 20, 41, 0.85)",
-    cardAnimatedBg: "rgba(20, 25, 45, 0.75)",
+    backgroundRoot: "#04060E",
+    backgroundDefault: "#080C18",
+    backgroundSecondary: "#0D1428",
+    backgroundTertiary: "#121C38",
+    border: "#1A2A48",
+    glassmorphic: "rgba(8, 12, 24, 0.88)",
+    cardAnimatedBg: "rgba(13, 20, 40, 0.80)",
   },
 };
 
@@ -165,41 +165,41 @@ export const Shadows = {
     elevation: 2,
   },
   lg: {
-    shadowColor: "#FF6B35",
+    shadowColor: "#D92222",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
+    shadowOpacity: 0.18,
     shadowRadius: 8,
     elevation: 4,
   },
   xl: {
-    shadowColor: "#00D9FF",
+    shadowColor: "#0066FF",
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.22,
     shadowRadius: 12,
     elevation: 6,
   },
   fab: {
-    shadowColor: "#FF6B35",
+    shadowColor: "#D92222",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
+    shadowOpacity: 0.40,
+    shadowRadius: 10,
     elevation: 6,
   },
 };
 
 export const Gradients = {
   primary: {
-    colors: ["#FF6B35", "#FF8C5A"],
+    colors: ["#D92222", "#FF4444"],
     start: { x: 0, y: 0 },
     end: { x: 1, y: 1 },
   },
   secondary: {
-    colors: ["#00D9FF", "#00FFFF"],
+    colors: ["#0066FF", "#00AAFF"],
     start: { x: 0, y: 0 },
     end: { x: 1, y: 1 },
   },
   dark: {
-    colors: ["#FF6B35", "#00D9FF"],
+    colors: ["#D92222", "#0066FF"],
     start: { x: 0, y: 0 },
     end: { x: 1, y: 1 },
   },

@@ -7,9 +7,9 @@ const PARTICLE_COUNT = 32;
 const CONNECT_DISTANCE = 180;
 const FPS_INTERVAL = 50;
 
-const DEFAULT_COLORS = ["#00D9FF", "#FF6B35", "#7B2FFF", "#00FFD4", "#FF006E", "#FFE000"];
+const DEFAULT_COLORS = ["#0066FF", "#D92222", "#00AAFF", "#FF5500", "#FFFFFF", "#4488FF"];
 
-export const DARK_BG = "#04081C";
+export const DARK_BG = "#04060E";
 export const LIGHT_BG = "#F0F2F5";
 
 interface Particle {

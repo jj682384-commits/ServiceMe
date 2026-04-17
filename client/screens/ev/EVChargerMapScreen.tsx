@@ -538,7 +538,7 @@ export default function EVChargerMapScreen() {
                   longitude: c.longitude,
                   title: c.name,
                   description: `${c.available > 0 ? "Open" : "Offline"} · ${c.speed} · ${c.distance}`,
-                  color: c.available === 0 ? "#FF3D00" : c.id === selectedCharger ? "#00FF88" : "#00D4FF",
+                  color: c.available === 0 ? "#B01A1A" : c.id === selectedCharger ? "#00FF88" : "#00D4FF",
                 }))}
                 onMarkerPress={(m) => handleMarkerPress(m.id)}
                 onRegionChangeComplete={handleRegionChange}

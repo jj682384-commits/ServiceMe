@@ -36,13 +36,13 @@ export async function initNotifications(): Promise<string | null> {
       name: "ResqRide",
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
-      lightColor: "#00D9FF",
+      lightColor: "#00AAFF",
     });
     await Notifications.setNotificationChannelAsync("emergency", {
       name: "Emergency Alerts",
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 500, 200, 500],
-      lightColor: "#FF3D00",
+      lightColor: "#B01A1A",
       sound: "default",
     });
   }

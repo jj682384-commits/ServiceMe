@@ -125,8 +125,8 @@ export default function RoleSelectionScreen() {
             title="I Need Help"
             description="Find nearby service providers instantly. Average response time: 8 minutes"
             onPress={handleDriverSelect}
-            gradientColors={["#FF6B35", "#FF3D00"]}
-            accentColor="#FF6B35"
+            gradientColors={["#D92222", "#B01A1A"]}
+            accentColor="#D92222"
             delay={300}
           />
           <RoleCard
@@ -134,8 +134,8 @@ export default function RoleSelectionScreen() {
             title="Earn Helping Others"
             description="No experience needed. Help nearby drivers on your own time"
             onPress={handleProviderSelect}
-            gradientColors={["#00A8CC", "#0077B6"]}
-            accentColor="#00D9FF"
+            gradientColors={["#0050CC", "#0077B6"]}
+            accentColor="#00AAFF"
             delay={450}
           />
         </View>

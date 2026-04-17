@@ -193,12 +193,12 @@ export interface SchemeConfig {
 export const BACKGROUND_SCHEMES: Record<BackgroundColorScheme, SchemeConfig> = {
   default: {
     label: "Cyber",
-    bgColor: "#04081C",
+    bgColor: "#04060E",
     bgColorLight: "#F0F2F5",
-    flashColor: "#00D9FF",
+    flashColor: "#00AAFF",
     flashColorLight: "#0055B3",
     colors: [
-      ["#00D9FF", "#0099CC"], ["#FF6B35", "#FF3D00"], ["#7B2FFF", "#4800FF"],
+      ["#00AAFF", "#0050CC"], ["#D92222", "#B01A1A"], ["#7B2FFF", "#4800FF"],
       ["#FF006E", "#CC0055"], ["#FFE000", "#FFA500"], ["#00FFD4", "#00AAAA"],
     ],
     colorsLight: [
@@ -250,7 +250,7 @@ export const BACKGROUND_SCHEMES: Record<BackgroundColorScheme, SchemeConfig> = {
     flashColorLight: "#047857",
     colors: [
       ["#39FF14", "#22CC00"], ["#00FF5E", "#00CC44"], ["#00FFD4", "#00AA99"],
-      ["#00DAFF", "#0099CC"], ["#8B00FF", "#5500CC"], ["#CCFF00", "#88BB00"],
+      ["#00DAFF", "#0050CC"], ["#8B00FF", "#5500CC"], ["#CCFF00", "#88BB00"],
     ],
     colorsLight: [
       ["#117700", "#005500"], ["#006633", "#004422"], ["#008877", "#006655"],

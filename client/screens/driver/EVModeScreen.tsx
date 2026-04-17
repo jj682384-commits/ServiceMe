@@ -658,7 +658,7 @@ export default function EVModeScreen() {
       await WebBrowser.openBrowserAsync(url, {
         presentationStyle: WebBrowser.WebBrowserPresentationStyle.PAGE_SHEET,
         controlsColor: "#00f5c4",
-        toolbarColor: "#0A0E27",
+        toolbarColor: "#04060E",
       });
 
       if (pollInterval) clearInterval(pollInterval);
