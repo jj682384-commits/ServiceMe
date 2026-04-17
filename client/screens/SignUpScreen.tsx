@@ -247,7 +247,7 @@ export default function SignUpScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: DARK_BG }]}>
-      <AnimatedBackground />
+      <AnimatedBackground showEkg={false} />
       <KeyboardAwareScrollViewCompat
         contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + Spacing.lg, paddingBottom: insets.bottom + Spacing.xl }]}
       >

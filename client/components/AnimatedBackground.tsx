@@ -144,7 +144,7 @@ function buildEkg(W: number, Y: number, off: number): string {
 }
 
 // ─── component ───────────────────────────────────────────────────────────────
-export default function AnimatedBackground() {
+export default function AnimatedBackground({ showEkg = true }: { showEkg?: boolean }) {
   const { width: W, height: H } = useWindowDimensions();
 
   const stateRef  = useRef<Anim>(makeState(W, H));
@@ -270,9 +270,11 @@ export default function AnimatedBackground() {
         })}
 
         {/* ── 4. EKG heartbeat (bottom) ── */}
-        <Polyline points={ekg} stroke="#0066FF" strokeWidth={7}   fill="none" strokeOpacity={0.12} />
-        <Polyline points={ekg} stroke="#00DDFF" strokeWidth={2.2} fill="none" strokeOpacity={0.50} />
-        <Polyline points={ekg} stroke="#FFFFFF"  strokeWidth={1.2} fill="none" strokeOpacity={0.80} />
+        {showEkg && <>
+          <Polyline points={ekg} stroke="#0066FF" strokeWidth={7}   fill="none" strokeOpacity={0.12} />
+          <Polyline points={ekg} stroke="#00DDFF" strokeWidth={2.2} fill="none" strokeOpacity={0.50} />
+          <Polyline points={ekg} stroke="#FFFFFF"  strokeWidth={1.2} fill="none" strokeOpacity={0.80} />
+        </>}
       </Svg>
     </View>
   );
