@@ -120,6 +120,14 @@ export default function WelcomeScreen() {
     <View style={[styles.container, { backgroundColor: isDark ? DARK_BG : LIGHT_BG }]}>
       <AnimatedBackground />
 
+      {/* Large translucent logo watermark */}
+      <Image
+        source={require("../../assets/images/logo.png")}
+        style={styles.bgLogo}
+        resizeMode="contain"
+        pointerEvents="none"
+      />
+
       <View style={[styles.content, { paddingTop: insets.top + Spacing.lg, paddingBottom: insets.bottom + Spacing.lg }]}>
         <Animated.View entering={FadeInDown.delay(100).duration(600).springify()} style={styles.logoSection}>
           <Image
@@ -193,6 +201,15 @@ export default function WelcomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  bgLogo: {
+    position: "absolute",
+    alignSelf: "center",
+    top: "50%",
+    width: "95%",
+    aspectRatio: 1,
+    opacity: 0.13,
+    transform: [{ translateY: -200 }],
+  },
   content: { flex: 1, paddingHorizontal: 24, justifyContent: "space-between" },
   logoSection: { alignItems: "center" },
   logo: { width: 130, height: 130 },
