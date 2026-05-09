@@ -867,6 +867,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const webAppPath = path.resolve(process.cwd(), "server", "templates", "web-app.html");
     if (fs.existsSync(webAppPath)) {
       res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
       res.send(fs.readFileSync(webAppPath, "utf-8"));
     } else {
       res.status(404).send("Web app not found");
