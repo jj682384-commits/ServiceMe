@@ -7,8 +7,8 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --navy: #0A0E27;
-      --navy2: #0D1230;
+      --navy: #04060E;
+      --navy2: #080B1A;
       --card: rgba(22,26,53,0.85);
       --card-solid: #161A35;
       --card2: rgba(28,32,64,0.9);
@@ -30,21 +30,18 @@
       background: var(--navy); color: var(--text); overflow: hidden; font-size: 14px;
     }
 
-    /* ── Canvas Background ── */
-    #bg-canvas {
-      position: fixed; inset: 0; z-index: 0; pointer-events: none;
-    }
-    .orb {
+    /* ── Static Background Glows ── */
+    .bg-glow {
       position: fixed; border-radius: 50%; pointer-events: none; z-index: 0;
-      animation: orbFloat 12s ease-in-out infinite alternate;
-      filter: blur(80px);
+      filter: blur(120px);
     }
-    .orb-1 { width: 500px; height: 500px; top: -150px; left: -100px; background: radial-gradient(circle, rgba(0,212,255,0.12) 0%, transparent 70%); animation-duration: 14s; }
-    .orb-2 { width: 400px; height: 400px; bottom: -100px; right: -80px; background: radial-gradient(circle, rgba(255,107,107,0.1) 0%, transparent 70%); animation-duration: 18s; animation-delay: -5s; }
-    .orb-3 { width: 300px; height: 300px; top: 40%; left: 40%; background: radial-gradient(circle, rgba(167,139,250,0.08) 0%, transparent 70%); animation-duration: 20s; animation-delay: -8s; }
-    @keyframes orbFloat {
-      0% { transform: translate(0, 0) scale(1); }
-      100% { transform: translate(40px, 30px) scale(1.15); }
+    .bg-glow-red {
+      width: 700px; height: 700px; top: -250px; left: -200px;
+      background: radial-gradient(circle, rgba(204,27,27,0.18) 0%, transparent 65%);
+    }
+    .bg-glow-blue {
+      width: 700px; height: 700px; top: -250px; right: -200px;
+      background: radial-gradient(circle, rgba(26,124,199,0.18) 0%, transparent 65%);
     }
 
     /* ── App Shell ── */
@@ -621,13 +618,8 @@
 </head>
 <body>
 
-<!-- Background Orbs -->
-<div class="orb orb-1"></div>
-<div class="orb orb-2"></div>
-<div class="orb orb-3"></div>
-
-<!-- Constellation Canvas -->
-<canvas id="bg-canvas"></canvas>
+<div class="bg-glow bg-glow-red"></div>
+<div class="bg-glow bg-glow-blue"></div>
 
 <div id="app">
 
@@ -636,22 +628,7 @@
     <div class="auth-box">
       <div class="auth-logo">
         <div class="auth-logo-icon">
-          <svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M26 4L8 11V26C8 36.5 16 45.5 26 48C36 45.5 44 36.5 44 26V11L26 4Z" fill="url(#shield-grad)" stroke="rgba(0,212,255,0.4)" stroke-width="1"/>
-            <path d="M26 10L13 15.5V26C13 33.5 18.5 40 26 42C33.5 40 39 33.5 39 26V15.5L26 10Z" fill="url(#inner-grad)" opacity="0.85"/>
-            <path d="M26 22L28.5 27H33L29 30L30.5 35L26 32L21.5 35L23 30L19 27H23.5L26 22Z" fill="white" opacity="0.95"/>
-            <defs>
-              <linearGradient id="shield-grad" x1="26" y1="4" x2="26" y2="48" gradientUnits="userSpaceOnUse">
-                <stop stop-color="#00D4FF"/>
-                <stop offset="0.5" stop-color="#FF6B6B"/>
-                <stop offset="1" stop-color="#0088CC"/>
-              </linearGradient>
-              <linearGradient id="inner-grad" x1="26" y1="10" x2="26" y2="42" gradientUnits="userSpaceOnUse">
-                <stop stop-color="#00AADD"/>
-                <stop offset="1" stop-color="#0055AA"/>
-              </linearGradient>
-            </defs>
-          </svg>
+          <img src="/assets/images/logo.png" alt="ResqRide" style="width:100%;height:100%;object-fit:cover;" />
         </div>
         <h1>ResqRide</h1>
         <p>On-demand roadside assistance</p>
@@ -715,8 +692,8 @@
       <div class="app-sidebar" id="app-sidebar">
         <div class="sidebar-logo-area">
           <div class="sidebar-logo-icon">
-          <svg width="22" height="22" viewBox="0 0 52 52" fill="none"><path d="M26 4L8 11V26C8 36.5 16 45.5 26 48C36 45.5 44 36.5 44 26V11L26 4Z" fill="url(#sg2)"/><path d="M26 22L28.5 27H33L29 30L30.5 35L26 32L21.5 35L23 30L19 27H23.5L26 22Z" fill="white" opacity="0.95"/><defs><linearGradient id="sg2" x1="26" y1="4" x2="26" y2="48" gradientUnits="userSpaceOnUse"><stop stop-color="#00D4FF"/><stop offset="0.5" stop-color="#FF6B6B"/><stop offset="1" stop-color="#0088CC"/></linearGradient></defs></svg>
-        </div>
+            <img src="/assets/images/logo.png" alt="ResqRide" style="width:100%;height:100%;object-fit:cover;" />
+          </div>
           <span class="sidebar-logo-text">ResqRide</span>
         </div>
 
@@ -1070,59 +1047,6 @@
 
 <script src="https://js.stripe.com/v3/"></script>
 <script>
-  // ── Constellation Background ──
-  (function() {
-    const canvas = document.getElementById("bg-canvas");
-    const ctx = canvas.getContext("2d");
-    let W, H, dots = [];
-
-    function resize() {
-      W = canvas.width = window.innerWidth;
-      H = canvas.height = window.innerHeight;
-    }
-
-    function initDots() {
-      dots = [];
-      const count = Math.floor((W * H) / 18000);
-      for (let i = 0; i < count; i++) {
-        dots.push({
-          x: Math.random() * W, y: Math.random() * H,
-          vx: (Math.random() - .5) * .25, vy: (Math.random() - .5) * .25,
-          r: Math.random() * 1.5 + .5, o: Math.random() * .5 + .2
-        });
-      }
-    }
-
-    function draw() {
-      ctx.clearRect(0, 0, W, H);
-      for (let i = 0; i < dots.length; i++) {
-        const d = dots[i];
-        d.x += d.vx; d.y += d.vy;
-        if (d.x < 0 || d.x > W) d.vx *= -1;
-        if (d.y < 0 || d.y > H) d.vy *= -1;
-        ctx.beginPath();
-        ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(0,212,255,${d.o})`;
-        ctx.fill();
-        for (let j = i + 1; j < dots.length; j++) {
-          const d2 = dots[j];
-          const dist = Math.hypot(d.x - d2.x, d.y - d2.y);
-          if (dist < 120) {
-            ctx.beginPath();
-            ctx.moveTo(d.x, d.y); ctx.lineTo(d2.x, d2.y);
-            ctx.strokeStyle = `rgba(0,212,255,${.06 * (1 - dist/120)})`;
-            ctx.lineWidth = .5;
-            ctx.stroke();
-          }
-        }
-      }
-      requestAnimationFrame(draw);
-    }
-
-    resize(); initDots(); draw();
-    window.addEventListener("resize", () => { resize(); initDots(); });
-  })();
-
   // ── App State ──
   const BASE = window.location.origin;
   let userToken = localStorage.getItem("sm_web_token") || "";

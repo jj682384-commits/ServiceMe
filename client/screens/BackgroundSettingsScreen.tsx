@@ -1,183 +1,78 @@
 import React from "react";
-import { View, StyleSheet, ScrollView, Pressable } from "react-native";
+import { View, StyleSheet, ScrollView } from "react-native";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
+import { Image } from "react-native";
 
 import { ThemedText } from "@/components/ThemedText";
-import AnimatedBackground, { DARK_BG } from "@/components/AnimatedBackground";
+import AnimatedBackground, { DARK_BG, LIGHT_BG } from "@/components/AnimatedBackground";
 import { useTheme } from "@/hooks/useTheme";
-import {
-  useApp,
-  BACKGROUND_SCHEMES,
-  BackgroundColorScheme,
-} from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
-
-
-function SchemePreview({ schemeKey, isSelected, onPress }: {
-  schemeKey: BackgroundColorScheme;
-  isSelected: boolean;
-  onPress: () => void;
-}) {
-  const { theme, isDark } = useTheme();
-  const scheme = BACKGROUND_SCHEMES[schemeKey];
-
-  const previewBg = isDark ? scheme.bgColor : scheme.bgColorLight;
-  const previewColors = isDark ? scheme.colors : scheme.colorsLight;
-  const previewOpacity = isDark ? scheme.opacityBoost : scheme.opacityBoostLight;
-  const cardBorder = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)";
-
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.schemeCard,
-        {
-          backgroundColor: isDark ? "rgba(20,25,45,0.75)" : "rgba(255,255,255,0.85)",
-          borderColor: isSelected ? theme.primary : cardBorder,
-          borderWidth: isSelected ? 2 : 1,
-          opacity: pressed ? 0.8 : 1,
-          overflow: "hidden",
-        },
-      ]}
-    >
-      <View style={[styles.schemePreviewBg, { backgroundColor: previewBg }]}>
-        {previewColors.slice(0, 4).map((colorPair, i) => (
-          <LinearGradient
-            key={i}
-            colors={colorPair as [string, string]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={[
-              styles.schemeOrbLarge,
-              {
-                left: [4, 42, 16, 52][i],
-                top: [6, 20, 40, 8][i],
-                opacity: 0.55 * previewOpacity,
-              },
-            ]}
-          />
-        ))}
-      </View>
-      <ThemedText type="body" style={{ marginTop: Spacing.sm, fontWeight: "600" }}>
-        {scheme.label}
-      </ThemedText>
-      {isSelected ? (
-        <View style={[styles.checkBadge, { backgroundColor: theme.primary }]}>
-          <Feather name="check" size={12} color="#FFF" />
-        </View>
-      ) : null}
-    </Pressable>
-  );
-}
 
 export default function BackgroundSettingsScreen() {
   const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
   const { theme, isDark } = useTheme();
-  const {
-    backgroundPreferences,
-    setBackgroundMode,
-    setBackgroundColorScheme,
-  } = useApp();
-
-  const isAnimated = backgroundPreferences.mode === "animated";
-  const scheme = BACKGROUND_SCHEMES[backgroundPreferences.colorScheme];
-  const cardBg = isDark ? "rgba(20, 25, 45, 0.75)" : "rgba(255, 255, 255, 0.82)";
-  const borderColor = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)";
 
   return (
-    <View style={[styles.container, { backgroundColor: isAnimated ? (isDark ? scheme.bgColor : scheme.bgColorLight) : (isDark ? DARK_BG : theme.backgroundRoot) }]}>
-      {isAnimated ? <AnimatedBackground customColors={isDark ? scheme.colors : scheme.colorsLight} opacityBoost={isDark ? scheme.opacityBoost : scheme.opacityBoostLight} flashColor={isDark ? scheme.flashColor : scheme.flashColorLight} isDark={isDark} /> : null}
+    <View style={[styles.container, { backgroundColor: isDark ? DARK_BG : LIGHT_BG }]}>
+      <AnimatedBackground />
       <ScrollView
         contentContainerStyle={{
           paddingTop: headerHeight + Spacing.lg,
           paddingBottom: insets.bottom + Spacing.xl,
           paddingHorizontal: Spacing.lg,
+          gap: Spacing.lg,
         }}
         scrollIndicatorInsets={{ bottom: insets.bottom }}
       >
-        <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
-          BACKGROUND STYLE
-        </ThemedText>
-        <View style={styles.modeRow}>
-          <Pressable
-            onPress={() => setBackgroundMode("animated")}
-            style={({ pressed }) => [
-              styles.modeOption,
-              {
-                backgroundColor: isAnimated ? theme.primary + "20" : cardBg,
-                borderColor: isAnimated ? theme.primary : borderColor,
-                borderWidth: isAnimated ? 2 : 1,
-                opacity: pressed ? 0.8 : 1,
-              },
-            ]}
-          >
-            <Feather name="activity" size={28} color={isAnimated ? theme.primary : theme.textSecondary} />
-            <ThemedText
-              type="body"
-              style={{ marginTop: Spacing.sm, fontWeight: "600", color: isAnimated ? theme.primary : theme.text }}
-            >
-              Motion
-            </ThemedText>
-            <ThemedText type="small" style={{ color: theme.textSecondary, textAlign: "center", marginTop: 2 }}>
-              Animated orbs
-            </ThemedText>
-          </Pressable>
-          <Pressable
-            onPress={() => setBackgroundMode("solid")}
-            style={({ pressed }) => [
-              styles.modeOption,
-              {
-                backgroundColor: !isAnimated ? theme.primary + "20" : cardBg,
-                borderColor: !isAnimated ? theme.primary : borderColor,
-                borderWidth: !isAnimated ? 2 : 1,
-                opacity: pressed ? 0.8 : 1,
-              },
-            ]}
-          >
-            <Feather name="square" size={28} color={!isAnimated ? theme.primary : theme.textSecondary} />
-            <ThemedText
-              type="body"
-              style={{ marginTop: Spacing.sm, fontWeight: "600", color: !isAnimated ? theme.primary : theme.text }}
-            >
-              Solid
-            </ThemedText>
-            <ThemedText type="small" style={{ color: theme.textSecondary, textAlign: "center", marginTop: 2 }}>
-              Clean, no motion
-            </ThemedText>
-          </Pressable>
+        <View style={[styles.logoCard, { backgroundColor: isDark ? "rgba(13,20,40,0.80)" : "rgba(255,255,255,0.88)", borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)" }]}>
+          <Image
+            source={require("../../assets/images/logo.png")}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+          <ThemedText type="h4" style={{ fontWeight: "700", textAlign: "center" }}>
+            ResqRide Design
+          </ThemedText>
+          <ThemedText type="small" style={{ color: theme.textSecondary, textAlign: "center", lineHeight: 20 }}>
+            The background adapts automatically to your device light or dark mode setting, reflecting the ResqRide logo colors.
+          </ThemedText>
         </View>
 
-        {isAnimated ? (
-          <>
-            <ThemedText
-              type="small"
-              style={[styles.sectionTitle, { color: theme.textSecondary, marginTop: Spacing["2xl"] }]}
-            >
-              COLOR SCHEME
-            </ThemedText>
-            <View style={styles.schemeGrid}>
-              {(Object.keys(BACKGROUND_SCHEMES) as BackgroundColorScheme[]).map((key) => (
-                <SchemePreview
-                  key={key}
-                  schemeKey={key}
-                  isSelected={backgroundPreferences.colorScheme === key}
-                  onPress={() => setBackgroundColorScheme(key)}
-                />
-              ))}
+        <View style={[styles.swatchRow]}>
+          <View style={[styles.swatchCard, { backgroundColor: isDark ? "rgba(13,20,40,0.80)" : "rgba(255,255,255,0.88)", borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)" }]}>
+            <View style={styles.swatchPreview}>
+              <View style={[styles.swatchBg, { backgroundColor: "#04060E" }]}>
+                <View style={[styles.swatchGlow, { backgroundColor: "#CC1B1B", left: 4, top: 6 }]} />
+                <View style={[styles.swatchGlow, { backgroundColor: "#1A7CC7", right: 4, top: 6 }]} />
+              </View>
             </View>
-          </>
-        ) : null}
+            <ThemedText type="small" style={{ fontWeight: "600", marginTop: Spacing.sm }}>Dark Mode</ThemedText>
+            <ThemedText type="small" style={{ color: theme.textSecondary, fontSize: 12, textAlign: "center" }}>
+              Deep navy with fire and ice glows
+            </ThemedText>
+          </View>
 
-        <View style={[styles.infoCard, { backgroundColor: isDark ? "rgba(20, 25, 45, 0.75)" : "rgba(0, 0, 0, 0.12)", borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.1)", borderWidth: 1 }]}>
+          <View style={[styles.swatchCard, { backgroundColor: isDark ? "rgba(13,20,40,0.80)" : "rgba(255,255,255,0.88)", borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)" }]}>
+            <View style={styles.swatchPreview}>
+              <View style={[styles.swatchBg, { backgroundColor: "#F0F4F8" }]}>
+                <View style={[styles.swatchGlow, { backgroundColor: "#CC1B1B", left: 4, top: 6, opacity: 0.5 }]} />
+                <View style={[styles.swatchGlow, { backgroundColor: "#1A7CC7", right: 4, top: 6, opacity: 0.5 }]} />
+              </View>
+            </View>
+            <ThemedText type="small" style={{ fontWeight: "600", marginTop: Spacing.sm }}>Light Mode</ThemedText>
+            <ThemedText type="small" style={{ color: theme.textSecondary, fontSize: 12, textAlign: "center" }}>
+              Clean silver with subtle accents
+            </ThemedText>
+          </View>
+        </View>
+
+        <View style={[styles.infoCard, { backgroundColor: isDark ? "rgba(13,20,40,0.75)" : "rgba(255,255,255,0.80)", borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)" }]}>
           <Feather name="info" size={16} color={theme.textSecondary} />
-          <ThemedText type="small" style={{ color: isDark ? theme.textSecondary : theme.text, flex: 1, marginLeft: Spacing.sm }}>
-            {isAnimated
-              ? "Motion backgrounds apply to the History, Messages, and Profile screens."
-              : "A solid background will be used on all screens."}
+          <ThemedText type="small" style={{ color: theme.textSecondary, flex: 1, marginLeft: Spacing.sm, lineHeight: 19 }}>
+            Change your device appearance in system settings to switch between dark and light mode.
           </ThemedText>
         </View>
       </ScrollView>
@@ -186,64 +81,48 @@ export default function BackgroundSettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  container: { flex: 1 },
+  logoCard: {
+    alignItems: "center",
+    padding: Spacing["2xl"],
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    gap: Spacing.sm,
   },
-  sectionTitle: {
-    fontWeight: "600",
-    letterSpacing: 1,
-    marginBottom: Spacing.md,
-  },
-  modeRow: {
+  logo: { width: 100, height: 100, marginBottom: Spacing.sm },
+  swatchRow: {
     flexDirection: "row",
     gap: Spacing.md,
   },
-  modeOption: {
+  swatchCard: {
     flex: 1,
     alignItems: "center",
-    paddingVertical: Spacing.xl,
-    borderRadius: BorderRadius.lg,
-  },
-  schemeGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: Spacing.md,
-  },
-  schemeCard: {
-    width: "47%",
     padding: Spacing.md,
     borderRadius: BorderRadius.lg,
-    alignItems: "center",
-    position: "relative",
+    borderWidth: 1,
   },
-  schemePreviewBg: {
+  swatchPreview: {
     width: "100%",
-    height: 70,
+    height: 72,
     borderRadius: BorderRadius.md,
-    position: "relative",
     overflow: "hidden",
   },
-  schemeOrbLarge: {
-    position: "absolute",
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  swatchBg: {
+    flex: 1,
+    position: "relative",
   },
-  checkBadge: {
+  swatchGlow: {
     position: "absolute",
-    top: 8,
-    right: 8,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    opacity: 0.8,
   },
   infoCard: {
     flexDirection: "row",
     alignItems: "center",
     padding: Spacing.lg,
     borderRadius: BorderRadius.md,
-    marginTop: Spacing["2xl"],
+    borderWidth: 1,
   },
 });

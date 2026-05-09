@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, Image, Platform } from "react-native";
+import { View, StyleSheet, Image } from "react-native";
 
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
@@ -16,9 +16,9 @@ export function HeaderTitle({ title, iconOnly }: HeaderTitleProps) {
   if (iconOnly) {
     return (
       <View style={styles.iconOnlyContainer}>
-        <View style={[styles.iconGlow, { backgroundColor: theme.primary + "25" }]} />
+        <View style={[styles.iconGlow, { backgroundColor: theme.primary + "22" }]} />
         <Image
-          source={require("../../assets/images/icon.png")}
+          source={require("../../assets/images/logo.png")}
           style={styles.iconLarge}
           resizeMode="contain"
         />
@@ -29,7 +29,7 @@ export function HeaderTitle({ title, iconOnly }: HeaderTitleProps) {
   return (
     <View style={styles.container}>
       <Image
-        source={require("../../assets/images/icon.png")}
+        source={require("../../assets/images/logo.png")}
         style={styles.icon}
         resizeMode="contain"
       />
