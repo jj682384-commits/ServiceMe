@@ -292,6 +292,16 @@ process.on("unhandledRejection", (reason) => {
 });
 
 (async () => {
+  // ── Redirect old Replit domain to custom domain ───────────────────────────
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    const host = req.header("x-forwarded-host") || req.header("host") || "";
+    const OLD_DOMAIN = "roadside-relay--sjx89tprxq.replit.app";
+    if (host === OLD_DOMAIN) {
+      return res.redirect(301, `https://resqride.co${req.originalUrl}`);
+    }
+    next();
+  });
+
   setupCors(app);
 
   // ── Stripe webhook — must come BEFORE express.json() ─────────────────────
