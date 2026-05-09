@@ -129,14 +129,6 @@ export default function WelcomeScreen() {
       />
 
       <View style={[styles.content, { paddingTop: insets.top + Spacing.lg, paddingBottom: insets.bottom + Spacing.lg }]}>
-        <Animated.View entering={FadeInDown.delay(100).duration(600).springify()} style={styles.logoSection}>
-          <Image
-            source={require("../../assets/images/logo.png")}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-        </Animated.View>
-
         <Animated.View entering={FadeInDown.delay(250).duration(600).springify()} style={styles.header}>
           <ThemedText type="small" style={[styles.tagline, { color: isDark ? "rgba(0,200,255,0.7)" : theme.secondary }]}>
             ROADSIDE ASSISTANCE
@@ -204,14 +196,13 @@ const styles = StyleSheet.create({
   bgLogo: {
     position: "absolute",
     alignSelf: "center",
-    top: "50%",
+    top: 0,
     width: "95%",
     aspectRatio: 1,
-    opacity: 0.13,
-    transform: [{ translateY: -200 }],
+    opacity: 0.18,
+    transform: [{ translateY: -60 }],
   },
   content: { flex: 1, paddingHorizontal: 24, justifyContent: "space-between" },
-  logoSection: { alignItems: "center" },
   logo: { width: 130, height: 130 },
   header: { alignItems: "center", gap: 6 },
   tagline: { fontSize: 11, fontWeight: "700", letterSpacing: 4, marginBottom: 4 },
