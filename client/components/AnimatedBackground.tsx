@@ -15,17 +15,17 @@ export const DARK_BG  = "#04060E";
 export const LIGHT_BG = "#F5F7FA";
 
 // ─── tunables ────────────────────────────────────────────────────────────────
-const TICK_MS        = 33;    // 30 fps
-const EKG_SPEED      = 1.8;
-const PARTICLE_SPEED = 0.22;
+const TICK_MS        = 66;    // 15 fps — smooth enough, frees JS thread
+const EKG_SPEED      = 2.4;   // compensate for slower tick so speed looks same
+const PARTICLE_SPEED = 0.30;
 const WOBBLE         = 0.008;
-const ARC_DIST       = 180;
+const ARC_DIST       = 160;
 
-// Rain streaks — 32 total, equally split left/right
-const STREAK_COUNT   = 32;
+// Rain streaks — 20 total, equally split left/right
+const STREAK_COUNT   = 20;
 // Streak fall speed range (px per tick, downward)
-const STREAK_SPD_MIN = 0.5;
-const STREAK_SPD_MAX = 1.4;
+const STREAK_SPD_MIN = 0.8;
+const STREAK_SPD_MAX = 2.2;
 
 // ─── particle definitions ────────────────────────────────────────────────────
 type Kind = "blue" | "red" | "white";
@@ -144,7 +144,7 @@ function buildEkg(W: number, Y: number, off: number): string {
 }
 
 // ─── component ───────────────────────────────────────────────────────────────
-export default function AnimatedBackground({ showEkg = true }: { showEkg?: boolean }) {
+const AnimatedBackground = React.memo(function AnimatedBackground({ showEkg = true }: { showEkg?: boolean }) {
   const { width: W, height: H } = useWindowDimensions();
 
   const stateRef  = useRef<Anim>(makeState(W, H));
@@ -278,7 +278,9 @@ export default function AnimatedBackground({ showEkg = true }: { showEkg?: boole
       </Svg>
     </View>
   );
-}
+});
+
+export default AnimatedBackground;
 
 const styles = StyleSheet.create({
   root: { ...StyleSheet.absoluteFillObject, overflow: "hidden" },

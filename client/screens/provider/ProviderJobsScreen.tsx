@@ -374,8 +374,8 @@ export default function ProviderJobsScreen() {
             createdAt: new Date(j.createdAt as string),
           })) as ServiceRequest[]
         : [],
-    refetchInterval: 1000,
-    staleTime: 0,
+    refetchInterval: 4000,
+    staleTime: 3000,
   });
 
   // WebSocket: instantly receive new job broadcasts instead of waiting for next poll
