@@ -8,6 +8,7 @@ import {
   Linking,
   Platform,
   KeyboardAvoidingView,
+  Keyboard,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -87,6 +88,7 @@ export default function SupportScreen() {
     setMessages((prev) => [...prev, userMessage]);
     setInputText("");
     setIsTyping(true);
+    Keyboard.dismiss();
 
     chatHistoryRef.current = [
       ...chatHistoryRef.current,
@@ -289,6 +291,8 @@ export default function SupportScreen() {
           padding: Spacing.lg,
           paddingBottom: Spacing.xl,
         }}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
       >
         {messages.map((message, index) => (
           <Animated.View
@@ -371,6 +375,9 @@ export default function SupportScreen() {
           ]}
           multiline
           maxLength={500}
+          returnKeyType="send"
+          blurOnSubmit
+          onSubmitEditing={() => handleSendMessage(inputText)}
         />
         <Pressable
           onPress={() => handleSendMessage(inputText)}
