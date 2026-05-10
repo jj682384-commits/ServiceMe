@@ -87,61 +87,75 @@ export const BorderRadius = {
   full: 9999,
 };
 
+const _fontRegular   = Platform.select({ web: "'Exo 2', sans-serif", default: "Exo2_400Regular" })!;
+const _fontMedium    = Platform.select({ web: "'Exo 2', sans-serif", default: "Exo2_500Medium" })!;
+const _fontSemiBold  = Platform.select({ web: "'Exo 2', sans-serif", default: "Exo2_600SemiBold" })!;
+const _fontBold      = Platform.select({ web: "'Exo 2', sans-serif", default: "Exo2_700Bold" })!;
+
 export const Typography = {
   display: {
     fontSize: 36,
     fontWeight: "700" as const,
     letterSpacing: 0.5,
+    fontFamily: _fontBold,
   },
   h1: {
     fontSize: 32,
     fontWeight: "700" as const,
     letterSpacing: 0.5,
+    fontFamily: _fontBold,
   },
   h2: {
     fontSize: 28,
     fontWeight: "700" as const,
     letterSpacing: 0.5,
+    fontFamily: _fontBold,
   },
   h3: {
     fontSize: 24,
     fontWeight: "600" as const,
     letterSpacing: 0.3,
+    fontFamily: _fontSemiBold,
   },
   h4: {
     fontSize: 20,
     fontWeight: "600" as const,
     letterSpacing: 0.2,
+    fontFamily: _fontSemiBold,
   },
   body: {
     fontSize: 16,
     fontWeight: "400" as const,
+    fontFamily: _fontRegular,
   },
   small: {
     fontSize: 14,
     fontWeight: "400" as const,
+    fontFamily: _fontRegular,
   },
   button: {
     fontSize: 16,
     fontWeight: "600" as const,
+    fontFamily: _fontSemiBold,
   },
   link: {
     fontSize: 16,
     fontWeight: "400" as const,
+    fontFamily: _fontRegular,
   },
 };
 
 export const Fonts = Platform.select({
   web: {
-    sans: "'Libre Bodoni', Georgia, serif",
-    serif: "'Libre Bodoni', Georgia, serif",
-    rounded: "'Libre Bodoni', Georgia, serif",
+    sans: "'Exo 2', sans-serif",
+    serif: "'Exo 2', sans-serif",
+    rounded: "'Exo 2', sans-serif",
     mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
   },
   default: {
-    sans: "LibreBodoni_400Regular",
-    serif: "LibreBodoni_400Regular",
-    rounded: "LibreBodoni_400Regular",
+    sans: "Exo2_400Regular",
+    serif: "Exo2_400Regular",
+    rounded: "Exo2_400Regular",
     mono: "monospace",
   },
 });

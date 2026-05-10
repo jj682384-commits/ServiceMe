@@ -5,7 +5,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import StripeWrapper from "@/components/StripeWrapper";
-import { useFonts, LibreBodoni_400Regular, LibreBodoni_400Regular_Italic, LibreBodoni_500Medium, LibreBodoni_600SemiBold, LibreBodoni_700Bold, LibreBodoni_700Bold_Italic } from "@expo-google-fonts/libre-bodoni";
+import { useFonts, Exo2_400Regular, Exo2_400Regular_Italic, Exo2_500Medium, Exo2_600SemiBold, Exo2_700Bold, Exo2_700Bold_Italic } from "@expo-google-fonts/exo-2";
 import * as SplashScreen from "expo-splash-screen";
 
 SplashScreen.preventAutoHideAsync();
@@ -58,12 +58,12 @@ export default function App() {
   const navTheme = colorScheme === "dark" ? DarkNavTheme : LightNavTheme;
   const [stripePublishableKey, setStripePublishableKey] = useState<string>("");
   const [fontsLoaded] = useFonts({
-    LibreBodoni_400Regular,
-    LibreBodoni_400Regular_Italic,
-    LibreBodoni_500Medium,
-    LibreBodoni_600SemiBold,
-    LibreBodoni_700Bold,
-    LibreBodoni_700Bold_Italic,
+    Exo2_400Regular,
+    Exo2_400Regular_Italic,
+    Exo2_500Medium,
+    Exo2_600SemiBold,
+    Exo2_700Bold,
+    Exo2_700Bold_Italic,
   });
 
   useEffect(() => {
