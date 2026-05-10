@@ -162,7 +162,7 @@ export default function WelcomeScreen() {
           />
           <Image
             source={require("../../assets/images/resqride-logo-light.png")}
-            style={[styles.logoImageStacked, { opacity: isDark ? 0 : 1 }]}
+            style={[styles.logoImageStacked, { opacity: isDark ? 0 : 1, transform: [{ scale: 1.044 }] }]}
             resizeMode="contain"
           />
 
@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
   content: { flex: 1, paddingHorizontal: 24, justifyContent: "space-between", paddingBottom: 12 },
   logoClip: { height: 260, overflow: "hidden", alignItems: "center", marginTop: 18 },
   logoImage: { width: "100%", height: 460, marginTop: -100 },
-  logoImageStacked: { width: "100%", height: 460, marginTop: -460 },
+  logoImageStacked: { width: "100%", height: 460, marginTop: -409 },
   taglineRow: { alignItems: "center", gap: 6, marginTop: -8 },
   taglinePill: { borderWidth: 1, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 5 },
   featuresContainer: { flexDirection: "row", justifyContent: "center", gap: 8, flexWrap: "wrap" },
