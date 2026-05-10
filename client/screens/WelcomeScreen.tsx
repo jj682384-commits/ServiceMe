@@ -13,10 +13,8 @@ import Animated, {
   FadeInDown,
   FadeInUp,
 } from "react-native-reanimated";
-import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
-import AnimatedBackground, { DARK_BG, LIGHT_BG } from "@/components/AnimatedBackground";
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
@@ -28,76 +26,78 @@ interface ActionButtonProps {
   subtitle: string;
   icon: keyof typeof Feather.glyphMap;
   onPress: () => void;
-  variant: "primary" | "secondary";
+  variant: "primary" | "secondary" | "ghost";
 }
 
 function ActionButton({ title, subtitle, icon, onPress, variant }: ActionButtonProps) {
-  const { theme, isDark } = useTheme();
   const scale = useSharedValue(1);
-
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
 
-  const isPrimary = variant === "primary";
+  const bgColor =
+    variant === "primary"
+      ? "rgba(42,42,42,1)"
+      : variant === "secondary"
+      ? "rgba(255,255,255,0.04)"
+      : "rgba(255,255,255,0.02)";
+
+  const borderColor =
+    variant === "primary"
+      ? "rgba(255,255,255,0.16)"
+      : variant === "secondary"
+      ? "rgba(255,255,255,0.08)"
+      : "rgba(255,255,255,0.05)";
+
+  const iconBg =
+    variant === "primary"
+      ? "rgba(255,255,255,0.12)"
+      : "rgba(255,255,255,0.06)";
 
   return (
     <AnimatedPressable
       style={[
         styles.actionButton,
         animatedStyle,
-        isPrimary
-          ? { overflow: "hidden" }
-          : {
-              backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)",
-              borderWidth: 1,
-              borderColor: isDark ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.10)",
-            },
+        { backgroundColor: bgColor, borderColor, borderWidth: 1 },
       ]}
       onPress={onPress}
       onPressIn={() => { scale.value = withSpring(0.97, { damping: 15, stiffness: 300 }); }}
       onPressOut={() => { scale.value = withSpring(1, { damping: 15, stiffness: 300 }); }}
     >
-      {isPrimary ? (
-        <LinearGradient
-          colors={["#CC1B1B", "#A01515"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={StyleSheet.absoluteFill}
-        />
+      {variant === "primary" ? (
+        <View style={styles.chromeSheenBar} />
       ) : null}
-      <View style={[styles.iconContainer, { backgroundColor: isPrimary ? "rgba(255,255,255,0.2)" : isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)" }]}>
-        <Feather name={icon} size={22} color={isPrimary ? "#FFF" : theme.secondary} />
+      <View style={[styles.iconContainer, { backgroundColor: iconBg }]}>
+        <Feather name={icon} size={22} color="rgba(255,255,255,0.85)" />
       </View>
       <View style={styles.buttonTextContainer}>
-        <ThemedText type="body" style={[styles.buttonTitle, { color: isPrimary ? "#FFF" : theme.text }]}>
+        <ThemedText
+          type="body"
+          style={[styles.buttonTitle, { color: variant === "primary" ? "#FFFFFF" : "rgba(255,255,255,0.8)" }]}
+        >
           {title}
         </ThemedText>
-        <ThemedText type="small" style={[styles.buttonSubtitle, { color: isPrimary ? "rgba(255,255,255,0.75)" : theme.textSecondary }]}>
+        <ThemedText
+          type="small"
+          style={[styles.buttonSubtitle, { color: variant === "primary" ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.35)" }]}
+        >
           {subtitle}
         </ThemedText>
       </View>
-      <Feather name="chevron-right" size={18} color={isPrimary ? "rgba(255,255,255,0.7)" : theme.textSecondary} />
+      <Feather name="chevron-right" size={18} color="rgba(255,255,255,0.3)" />
     </AnimatedPressable>
   );
 }
 
 function FeaturePill({ text, delay }: { text: string; delay: number }) {
-  const { theme, isDark } = useTheme();
-
   return (
     <Animated.View
       entering={FadeInDown.delay(delay).duration(500).springify()}
-      style={[
-        styles.featurePill,
-        {
-          backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)",
-          borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)",
-        },
-      ]}
+      style={styles.featurePill}
     >
-      <View style={[styles.featurePillDot, { backgroundColor: theme.secondary }]} />
-      <ThemedText type="small" style={[styles.featurePillText, { color: isDark ? "rgba(255,255,255,0.7)" : theme.textSecondary }]}>
+      <View style={styles.featurePillDot} />
+      <ThemedText type="small" style={styles.featurePillText}>
         {text}
       </ThemedText>
     </Animated.View>
@@ -106,7 +106,7 @@ function FeaturePill({ text, delay }: { text: string; delay: number }) {
 
 export default function WelcomeScreen() {
   const insets = useSafeAreaInsets();
-  const { theme, isDark } = useTheme();
+  const { theme } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { hydrated, isAuthenticated, userRole } = useApp();
 
@@ -117,72 +117,74 @@ export default function WelcomeScreen() {
   }, [hydrated, isAuthenticated, userRole]);
 
   return (
-    <View style={[styles.container, { backgroundColor: isDark ? DARK_BG : LIGHT_BG }]}>
-      <AnimatedBackground />
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+      {/* Subtle chrome ambient glows */}
+      <View style={styles.glowTopLeft} pointerEvents="none" />
+      <View style={styles.glowBottomRight} pointerEvents="none" />
 
-      {/* Large translucent logo watermark */}
-      <Image
-        source={require("../../assets/images/logo.png")}
-        style={styles.bgLogo}
-        resizeMode="contain"
-        pointerEvents="none"
-      />
+      <View style={styles.content}>
+        {/* Big chrome logo — clipped to remove built-in image margins */}
+        <Animated.View entering={FadeIn.delay(100).duration(600)} style={styles.logoClip}>
+          <Image
+            source={require("../../assets/images/logo_chrome.png")}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
+        </Animated.View>
 
-      <View style={[styles.content, { paddingTop: insets.top + Spacing.lg, paddingBottom: insets.bottom + Spacing.lg }]}>
-        <Animated.View entering={FadeInDown.delay(250).duration(600).springify()} style={styles.header}>
-          <ThemedText type="small" style={[styles.tagline, { color: isDark ? "rgba(0,200,255,0.7)" : theme.secondary }]}>
-            ROADSIDE ASSISTANCE
-          </ThemedText>
-          <View style={styles.titleRow}>
-            <ThemedText type="h1" style={[styles.titleMain, { color: isDark ? "#FFFFFF" : "#0D1428" }]}>Resq</ThemedText>
-            <ThemedText type="h1" style={[styles.titleAccent, { color: theme.secondary }]}>Ride</ThemedText>
+        {/* Tagline */}
+        <Animated.View entering={FadeInDown.delay(200).duration(500).springify()} style={styles.taglineRow}>
+          <View style={styles.taglinePill}>
+            <ThemedText style={styles.taglineText}>ROADSIDE ASSISTANCE</ThemedText>
           </View>
-          <ThemedText type="body" style={[styles.subtitle, { color: isDark ? "rgba(255,255,255,0.45)" : theme.textSecondary }]}>
-            Help is always closer than you think
-          </ThemedText>
-          <View style={[styles.noBadge, { backgroundColor: isDark ? "rgba(0,200,255,0.08)" : "rgba(26,124,199,0.08)", borderColor: isDark ? "rgba(0,200,255,0.20)" : "rgba(26,124,199,0.20)" }]}>
-            <Feather name="check-circle" size={13} color={theme.secondary} />
-            <ThemedText type="small" style={[styles.noBadgeText, { color: isDark ? "rgba(0,200,255,0.85)" : theme.secondary }]}>
-              No membership required — pay only when you need us
-            </ThemedText>
-          </View>
+          <ThemedText style={styles.subtitle}>Help is always closer than you think</ThemedText>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(400).duration(500).springify()} style={styles.featuresContainer}>
-          <FeaturePill text="8-min avg response" delay={500} />
-          <FeaturePill text="ID-verified providers" delay={600} />
-          <FeaturePill text="GPS-powered matching" delay={700} />
+        {/* Feature pills */}
+        <Animated.View entering={FadeInDown.delay(350).duration(500).springify()} style={styles.featuresContainer}>
+          <FeaturePill text="8-min avg response" delay={400} />
+          <FeaturePill text="ID-verified providers" delay={480} />
+          <FeaturePill text="GPS-powered matching" delay={560} />
         </Animated.View>
 
-        <Animated.View entering={FadeInUp.delay(500).duration(600).springify()} style={styles.actionsContainer}>
-          <ActionButton title="I Need Help" subtitle="Get roadside assistance now" icon="alert-circle" onPress={() => navigation.navigate("SignUp")} variant="primary" />
-          <ActionButton title="Sign In" subtitle="Already have an account?" icon="log-in" onPress={() => navigation.navigate("SignIn")} variant="secondary" />
+        {/* Action buttons */}
+        <Animated.View entering={FadeInUp.delay(450).duration(600).springify()} style={styles.actionsContainer}>
+          <ActionButton
+            title="I Need Help"
+            subtitle="Get roadside assistance now"
+            icon="alert-circle"
+            onPress={() => navigation.navigate("SignUp")}
+            variant="primary"
+          />
+          <ActionButton
+            title="Sign In"
+            subtitle="Already have an account?"
+            icon="log-in"
+            onPress={() => navigation.navigate("SignIn")}
+            variant="secondary"
+          />
         </Animated.View>
 
-        <Animated.View entering={FadeInUp.delay(700).duration(500).springify()}>
+        {/* Provider link */}
+        <Animated.View entering={FadeInUp.delay(600).duration(500).springify()}>
           <Pressable
-            style={[
-              styles.providerLink,
-              {
-                borderColor: isDark ? "rgba(26,124,199,0.20)" : "rgba(26,124,199,0.18)",
-                backgroundColor: isDark ? "rgba(26,124,199,0.07)" : "rgba(26,124,199,0.06)",
-              },
-            ]}
+            style={styles.providerLink}
             onPress={() => navigation.navigate("ProviderTypeSelection")}
           >
-            <View style={[styles.providerLinkIcon, { backgroundColor: isDark ? "rgba(26,124,199,0.15)" : "rgba(26,124,199,0.10)" }]}>
-              <Feather name="heart" size={16} color={theme.secondary} />
+            <View style={styles.providerLinkIcon}>
+              <Feather name="heart" size={15} color="rgba(192,192,192,0.7)" />
             </View>
             <View style={styles.providerLinkText}>
-              <ThemedText type="body" style={{ color: isDark ? "#FFF" : theme.text, fontSize: 14, fontWeight: "600" }}>Want to earn helping others?</ThemedText>
-              <ThemedText type="small" style={{ color: theme.secondary, fontSize: 12 }}>Become a service provider</ThemedText>
+              <ThemedText style={styles.providerLinkTitle}>Want to earn helping others?</ThemedText>
+              <ThemedText style={styles.providerLinkSub}>Become a service provider</ThemedText>
             </View>
-            <Feather name="arrow-right" size={16} color={theme.secondary} />
+            <Feather name="arrow-right" size={15} color="rgba(255,255,255,0.25)" />
           </Pressable>
         </Animated.View>
 
-        <Animated.View entering={FadeIn.delay(900).duration(400)}>
-          <ThemedText type="small" style={[styles.termsText, { color: isDark ? "rgba(255,255,255,0.25)" : theme.textSecondary }]}>
+        {/* Terms */}
+        <Animated.View entering={FadeIn.delay(800).duration(400)}>
+          <ThemedText style={styles.termsText}>
             By continuing, you agree to our Terms of Service and Privacy Policy
           </ThemedText>
         </Animated.View>
@@ -192,38 +194,159 @@ export default function WelcomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  bgLogo: {
-    position: "absolute",
-    alignSelf: "center",
-    top: 0,
-    width: "95%",
-    aspectRatio: 1,
-    opacity: 0.18,
-    transform: [{ translateY: -60 }],
+  container: {
+    flex: 1,
+    backgroundColor: "#000000",
   },
-  content: { flex: 1, paddingHorizontal: 24, justifyContent: "space-between" },
-  logo: { width: 130, height: 130 },
-  header: { alignItems: "center", gap: 6 },
-  tagline: { fontSize: 11, fontWeight: "700", letterSpacing: 4, marginBottom: 4 },
-  titleRow: { flexDirection: "row", alignItems: "baseline" },
-  titleMain: { fontSize: 42, fontWeight: "800", letterSpacing: -1.5 },
-  titleAccent: { fontSize: 42, fontWeight: "800", letterSpacing: -1.5 },
-  subtitle: { fontSize: 15, fontWeight: "400", marginTop: 4, letterSpacing: 0.3 },
-  noBadge: { flexDirection: "row", alignItems: "center", gap: 6, borderWidth: 1, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6, marginTop: 10 },
-  noBadgeText: { fontSize: 12, fontWeight: "500", flexShrink: 1 },
-  featuresContainer: { flexDirection: "row", justifyContent: "center", gap: 8, flexWrap: "wrap" },
-  featurePill: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
-  featurePillDot: { width: 5, height: 5, borderRadius: 2.5 },
-  featurePillText: { fontSize: 12, fontWeight: "500" },
-  actionsContainer: { gap: 12 },
-  actionButton: { flexDirection: "row", alignItems: "center", padding: 18, borderRadius: 16, gap: 14 },
-  iconContainer: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
+  glowTopLeft: {
+    position: "absolute",
+    top: -60,
+    left: -60,
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    backgroundColor: "rgba(192,192,192,0.04)",
+  },
+  glowBottomRight: {
+    position: "absolute",
+    bottom: -60,
+    right: -60,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: "rgba(160,160,180,0.03)",
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 24,
+    justifyContent: "space-between",
+    paddingBottom: 12,
+  },
+  logoClip: {
+    height: 200,
+    overflow: "hidden",
+    alignItems: "center",
+    marginTop: -10,
+  },
+  logoImage: {
+    width: "100%",
+    height: 380,
+    marginTop: -90,
+  },
+  taglineRow: {
+    alignItems: "center",
+    gap: 6,
+    marginTop: -8,
+  },
+  taglinePill: {
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.10)",
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 5,
+  },
+  taglineText: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 4,
+    color: "rgba(255,255,255,0.5)",
+  },
+  subtitle: {
+    fontSize: 13,
+    color: "rgba(255,255,255,0.35)",
+    textAlign: "center",
+  },
+  featuresContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  featurePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 13,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+    backgroundColor: "rgba(255,255,255,0.03)",
+    borderColor: "rgba(255,255,255,0.07)",
+  },
+  featurePillDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: "rgba(192,192,192,0.7)",
+  },
+  featurePillText: {
+    fontSize: 12,
+    fontWeight: "500",
+    color: "rgba(255,255,255,0.55)",
+  },
+  actionsContainer: { gap: 10 },
+  actionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 17,
+    borderRadius: 18,
+    gap: 14,
+    overflow: "hidden",
+    position: "relative",
+  },
+  chromeSheenBar: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: "50%",
+    backgroundColor: "rgba(255,255,255,0.05)",
+  },
+  iconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   buttonTextContainer: { flex: 1, gap: 2 },
   buttonTitle: { fontWeight: "700", fontSize: 16 },
   buttonSubtitle: { fontSize: 13 },
-  providerLink: { flexDirection: "row", alignItems: "center", padding: 16, gap: 12, borderRadius: 16, borderWidth: 1 },
-  providerLinkIcon: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
+  providerLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 14,
+    gap: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.06)",
+    backgroundColor: "rgba(255,255,255,0.02)",
+  },
+  providerLinkIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.09)",
+  },
   providerLinkText: { flex: 1, gap: 1 },
-  termsText: { textAlign: "center", fontSize: 11, paddingHorizontal: 20 },
+  providerLinkTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.78)",
+  },
+  providerLinkSub: {
+    fontSize: 12,
+    color: "rgba(192,192,192,0.5)",
+  },
+  termsText: {
+    textAlign: "center",
+    fontSize: 11,
+    paddingHorizontal: 20,
+    color: "rgba(255,255,255,0.2)",
+  },
 });

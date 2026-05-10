@@ -1,31 +1,28 @@
 import { Platform } from "react-native";
 
-// Pulled directly from the ResqRide logo:
-// Red half (fire / medical cross) → #CC1B1B
-// Blue half (ice / swirl) → #1A7CC7
-// Dark navy sphere → #0D1428
-const logoRed    = "#CC1B1B";
-const logoRedDk  = "#A01515";
-const logoRedLt  = "#E83030";
-const logoBlue   = "#1A7CC7";
-const logoBlueDk = "#155FA0";
-const logoBlueLt = "#3399DD";
+// Chrome / metallic palette — pulled from the new +R mark logo
+const chromeWhite   = "#FFFFFF";
+const chromeSilver  = "#C0C0C0";
+const chromeGray    = "#888888";
+const chromeDark    = "#2A2A2A";
+const emergencyRed  = "#CC1B1B";
+const emergencyRedDk = "#A01515";
+const emergencyRedLt = "#E83030";
 
 export const Colors = {
   light: {
-    // Light mode: clean silver-white canvas, navy text, logo accents
-    text:                "#0D1428",
-    textSecondary:       "#4A5568",
+    text:                "#0D0D0D",
+    textSecondary:       "#4A4A4A",
     buttonText:          "#FFFFFF",
     tabIconDefault:      "#94A3B8",
-    tabIconSelected:     logoBlue,
-    link:                logoBlue,
-    primary:             logoRed,
-    primaryDark:         logoRedDk,
-    primaryLight:        logoRedLt,
-    secondary:           logoBlue,
-    secondaryDark:       logoBlueDk,
-    accent:              logoBlueLt,
+    tabIconSelected:     "#0055B3",
+    link:                "#0055B3",
+    primary:             emergencyRed,
+    primaryDark:         emergencyRedDk,
+    primaryLight:        emergencyRedLt,
+    secondary:           "#0055B3",
+    secondaryDark:       "#003D82",
+    accent:              "#1A7CC7",
     success:             "#059669",
     warning:             "#B45309",
     error:               "#DC2626",
@@ -38,29 +35,29 @@ export const Colors = {
     cardAnimatedBg:      "rgba(255, 255, 255, 0.92)",
   },
   dark: {
-    // Dark mode: deep space navy, logo fire + ice accents
-    text:                "#EFF2F7",
-    textSecondary:       "#A8B4C4",
+    // Chrome / pitch-black aesthetic
+    text:                "#F0F0F0",
+    textSecondary:       "#A0A0A0",
     buttonText:          "#FFFFFF",
-    tabIconDefault:      "#6B7280",
-    tabIconSelected:     logoBlueLt,
-    link:                logoBlueLt,
-    primary:             logoRed,
-    primaryDark:         logoRedDk,
-    primaryLight:        logoRedLt,
-    secondary:           logoBlue,
-    secondaryDark:       logoBlueDk,
-    accent:              logoBlueLt,
+    tabIconDefault:      "#555555",
+    tabIconSelected:     chromeSilver,
+    link:                chromeSilver,
+    primary:             emergencyRed,
+    primaryDark:         emergencyRedDk,
+    primaryLight:        emergencyRedLt,
+    secondary:           chromeSilver,
+    secondaryDark:       chromeGray,
+    accent:              chromeWhite,
     success:             "#00E676",
     warning:             "#FFB300",
     error:               "#FF5252",
-    backgroundRoot:      "#04060E",
-    backgroundDefault:   "#080C18",
-    backgroundSecondary: "#0D1428",
-    backgroundTertiary:  "#121C38",
-    border:              "#1A2A48",
-    glassmorphic:        "rgba(8, 12, 24, 0.90)",
-    cardAnimatedBg:      "rgba(13, 20, 40, 0.82)",
+    backgroundRoot:      "#000000",
+    backgroundDefault:   "#080808",
+    backgroundSecondary: "#111111",
+    backgroundTertiary:  "#1A1A1A",
+    border:              "rgba(255,255,255,0.09)",
+    glassmorphic:        "rgba(10, 10, 10, 0.92)",
+    cardAnimatedBg:      "rgba(20, 20, 20, 0.90)",
   },
 };
 
@@ -160,33 +157,33 @@ export const Shadows = {
   sm: {
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.15,
     shadowRadius: 2,
     elevation: 1,
   },
   md: {
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.20,
     shadowRadius: 4,
     elevation: 2,
   },
   lg: {
-    shadowColor: logoRed,
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.18,
+    shadowOpacity: 0.30,
     shadowRadius: 8,
     elevation: 4,
   },
   xl: {
-    shadowColor: logoBlue,
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.22,
+    shadowOpacity: 0.40,
     shadowRadius: 12,
     elevation: 6,
   },
   fab: {
-    shadowColor: logoRed,
+    shadowColor: emergencyRed,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.40,
     shadowRadius: 10,
@@ -196,17 +193,17 @@ export const Shadows = {
 
 export const Gradients = {
   primary: {
-    colors: [logoRed, logoRedLt],
+    colors: [emergencyRed, emergencyRedDk] as [string, string],
     start: { x: 0, y: 0 },
     end: { x: 1, y: 1 },
   },
   secondary: {
-    colors: [logoBlue, logoBlueLt],
+    colors: [chromeDark, "#111111"] as [string, string],
     start: { x: 0, y: 0 },
     end: { x: 1, y: 1 },
   },
   dark: {
-    colors: [logoRed, logoBlue],
+    colors: ["#1A1A1A", "#000000"] as [string, string],
     start: { x: 0, y: 0 },
     end: { x: 1, y: 1 },
   },

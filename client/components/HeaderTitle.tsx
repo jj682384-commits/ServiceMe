@@ -1,8 +1,6 @@
 import React from "react";
 import { View, StyleSheet, Image } from "react-native";
-
 import { ThemedText } from "@/components/ThemedText";
-import { useTheme } from "@/hooks/useTheme";
 import { Spacing } from "@/constants/theme";
 
 interface HeaderTitleProps {
@@ -11,14 +9,11 @@ interface HeaderTitleProps {
 }
 
 export function HeaderTitle({ title, iconOnly }: HeaderTitleProps) {
-  const { theme } = useTheme();
-
   if (iconOnly) {
     return (
       <View style={styles.iconOnlyContainer}>
-        <View style={[styles.iconGlow, { backgroundColor: theme.primary + "22" }]} />
         <Image
-          source={require("../../assets/images/logo.png")}
+          source={require("../../assets/images/logo_chrome.png")}
           style={styles.iconLarge}
           resizeMode="contain"
         />
@@ -29,7 +24,7 @@ export function HeaderTitle({ title, iconOnly }: HeaderTitleProps) {
   return (
     <View style={styles.container}>
       <Image
-        source={require("../../assets/images/logo.png")}
+        source={require("../../assets/images/logo_chrome.png")}
         style={styles.icon}
         resizeMode="contain"
       />
@@ -45,13 +40,14 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
   },
   icon: {
-    width: 28,
-    height: 28,
+    width: 32,
+    height: 32,
     marginRight: Spacing.sm,
   },
   title: {
     fontSize: 17,
     fontWeight: "600",
+    color: "#FFFFFF",
   },
   iconOnlyContainer: {
     alignItems: "center",
@@ -59,14 +55,8 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
   },
-  iconGlow: {
-    position: "absolute",
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-  },
   iconLarge: {
-    width: 32,
-    height: 32,
+    width: 36,
+    height: 36,
   },
 });

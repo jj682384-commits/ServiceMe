@@ -45,7 +45,7 @@ function InputField({
     <View style={styles.inputContainer}>
       <ThemedText type="small" style={styles.inputLabel}>{label}</ThemedText>
       <View style={[styles.inputWrapper, isFocused ? styles.inputWrapperFocused : null]}>
-        <Feather name={icon} size={18} color={isFocused ? "#00AAFF" : "rgba(255,255,255,0.4)"} />
+        <Feather name={icon} size={18} color={isFocused ? "#C0C0C0" : "rgba(255,255,255,0.4)"} />
         <TextInput
           style={styles.input}
           value={value}
@@ -173,7 +173,7 @@ export default function SignInScreen() {
           <InputField label="Email Address" value={email} onChangeText={setEmail} placeholder="Enter your email" icon="mail" keyboardType="email-address" autoCapitalize="none" />
           <InputField label="Password" value={password} onChangeText={setPassword} placeholder="Enter your password" icon="lock" secureTextEntry autoCapitalize="none" />
           <Pressable style={styles.forgotPassword}>
-            <ThemedText type="small" style={{ color: "#00AAFF" }}>Forgot Password?</ThemedText>
+            <ThemedText type="small" style={{ color: "rgba(192,192,192,0.7)" }}>Forgot Password?</ThemedText>
           </Pressable>
         </View>
 
@@ -185,7 +185,7 @@ export default function SignInScreen() {
             onPressOut={() => { scale.value = withSpring(1); }}
             disabled={isLoading}
           >
-            <LinearGradient colors={["#D92222", "#B01A1A"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[StyleSheet.absoluteFill, { borderRadius: 16 }]} />
+            <LinearGradient colors={["#2A2A2A", "#181818"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[StyleSheet.absoluteFill, { borderRadius: 16 }]} />
             <ThemedText type="body" style={styles.signInButtonText}>
               {isLoading ? "Signing In..." : "Sign In"}
             </ThemedText>
@@ -196,7 +196,7 @@ export default function SignInScreen() {
           <View style={styles.signUpRow}>
             <ThemedText type="body" style={{ color: "rgba(255,255,255,0.5)" }}>Don't have an account?</ThemedText>
             <Pressable onPress={() => navigation.navigate("SignUp")}>
-              <ThemedText type="body" style={{ color: "#00AAFF", fontWeight: "600" }}> Sign Up</ThemedText>
+              <ThemedText type="body" style={{ color: "rgba(192,192,192,0.85)", fontWeight: "600" }}> Sign Up</ThemedText>
             </Pressable>
           </View>
         </View>
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
   inputContainer: { gap: 6 },
   inputLabel: { fontWeight: "500", color: "rgba(255,255,255,0.6)", fontSize: 13 },
   inputWrapper: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: Platform.OS === "ios" ? 14 : 10, borderRadius: 14, gap: 10, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
-  inputWrapperFocused: { borderColor: "rgba(0,217,255,0.4)", backgroundColor: "rgba(0,217,255,0.06)" },
+  inputWrapperFocused: { borderColor: "rgba(192,192,192,0.30)", backgroundColor: "rgba(192,192,192,0.05)" },
   input: { flex: 1, fontSize: 16, color: "#FFF" },
   forgotPassword: { alignSelf: "flex-end", marginTop: 4 },
   footer: { marginTop: "auto", gap: Spacing.lg },
