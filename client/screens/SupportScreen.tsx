@@ -294,6 +294,8 @@ export default function SupportScreen() {
         contentContainerStyle={{
           padding: Spacing.lg,
           paddingBottom: Spacing.xl,
+          flexGrow: 1,
+          justifyContent: "flex-end",
         }}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
