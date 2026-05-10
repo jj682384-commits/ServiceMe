@@ -57,47 +57,14 @@ export function Welcome() {
       </div>
 
       {/* Logo area */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "0 28px", paddingBottom: 34, paddingTop: 20 }}>
-        {/* Logo + tagline */}
-        <div style={{ alignItems: "center", display: "flex", flexDirection: "column", marginTop: 8 }}>
-          <div style={{ position: "relative", marginBottom: 16 }}>
-            {/* Chrome ring behind logo */}
-            <div style={{
-              position: "absolute", inset: -12,
-              borderRadius: "50%",
-              background: "conic-gradient(from 0deg, rgba(200,200,200,0.3), rgba(100,100,100,0.05), rgba(220,220,220,0.35), rgba(80,80,80,0.05), rgba(200,200,200,0.3))",
-            }} />
-            <div style={{
-              position: "absolute", inset: -8,
-              borderRadius: "50%",
-              background: "radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 70%)",
-            }} />
-            <img
-              src="/__mockup/images/resqride_logo.png"
-              alt="ResqRide"
-              style={{ width: 100, height: 100, objectFit: "contain", position: "relative", zIndex: 1 }}
-            />
-          </div>
-
-          {/* App name */}
-          <div style={{ display: "flex", alignItems: "baseline", gap: 0, marginBottom: 6 }}>
-            <span style={{
-              fontSize: 38,
-              fontWeight: 800,
-              letterSpacing: -1.5,
-              background: "linear-gradient(180deg, #FFFFFF 0%, #C0C0C0 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-            }}>Resq</span>
-            <span style={{
-              fontSize: 38,
-              fontWeight: 800,
-              letterSpacing: -1.5,
-              background: "linear-gradient(180deg, #E8E8E8 0%, #888 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-            }}>Ride</span>
-          </div>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "0 28px", paddingBottom: 34, paddingTop: 0 }}>
+        {/* Logo full-width */}
+        <div style={{ alignItems: "center", display: "flex", flexDirection: "column", marginBottom: 4 }}>
+          <img
+            src="/__mockup/images/resqride_logo.png"
+            alt="ResqRide"
+            style={{ width: "100%", maxWidth: 340, height: 320, objectFit: "contain" }}
+          />
 
           {/* Tagline pill */}
           <div style={{
