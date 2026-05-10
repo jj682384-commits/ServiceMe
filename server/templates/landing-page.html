@@ -23,6 +23,55 @@
       --card: rgba(255,255,255,0.04);
       --border: rgba(255,255,255,0.08);
     }
+    html[data-theme="light"] {
+      --navy: #F0F0F0;
+      --navy2: #E4E4E4;
+      --text: #0A0A0A;
+      --muted: rgba(0,0,0,0.5);
+      --card: rgba(0,0,0,0.04);
+      --border: rgba(0,0,0,0.1);
+      --cyan: #444444;
+      --coral: #222222;
+      --accent: #333333;
+    }
+    html[data-theme="light"] body {
+      background: var(--navy);
+      color: var(--text);
+    }
+    html[data-theme="light"] nav {
+      background: rgba(240,240,240,0.96);
+      border-bottom: 1px solid rgba(0,0,0,0.08);
+    }
+    html[data-theme="light"] .nav-links a { color: rgba(0,0,0,0.55); }
+    html[data-theme="light"] .nav-links a:hover { color: #000; }
+    html[data-theme="light"] .nav-cta {
+      background: linear-gradient(135deg, #111 0%, #333 50%, #111 100%);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    }
+    html[data-theme="light"] .section-label { color: rgba(0,0,0,0.45); }
+    html[data-theme="light"] .section-label::before,
+    html[data-theme="light"] .section-label::after { background: rgba(0,0,0,0.15); }
+    html[data-theme="light"] .step-card,
+    html[data-theme="light"] .service-card,
+    html[data-theme="light"] .dual-card,
+    html[data-theme="light"] .pricing-card { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); }
+    html[data-theme="light"] footer { background: #E0E0E0; border-top: 1px solid rgba(0,0,0,0.1); }
+    html[data-theme="light"] .footer-links a { color: rgba(0,0,0,0.5); }
+    html[data-theme="light"] .footer-copy { color: rgba(0,0,0,0.35); }
+    html[data-theme="light"] .stats-bar { background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.1); }
+    html[data-theme="light"] .hero-badge { background: rgba(0,0,0,0.07); border-color: rgba(0,0,0,0.15); color: #333; }
+    .logo-dark { display: block !important; }
+    .logo-light { display: none !important; }
+    html[data-theme="light"] .logo-dark { display: none !important; }
+    html[data-theme="light"] .logo-light { display: block !important; }
+    .theme-btn {
+      background: var(--card); border: 1px solid var(--border); border-radius: 100px;
+      color: var(--text); cursor: pointer; padding: 7px 14px; font-size: 15px;
+      display: inline-flex; align-items: center; gap: 6px; transition: all .2s;
+      font-family: inherit; margin-right: 8px; flex-shrink: 0;
+    }
+    .theme-btn:hover { border-color: rgba(128,128,128,0.4); }
 
     html { scroll-behavior: smooth; }
     body {
@@ -579,7 +628,8 @@
 <!-- Nav -->
 <nav>
   <a class="nav-logo" href="#">
-    <img src="/assets/images/resqride-logo-final.png" alt="ResqRide" style="height:64px;width:auto;object-fit:contain;" />
+    <img class="logo-dark" src="/assets/images/resqride-logo-dark.png" alt="ResqRide" style="height:64px;width:auto;object-fit:contain;" />
+    <img class="logo-light" src="/assets/images/resqride-logo-light.png" alt="ResqRide" style="height:64px;width:auto;object-fit:contain;" />
   </a>
   <div class="nav-links">
     <a href="#how-it-works">How It Works</a>
@@ -588,7 +638,12 @@
     <a href="#premium">Premium</a>
     <a href="#waitlist">Early Access</a>
   </div>
-  <a href="#waitlist" class="nav-cta">Join Waitlist</a>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <button class="theme-btn" id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode">
+      <span id="theme-icon">☀</span>
+    </button>
+    <a href="#waitlist" class="nav-cta">Join Waitlist</a>
+  </div>
 </nav>
 
 <!-- Hero -->
@@ -1109,7 +1164,8 @@
 <footer>
   <div class="footer-inner">
     <div class="footer-logo">
-      <img src="/assets/images/resqride-logo-final.png" alt="ResqRide" style="height:80px;width:auto;object-fit:contain;display:block;margin:0 auto;" />
+      <img class="logo-dark" src="/assets/images/resqride-logo-dark.png" alt="ResqRide" style="height:80px;width:auto;object-fit:contain;display:block;margin:0 auto;" />
+      <img class="logo-light" src="/assets/images/resqride-logo-light.png" alt="ResqRide" style="height:80px;width:auto;object-fit:contain;display:block;margin:0 auto;" />
     </div>
     <div class="footer-links">
       <a href="#how-it-works">How It Works</a>
@@ -1166,6 +1222,21 @@
       btn.textContent = "Join Waitlist";
     }
   }
+
+  function toggleTheme() {
+    const html = document.documentElement;
+    const isLight = html.getAttribute('data-theme') === 'light';
+    html.setAttribute('data-theme', isLight ? 'dark' : 'light');
+    const icon = document.getElementById('theme-icon');
+    if (icon) icon.textContent = isLight ? '☀' : '☾';
+    localStorage.setItem('resqride-theme', isLight ? 'dark' : 'light');
+  }
+  (function(){
+    const saved = localStorage.getItem('resqride-theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', saved);
+    const icon = document.getElementById('theme-icon');
+    if (icon) icon.textContent = saved === 'light' ? '☾' : '☀';
+  })();
 </script>
 <script>
 (function(){

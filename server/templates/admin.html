@@ -26,6 +26,45 @@
       --purple: #a78bfa;
       --radius: 12px;
     }
+    html[data-theme="light"] {
+      --bg: #F0F0F0;
+      --surface: #FFFFFF;
+      --surface2: #F5F5F5;
+      --surface3: #EBEBEB;
+      --border: rgba(0,0,0,0.1);
+      --text: #0A0A0A;
+      --muted: rgba(0,0,0,0.5);
+      --cyan: #444444;
+      --coral: #222222;
+      --accent: #333333;
+    }
+    html[data-theme="light"] body { background: var(--bg); color: var(--text); }
+    html[data-theme="light"] .sidebar { background: var(--surface); border-right: 1px solid var(--border); }
+    html[data-theme="light"] .main-content { background: var(--bg); }
+    html[data-theme="light"] .topbar { background: var(--surface); border-bottom: 1px solid var(--border); }
+    html[data-theme="light"] .card { background: var(--surface); border-color: var(--border); }
+    html[data-theme="light"] .stat-card { background: var(--surface); border-color: var(--border); }
+    html[data-theme="light"] .field input,
+    html[data-theme="light"] .field select,
+    html[data-theme="light"] .field textarea { background: var(--surface2); border-color: var(--border); color: var(--text); }
+    html[data-theme="light"] .table-wrap { background: var(--surface); border-color: var(--border); }
+    html[data-theme="light"] table th { background: var(--surface2); color: var(--muted); }
+    html[data-theme="light"] table tr:hover { background: var(--surface2); }
+    html[data-theme="light"] .nav-item { color: var(--muted); }
+    html[data-theme="light"] .nav-item.active { background: rgba(0,0,0,0.07); color: var(--text); }
+    html[data-theme="light"] .btn-ghost { background: var(--surface2); color: var(--text); border-color: var(--border); }
+    html[data-theme="light"] #login-screen { background: radial-gradient(ellipse 70% 60% at 50% 40%, rgba(0,0,0,0.04) 0%, transparent 70%); }
+    .logo-dark { display: block !important; }
+    .logo-light { display: none !important; }
+    html[data-theme="light"] .logo-dark { display: none !important; }
+    html[data-theme="light"] .logo-light { display: block !important; }
+    .theme-btn {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 100px;
+      color: var(--text); cursor: pointer; padding: 6px 14px; font-size: 14px;
+      display: inline-flex; align-items: center; gap: 6px; transition: all .2s;
+      font-family: inherit; flex-shrink: 0;
+    }
+    .theme-btn:hover { border-color: rgba(128,128,128,0.4); }
     body { font-family: 'Libre Bodoni', Georgia, serif, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; }
 
     /* ── Login ── */
@@ -234,9 +273,13 @@
 <!-- Login -->
 <div id="login-screen">
   <div class="login-card">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
+      <button class="theme-btn" id="theme-toggle-login" onclick="toggleTheme()" title="Toggle light/dark mode"><span class="theme-icon-el">☀</span></button>
+    </div>
     <div class="login-logo">
       <div>
-        <img src="/assets/images/resqride-logo-final.png" alt="ResqRide" style="height:80px;width:auto;object-fit:contain;display:block;" />
+        <img class="logo-dark" src="/assets/images/resqride-logo-dark.png" alt="ResqRide" style="height:80px;width:auto;object-fit:contain;display:block;" />
+        <img class="logo-light" src="/assets/images/resqride-logo-light.png" alt="ResqRide" style="height:80px;width:auto;object-fit:contain;display:block;" />
         <div class="login-sub" style="margin-top:10px;">Admin Dashboard</div>
       </div>
     </div>
@@ -257,9 +300,11 @@
     <div class="sidebar-logo">
       <div class="sidebar-logo-row">
         <div>
-          <img src="/assets/images/resqride-logo-final.png" alt="ResqRide" style="height:64px;width:auto;object-fit:contain;display:block;" />
+          <img class="logo-dark" src="/assets/images/resqride-logo-dark.png" alt="ResqRide" style="height:64px;width:auto;object-fit:contain;display:block;" />
+          <img class="logo-light" src="/assets/images/resqride-logo-light.png" alt="ResqRide" style="height:64px;width:auto;object-fit:contain;display:block;" />
           <div class="sidebar-version" style="margin-top:5px;">Admin Panel</div>
         </div>
+        <button class="theme-btn" onclick="toggleTheme()" title="Toggle theme" style="margin-left:auto;padding:5px 10px;font-size:13px;"><span class="theme-icon-el">☀</span></button>
       </div>
     </div>
     <nav class="sidebar-nav">
@@ -859,6 +904,23 @@
 
   // ── Auto-login ──
   if (token) { showDashboard(); }
+
+  function toggleTheme() {
+    const html = document.documentElement;
+    const isLight = html.getAttribute('data-theme') === 'light';
+    html.setAttribute('data-theme', isLight ? 'dark' : 'light');
+    document.querySelectorAll('.theme-icon-el').forEach(el => {
+      el.textContent = isLight ? '☀' : '☾';
+    });
+    localStorage.setItem('resqride-theme', isLight ? 'dark' : 'light');
+  }
+  (function(){
+    const saved = localStorage.getItem('resqride-theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', saved);
+    document.querySelectorAll('.theme-icon-el').forEach(el => {
+      el.textContent = saved === 'light' ? '☾' : '☀';
+    });
+  })();
 </script>
 <script>
 (function(){

@@ -27,6 +27,46 @@
       --warning: #f59e0b;
       --danger: #ef4444;
     }
+    html[data-theme="light"] {
+      --navy: #F0F0F0;
+      --navy2: #E8E8E8;
+      --card: rgba(0,0,0,0.04);
+      --card-solid: #FFFFFF;
+      --card2: rgba(0,0,0,0.04);
+      --border: rgba(0,0,0,0.1);
+      --border-glow: rgba(0,0,0,0.2);
+      --cyan: #444444;
+      --cyan2: #333333;
+      --coral: #222222;
+      --text: #0A0A0A;
+      --muted: rgba(0,0,0,0.5);
+    }
+    html[data-theme="light"] body { background: var(--navy); color: var(--text); }
+    html[data-theme="light"] #app-bar {
+      background: rgba(240,240,240,0.96);
+      border-bottom: 1px solid rgba(0,0,0,0.1);
+    }
+    html[data-theme="light"] .app-sidebar { background: #E8E8E8; border-right: 1px solid rgba(0,0,0,0.1); }
+    html[data-theme="light"] .auth-box { background: rgba(255,255,255,0.85); border-color: rgba(0,0,0,0.12); }
+    html[data-theme="light"] .nav-item { color: rgba(0,0,0,0.5); }
+    html[data-theme="light"] .nav-item.active { background: rgba(0,0,0,0.07); color: #0A0A0A; }
+    html[data-theme="light"] .panel { background: rgba(0,0,0,0.03); }
+    html[data-theme="light"] .field input,
+    html[data-theme="light"] .field select,
+    html[data-theme="light"] .field textarea { background: #FFFFFF; border-color: rgba(0,0,0,0.15); color: #0A0A0A; }
+    html[data-theme="light"] .btn-ghost { background: rgba(0,0,0,0.07); color: #0A0A0A; border-color: rgba(0,0,0,0.12); }
+    html[data-theme="light"] .mode-chip { background: rgba(0,0,0,0.08); color: #333; }
+    .logo-dark { display: block !important; }
+    .logo-light { display: none !important; }
+    html[data-theme="light"] .logo-dark { display: none !important; }
+    html[data-theme="light"] .logo-light { display: block !important; }
+    .theme-btn {
+      background: var(--card); border: 1px solid var(--border); border-radius: 100px;
+      color: var(--text); cursor: pointer; padding: 5px 12px; font-size: 14px;
+      display: inline-flex; align-items: center; gap: 5px; transition: all .2s;
+      font-family: inherit; flex-shrink: 0; white-space: nowrap;
+    }
+    .theme-btn:hover { border-color: rgba(128,128,128,0.4); }
     html, body { height: 100%; }
     body {
       font-family: 'Libre Bodoni', Georgia, serif, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -643,10 +683,15 @@
 
   <!-- Auth Screen -->
   <div id="auth-screen">
-    <img class="auth-bg-logo" src="/assets/images/resqride-logo-final.png" alt="" />
+    <img class="auth-bg-logo logo-dark" src="/assets/images/resqride-logo-dark.png" alt="" />
+    <img class="auth-bg-logo logo-light" src="/assets/images/resqride-logo-light.png" alt="" style="opacity:0.08;filter:grayscale(1) brightness(0.3);" />
+    <div style="position:absolute;top:16px;right:16px;z-index:10;">
+      <button class="theme-btn" id="theme-toggle-auth" onclick="toggleTheme()" title="Toggle light/dark mode"><span class="theme-icon-el">☀</span></button>
+    </div>
     <div class="auth-box">
       <div class="auth-logo">
-        <img src="/assets/images/resqride-logo-final.png" alt="ResqRide" style="width:240px;height:auto;object-fit:contain;display:block;margin:0 auto 12px;" />
+        <img class="logo-dark" src="/assets/images/resqride-logo-dark.png" alt="ResqRide" style="width:240px;height:auto;object-fit:contain;display:block;margin:0 auto 12px;" />
+        <img class="logo-light" src="/assets/images/resqride-logo-light.png" alt="ResqRide" style="width:240px;height:auto;object-fit:contain;display:block;margin:0 auto 12px;" />
         <p>On-demand roadside assistance</p>
       </div>
 
@@ -689,13 +734,15 @@
   <!-- App Bar -->
   <div id="app-bar">
     <div class="app-bar-left">
-      <img src="/assets/images/resqride-logo-final.png" alt="ResqRide" style="height:52px;width:auto;object-fit:contain;" />
+      <img class="logo-dark" src="/assets/images/resqride-logo-dark.png" alt="ResqRide" style="height:52px;width:auto;object-fit:contain;" />
+      <img class="logo-light" src="/assets/images/resqride-logo-light.png" alt="ResqRide" style="height:52px;width:auto;object-fit:contain;" />
       <div class="app-bar-sep"></div>
       <span class="live-dot">Live</span>
     </div>
     <div class="app-bar-right">
       <span class="mode-chip" id="bar-mode-chip">Driver Mode</span>
       <span class="app-bar-user" id="bar-user-name"></span>
+      <button class="theme-btn" id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode"><span id="theme-icon">☀</span></button>
       <button class="btn btn-ghost btn-sm" onclick="logout()" style="width:auto">Sign Out</button>
     </div>
   </div>
@@ -707,7 +754,8 @@
       <!-- Sidebar -->
       <div class="app-sidebar" id="app-sidebar">
         <div class="sidebar-logo-area">
-          <img src="/assets/images/resqride-logo-final.png" alt="ResqRide" style="height:62px;width:auto;object-fit:contain;" />
+          <img class="logo-dark" src="/assets/images/resqride-logo-dark.png" alt="ResqRide" style="height:62px;width:auto;object-fit:contain;" />
+          <img class="logo-light" src="/assets/images/resqride-logo-light.png" alt="ResqRide" style="height:62px;width:auto;object-fit:contain;" />
         </div>
 
         <!-- Driver nav -->
@@ -1681,6 +1729,23 @@
 
   buildServiceGrid();
   tryAutoLogin();
+
+  function toggleTheme() {
+    const html = document.documentElement;
+    const isLight = html.getAttribute('data-theme') === 'light';
+    html.setAttribute('data-theme', isLight ? 'dark' : 'light');
+    document.querySelectorAll('.theme-icon-el, #theme-icon').forEach(el => {
+      el.textContent = isLight ? '☀' : '☾';
+    });
+    localStorage.setItem('resqride-theme', isLight ? 'dark' : 'light');
+  }
+  (function(){
+    const saved = localStorage.getItem('resqride-theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', saved);
+    document.querySelectorAll('.theme-icon-el, #theme-icon').forEach(el => {
+      el.textContent = saved === 'light' ? '☾' : '☀';
+    });
+  })();
 </script>
 <script>
 (function(){
