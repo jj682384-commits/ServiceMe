@@ -7,7 +7,6 @@ import {
   TextInput,
   Linking,
   Platform,
-  KeyboardAvoidingView,
   Keyboard,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -61,13 +60,13 @@ export default function SupportScreen() {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [inputText, setInputText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   React.useEffect(() => {
     const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
     const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
-    const show = Keyboard.addListener(showEvent, () => setKeyboardVisible(true));
-    const hide = Keyboard.addListener(hideEvent, () => setKeyboardVisible(false));
+    const show = Keyboard.addListener(showEvent, (e) => setKeyboardHeight(e.endCoordinates.height));
+    const hide = Keyboard.addListener(hideEvent, () => setKeyboardHeight(0));
     return () => { show.remove(); hide.remove(); };
   }, []);
 
@@ -266,11 +265,7 @@ export default function SupportScreen() {
   );
 
   const renderLiveChat = () => (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={headerHeight}
-    >
+    <View style={{ flex: 1, paddingBottom: keyboardHeight }}>
       <View style={[styles.chatHeader, { borderBottomColor: theme.border }]}>
         <Pressable
           onPress={() => setActiveTab("options")}
@@ -366,7 +361,7 @@ export default function SupportScreen() {
           {
             backgroundColor: theme.backgroundDefault,
             borderTopColor: theme.border,
-            paddingBottom: keyboardVisible ? Spacing.sm : insets.bottom + Spacing.sm,
+            paddingBottom: keyboardHeight > 0 ? Spacing.sm : insets.bottom + Spacing.sm,
           },
         ]}
       >
@@ -402,7 +397,7 @@ export default function SupportScreen() {
           <Feather name="send" size={20} color="#FFFFFF" />
         </Pressable>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 
   return (
