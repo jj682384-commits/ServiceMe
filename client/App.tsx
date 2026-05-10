@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { StyleSheet, useColorScheme } from "react-native";
+import { StyleSheet } from "react-native";
 import { NavigationContainer, DefaultTheme, DarkTheme } from "@react-navigation/native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -21,6 +21,7 @@ import { initializeRevenueCat, SubscriptionProvider } from "@/lib/revenuecat";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { navigationRef } from "@/lib/navigationRef";
 import { getApiUrl } from "@/lib/query-client";
+import { useTheme } from "@/hooks/useTheme";
 
 initializeRevenueCat();
 
@@ -53,9 +54,26 @@ function NotificationSetup() {
   return null;
 }
 
+function AppInner({ stripePublishableKey }: { stripePublishableKey: string }) {
+  const { isDark } = useTheme();
+  const navTheme = isDark ? DarkNavTheme : LightNavTheme;
+
+  return (
+    <StripeWrapper publishableKey={stripePublishableKey}>
+      <SafeAreaProvider>
+        <GestureHandlerRootView style={styles.root}>
+          <NavigationContainer theme={navTheme} ref={navigationRef}>
+            <NotificationSetup />
+            <RootStackNavigator />
+          </NavigationContainer>
+          <StatusBar style={isDark ? "light" : "dark"} />
+        </GestureHandlerRootView>
+      </SafeAreaProvider>
+    </StripeWrapper>
+  );
+}
+
 export default function App() {
-  const colorScheme = useColorScheme();
-  const navTheme = colorScheme === "dark" ? DarkNavTheme : LightNavTheme;
   const [stripePublishableKey, setStripePublishableKey] = useState<string>("");
   const [fontsLoaded] = useFonts({
     Exo2_400Regular,
@@ -83,23 +101,13 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <StripeWrapper publishableKey={stripePublishableKey}>
-        <QueryClientProvider client={queryClient}>
-          <SubscriptionProvider>
-            <AppProvider>
-              <SafeAreaProvider>
-                <GestureHandlerRootView style={styles.root}>
-                  <NavigationContainer theme={navTheme} ref={navigationRef}>
-                    <NotificationSetup />
-                    <RootStackNavigator />
-                  </NavigationContainer>
-                  <StatusBar style="auto" />
-                </GestureHandlerRootView>
-              </SafeAreaProvider>
-            </AppProvider>
-          </SubscriptionProvider>
-        </QueryClientProvider>
-      </StripeWrapper>
+      <QueryClientProvider client={queryClient}>
+        <SubscriptionProvider>
+          <AppProvider>
+            <AppInner stripePublishableKey={stripePublishableKey} />
+          </AppProvider>
+        </SubscriptionProvider>
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 }

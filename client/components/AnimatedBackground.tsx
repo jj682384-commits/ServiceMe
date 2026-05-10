@@ -1,6 +1,7 @@
 import React from "react";
-import { StyleSheet, useColorScheme, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import Svg, { Defs, RadialGradient, Stop, Rect } from "react-native-svg";
+import { useTheme } from "@/hooks/useTheme";
 
 export const DARK_BG  = "#000000";
 export const LIGHT_BG = "#F0F4F8";
@@ -18,11 +19,10 @@ const AnimatedBackground = React.memo(function AnimatedBackground({
   flashColor?: string;
   isDark?: boolean;
 }) {
-  const scheme = useColorScheme();
-  const dark = scheme !== "light";
-  const bg = dark ? DARK_BG : LIGHT_BG;
+  const { isDark } = useTheme();
+  const bg = isDark ? DARK_BG : LIGHT_BG;
 
-  if (!dark) {
+  if (!isDark) {
     return <View style={[styles.root, { backgroundColor: bg }]} pointerEvents="none" />;
   }
 
@@ -36,12 +36,10 @@ const AnimatedBackground = React.memo(function AnimatedBackground({
         preserveAspectRatio="none"
       >
         <Defs>
-          {/* Subtle chrome silver glow — top-left */}
           <RadialGradient id="rg_chrome_tl" cx="0%" cy="0%" r="55%">
             <Stop offset="0%"   stopColor="#C0C0C0" stopOpacity="0.07" />
             <Stop offset="100%" stopColor="#C0C0C0" stopOpacity="0"   />
           </RadialGradient>
-          {/* Subtle chrome glow — bottom-right */}
           <RadialGradient id="rg_chrome_br" cx="100%" cy="100%" r="50%">
             <Stop offset="0%"   stopColor="#A0A0A0" stopOpacity="0.05" />
             <Stop offset="100%" stopColor="#A0A0A0" stopOpacity="0"   />
