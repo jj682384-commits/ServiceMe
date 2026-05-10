@@ -48,7 +48,7 @@
       overflow: hidden;
     }
     .nav-logo-text { font-size: 18px; font-weight: 800; color: #fff; }
-    .nav-links { display: flex; align-items: center; gap: 32px; }
+    .nav-links { display: flex; align-items: center; gap: 28px; }
     .nav-links a { color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 500; transition: color .2s; }
     .nav-links a:hover { color: #fff; }
     .nav-cta {
@@ -236,6 +236,83 @@
       font-size: 10px; font-weight: 800; color: #4ADE80;
       text-align: center; padding-bottom: 4px;
     }
+
+    /* ── Premium Section ── */
+    .premium-section { background: var(--navy2); }
+    .premium-toggle {
+      display: flex; align-items: center; justify-content: center;
+      gap: 0; margin: 48px auto 0;
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+      border-radius: 100px; padding: 4px; width: fit-content;
+    }
+    .premium-toggle-btn {
+      padding: 10px 28px; border-radius: 100px; font-size: 14px; font-weight: 700;
+      cursor: pointer; border: none; background: transparent; color: var(--muted);
+      transition: all .2s;
+    }
+    .premium-toggle-btn.active { background: var(--cyan); color: #fff; }
+    .premium-toggle-btn:not(.active):hover { color: #fff; }
+    .premium-save-badge {
+      background: rgba(74,222,128,0.15); border: 1px solid rgba(74,222,128,0.3);
+      color: #4ADE80; font-size: 11px; font-weight: 700; padding: 3px 10px;
+      border-radius: 100px; margin-left: 10px;
+    }
+    .premium-cards {
+      display: grid; grid-template-columns: repeat(2,1fr); gap: 24px;
+      margin-top: 40px; max-width: 860px; margin-left: auto; margin-right: auto;
+    }
+    @media(max-width:680px) { .premium-cards { grid-template-columns: 1fr; } }
+    .premium-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 24px; padding: 36px 32px; position: relative; overflow: hidden;
+      transition: border-color .2s, transform .2s;
+    }
+    .premium-card:hover { transform: translateY(-4px); }
+    .premium-card.featured {
+      border-color: rgba(0,102,255,0.4);
+      background: linear-gradient(160deg, rgba(0,102,255,0.08) 0%, rgba(0,0,0,0) 60%);
+    }
+    .premium-card.featured::before {
+      content: "MOST POPULAR"; position: absolute; top: 20px; right: 20px;
+      background: var(--cyan); color: #fff; font-size: 10px; font-weight: 800;
+      letter-spacing: 1.5px; padding: 4px 12px; border-radius: 100px;
+    }
+    .premium-plan-name { font-size: 13px; font-weight: 700; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; }
+    .premium-price { display: flex; align-items: flex-end; gap: 4px; margin-bottom: 6px; }
+    .premium-price-amount { font-size: 52px; font-weight: 900; line-height: 1; color: #fff; letter-spacing: -2px; }
+    .premium-price-period { font-size: 16px; color: var(--muted); margin-bottom: 8px; }
+    .premium-price-note { font-size: 13px; color: var(--muted); margin-bottom: 32px; min-height: 20px; }
+    .premium-price-note span { color: #4ADE80; font-weight: 600; }
+    .premium-divider { width: 100%; height: 1px; background: var(--border); margin-bottom: 28px; }
+    .premium-perks { list-style: none; display: flex; flex-direction: column; gap: 16px; margin-bottom: 36px; }
+    .premium-perk { display: flex; align-items: flex-start; gap: 12px; }
+    .premium-perk-check {
+      width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0; margin-top: 1px;
+      background: rgba(0,102,255,0.15); border: 1px solid rgba(0,102,255,0.3);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .premium-perk-check::after {
+      content: ""; width: 6px; height: 10px; border-right: 2px solid var(--cyan);
+      border-bottom: 2px solid var(--cyan); transform: rotate(45deg) translate(-1px,-1px);
+    }
+    .premium-perk-text { flex: 1; }
+    .premium-perk-title { font-size: 15px; font-weight: 700; color: #fff; line-height: 1.3; }
+    .premium-perk-desc { font-size: 13px; color: var(--muted); margin-top: 2px; line-height: 1.5; }
+    .premium-highlight { color: var(--cyan); }
+    .premium-cta {
+      display: block; width: 100%; padding: 14px; border-radius: 14px; text-align: center;
+      font-size: 15px; font-weight: 800; text-decoration: none; transition: all .2s;
+      background: linear-gradient(135deg, #0066FF, #0052CC);
+      color: #fff; box-shadow: 0 6px 24px rgba(0,102,255,0.35);
+    }
+    .premium-cta:hover { opacity: .9; transform: translateY(-1px); box-shadow: 0 10px 30px rgba(0,102,255,0.45); }
+    .premium-cta.secondary {
+      background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+      box-shadow: none; color: var(--muted);
+    }
+    .premium-cta.secondary:hover { background: rgba(255,255,255,0.1); color: #fff; box-shadow: none; }
+    .premium-trial-note { text-align: center; color: var(--muted); font-size: 13px; margin-top: 24px; }
+    .premium-trial-note strong { color: #fff; }
 
     /* ── Stats ── */
     .stats-bar {
@@ -436,6 +513,7 @@
     <a href="#how-it-works">How It Works</a>
     <a href="#services">Services</a>
     <a href="#earn">Earn With Us</a>
+    <a href="#premium">Premium</a>
     <a href="#waitlist">Early Access</a>
   </div>
   <a href="#waitlist" class="nav-cta">Join Waitlist</a>
@@ -765,6 +843,146 @@
   </div>
 </section>
 
+<!-- Premium -->
+<section id="premium" class="premium-section">
+  <div class="section-inner">
+    <div class="section-label">Premium Membership</div>
+    <h2>More protection, <span>less to pay</span></h2>
+    <p class="section-sub">Get discounts on every service, free monthly requests, and priority dispatch — for less than a tank of gas.</p>
+
+    <!-- Billing Toggle -->
+    <div style="display:flex;align-items:center;justify-content:center;margin-top:48px;">
+      <div class="premium-toggle">
+        <button class="premium-toggle-btn active" id="toggle-monthly" onclick="setPremiumCycle('monthly')">Monthly</button>
+        <button class="premium-toggle-btn" id="toggle-yearly" onclick="setPremiumCycle('yearly')">
+          Yearly <span class="premium-save-badge">Save 33%</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Pricing Cards -->
+    <div class="premium-cards">
+
+      <!-- Monthly -->
+      <div class="premium-card" id="card-monthly">
+        <div class="premium-plan-name">Monthly</div>
+        <div class="premium-price">
+          <span class="premium-price-amount">$9</span>
+          <span class="premium-price-period">.99&nbsp;/&nbsp;month</span>
+        </div>
+        <div class="premium-price-note">Billed monthly &mdash; cancel anytime</div>
+        <div class="premium-divider"></div>
+        <ul class="premium-perks">
+          <li class="premium-perk">
+            <div class="premium-perk-check"></div>
+            <div class="premium-perk-text">
+              <div class="premium-perk-title"><span class="premium-highlight">20% off</span> all services</div>
+              <div class="premium-perk-desc">Save on every roadside request — flat tires, tows, lockouts, and more.</div>
+            </div>
+          </li>
+          <li class="premium-perk">
+            <div class="premium-perk-check"></div>
+            <div class="premium-perk-text">
+              <div class="premium-perk-title"><span class="premium-highlight">1 free service</span> per month</div>
+              <div class="premium-perk-desc">One completely free roadside request every billing cycle — no minimum spend.</div>
+            </div>
+          </li>
+          <li class="premium-perk">
+            <div class="premium-perk-check"></div>
+            <div class="premium-perk-text">
+              <div class="premium-perk-title">Priority dispatch</div>
+              <div class="premium-perk-desc">Get matched with available providers faster than standard requests.</div>
+            </div>
+          </li>
+          <li class="premium-perk">
+            <div class="premium-perk-check"></div>
+            <div class="premium-perk-text">
+              <div class="premium-perk-title">Discounted towing rates</div>
+              <div class="premium-perk-desc">Reduced pricing on all tow truck services, including EV-safe tows.</div>
+            </div>
+          </li>
+          <li class="premium-perk">
+            <div class="premium-perk-check"></div>
+            <div class="premium-perk-text">
+              <div class="premium-perk-title">Extended coverage area</div>
+              <div class="premium-perk-desc">Access providers in more remote locations where standard coverage may not apply.</div>
+            </div>
+          </li>
+          <li class="premium-perk">
+            <div class="premium-perk-check"></div>
+            <div class="premium-perk-text">
+              <div class="premium-perk-title">24/7 priority support</div>
+              <div class="premium-perk-desc">Skip the queue and reach support faster whenever you need help.</div>
+            </div>
+          </li>
+        </ul>
+        <a href="#waitlist" class="premium-cta secondary">Get Started</a>
+      </div>
+
+      <!-- Yearly -->
+      <div class="premium-card featured" id="card-yearly" style="display:none;">
+        <div class="premium-plan-name">Yearly</div>
+        <div class="premium-price">
+          <span class="premium-price-amount">$79</span>
+          <span class="premium-price-period">.99&nbsp;/&nbsp;year</span>
+        </div>
+        <div class="premium-price-note"><span>Save $39.89</span> vs monthly &mdash; just $6.67/mo</div>
+        <div class="premium-divider"></div>
+        <ul class="premium-perks">
+          <li class="premium-perk">
+            <div class="premium-perk-check"></div>
+            <div class="premium-perk-text">
+              <div class="premium-perk-title"><span class="premium-highlight">25% off</span> all services</div>
+              <div class="premium-perk-desc">Even bigger savings on every roadside request — 5% more than the monthly plan.</div>
+            </div>
+          </li>
+          <li class="premium-perk">
+            <div class="premium-perk-check"></div>
+            <div class="premium-perk-text">
+              <div class="premium-perk-title"><span class="premium-highlight">2 free services</span> per month</div>
+              <div class="premium-perk-desc">Two completely free roadside requests every month — double the monthly plan.</div>
+            </div>
+          </li>
+          <li class="premium-perk">
+            <div class="premium-perk-check"></div>
+            <div class="premium-perk-text">
+              <div class="premium-perk-title">Priority dispatch</div>
+              <div class="premium-perk-desc">Get matched with available providers faster than standard requests.</div>
+            </div>
+          </li>
+          <li class="premium-perk">
+            <div class="premium-perk-check"></div>
+            <div class="premium-perk-text">
+              <div class="premium-perk-title">Discounted towing rates</div>
+              <div class="premium-perk-desc">Reduced pricing on all tow truck services, including EV-safe tows.</div>
+            </div>
+          </li>
+          <li class="premium-perk">
+            <div class="premium-perk-check"></div>
+            <div class="premium-perk-text">
+              <div class="premium-perk-title">Extended coverage area</div>
+              <div class="premium-perk-desc">Access providers in more remote locations where standard coverage may not apply.</div>
+            </div>
+          </li>
+          <li class="premium-perk">
+            <div class="premium-perk-check"></div>
+            <div class="premium-perk-text">
+              <div class="premium-perk-title">24/7 priority support</div>
+              <div class="premium-perk-desc">Skip the queue and reach support faster whenever you need help.</div>
+            </div>
+          </li>
+        </ul>
+        <a href="#waitlist" class="premium-cta">Get Started — Best Value</a>
+      </div>
+
+    </div>
+
+    <p class="premium-trial-note">
+      <strong>10-day free trial</strong> included with every new Premium membership &mdash; cancel before it ends and you won't be charged a thing.
+    </p>
+  </div>
+</section>
+
 <!-- Waitlist -->
 <section id="waitlist" class="waitlist-section">
   <div class="waitlist-inner">
@@ -835,6 +1053,14 @@
 </footer>
 
 <script>
+  function setPremiumCycle(cycle) {
+    const isYearly = cycle === "yearly";
+    document.getElementById("toggle-monthly").classList.toggle("active", !isYearly);
+    document.getElementById("toggle-yearly").classList.toggle("active", isYearly);
+    document.getElementById("card-monthly").style.display = isYearly ? "none" : "block";
+    document.getElementById("card-yearly").style.display = isYearly ? "block" : "none";
+  }
+
   async function submitWaitlist(e) {
     e.preventDefault();
     const email = document.getElementById("waitlist-email").value.trim();
