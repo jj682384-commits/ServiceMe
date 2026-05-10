@@ -57,16 +57,18 @@ export function Welcome() {
       </div>
 
       {/* Logo area */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "0 28px", paddingBottom: 34, paddingTop: 0 }}>
-        {/* Logo full-width */}
-        <div style={{ alignItems: "center", display: "flex", flexDirection: "column", marginBottom: 4 }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "0 28px", paddingBottom: 28, paddingTop: 0 }}>
+        {/* Logo — clipped to remove built-in black margins */}
+        <div style={{ alignItems: "center", display: "flex", flexDirection: "column", marginBottom: 2, overflow: "hidden", height: 180 }}>
           <img
             src="/__mockup/images/resqride_logo.png"
             alt="ResqRide"
-            style={{ width: "100%", maxWidth: 340, height: 320, objectFit: "contain" }}
+            style={{ width: "100%", maxWidth: 320, height: 340, objectFit: "contain", marginTop: -60 }}
           />
+        </div>
 
-          {/* Tagline pill */}
+        {/* Tagline pill + subtitle */}
+        <div style={{ alignItems: "center", display: "flex", flexDirection: "column", marginBottom: 0 }}>
           <div style={{
             background: "linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.04) 100%)",
             border: "1px solid rgba(255,255,255,0.12)",
@@ -76,13 +78,13 @@ export function Welcome() {
           }}>
             <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 700, letterSpacing: 4 }}>ROADSIDE ASSISTANCE</span>
           </div>
-          <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 14, margin: 0, marginBottom: 0, textAlign: "center" }}>
+          <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 13, margin: 0, marginBottom: 0, textAlign: "center" }}>
             Help is always closer than you think
           </p>
         </div>
 
         {/* Feature pills */}
-        <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginTop: 24, marginBottom: 28 }}>
+        <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginTop: 16, marginBottom: 18 }}>
           {["8-min avg response", "ID-verified providers", "GPS-powered matching"].map((text) => (
             <div key={text} style={{
               display: "flex", alignItems: "center", gap: 6,
