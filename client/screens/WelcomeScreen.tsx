@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { View, StyleSheet, Image, Pressable, Platform } from "react-native";
+import * as Haptics from "expo-haptics";
 import WelcomeConstellationBg from "@/components/WelcomeConstellationBg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
@@ -99,7 +100,7 @@ export default function WelcomeScreen() {
   const insets = useSafeAreaInsets();
   const { theme, isDark } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { hydrated, isAuthenticated, userRole } = useApp();
+  const { hydrated, isAuthenticated, userRole, toggleTheme } = useApp();
 
   useEffect(() => {
     if (!hydrated || !isAuthenticated) return;
@@ -124,6 +125,30 @@ export default function WelcomeScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.backgroundRoot, paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       {Platform.OS !== "web" && <WelcomeConstellationBg isDark={isDark} />}
+
+      <Animated.View
+        entering={FadeIn.delay(300).duration(500)}
+        style={[styles.themeToggle, { top: insets.top + 12 }]}
+      >
+        <Pressable
+          onPress={() => {
+            if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            toggleTheme();
+          }}
+          style={[
+            styles.themeToggleInner,
+            {
+              backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)",
+              borderColor:     isDark ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.13)",
+            },
+          ]}
+        >
+          <Feather name={isDark ? "sun" : "moon"} size={15} color={isDark ? "rgba(255,255,255,0.75)" : "rgba(0,0,0,0.65)"} />
+          <ThemedText style={{ fontSize: 12, fontWeight: "600", color: isDark ? "rgba(255,255,255,0.65)" : "rgba(0,0,0,0.55)" }}>
+            {isDark ? "Light" : "Dark"}
+          </ThemedText>
+        </Pressable>
+      </Animated.View>
 
       <View style={styles.content}>
         <Animated.View
@@ -205,4 +230,6 @@ const styles = StyleSheet.create({
   providerLink: { flexDirection: "row", alignItems: "center", padding: 14, gap: 12, borderRadius: 16, borderWidth: 1 },
   providerLinkIcon: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center", borderWidth: 1 },
   providerLinkText: { flex: 1, gap: 1 },
+  themeToggle: { position: "absolute", right: 16, zIndex: 10 },
+  themeToggleInner: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 13, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
 });
