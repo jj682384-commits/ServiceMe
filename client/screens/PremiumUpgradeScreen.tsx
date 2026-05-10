@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, StyleSheet, Pressable, ActivityIndicator } from "react-native";
+import { View, StyleSheet, Pressable, ActivityIndicator, Alert, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Feather } from "@expo/vector-icons";
@@ -105,7 +105,19 @@ export default function PremiumUpgradeScreen() {
   const subscribeButtonStyle = useAnimatedStyle(() => ({ transform: [{ scale: subscribeButtonScale.value }] }));
 
   const handleSubscribe = async () => {
-    if (!selectedPkg) return;
+    if (!selectedPkg) {
+      if (Platform.OS === "web") {
+        // Web fallback: upgrade directly
+        upgradeMembership("premium");
+        Alert.alert("Premium Activated", "Your account has been upgraded to Premium.");
+      } else {
+        Alert.alert(
+          "Subscriptions Unavailable",
+          "In-app purchases are not available in this version. Download the app from the App Store to subscribe.",
+        );
+      }
+      return;
+    }
     requestPurchase(selectedPkg);
   };
 
@@ -261,7 +273,7 @@ export default function PremiumUpgradeScreen() {
                     { backgroundColor: isPurchasing ? theme.textSecondary : theme.primary, ...Shadows.lg },
                     subscribeButtonStyle,
                   ]}
-                  disabled={isPurchasing || !selectedPkg}
+                  disabled={isPurchasing}
                 >
                   {isPurchasing ? (
                     <ActivityIndicator color="#FFFFFF" />
