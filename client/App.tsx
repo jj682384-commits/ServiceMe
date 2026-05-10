@@ -5,6 +5,10 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import StripeWrapper from "@/components/StripeWrapper";
+import { useFonts, DMSans_400Regular, DMSans_500Medium, DMSans_600SemiBold, DMSans_700Bold, DMSans_800ExtraBold } from "@expo-google-fonts/dm-sans";
+import * as SplashScreen from "expo-splash-screen";
+
+SplashScreen.preventAutoHideAsync();
 
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/query-client";
@@ -53,6 +57,13 @@ export default function App() {
   const colorScheme = useColorScheme();
   const navTheme = colorScheme === "dark" ? DarkNavTheme : LightNavTheme;
   const [stripePublishableKey, setStripePublishableKey] = useState<string>("");
+  const [fontsLoaded] = useFonts({
+    DMSans_400Regular,
+    DMSans_500Medium,
+    DMSans_600SemiBold,
+    DMSans_700Bold,
+    DMSans_800ExtraBold,
+  });
 
   useEffect(() => {
     fetch(new URL("/api/stripe/publishable-key", getApiUrl()).toString())
@@ -60,6 +71,14 @@ export default function App() {
       .then((d) => { if (d.publishableKey) setStripePublishableKey(d.publishableKey); })
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) return null;
 
   return (
     <ErrorBoundary>
