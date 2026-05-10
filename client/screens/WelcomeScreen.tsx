@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
   glowTopLeft: { position: "absolute", top: -60, left: -60, width: 240, height: 240, borderRadius: 120 },
   glowBottomRight: { position: "absolute", bottom: -60, right: -60, width: 200, height: 200, borderRadius: 100 },
   content: { flex: 1, paddingHorizontal: 24, justifyContent: "space-between", paddingBottom: 12 },
-  logoClip: { height: 260, overflow: "hidden", alignItems: "center", marginTop: -10 },
+  logoClip: { height: 260, overflow: "hidden", alignItems: "center", marginTop: 18 },
   logoImage: { width: "100%", height: 460, marginTop: -100 },
   taglineRow: { alignItems: "center", gap: 6, marginTop: -8 },
   taglinePill: { borderWidth: 1, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 5 },
