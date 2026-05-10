@@ -61,6 +61,15 @@ export default function SupportScreen() {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [inputText, setInputText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  React.useEffect(() => {
+    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const show = Keyboard.addListener(showEvent, () => setKeyboardVisible(true));
+    const hide = Keyboard.addListener(hideEvent, () => setKeyboardVisible(false));
+    return () => { show.remove(); hide.remove(); };
+  }, []);
 
   const handleCallSupport = () => {
     const phoneUrl = Platform.select({
@@ -357,7 +366,7 @@ export default function SupportScreen() {
           {
             backgroundColor: theme.backgroundDefault,
             borderTopColor: theme.border,
-            paddingBottom: insets.bottom + Spacing.sm,
+            paddingBottom: keyboardVisible ? Spacing.sm : insets.bottom + Spacing.sm,
           },
         ]}
       >
