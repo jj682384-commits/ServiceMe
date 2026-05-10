@@ -89,7 +89,7 @@ export default function DriverProfileScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { theme, isDark } = useTheme();
-  const { currentDriver, setUserRole, logout, searchRadius, getTrialDaysRemaining, preferredProviders } = useApp();
+  const { currentDriver, setUserRole, logout, searchRadius, getTrialDaysRemaining, preferredProviders, toggleTheme } = useApp();
   const sectionBg = theme.cardAnimatedBg;
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
@@ -276,6 +276,12 @@ export default function DriverProfileScreen() {
             label="Push Notifications"
             value={notificationsEnabled}
             onValueChange={setNotificationsEnabled}
+          />
+          <ToggleItem
+            icon="moon"
+            label="Dark Mode"
+            value={isDark}
+            onValueChange={toggleTheme}
           />
           <MenuItem icon="map-pin" label="Search Radius" value={`${searchRadius} miles`} onPress={() => navigation.navigate("SearchRadius")} />
         </View>

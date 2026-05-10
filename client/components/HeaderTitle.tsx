@@ -1,7 +1,11 @@
 import React from "react";
 import { View, StyleSheet, Image } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
+import { useTheme } from "@/hooks/useTheme";
 import { Spacing } from "@/constants/theme";
+
+const LOGO_DARK = require("../../assets/images/resqride-logo-dark.png");
+const LOGO_LIGHT = require("../../assets/images/resqride-logo-light.png");
 
 interface HeaderTitleProps {
   title?: string;
@@ -9,11 +13,14 @@ interface HeaderTitleProps {
 }
 
 export function HeaderTitle({ title, iconOnly }: HeaderTitleProps) {
+  const { isDark } = useTheme();
+  const logoSource = isDark ? LOGO_DARK : LOGO_LIGHT;
+
   if (iconOnly) {
     return (
       <View style={styles.iconOnlyContainer}>
         <Image
-          source={require("../../assets/images/logo_chrome.png")}
+          source={logoSource}
           style={styles.iconLarge}
           resizeMode="contain"
         />
@@ -24,7 +31,7 @@ export function HeaderTitle({ title, iconOnly }: HeaderTitleProps) {
   return (
     <View style={styles.container}>
       <Image
-        source={require("../../assets/images/logo_chrome.png")}
+        source={logoSource}
         style={styles.icon}
         resizeMode="contain"
       />

@@ -239,9 +239,11 @@ interface AppContextType {
   useFreeService: () => void;
   removePendingJob: (id: string) => void;
   logout: () => void;
+  themeOverride: "dark" | "light" | null;
+  toggleTheme: () => void;
 }
 
-const AppContext = createContext<AppContextType | undefined>(undefined);
+export const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -262,6 +264,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [pendingJobs, setPendingJobs] = useState<ServiceRequest[]>([]);
+  const [themeOverride, setThemeOverride] = useState<"dark" | "light" | null>(null);
 
   const addPendingJob = (job: ServiceRequest) => {
     setPendingJobs((prev) => [job, ...prev]);
@@ -284,6 +287,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           contactsRaw,
           activeRequestRaw,
           savedToken,
+          themeRaw,
         ] = await Promise.all([
           AsyncStorage.getItem("currentDriver"),
           AsyncStorage.getItem("currentProvider"),
@@ -294,8 +298,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
           AsyncStorage.getItem("emergencyContacts"),
           AsyncStorage.getItem("activeRequest"),
           loadAuthToken(),
+          AsyncStorage.getItem("themeOverride"),
         ]);
         if (savedToken) setAuthToken(savedToken);
+        if (themeRaw === "dark" || themeRaw === "light") setThemeOverride(themeRaw);
         if (driverRaw) setCurrentDriver(JSON.parse(driverRaw));
         if (providerRaw) setCurrentProvider(JSON.parse(providerRaw));
         if (roleRaw) setUserRole(roleRaw as UserRole);
@@ -616,6 +622,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     ]).catch(() => {});
   };
 
+  const toggleTheme = () => {
+    setThemeOverride((prev) => {
+      const next = prev === "light" ? "dark" : "light";
+      AsyncStorage.setItem("themeOverride", next).catch(() => {});
+      return next;
+    });
+  };
+
   const switchUserRole = async (role: "driver" | "provider"): Promise<void> => {
     setUserRole(role);
     try {
@@ -686,6 +700,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         useFreeService,
         removePendingJob,
         logout,
+        themeOverride,
+        toggleTheme,
       }}
     >
       {children}

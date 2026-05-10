@@ -131,13 +131,12 @@ export default function WelcomeScreen() {
       <View style={styles.content}>
         <Animated.View
           entering={FadeIn.delay(100).duration(600)}
-          style={[
-            styles.logoClip,
-            !isDark && { backgroundColor: "#000000", borderRadius: 36 },
-          ]}
+          style={styles.logoClip}
         >
           <Image
-            source={require("../../assets/images/logo_chrome.png")}
+            source={isDark
+              ? require("../../assets/images/resqride-logo-dark.png")
+              : require("../../assets/images/resqride-logo-light.png")}
             style={styles.logoImage}
             resizeMode="contain"
           />

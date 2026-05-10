@@ -77,7 +77,7 @@ export default function ProviderProfileScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { theme, isDark } = useTheme();
-  const { currentProvider, setCurrentProvider, setUserRole, logout, serviceRadius } = useApp();
+  const { currentProvider, setCurrentProvider, setUserRole, logout, serviceRadius, toggleTheme } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
   const [priorityOptIn, setPriorityOptIn] = React.useState(currentProvider?.acceptsPriorityJobs ?? false);
@@ -338,6 +338,18 @@ export default function ProviderProfileScreen() {
               value={priorityOptIn}
               onValueChange={handlePriorityToggle}
               trackColor={{ false: theme.border, true: theme.warning }}
+              thumbColor="#FFFFFF"
+            />
+          </View>
+          <View style={[styles.menuItem, { borderTopWidth: 1, borderTopColor: theme.border }]}>
+            <Feather name="moon" size={20} color={theme.textSecondary} />
+            <ThemedText type="body" style={styles.menuLabel}>
+              Dark Mode
+            </ThemedText>
+            <Switch
+              value={isDark}
+              onValueChange={toggleTheme}
+              trackColor={{ false: theme.border, true: theme.secondary }}
               thumbColor="#FFFFFF"
             />
           </View>
