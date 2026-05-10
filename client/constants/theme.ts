@@ -133,15 +133,15 @@ export const Typography = {
 
 export const Fonts = Platform.select({
   web: {
-    sans: "'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-    serif: "Georgia, 'Times New Roman', serif",
-    rounded: "'DM Sans', -apple-system, sans-serif",
+    sans: "'Libre Bodoni', Georgia, serif",
+    serif: "'Libre Bodoni', Georgia, serif",
+    rounded: "'Libre Bodoni', Georgia, serif",
     mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
   },
   default: {
-    sans: "DMSans_400Regular",
-    serif: "serif",
-    rounded: "DMSans_400Regular",
+    sans: "LibreBodoni_400Regular",
+    serif: "LibreBodoni_400Regular",
+    rounded: "LibreBodoni_400Regular",
     mono: "monospace",
   },
 });
