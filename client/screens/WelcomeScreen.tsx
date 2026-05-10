@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
-import { View, StyleSheet, Image, Pressable } from "react-native";
+import { View, StyleSheet, Image, Pressable, Platform } from "react-native";
+import WelcomeConstellationBg from "@/components/WelcomeConstellationBg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -106,9 +107,6 @@ export default function WelcomeScreen() {
     navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: dest }] }));
   }, [hydrated, isAuthenticated, userRole]);
 
-  const glowColor1 = isDark ? "rgba(192,192,192,0.04)" : "rgba(0,0,0,0.03)";
-  const glowColor2 = isDark ? "rgba(160,160,180,0.03)" : "rgba(0,0,0,0.02)";
-
   const pillBg     = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)";
   const pillBorder = isDark ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.09)";
   const taglineColor = isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.45)";
@@ -125,8 +123,7 @@ export default function WelcomeScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.backgroundRoot, paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-      <View style={[styles.glowTopLeft, { backgroundColor: glowColor1 }]} pointerEvents="none" />
-      <View style={[styles.glowBottomRight, { backgroundColor: glowColor2 }]} pointerEvents="none" />
+      {Platform.OS !== "web" && <WelcomeConstellationBg isDark={isDark} />}
 
       <View style={styles.content}>
         <Animated.View
@@ -192,8 +189,6 @@ export default function WelcomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  glowTopLeft: { position: "absolute", top: -60, left: -60, width: 240, height: 240, borderRadius: 120 },
-  glowBottomRight: { position: "absolute", bottom: -60, right: -60, width: 200, height: 200, borderRadius: 100 },
   content: { flex: 1, paddingHorizontal: 24, justifyContent: "space-between", paddingBottom: 12 },
   logoClip: { height: 260, overflow: "hidden", alignItems: "center", marginTop: 18 },
   logoImage: { width: "100%", height: 460, marginTop: -100 },
