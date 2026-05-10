@@ -61,6 +61,69 @@
     html[data-theme="light"] .footer-copy { color: rgba(0,0,0,0.35); }
     html[data-theme="light"] .stats-bar { background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.1); }
     html[data-theme="light"] .hero-badge { background: rgba(0,0,0,0.07); border-color: rgba(0,0,0,0.15); color: #333; }
+    /* hero gradient text → dark in light mode */
+    html[data-theme="light"] .hero h1 span {
+      background: linear-gradient(110deg, #111 0%, #333 40%, #666 70%, #222 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    /* all section h2 gradient spans → dark in light mode */
+    html[data-theme="light"] h2 span {
+      background: linear-gradient(110deg, #111 0%, #333 40%, #666 70%, #222 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    /* stats numbers gradient → dark */
+    html[data-theme="light"] .stat h3 {
+      background: linear-gradient(135deg, #111 0%, #444 50%, #111 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    /* store buttons → visible on light bg */
+    html[data-theme="light"] .btn-store {
+      background: rgba(0,0,0,0.08); border-color: rgba(0,0,0,0.2); color: #111;
+    }
+    html[data-theme="light"] .btn-store:hover {
+      background: rgba(0,0,0,0.14); border-color: rgba(0,0,0,0.35); transform: translateY(-2px);
+    }
+    html[data-theme="light"] .btn-store-sub { color: rgba(0,0,0,0.5); }
+    /* hero note link */
+    html[data-theme="light"] .hero-note a {
+      color: rgba(0,0,0,0.6); border-bottom-color: rgba(0,0,0,0.25);
+    }
+    /* nav */
+    html[data-theme="light"] .nav-logo-text { color: #111; }
+    html[data-theme="light"] .nav-links a:hover { color: #000; }
+    /* section label line */
+    html[data-theme="light"] .section-label::before { background: linear-gradient(90deg, transparent, rgba(0,0,0,0.3)); }
+    /* service price badge */
+    html[data-theme="light"] .service-price {
+      color: #444; background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.12);
+    }
+    html[data-theme="light"] .service-addon { color: rgba(0,0,0,0.55); background: rgba(0,0,0,0.05); }
+    /* premium pricing */
+    html[data-theme="light"] .premium-price-amount { color: #111; }
+    html[data-theme="light"] .premium-perk-title { color: #111; }
+    html[data-theme="light"] .premium-trial-note strong { color: #111; }
+    html[data-theme="light"] .premium-toggle-btn.active {
+      background: linear-gradient(135deg, #111, #333); color: #fff; border-color: rgba(0,0,0,0.3);
+    }
+    html[data-theme="light"] .premium-toggle-btn:not(.active) { color: rgba(0,0,0,0.5); }
+    html[data-theme="light"] .premium-toggle-btn:not(.active):hover { color: #111; }
+    /* step card number watermark */
+    html[data-theme="light"] .step-num { color: rgba(0,0,0,0.04); }
+    /* dual cards */
+    html[data-theme="light"] .dual-tag { background: rgba(0,0,0,0.07) !important; color: #444 !important; border-color: rgba(0,0,0,0.12) !important; }
+    html[data-theme="light"] .dual-features li::before { background: linear-gradient(135deg, #222, #666) !important; }
+    /* footer */
+    html[data-theme="light"] .footer-logo { color: #111; }
+    /* highlight spans (green premium highlights) */
+    html[data-theme="light"] .premium-highlight { color: #1a7c3e; }
+    /* step / service card hover */
+    html[data-theme="light"] .step-card:hover { border-color: rgba(0,0,0,0.18); box-shadow: 0 20px 60px rgba(0,0,0,0.12); }
+    html[data-theme="light"] .service-card:hover { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.18); box-shadow: 0 16px 40px rgba(0,0,0,0.1); }
+    /* waitlist form */
+    html[data-theme="light"] .waitlist-input { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.15); color: #111; }
+    html[data-theme="light"] .waitlist-input::placeholder { color: rgba(0,0,0,0.35); }
+    html[data-theme="light"] .waitlist-select { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.15); color: #111; }
+    html[data-theme="light"] .waitlist-privacy { color: rgba(0,0,0,0.4); }
     .logo-dark { display: block !important; }
     .logo-light { display: none !important; }
     html[data-theme="light"] .logo-dark { display: none !important; }
