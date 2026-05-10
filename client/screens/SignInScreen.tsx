@@ -133,7 +133,8 @@ export default function SignInScreen() {
           .then((d) => { if (d) setCurrentProvider(d); })
           .catch(() => {});
       } else {
-        navigateAfterAuth();
+        setUserRole("driver");
+        navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "DriverTabs" }] }));
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Sign in failed";
