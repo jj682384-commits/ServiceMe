@@ -1,5 +1,5 @@
 import React, { createContext, useContext } from "react";
-import { Platform, View, Text, Pressable, StyleSheet, Modal } from "react-native";
+import { Platform, View, Text, Pressable, StyleSheet, Modal, Alert } from "react-native";
 import Purchases, { PurchasesPackage } from "react-native-purchases";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import Constants from "expo-constants";
@@ -58,6 +58,25 @@ function useSubscriptionContext() {
       return customerInfo;
     },
     onSuccess: () => customerInfoQuery.refetch(),
+    onError: (err: unknown) => {
+      const msg = err instanceof Error ? err.message : String(err);
+      // User cancelled — no alert needed
+      if (msg.toLowerCase().includes("cancel") || msg.toLowerCase().includes("usercancel")) return;
+      // Expo Go / Browser mode limitation
+      if (
+        msg.toLowerCase().includes("browser") ||
+        msg.toLowerCase().includes("storekit") ||
+        msg.toLowerCase().includes("not available") ||
+        msg.toLowerCase().includes("simulator")
+      ) {
+        Alert.alert(
+          "Purchases Not Available",
+          "In-app purchases require the App Store version of ResqRide. Download from the App Store to subscribe.",
+        );
+        return;
+      }
+      Alert.alert("Purchase Failed", msg || "Something went wrong. Please try again.");
+    },
   });
 
   const restoreMutation = useMutation({

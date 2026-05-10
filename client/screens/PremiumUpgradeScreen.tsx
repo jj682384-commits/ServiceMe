@@ -127,9 +127,15 @@ export default function PremiumUpgradeScreen() {
       const hasEntitlement = result.activeSubscriptions.length > 0;
       if (hasEntitlement) {
         upgradeMembership("premium");
+        Alert.alert("Restored", "Your Premium subscription has been restored.");
+      } else {
+        Alert.alert("Nothing to Restore", "No active Premium subscription found on this Apple ID.");
       }
-    } catch (e) {
-      console.warn("Restore failed:", e);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "";
+      if (!msg.toLowerCase().includes("cancel")) {
+        Alert.alert("Restore Failed", "Could not restore purchases. Please try again.");
+      }
     }
   };
 
