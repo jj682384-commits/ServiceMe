@@ -162,9 +162,10 @@ export default function WelcomeScreen() {
           />
           <Image
             source={require("../../assets/images/resqride-logo-light.png")}
-            style={[styles.logoImage, styles.logoImageOverlay, { opacity: isDark ? 0 : 1 }]}
+            style={[styles.logoImageOverlay, { opacity: isDark ? 0 : 1 }]}
             resizeMode="contain"
           />
+
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(200).duration(500).springify()} style={styles.taglineRow}>
