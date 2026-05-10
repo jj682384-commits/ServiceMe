@@ -15,7 +15,7 @@
       --text: #ffffff;
       --muted: rgba(255,255,255,0.5);
       --cyan: #C0C0C0;
-      --coral: #CC1B1B;
+      --coral: #C0C0C0;
       --accent: #A0A0A0;
       --success: #22c55e;
       --warning: #f59e0b;
@@ -28,8 +28,7 @@
     /* ── Login ── */
     #login-screen {
       display: flex; align-items: center; justify-content: center; min-height: 100vh;
-      background: radial-gradient(ellipse 70% 60% at 20% 40%, rgba(0,85,255,0.18) 0%, transparent 65%),
-                  radial-gradient(ellipse 60% 50% at 80% 60%, rgba(204,27,27,0.14) 0%, transparent 65%);
+      background: radial-gradient(ellipse 70% 60% at 50% 40%, rgba(255,255,255,0.03) 0%, transparent 70%);
     }
     .login-card {
       background: var(--surface); border: 1px solid var(--border);
@@ -37,8 +36,8 @@
       box-shadow: 0 40px 80px rgba(0,0,0,0.5);
     }
     .login-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
-    .btn-primary { background: linear-gradient(135deg,#CC1B1B,#9E1414); border: none; color: #fff; width: 100%; justify-content: center; padding: 13px; box-shadow: 0 6px 24px rgba(204,27,27,0.35); }
-    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 10px 32px rgba(204,27,27,0.5); opacity: 1; }
+    .btn-primary { background: linear-gradient(135deg, #e8e8e8 0%, #b0b0b0 50%, #d8d8d8 100%); border: none; color: #000; width: 100%; justify-content: center; padding: 13px; box-shadow: 0 6px 24px rgba(255,255,255,0.12), inset 0 1px 0 rgba(255,255,255,0.6); font-weight: 800; letter-spacing: .3px; }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 10px 32px rgba(255,255,255,0.2), inset 0 1px 0 rgba(255,255,255,0.6); opacity: 1; }
     .login-logo-icon {
       width: 40px; height: 40px; border-radius: 12px;
       background: #0A0A0A;
@@ -55,7 +54,7 @@
       width: 100%; padding: 12px 14px; background: var(--surface2); border: 1px solid var(--border);
       border-radius: 8px; color: var(--text); font-size: 14px; outline: none; font-family: inherit;
     }
-    .field input:focus, .field select:focus, .field textarea:focus { border-color: #0066FF; box-shadow: 0 0 0 3px rgba(0,102,255,0.12); }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color: rgba(255,255,255,0.3); box-shadow: 0 0 0 3px rgba(255,255,255,0.05); }
     .field { margin-bottom: 18px; }
     .btn {
       display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px;
@@ -98,7 +97,7 @@
       transition: all .15s; margin-bottom: 2px;
     }
     .nav-item:hover { background: var(--surface2); color: var(--text); }
-    .nav-item.active { background: rgba(0,102,255,0.1); color: #fff; border-left: 2px solid #0066FF; }
+    .nav-item.active { background: rgba(255,255,255,0.06); color: #fff; border-left: 2px solid rgba(255,255,255,0.4); }
     .nav-item .nav-icon { width: 18px; text-align: center; font-size: 15px; flex-shrink: 0; }
     .nav-badge {
       margin-left: auto; background: var(--warning); color: #000;
@@ -167,7 +166,7 @@
     .badge.accepted { background: rgba(192,192,192,.1); color: #C0C0C0; }
     .badge.cancelled { background: rgba(239,68,68,.12); color: var(--danger); }
     .badge.driver { background: rgba(192,192,192,.08); color: #C0C0C0; }
-    .badge.provider { background: rgba(217,34,34,.12); color: var(--coral); }
+    .badge.provider { background: rgba(192,192,192,.1); color: #A0A0A0; }
     .badge.ev { background: rgba(167,139,250,.12); color: var(--purple); }
     .badge.express { background: rgba(245,158,11,.12); color: var(--warning); }
 
@@ -233,9 +232,9 @@
 <div id="login-screen">
   <div class="login-card">
     <div class="login-logo">
-      <div class="login-logo-icon"><img src="/assets/images/logo.png" alt="ResqRide" style="width:100%;height:100%;object-fit:cover;" /></div>
+      <div class="login-logo-icon"><img src="/assets/images/icon.png" alt="ResqRide" style="width:100%;height:100%;object-fit:cover;" /></div>
       <div>
-        <div class="login-logo-text"><span style="color:#fff;">Resq</span><span style="color:#0066FF;">Ride</span></div>
+        <div class="login-logo-text"><span style="color:#fff;">Resq</span><span style="background:linear-gradient(110deg,#D0D0D0,#888);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Ride</span></div>
         <div class="login-sub">Admin Dashboard</div>
       </div>
     </div>
@@ -255,9 +254,9 @@
   <div class="sidebar">
     <div class="sidebar-logo">
       <div class="sidebar-logo-row">
-        <div class="sidebar-logo-icon"><img src="/assets/images/logo.png" alt="ResqRide" style="width:100%;height:100%;object-fit:cover;" /></div>
+        <div class="sidebar-logo-icon"><img src="/assets/images/icon.png" alt="ResqRide" style="width:100%;height:100%;object-fit:cover;" /></div>
         <div>
-          <div class="sidebar-logo-text"><span style="color:#fff;">Resq</span><span style="color:#0066FF;">Ride</span></div>
+          <div class="sidebar-logo-text"><span style="color:#fff;">Resq</span><span style="background:linear-gradient(110deg,#D0D0D0,#888);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Ride</span></div>
           <div class="sidebar-version">Admin Panel</div>
         </div>
       </div>
@@ -859,6 +858,33 @@
 
   // ── Auto-login ──
   if (token) { showDashboard(); }
+</script>
+<script>
+(function(){
+  var c=document.createElement('canvas');
+  c.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;';
+  document.body.insertBefore(c,document.body.firstChild);
+  var x=c.getContext('2d'),w,h,pts;
+  function resize(){c.width=w=window.innerWidth;c.height=h=window.innerHeight;}
+  function init(){pts=Array.from({length:45},function(){return{x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-.5)*.18,vy:(Math.random()-.5)*.18,r:Math.random()*1+.3,a:Math.random()*.35+.07};});}
+  function draw(){
+    x.clearRect(0,0,w,h);
+    for(var i=0;i<pts.length;i++){
+      for(var j=i+1;j<pts.length;j++){
+        var d=Math.hypot(pts[i].x-pts[j].x,pts[i].y-pts[j].y);
+        if(d<130){x.beginPath();x.strokeStyle='rgba(192,192,192,'+(0.07*(1-d/130))+')';x.lineWidth=.4;x.moveTo(pts[i].x,pts[i].y);x.lineTo(pts[j].x,pts[j].y);x.stroke();}
+      }
+      x.beginPath();x.arc(pts[i].x,pts[i].y,pts[i].r,0,Math.PI*2);
+      x.fillStyle='rgba(255,255,255,'+pts[i].a+')';x.fill();
+      pts[i].x+=pts[i].vx;pts[i].y+=pts[i].vy;
+      if(pts[i].x<-5)pts[i].x=w+5;if(pts[i].x>w+5)pts[i].x=-5;
+      if(pts[i].y<-5)pts[i].y=h+5;if(pts[i].y>h+5)pts[i].y=-5;
+    }
+    requestAnimationFrame(draw);
+  }
+  resize();init();draw();
+  window.addEventListener('resize',function(){resize();init();});
+})();
 </script>
 </body>
 </html>
