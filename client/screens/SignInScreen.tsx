@@ -1,22 +1,18 @@
 import React, { useState } from "react";
-import { View, StyleSheet, TextInput, Pressable, Alert, Platform, Image, Keyboard } from "react-native";
+import { View, StyleSheet, TextInput, Pressable, Alert, Platform, Keyboard } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, CommonActions } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from "react-native-reanimated";
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
-import AnimatedBackground, { DARK_BG } from "@/components/AnimatedBackground";
+import AnimatedBackground, { DARK_BG, LIGHT_BG } from "@/components/AnimatedBackground";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/context/AppContext";
 import { GoogleSignInButton } from "@/components/GoogleSignInButton";
-import { Spacing, BorderRadius } from "@/constants/theme";
+import { Spacing } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { apiRequest, setAuthToken } from "@/lib/query-client";
 import { saveAuthToken } from "@/lib/secureStorage";
@@ -34,24 +30,36 @@ interface InputFieldProps {
   autoCapitalize?: "none" | "sentences" | "words" | "characters";
 }
 
-function InputField({
-  label, value, onChangeText, placeholder, icon,
-  secureTextEntry, keyboardType = "default", autoCapitalize = "sentences",
-}: InputFieldProps) {
+function InputField({ label, value, onChangeText, placeholder, icon, secureTextEntry, keyboardType = "default", autoCapitalize = "sentences" }: InputFieldProps) {
+  const { theme, isDark } = useTheme();
   const [isFocused, setIsFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  const inputBg      = isDark ? "rgba(255,255,255,0.06)" : theme.backgroundDefault;
+  const inputBorder  = isDark ? "rgba(255,255,255,0.08)" : theme.border;
+  const focusBg      = isDark ? "rgba(192,192,192,0.05)" : theme.backgroundSecondary;
+  const focusBorder  = isDark ? "rgba(192,192,192,0.30)" : "#555555";
+  const iconColor    = isFocused
+    ? (isDark ? "#C0C0C0" : "#333333")
+    : (isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.35)");
+  const labelColor   = isDark ? "rgba(255,255,255,0.6)" : theme.textSecondary;
+  const textColor    = isDark ? "#FFFFFF" : theme.text;
+  const placeholderColor = isDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.3)";
+
   return (
     <View style={styles.inputContainer}>
-      <ThemedText type="small" style={styles.inputLabel}>{label}</ThemedText>
-      <View style={[styles.inputWrapper, isFocused ? styles.inputWrapperFocused : null]}>
-        <Feather name={icon} size={18} color={isFocused ? "#C0C0C0" : "rgba(255,255,255,0.4)"} />
+      <ThemedText type="small" style={{ fontWeight: "500", color: labelColor, fontSize: 13, marginBottom: 6 }}>{label}</ThemedText>
+      <View style={[
+        styles.inputWrapper,
+        { backgroundColor: isFocused ? focusBg : inputBg, borderColor: isFocused ? focusBorder : inputBorder },
+      ]}>
+        <Feather name={icon} size={18} color={iconColor} />
         <TextInput
-          style={styles.input}
+          style={[styles.input, { color: textColor }]}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor="rgba(255,255,255,0.25)"
+          placeholderTextColor={placeholderColor}
           secureTextEntry={secureTextEntry && !showPassword}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
@@ -63,7 +71,7 @@ function InputField({
         />
         {secureTextEntry ? (
           <Pressable onPress={() => setShowPassword(!showPassword)}>
-            <Feather name={showPassword ? "eye-off" : "eye"} size={18} color="rgba(255,255,255,0.4)" />
+            <Feather name={showPassword ? "eye-off" : "eye"} size={18} color={iconColor} />
           </Pressable>
         ) : null}
       </View>
@@ -73,7 +81,7 @@ function InputField({
 
 export default function SignInScreen() {
   const insets = useSafeAreaInsets();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const { setIsAuthenticated, setAuthUser, userRole, currentDriver, currentProvider, setUserRole, setCurrentProvider } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
@@ -95,20 +103,13 @@ export default function SignInScreen() {
   };
 
   const handleGoogleSuccess = (googleUser: { id: string; name: string; email: string }) => {
-    setAuthUser({
-      id: `google_${googleUser.id}`,
-      name: googleUser.name,
-      email: googleUser.email,
-      phone: "",
-    });
+    setAuthUser({ id: `google_${googleUser.id}`, name: googleUser.name, email: googleUser.email, phone: "" });
     setIsAuthenticated(true);
     navigateAfterAuth();
   };
 
   const handleGoogleError = (error: string) => {
-    if (error && !error.toLowerCase().includes("cancel")) {
-      Alert.alert("Google Sign-In Failed", error);
-    }
+    if (error && !error.toLowerCase().includes("cancel")) Alert.alert("Google Sign-In Failed", error);
   };
 
   const handleSignIn = async () => {
@@ -116,64 +117,60 @@ export default function SignInScreen() {
       Alert.alert("Missing Information", "Please enter your email and password.");
       return;
     }
-
     setIsLoading(true);
     try {
-      const res = await apiRequest("POST", "/api/auth/signin", {
-        email: email.trim(),
-        password,
-      });
-      const data = await res.json() as {
-        userId: string; token: string; role: string;
-        name: string; email: string; phone: string;
-      };
+      const res = await apiRequest("POST", "/api/auth/signin", { email: email.trim(), password });
+      const data = await res.json() as { userId: string; token: string; role: string; name: string; email: string; phone: string; };
       setAuthToken(data.token);
       await saveAuthToken(data.token);
       setAuthUser({ id: data.userId, name: data.name, email: data.email, phone: data.phone });
       setIsAuthenticated(true);
-
       if (data.role === "provider") {
         setUserRole("provider");
-        // Navigate immediately — don't block on the provider-data fetch
         navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "ProviderTabs" }] }));
-        // Load provider profile in the background after the screen is already open
         apiRequest("GET", `/api/providers/by-email/${encodeURIComponent(data.email)}`)
-          .then((provRes) => provRes.ok ? provRes.json() : null)
-          .then((provData) => { if (provData) setCurrentProvider(provData); })
+          .then((r) => r.ok ? r.json() : null)
+          .then((d) => { if (d) setCurrentProvider(d); })
           .catch(() => {});
       } else {
         navigateAfterAuth();
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Sign in failed";
-      const friendly = msg.includes("401") ? "Email or password is incorrect." : "Could not sign in. Please try again.";
-      Alert.alert("Sign In Failed", friendly);
+      Alert.alert("Sign In Failed", msg.includes("401") ? "Email or password is incorrect." : "Could not sign in. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
+  const backBg       = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)";
+  const backIcon     = isDark ? "#FFF" : theme.text;
+  const forgotColor  = isDark ? "rgba(192,192,192,0.7)" : theme.textSecondary;
+  const mutedColor   = isDark ? "rgba(255,255,255,0.5)" : theme.textSecondary;
+  const signUpColor  = isDark ? "rgba(192,192,192,0.85)" : theme.text;
+  const btnColors    = isDark ? ["#2A2A2A", "#181818"] as [string,string] : ["#1A1A1A", "#0A0A0A"] as [string,string];
+
   return (
-    <View style={[styles.container, { backgroundColor: DARK_BG }]}>
+    <View style={[styles.container, { backgroundColor: isDark ? DARK_BG : LIGHT_BG }]}>
       <AnimatedBackground showEkg={false} />
       <KeyboardAwareScrollViewCompat
         contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + Spacing.lg, paddingBottom: insets.bottom + Spacing.xl }]}
       >
         <View style={styles.header}>
           <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
-            <View style={styles.backButtonBg}>
-              <Feather name="arrow-left" size={20} color="#FFF" />
+            <View style={[styles.backButtonBg, { backgroundColor: backBg }]}>
+              <Feather name="arrow-left" size={20} color={backIcon} />
             </View>
           </Pressable>
-          <ThemedText type="h2" style={styles.title}>Welcome Back</ThemedText>
-          <ThemedText type="body" style={styles.subtitle}>Sign in to continue with ResqRide</ThemedText>
+          <ThemedText type="h2" style={[styles.title, { color: theme.text }]}>Welcome Back</ThemedText>
+          <ThemedText type="body" style={{ color: isDark ? "rgba(255,255,255,0.5)" : theme.textSecondary }}>Sign in to continue with ResqRide</ThemedText>
         </View>
 
         <View style={styles.form}>
           <InputField label="Email Address" value={email} onChangeText={setEmail} placeholder="Enter your email" icon="mail" keyboardType="email-address" autoCapitalize="none" />
           <InputField label="Password" value={password} onChangeText={setPassword} placeholder="Enter your password" icon="lock" secureTextEntry autoCapitalize="none" />
           <Pressable style={styles.forgotPassword}>
-            <ThemedText type="small" style={{ color: "rgba(192,192,192,0.7)" }}>Forgot Password?</ThemedText>
+            <ThemedText type="small" style={{ color: forgotColor }}>Forgot Password?</ThemedText>
           </Pressable>
         </View>
 
@@ -185,8 +182,8 @@ export default function SignInScreen() {
             onPressOut={() => { scale.value = withSpring(1); }}
             disabled={isLoading}
           >
-            <LinearGradient colors={["#2A2A2A", "#181818"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[StyleSheet.absoluteFill, { borderRadius: 16 }]} />
-            <ThemedText type="body" style={styles.signInButtonText}>
+            <LinearGradient colors={btnColors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[StyleSheet.absoluteFill, { borderRadius: 16 }]} />
+            <ThemedText type="body" style={{ color: "#FFF", fontWeight: "700", fontSize: 16 }}>
               {isLoading ? "Signing In..." : "Sign In"}
             </ThemedText>
           </AnimatedPressable>
@@ -194,9 +191,9 @@ export default function SignInScreen() {
           <GoogleSignInButton onSuccess={handleGoogleSuccess} onError={handleGoogleError} />
 
           <View style={styles.signUpRow}>
-            <ThemedText type="body" style={{ color: "rgba(255,255,255,0.5)" }}>Don't have an account?</ThemedText>
+            <ThemedText type="body" style={{ color: mutedColor }}>Don't have an account?</ThemedText>
             <Pressable onPress={() => navigation.navigate("SignUp")}>
-              <ThemedText type="body" style={{ color: "rgba(192,192,192,0.85)", fontWeight: "600" }}> Sign Up</ThemedText>
+              <ThemedText type="body" style={{ color: signUpColor, fontWeight: "600" }}> Sign Up</ThemedText>
             </Pressable>
           </View>
         </View>
@@ -210,18 +207,14 @@ const styles = StyleSheet.create({
   scrollContent: { flexGrow: 1, paddingHorizontal: 24 },
   header: { marginBottom: Spacing.xl },
   backButton: { marginBottom: Spacing.lg },
-  backButtonBg: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.08)", alignItems: "center", justifyContent: "center" },
-  title: { color: "#FFF", marginBottom: Spacing.xs },
-  subtitle: { color: "rgba(255,255,255,0.5)" },
+  backButtonBg: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
+  title: { marginBottom: Spacing.xs },
   form: { gap: 16, marginBottom: Spacing.xl },
-  inputContainer: { gap: 6 },
-  inputLabel: { fontWeight: "500", color: "rgba(255,255,255,0.6)", fontSize: 13 },
-  inputWrapper: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: Platform.OS === "ios" ? 14 : 10, borderRadius: 14, gap: 10, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
-  inputWrapperFocused: { borderColor: "rgba(192,192,192,0.30)", backgroundColor: "rgba(192,192,192,0.05)" },
-  input: { flex: 1, fontSize: 16, color: "#FFF" },
+  inputContainer: {},
+  inputWrapper: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: Platform.OS === "ios" ? 14 : 10, borderRadius: 14, gap: 10, borderWidth: 1 },
+  input: { flex: 1, fontSize: 16 },
   forgotPassword: { alignSelf: "flex-end", marginTop: 4 },
   footer: { marginTop: "auto", gap: Spacing.lg },
   signInButton: { paddingVertical: 16, borderRadius: 16, alignItems: "center", overflow: "hidden" },
-  signInButtonText: { color: "#FFF", fontWeight: "700", fontSize: 16 },
   signUpRow: { flexDirection: "row", justifyContent: "center" },
 });

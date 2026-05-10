@@ -3,20 +3,16 @@ import { View, StyleSheet, TextInput, Pressable, Alert, Platform, Keyboard } fro
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, CommonActions } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from "react-native-reanimated";
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
-import AnimatedBackground, { DARK_BG } from "@/components/AnimatedBackground";
+import AnimatedBackground, { DARK_BG, LIGHT_BG } from "@/components/AnimatedBackground";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/context/AppContext";
 import { GoogleSignInButton } from "@/components/GoogleSignInButton";
-import { Spacing, BorderRadius } from "@/constants/theme";
+import { Spacing } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { apiRequest, setAuthToken } from "@/lib/query-client";
 import { saveAuthToken } from "@/lib/secureStorage";
@@ -34,24 +30,33 @@ interface InputFieldProps {
   autoCapitalize?: "none" | "sentences" | "words" | "characters";
 }
 
-function InputField({
-  label, value, onChangeText, placeholder, icon,
-  secureTextEntry, keyboardType = "default", autoCapitalize = "sentences",
-}: InputFieldProps) {
+function InputField({ label, value, onChangeText, placeholder, icon, secureTextEntry, keyboardType = "default", autoCapitalize = "sentences" }: InputFieldProps) {
+  const { theme, isDark } = useTheme();
   const [isFocused, setIsFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  const inputBg     = isDark ? "rgba(255,255,255,0.06)" : theme.backgroundDefault;
+  const inputBorder = isDark ? "rgba(255,255,255,0.08)" : theme.border;
+  const focusBg     = isDark ? "rgba(192,192,192,0.05)" : theme.backgroundSecondary;
+  const focusBorder = isDark ? "rgba(192,192,192,0.30)" : "#555555";
+  const iconColor   = isFocused
+    ? (isDark ? "#C0C0C0" : "#333333")
+    : (isDark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.35)");
+  const labelColor  = isDark ? "rgba(255,255,255,0.6)" : theme.textSecondary;
+  const textColor   = isDark ? "#FFFFFF" : theme.text;
+  const phColor     = isDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.3)";
+
   return (
     <View style={styles.inputContainer}>
-      <ThemedText type="small" style={styles.inputLabel}>{label}</ThemedText>
-      <View style={[styles.inputWrapper, isFocused ? styles.inputWrapperFocused : null]}>
-        <Feather name={icon} size={18} color={isFocused ? "#C0C0C0" : "rgba(255,255,255,0.35)"} />
+      <ThemedText type="small" style={{ fontWeight: "500", color: labelColor, fontSize: 13, marginBottom: 6 }}>{label}</ThemedText>
+      <View style={[styles.inputWrapper, { backgroundColor: isFocused ? focusBg : inputBg, borderColor: isFocused ? focusBorder : inputBorder }]}>
+        <Feather name={icon} size={18} color={iconColor} />
         <TextInput
-          style={styles.input}
+          style={[styles.input, { color: textColor }]}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor="rgba(255,255,255,0.25)"
+          placeholderTextColor={phColor}
           secureTextEntry={secureTextEntry && !showPassword}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
@@ -63,7 +68,7 @@ function InputField({
         />
         {secureTextEntry ? (
           <Pressable onPress={() => setShowPassword(!showPassword)}>
-            <Feather name={showPassword ? "eye-off" : "eye"} size={18} color="rgba(255,255,255,0.4)" />
+            <Feather name={showPassword ? "eye-off" : "eye"} size={18} color={iconColor} />
           </Pressable>
         ) : null}
       </View>
@@ -119,34 +124,49 @@ interface LegalDocumentCardProps {
 }
 
 function LegalDocumentCard({ doc, isAccepted, isExpanded, onToggleAccept, onToggleExpand }: LegalDocumentCardProps) {
-  const iconColor = doc.key === "liability" ? "#F59E0B" : "#C0C0C0";
+  const { theme, isDark } = useTheme();
+
+  const iconColor      = doc.key === "liability" ? "#F59E0B" : (isDark ? "#C0C0C0" : "#555555");
+  const cardBg         = isDark ? "rgba(255,255,255,0.04)" : theme.backgroundDefault;
+  const cardBorder     = isDark ? "rgba(255,255,255,0.08)" : theme.border;
+  const chevronColor   = isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.35)";
+  const titleColor     = isDark ? "#FFF" : theme.text;
+  const summaryColor   = isDark ? "rgba(255,255,255,0.5)" : theme.textSecondary;
+  const headingColor   = isDark ? "rgba(255,255,255,0.7)" : theme.text;
+  const contentColor   = isDark ? "rgba(255,255,255,0.45)" : theme.textSecondary;
+  const fullDocColor   = isDark ? "#C0C0C0" : theme.textSecondary;
+  const acceptBorder   = isDark ? "rgba(255,255,255,0.08)" : theme.border;
+  const acceptText     = isDark ? "rgba(255,255,255,0.5)" : theme.textSecondary;
+  const checkboxBorder = isDark ? "rgba(255,255,255,0.2)" : theme.border;
 
   return (
-    <View style={styles.legalCard}>
+    <View style={[styles.legalCard, { backgroundColor: cardBg, borderColor: cardBorder }]}>
       <Pressable onPress={onToggleExpand} style={styles.legalCardHeader}>
         <Feather name={doc.icon} size={18} color={iconColor} />
-        <ThemedText type="body" style={styles.legalCardTitle}>{doc.title}</ThemedText>
-        <Feather name={isExpanded ? "chevron-up" : "chevron-down"} size={18} color="rgba(255,255,255,0.4)" />
+        <ThemedText type="body" style={{ fontWeight: "600", flex: 1, color: titleColor, fontSize: 15 }}>{doc.title}</ThemedText>
+        <Feather name={isExpanded ? "chevron-up" : "chevron-down"} size={18} color={chevronColor} />
       </Pressable>
 
       {isExpanded ? (
         <View style={styles.legalCardBody}>
-          <ThemedText type="small" style={styles.legalSummary}>{doc.summary}</ThemedText>
+          <ThemedText type="small" style={{ lineHeight: 20, marginBottom: Spacing.md, color: summaryColor }}>{doc.summary}</ThemedText>
           {doc.sections.map((section, idx) => (
-            <View key={idx} style={styles.legalSectionItem}>
-              <ThemedText type="small" style={styles.legalSectionHeading}>{section.heading}</ThemedText>
-              <ThemedText type="small" style={styles.legalSectionContent}>{section.content}</ThemedText>
+            <View key={idx} style={{ marginBottom: Spacing.sm }}>
+              <ThemedText type="small" style={{ fontWeight: "600", marginBottom: 4, color: headingColor }}>{section.heading}</ThemedText>
+              <ThemedText type="small" style={{ color: contentColor, lineHeight: 20 }}>{section.content}</ThemedText>
             </View>
           ))}
-          <ThemedText type="small" style={styles.fullDocLink}>View full document in Settings after sign up</ThemedText>
+          <ThemedText type="small" style={{ marginTop: Spacing.sm, fontWeight: "500", fontStyle: "italic", color: fullDocColor }}>
+            View full document in Settings after sign up
+          </ThemedText>
         </View>
       ) : null}
 
-      <Pressable onPress={onToggleAccept} style={styles.acceptRow}>
-        <View style={[styles.checkbox, isAccepted ? styles.checkboxChecked : null]}>
+      <Pressable onPress={onToggleAccept} style={[styles.acceptRow, { borderTopColor: acceptBorder }]}>
+        <View style={[styles.checkbox, { borderColor: isAccepted ? "#00E676" : checkboxBorder, backgroundColor: isAccepted ? "#00E676" : "transparent" }]}>
           {isAccepted ? <Feather name="check" size={14} color="#FFF" /> : null}
         </View>
-        <ThemedText type="small" style={styles.acceptText}>I have read and accept the {doc.title}</ThemedText>
+        <ThemedText type="small" style={{ flex: 1, color: acceptText }}>I have read and accept the {doc.title}</ThemedText>
       </Pressable>
     </View>
   );
@@ -154,7 +174,7 @@ function LegalDocumentCard({ doc, isAccepted, isExpanded, onToggleAccept, onTogg
 
 export default function SignUpScreen() {
   const insets = useSafeAreaInsets();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const { setIsAuthenticated, setAuthUser, setUserRole, setCurrentDriver } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
@@ -181,9 +201,7 @@ export default function SignUpScreen() {
   };
 
   const handleGoogleError = (error: string) => {
-    if (error && !error.toLowerCase().includes("cancel")) {
-      Alert.alert("Google Sign-In Failed", error);
-    }
+    if (error && !error.toLowerCase().includes("cancel")) Alert.alert("Google Sign-In Failed", error);
   };
 
   const toggleAccept = useCallback((key: string) => {
@@ -211,62 +229,56 @@ export default function SignUpScreen() {
       Alert.alert("Agreement Required", "Please read and accept the Privacy Policy, Terms of Service, and Liability Disclaimer before creating your account.");
       return;
     }
-
     setIsLoading(true);
     try {
-      const res = await apiRequest("POST", "/api/auth/signup", {
-        email: email.trim(),
-        name: fullName.trim(),
-        phone: phone.trim(),
-        password,
-      });
-      const data = await res.json() as {
-        userId: string; token: string; role: string;
-        name: string; email: string; phone: string;
-      };
+      const res = await apiRequest("POST", "/api/auth/signup", { email: email.trim(), name: fullName.trim(), phone: phone.trim(), password });
+      const data = await res.json() as { userId: string; token: string; role: string; name: string; email: string; phone: string; };
       setAuthToken(data.token);
       await saveAuthToken(data.token);
       setAuthUser({ id: data.userId, name: data.name, email: data.email, phone: data.phone });
       setIsAuthenticated(true);
       setUserRole("driver");
-      setCurrentDriver({
-        id: data.userId, name: data.name, email: data.email, phone: data.phone,
-        avatarPreset: Math.floor(Math.random() * 5) + 1, membership: "free",
-      });
+      setCurrentDriver({ id: data.userId, name: data.name, email: data.email, phone: data.phone, avatarPreset: Math.floor(Math.random() * 5) + 1, membership: "free" });
       navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "DriverTabs" }] }));
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Sign up failed";
-      const friendly = msg.includes("409")
-        ? "An account with this email already exists. Try signing in instead."
-        : "Could not create account. Please try again.";
-      Alert.alert("Sign Up Failed", friendly);
+      Alert.alert("Sign Up Failed", msg.includes("409") ? "An account with this email already exists. Try signing in instead." : "Could not create account. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
+  const backBg      = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)";
+  const backIcon    = isDark ? "#FFF" : theme.text;
+  const mutedColor  = isDark ? "rgba(255,255,255,0.5)" : theme.textSecondary;
+  const signInColor = isDark ? "#C0C0C0" : theme.text;
+  const hintColor   = isDark ? "rgba(255,255,255,0.4)" : theme.textSecondary;
+  const hintIcon    = isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.35)";
+
+  const btnActive   = allAccepted;
+  const btnColors   = isDark
+    ? (btnActive ? ["#2A2A2A", "#181818"] as [string,string] : ["rgba(255,255,255,0.06)", "rgba(255,255,255,0.03)"] as [string,string])
+    : (btnActive ? ["#1A1A1A", "#0A0A0A"] as [string,string] : ["rgba(0,0,0,0.08)", "rgba(0,0,0,0.05)"] as [string,string]);
+  const btnTextColor = btnActive ? "#FFF" : (isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.3)");
+
   return (
-    <View style={[styles.container, { backgroundColor: DARK_BG }]}>
+    <View style={[styles.container, { backgroundColor: isDark ? DARK_BG : LIGHT_BG }]}>
       <AnimatedBackground showEkg={false} />
       <KeyboardAwareScrollViewCompat
         contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + Spacing.lg, paddingBottom: insets.bottom + Spacing.xl }]}
       >
         <View style={styles.header}>
           <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
-            <View style={styles.backButtonBg}>
-              <Feather name="arrow-left" size={20} color="#FFF" />
+            <View style={[styles.backButtonBg, { backgroundColor: backBg }]}>
+              <Feather name="arrow-left" size={20} color={backIcon} />
             </View>
           </Pressable>
-          <ThemedText type="h2" style={styles.title}>Create Account</ThemedText>
-          <ThemedText type="body" style={styles.subtitle}>Sign up to get started with roadside assistance</ThemedText>
+          <ThemedText type="h2" style={[styles.title, { color: theme.text }]}>Create Account</ThemedText>
+          <ThemedText type="body" style={{ color: isDark ? "rgba(255,255,255,0.5)" : theme.textSecondary }}>Sign up to get started with roadside assistance</ThemedText>
         </View>
 
         <View style={styles.googleSection}>
-          <GoogleSignInButton
-            onSuccess={handleGoogleSuccess}
-            onError={handleGoogleError}
-            showDivider={false}
-          />
+          <GoogleSignInButton onSuccess={handleGoogleSuccess} onError={handleGoogleError} showDivider={false} />
         </View>
 
         <View style={styles.form}>
@@ -278,8 +290,8 @@ export default function SignUpScreen() {
         </View>
 
         <View style={styles.legalAgreements}>
-          <ThemedText type="h4" style={styles.legalTitle}>Legal Agreements</ThemedText>
-          <ThemedText type="small" style={styles.legalSubtitleText}>Please review and accept each to continue</ThemedText>
+          <ThemedText type="h4" style={{ marginBottom: Spacing.xs, color: theme.text }}>Legal Agreements</ThemedText>
+          <ThemedText type="small" style={{ marginBottom: Spacing.md, color: isDark ? "rgba(255,255,255,0.4)" : theme.textSecondary }}>Please review and accept each to continue</ThemedText>
           {LEGAL_DOCUMENTS.map((doc) => (
             <LegalDocumentCard
               key={doc.key}
@@ -300,28 +312,23 @@ export default function SignUpScreen() {
             onPressOut={() => { scale.value = withSpring(1); }}
             disabled={isLoading}
           >
-            <LinearGradient
-              colors={allAccepted ? ["#2A2A2A", "#181818"] : ["rgba(255,255,255,0.06)", "rgba(255,255,255,0.03)"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
-            />
-            <ThemedText type="body" style={[styles.signUpButtonText, { color: allAccepted ? "#FFF" : "rgba(255,255,255,0.4)" }]}>
+            <LinearGradient colors={btnColors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[StyleSheet.absoluteFill, { borderRadius: 16 }]} />
+            <ThemedText type="body" style={{ fontWeight: "700", fontSize: 16, color: btnTextColor }}>
               {isLoading ? "Creating Account..." : "Create Account"}
             </ThemedText>
           </AnimatedPressable>
 
           {!allAccepted ? (
             <View style={styles.acceptHint}>
-              <Feather name="info" size={14} color="rgba(255,255,255,0.4)" />
-              <ThemedText type="small" style={styles.acceptHintText}>Accept all agreements above to create your account</ThemedText>
+              <Feather name="info" size={14} color={hintIcon} />
+              <ThemedText type="small" style={{ color: hintColor, marginLeft: Spacing.xs }}>Accept all agreements above to create your account</ThemedText>
             </View>
           ) : null}
 
           <View style={styles.signInRow}>
-            <ThemedText type="body" style={{ color: "rgba(255,255,255,0.5)" }}>Already have an account?</ThemedText>
+            <ThemedText type="body" style={{ color: mutedColor }}>Already have an account?</ThemedText>
             <Pressable onPress={() => navigation.navigate("SignIn")}>
-              <ThemedText type="body" style={{ color: "#C0C0C0", fontWeight: "600" }}> Sign In</ThemedText>
+              <ThemedText type="body" style={{ color: signInColor, fontWeight: "600" }}> Sign In</ThemedText>
             </Pressable>
           </View>
         </View>
@@ -335,36 +342,21 @@ const styles = StyleSheet.create({
   scrollContent: { flexGrow: 1, paddingHorizontal: 24 },
   header: { marginBottom: Spacing.xl },
   backButton: { marginBottom: Spacing.lg },
-  backButtonBg: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.08)", alignItems: "center", justifyContent: "center" },
-  title: { color: "#FFF", marginBottom: Spacing.xs },
-  subtitle: { color: "rgba(255,255,255,0.5)" },
+  backButtonBg: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
+  title: { marginBottom: Spacing.xs },
   form: { gap: 16, marginBottom: Spacing.xl },
-  inputContainer: { gap: 6 },
-  inputLabel: { fontWeight: "500", color: "rgba(255,255,255,0.6)", fontSize: 13 },
-  inputWrapper: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: Platform.OS === "ios" ? 14 : 10, borderRadius: 14, gap: 10, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
-  inputWrapperFocused: { borderColor: "rgba(192,192,192,0.35)", backgroundColor: "rgba(255,255,255,0.06)" },
-  input: { flex: 1, fontSize: 16, color: "#FFF" },
+  inputContainer: {},
+  inputWrapper: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: Platform.OS === "ios" ? 14 : 10, borderRadius: 14, gap: 10, borderWidth: 1 },
+  input: { flex: 1, fontSize: 16 },
   legalAgreements: { marginBottom: Spacing.xl },
-  legalTitle: { marginBottom: Spacing.xs, color: "#FFF" },
-  legalSubtitleText: { marginBottom: Spacing.md, color: "rgba(255,255,255,0.4)" },
-  legalCard: { borderRadius: 14, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", backgroundColor: "rgba(255,255,255,0.04)", marginBottom: 10, overflow: "hidden" },
+  legalCard: { borderRadius: 14, borderWidth: 1, marginBottom: 10, overflow: "hidden" },
   legalCardHeader: { flexDirection: "row", alignItems: "center", padding: 14, gap: 10 },
-  legalCardTitle: { fontWeight: "600", flex: 1, color: "#FFF", fontSize: 15 },
   legalCardBody: { paddingHorizontal: 14, paddingBottom: 14 },
-  legalSummary: { lineHeight: 20, marginBottom: Spacing.md, color: "rgba(255,255,255,0.5)" },
-  legalSectionItem: { marginBottom: Spacing.sm },
-  legalSectionHeading: { fontWeight: "600", marginBottom: 4, color: "rgba(255,255,255,0.7)" },
-  legalSectionContent: { color: "rgba(255,255,255,0.45)", lineHeight: 20 },
-  fullDocLink: { marginTop: Spacing.sm, fontWeight: "500", fontStyle: "italic", color: "#C0C0C0" },
-  acceptRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 10, gap: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "rgba(255,255,255,0.08)" },
-  acceptText: { flex: 1, color: "rgba(255,255,255,0.5)" },
-  checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
-  checkboxChecked: { borderColor: "#00E676", backgroundColor: "#00E676" },
+  acceptRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 10, gap: 10, borderTopWidth: StyleSheet.hairlineWidth },
+  checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, alignItems: "center", justifyContent: "center" },
   footer: { marginTop: "auto", gap: Spacing.lg },
   signUpButton: { paddingVertical: 16, borderRadius: 16, alignItems: "center", overflow: "hidden" },
-  signUpButtonText: { fontWeight: "700", fontSize: 16 },
   acceptHint: { flexDirection: "row", alignItems: "center", justifyContent: "center" },
-  acceptHintText: { color: "rgba(255,255,255,0.4)", marginLeft: Spacing.xs },
   signInRow: { flexDirection: "row", justifyContent: "center" },
   googleSection: { marginBottom: Spacing.lg, gap: Spacing.lg },
 });
