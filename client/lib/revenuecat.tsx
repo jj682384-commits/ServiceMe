@@ -42,13 +42,17 @@ function useSubscriptionContext() {
 
   const customerInfoQuery = useQuery({
     queryKey: ["revenuecat", "customer-info"],
-    queryFn: async () => Purchases.getCustomerInfo(),
+    queryFn: async () => {
+      try { return await Purchases.getCustomerInfo(); } catch { return null; }
+    },
     staleTime: 60 * 1000,
   });
 
   const offeringsQuery = useQuery({
     queryKey: ["revenuecat", "offerings"],
-    queryFn: async () => Purchases.getOfferings(),
+    queryFn: async () => {
+      try { return await Purchases.getOfferings(); } catch { return null; }
+    },
     staleTime: 300 * 1000,
   });
 
@@ -85,16 +89,17 @@ function useSubscriptionContext() {
   });
 
   const isSubscribed =
-    customerInfoQuery.data?.entitlements.active?.[REVENUECAT_ENTITLEMENT_IDENTIFIER] !== undefined;
+    !!customerInfoQuery.data?.entitlements?.active?.[REVENUECAT_ENTITLEMENT_IDENTIFIER];
 
   const requestPurchase = (pkg: PurchasesPackage) => {
     setConfirmPkg(pkg);
   };
 
-  const confirmPurchase = async () => {
+  const confirmPurchase = () => {
     if (!confirmPkg) return;
+    const pkg = confirmPkg;
     setConfirmPkg(null);
-    await purchaseMutation.mutateAsync(confirmPkg);
+    purchaseMutation.mutate(pkg);
   };
 
   const cancelPurchase = () => setConfirmPkg(null);
