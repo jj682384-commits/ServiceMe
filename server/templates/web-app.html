@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ResqRide — Web App</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -26,7 +29,7 @@
     }
     html, body { height: 100%; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: var(--navy); color: var(--text); overflow: hidden; font-size: 14px;
     }
 
@@ -640,13 +643,10 @@
 
   <!-- Auth Screen -->
   <div id="auth-screen">
-    <img class="auth-bg-logo" src="/assets/images/icon.png" alt="" />
+    <img class="auth-bg-logo" src="/assets/images/resqride-logo-crop.png" alt="" />
     <div class="auth-box">
       <div class="auth-logo">
-        <div class="auth-logo-icon">
-          <img src="/assets/images/icon.png" alt="ResqRide" style="width:100%;height:100%;object-fit:cover;" />
-        </div>
-        <h1>ResqRide</h1>
+        <img src="/assets/images/resqride-logo-crop.png" alt="ResqRide" style="width:210px;height:auto;object-fit:contain;display:block;margin:0 auto 12px;" />
         <p>On-demand roadside assistance</p>
       </div>
 
@@ -689,8 +689,7 @@
   <!-- App Bar -->
   <div id="app-bar">
     <div class="app-bar-left">
-      <img src="/assets/images/icon.png" alt="" style="width:28px;height:28px;border-radius:8px;object-fit:cover;" />
-      <span class="app-bar-logo"><span style="color:#fff;font-weight:900;">Resq</span><span style="color:#C0C0C0;font-weight:900;">Ride</span></span>
+      <img src="/assets/images/resqride-logo-crop.png" alt="ResqRide" style="height:40px;width:auto;object-fit:contain;" />
       <div class="app-bar-sep"></div>
       <span class="live-dot">Live</span>
     </div>
@@ -708,10 +707,7 @@
       <!-- Sidebar -->
       <div class="app-sidebar" id="app-sidebar">
         <div class="sidebar-logo-area">
-          <div class="sidebar-logo-icon">
-            <img src="/assets/images/icon.png" alt="ResqRide" style="width:100%;height:100%;object-fit:cover;" />
-          </div>
-          <span class="sidebar-logo-text"><span style="color:#fff;">Resq</span><span style="color:#C0C0C0;">Ride</span></span>
+          <img src="/assets/images/resqride-logo-crop.png" alt="ResqRide" style="height:46px;width:auto;object-fit:contain;" />
         </div>
 
         <!-- Driver nav -->
@@ -1693,13 +1689,13 @@
   document.body.insertBefore(c,document.body.firstChild);
   var x=c.getContext('2d'),w,h,pts;
   function resize(){c.width=w=window.innerWidth;c.height=h=window.innerHeight;}
-  function init(){pts=Array.from({length:50},function(){return{x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-.5)*.2,vy:(Math.random()-.5)*.2,r:Math.random()*1.1+.3,a:Math.random()*.4+.08};});}
+  function init(){pts=Array.from({length:80},function(){return{x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-.5)*.2,vy:(Math.random()-.5)*.2,r:Math.random()*1.2+.3,a:Math.random()*.42+.08};});}
   function draw(){
     x.clearRect(0,0,w,h);
     for(var i=0;i<pts.length;i++){
       for(var j=i+1;j<pts.length;j++){
         var d=Math.hypot(pts[i].x-pts[j].x,pts[i].y-pts[j].y);
-        if(d<140){x.beginPath();x.strokeStyle='rgba(192,192,192,'+(0.07*(1-d/140))+')';x.lineWidth=.4;x.moveTo(pts[i].x,pts[i].y);x.lineTo(pts[j].x,pts[j].y);x.stroke();}
+        if(d<155){x.beginPath();x.strokeStyle='rgba(192,192,192,'+(0.08*(1-d/155))+')';x.lineWidth=.45;x.moveTo(pts[i].x,pts[i].y);x.lineTo(pts[j].x,pts[j].y);x.stroke();}
       }
       x.beginPath();x.arc(pts[i].x,pts[i].y,pts[i].r,0,Math.PI*2);
       x.fillStyle='rgba(255,255,255,'+pts[i].a+')';x.fill();
