@@ -2,7 +2,7 @@ import React from "react";
 import { StyleSheet, useColorScheme, View } from "react-native";
 import Svg, { Defs, RadialGradient, Stop, Rect } from "react-native-svg";
 
-export const DARK_BG  = "#04060E";
+export const DARK_BG  = "#000000";
 export const LIGHT_BG = "#F0F4F8";
 
 const AnimatedBackground = React.memo(function AnimatedBackground({
@@ -22,6 +22,10 @@ const AnimatedBackground = React.memo(function AnimatedBackground({
   const dark = scheme !== "light";
   const bg = dark ? DARK_BG : LIGHT_BG;
 
+  if (!dark) {
+    return <View style={[styles.root, { backgroundColor: bg }]} pointerEvents="none" />;
+  }
+
   return (
     <View style={[styles.root, { backgroundColor: bg }]} pointerEvents="none">
       <Svg
@@ -32,34 +36,19 @@ const AnimatedBackground = React.memo(function AnimatedBackground({
         preserveAspectRatio="none"
       >
         <Defs>
-          <RadialGradient id="rg_fire" cx="12%" cy="22%" r="58%">
-            <Stop
-              offset="0%"
-              stopColor="#CC1B1B"
-              stopOpacity={dark ? "0.22" : "0.12"}
-            />
-            <Stop offset="100%" stopColor="#CC1B1B" stopOpacity="0" />
+          {/* Subtle chrome silver glow — top-left */}
+          <RadialGradient id="rg_chrome_tl" cx="0%" cy="0%" r="55%">
+            <Stop offset="0%"   stopColor="#C0C0C0" stopOpacity="0.07" />
+            <Stop offset="100%" stopColor="#C0C0C0" stopOpacity="0"   />
           </RadialGradient>
-          <RadialGradient id="rg_ice" cx="88%" cy="18%" r="58%">
-            <Stop
-              offset="0%"
-              stopColor="#1A7CC7"
-              stopOpacity={dark ? "0.22" : "0.12"}
-            />
-            <Stop offset="100%" stopColor="#1A7CC7" stopOpacity="0" />
-          </RadialGradient>
-          <RadialGradient id="rg_bottom" cx="50%" cy="100%" r="50%">
-            <Stop
-              offset="0%"
-              stopColor={dark ? "#0D1428" : "#D8E8F4"}
-              stopOpacity={dark ? "0.80" : "0.50"}
-            />
-            <Stop offset="100%" stopColor={dark ? "#0D1428" : "#D8E8F4"} stopOpacity="0" />
+          {/* Subtle chrome glow — bottom-right */}
+          <RadialGradient id="rg_chrome_br" cx="100%" cy="100%" r="50%">
+            <Stop offset="0%"   stopColor="#A0A0A0" stopOpacity="0.05" />
+            <Stop offset="100%" stopColor="#A0A0A0" stopOpacity="0"   />
           </RadialGradient>
         </Defs>
-        <Rect x="0" y="0" width="100" height="100" fill="url(#rg_fire)" />
-        <Rect x="0" y="0" width="100" height="100" fill="url(#rg_ice)" />
-        <Rect x="0" y="0" width="100" height="100" fill="url(#rg_bottom)" />
+        <Rect x="0" y="0" width="100" height="100" fill="url(#rg_chrome_tl)" />
+        <Rect x="0" y="0" width="100" height="100" fill="url(#rg_chrome_br)" />
       </Svg>
     </View>
   );

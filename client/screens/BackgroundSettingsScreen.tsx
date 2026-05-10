@@ -44,7 +44,7 @@ export default function BackgroundSettingsScreen() {
         <View style={[styles.swatchRow]}>
           <View style={[styles.swatchCard, { backgroundColor: isDark ? "rgba(13,20,40,0.80)" : "rgba(255,255,255,0.88)", borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)" }]}>
             <View style={styles.swatchPreview}>
-              <View style={[styles.swatchBg, { backgroundColor: "#04060E" }]}>
+              <View style={[styles.swatchBg, { backgroundColor: "#000000" }]}>
                 <View style={[styles.swatchGlow, { backgroundColor: "#CC1B1B", left: 4, top: 6 }]} />
                 <View style={[styles.swatchGlow, { backgroundColor: "#1A7CC7", right: 4, top: 6 }]} />
               </View>

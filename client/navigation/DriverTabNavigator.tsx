@@ -156,19 +156,9 @@ export default function DriverTabNavigator() {
         options={{
           title: "EV",
           headerShown: false,
-          tabBarActiveTintColor: isDark ? "#00FF88" : "#059669",
-          tabBarInactiveTintColor: isDark ? "#6B7280" : "#9CA3AF",
-          tabBarStyle: {
-            position: "absolute",
-            backgroundColor: isDark ? "#0A0E1A" : "#F0F9F4",
-            borderTopWidth: 0,
-            borderTopColor: isDark ? "#0A0E1A" : "#F0F9F4",
-            elevation: 0,
-          },
-          tabBarIcon: ({ focused, size }) => (
-            <Feather name="zap" size={size} color={focused ? (isDark ? "#00FF88" : "#059669") : (isDark ? "#6B7280" : "#9CA3AF")} />
+          tabBarIcon: ({ color, size }) => (
+            <Feather name="zap" size={size} color={color} />
           ),
-          tabBarLabel: "EV",
         }}
       />
       <Tab.Screen

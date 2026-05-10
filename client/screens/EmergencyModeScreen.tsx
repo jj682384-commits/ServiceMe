@@ -316,7 +316,7 @@ export default function EmergencyModeScreen() {
           )}
         </View>
 
-        <View style={[styles.infoCard, { backgroundColor: "rgba(0,217,255,0.15)", borderColor: "rgba(0,217,255,0.3)" }]}>
+        <View style={[styles.infoCard, { backgroundColor: "rgba(255,255,255,0.06)", borderColor: "rgba(255,255,255,0.12)" }]}>
           <View style={styles.infoCardHeader}>
             <Feather name="zap" size={18} color={theme.secondary} />
             <ThemedText type="body" style={[styles.infoCardTitle, { color: theme.secondary }]}>

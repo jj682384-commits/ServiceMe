@@ -14,7 +14,7 @@ import { useApp } from "@/context/AppContext";
 import { Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
-const avatarColors = ["#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#14B8A6"];
+const avatarColors = ["#3A3A3A", "#2D2D2D", "#484848", "#3F3F3F", "#424242"];
 
 interface MenuItemProps {
   icon: keyof typeof Feather.glyphMap;
@@ -145,7 +145,7 @@ export default function DriverProfileScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: isDark ? "#04060E" : theme.backgroundRoot }]}>
+    <View style={[styles.container, { backgroundColor: isDark ? "#000000" : theme.backgroundRoot }]}>
       <AnimatedBackground />
       <ScrollView
         contentContainerStyle={{

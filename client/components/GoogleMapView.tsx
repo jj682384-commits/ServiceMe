@@ -54,7 +54,7 @@ export function GoogleMapView({
   showsUserLocation = false,
   showRoute = false,
   routeCoordinates = [],
-  routeColor = "#00AAFF",
+  routeColor = "#C0C0C0",
   fallback,
   mapStyle = "standard",
 }: GoogleMapViewProps) {

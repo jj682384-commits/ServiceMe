@@ -111,7 +111,7 @@ export default function DriverMessagesScreen() {
   const conversations = getConversations(requestHistory);
 
   return (
-    <View style={[styles.container, { backgroundColor: isDark ? "#04060E" : theme.backgroundRoot }]}>
+    <View style={[styles.container, { backgroundColor: isDark ? "#000000" : theme.backgroundRoot }]}>
       <AnimatedBackground />
       <FlatList
         data={conversations}

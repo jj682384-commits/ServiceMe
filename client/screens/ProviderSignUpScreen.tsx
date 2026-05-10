@@ -88,7 +88,7 @@ function InputField({
     <View style={styles.inputContainer}>
       <ThemedText type="small" style={styles.inputLabel}>{label}</ThemedText>
       <View style={[styles.inputWrapper, isFocused ? styles.inputWrapperFocused : null, multiline ? { minHeight: 80, alignItems: "flex-start", paddingTop: 12 } : null]}>
-        <Feather name={icon} size={18} color={isFocused ? "#00AAFF" : "rgba(255,255,255,0.4)"} style={multiline ? { marginTop: 2 } : undefined} />
+        <Feather name={icon} size={18} color={isFocused ? "#C0C0C0" : "rgba(255,255,255,0.35)"} style={multiline ? { marginTop: 2 } : undefined} />
         <TextInput
           style={[styles.input, multiline ? { textAlignVertical: "top", minHeight: 60 } : null]}
           value={value}
@@ -180,7 +180,7 @@ function ServiceSelector({ selected, onToggle }: { selected: ServiceType[]; onTo
             onPress={() => onToggle(svc.key)}
             style={[styles.serviceChip, isSelected ? styles.serviceChipSelected : null]}
           >
-            <Feather name={svc.icon} size={16} color={isSelected ? "#00AAFF" : "rgba(255,255,255,0.5)"} />
+            <Feather name={svc.icon} size={16} color={isSelected ? "#C0C0C0" : "rgba(255,255,255,0.45)"} />
             <ThemedText type="small" style={{ color: isSelected ? "#FFF" : "rgba(255,255,255,0.6)", fontWeight: isSelected ? "600" : "400" }}>
               {svc.label}
             </ThemedText>
@@ -485,8 +485,8 @@ export default function ProviderSignUpScreen() {
   const renderStep0 = () => (
     <Animated.View entering={FadeInDown.duration(400)} key="step0" style={styles.stepContent}>
       <View style={styles.stepHeader}>
-        <View style={[styles.stepHeaderIcon, { backgroundColor: isIndependent ? "rgba(0,168,204,0.15)" : "rgba(255,107,53,0.15)" }]}>
-          <Feather name="user" size={24} color={isIndependent ? "#0050CC" : "#D92222"} />
+        <View style={[styles.stepHeaderIcon, { backgroundColor: "rgba(192,192,192,0.10)" }]}>
+          <Feather name="user" size={24} color="#C0C0C0" />
         </View>
         <ThemedText type="h3" style={styles.stepTitle}>Personal Information</ThemedText>
         <ThemedText type="small" style={styles.stepSubtitle}>
@@ -506,8 +506,8 @@ export default function ProviderSignUpScreen() {
   const renderStep1Independent = () => (
     <Animated.View entering={FadeInDown.duration(400)} key="step1-ind" style={styles.stepContent}>
       <View style={styles.stepHeader}>
-        <View style={[styles.stepHeaderIcon, { backgroundColor: "rgba(0,168,204,0.15)" }]}>
-          <Feather name="tool" size={24} color="#0050CC" />
+        <View style={[styles.stepHeaderIcon, { backgroundColor: "rgba(192,192,192,0.10)" }]}>
+          <Feather name="tool" size={24} color="#C0C0C0" />
         </View>
         <ThemedText type="h3" style={styles.stepTitle}>Your Setup</ThemedText>
         <ThemedText type="small" style={styles.stepSubtitle}>Tell us about your vehicle and skills</ThemedText>
@@ -523,7 +523,7 @@ export default function ProviderSignUpScreen() {
                 onPress={() => handleVehicleTypeChange(type)}
                 style={[styles.vehicleTypeOption, vehicleType === type ? styles.vehicleTypeSelected : null]}
               >
-                <Feather name={icon} size={18} color={vehicleType === type ? "#00AAFF" : "rgba(255,255,255,0.4)"} />
+                <Feather name={icon} size={18} color={vehicleType === type ? "#C0C0C0" : "rgba(255,255,255,0.35)"} />
                 <ThemedText type="small" style={{ color: vehicleType === type ? "#FFF" : "rgba(255,255,255,0.5)", fontSize: 12 }}>{label}</ThemedText>
               </Pressable>
             ))}
@@ -532,8 +532,8 @@ export default function ProviderSignUpScreen() {
 
         {isTowTruck ? (
           <View style={styles.signupTowBanner}>
-            <Feather name="info" size={13} color="#00AAFF" />
-            <ThemedText type="small" style={{ color: "rgba(0,217,255,0.9)", flex: 1, marginLeft: 8, fontSize: 12 }}>
+            <Feather name="info" size={13} color="rgba(192,192,192,0.7)" />
+            <ThemedText type="small" style={{ color: "rgba(192,192,192,0.7)", flex: 1, marginLeft: 8, fontSize: 12 }}>
               Commercial tow truck makes & models are loaded. Select your chassis below.
             </ThemedText>
           </View>
@@ -547,7 +547,7 @@ export default function ProviderSignUpScreen() {
             onPress={() => setShowMakePicker(true)}
             style={[styles.signupPickerBtn, vehicleMake ? styles.signupPickerBtnFilled : null]}
           >
-            <Feather name="truck" size={16} color={vehicleMake ? "#00AAFF" : "rgba(255,255,255,0.4)"} />
+            <Feather name="truck" size={16} color={vehicleMake ? "#C0C0C0" : "rgba(255,255,255,0.35)"} />
             <ThemedText type="small" style={{ color: vehicleMake ? "#FFF" : "rgba(255,255,255,0.4)", flex: 1, marginLeft: 10, fontSize: 14 }}>
               {vehicleMake || (isTowTruck ? "Select tow truck make..." : "Select make...")}
             </ThemedText>
@@ -563,7 +563,7 @@ export default function ProviderSignUpScreen() {
             onPress={() => vehicleMake ? setShowModelPicker(true) : null}
             style={[styles.signupPickerBtn, vehicleModel ? styles.signupPickerBtnFilled : null, !vehicleMake ? { opacity: 0.5 } : null]}
           >
-            <Feather name="truck" size={16} color={vehicleModel ? "#00AAFF" : "rgba(255,255,255,0.4)"} />
+            <Feather name="truck" size={16} color={vehicleModel ? "#C0C0C0" : "rgba(255,255,255,0.35)"} />
             <ThemedText type="small" style={{ color: vehicleModel ? "#FFF" : "rgba(255,255,255,0.4)", flex: 1, marginLeft: 10, fontSize: 14 }}>
               {vehicleModel || (vehicleMake ? "Select model..." : "Select a make first")}
             </ThemedText>
@@ -578,7 +578,7 @@ export default function ProviderSignUpScreen() {
               onPress={() => setShowTowClassPicker(true)}
               style={[styles.signupPickerBtn, towClass ? styles.signupPickerBtnFilled : null]}
             >
-              <Feather name="layers" size={16} color={towClass ? "#00AAFF" : "rgba(255,255,255,0.4)"} />
+              <Feather name="layers" size={16} color={towClass ? "#C0C0C0" : "rgba(255,255,255,0.35)"} />
               <ThemedText type="small" style={{ color: towClass ? "#FFF" : "rgba(255,255,255,0.4)", flex: 1, marginLeft: 10, fontSize: 14 }}>
                 {towClass || "Select wrecker class..."}
               </ThemedText>
@@ -603,8 +603,8 @@ export default function ProviderSignUpScreen() {
   const renderStep1Business = () => (
     <Animated.View entering={FadeInDown.duration(400)} key="step1-biz" style={styles.stepContent}>
       <View style={styles.stepHeader}>
-        <View style={[styles.stepHeaderIcon, { backgroundColor: "rgba(255,107,53,0.15)" }]}>
-          <Feather name="briefcase" size={24} color="#D92222" />
+        <View style={[styles.stepHeaderIcon, { backgroundColor: "rgba(192,192,192,0.10)" }]}>
+          <Feather name="briefcase" size={24} color="#C0C0C0" />
         </View>
         <ThemedText type="h3" style={styles.stepTitle}>Business Information</ThemedText>
         <ThemedText type="small" style={styles.stepSubtitle}>Register your company details</ThemedText>
@@ -633,8 +633,8 @@ export default function ProviderSignUpScreen() {
   const renderStep2 = () => (
     <Animated.View entering={FadeInDown.duration(400)} key="step2" style={styles.stepContent}>
       <View style={styles.stepHeader}>
-        <View style={[styles.stepHeaderIcon, { backgroundColor: "rgba(139,92,246,0.15)" }]}>
-          <Feather name="shield" size={24} color="#8B5CF6" />
+        <View style={[styles.stepHeaderIcon, { backgroundColor: "rgba(192,192,192,0.10)" }]}>
+          <Feather name="shield" size={24} color="#C0C0C0" />
         </View>
         <ThemedText type="h3" style={styles.stepTitle}>Identity Verification</ThemedText>
         <ThemedText type="small" style={styles.stepSubtitle}>
@@ -643,7 +643,7 @@ export default function ProviderSignUpScreen() {
       </View>
 
       <View style={styles.verificationInfo}>
-        <Feather name="lock" size={16} color="#00AAFF" />
+        <Feather name="lock" size={16} color="rgba(192,192,192,0.7)" />
         <ThemedText type="small" style={styles.verificationInfoText}>
           Your documents are encrypted and stored securely. Verification typically takes 1-2 business days.
         </ThemedText>
@@ -743,7 +743,7 @@ export default function ProviderSignUpScreen() {
           {LEGAL_DOCUMENTS.map((doc) => {
             const isExpanded = expandedDoc === doc.key;
             const isAccepted = !!acceptedDocs[doc.key];
-            const iconColor = isAccepted ? "#00E676" : (doc.key === "liability" ? "#F59E0B" : "#00AAFF");
+            const iconColor = isAccepted ? "#00E676" : (doc.key === "liability" ? "#F59E0B" : "#C0C0C0");
 
             return (
               <Pressable
@@ -785,8 +785,8 @@ export default function ProviderSignUpScreen() {
     );
   };
 
-  const accentColor = isIndependent ? "#0050CC" : "#D92222";
-  const gradientColors = isIndependent ? ["#0050CC", "#0077B6"] : ["#D92222", "#B01A1A"];
+  const accentColor = "#C0C0C0";
+  const gradientColors = ["#2A2A2A", "#181818"];
 
   const isLastStep = step === TOTAL_STEPS - 1;
   const canProceed = step === 3 ? allAccepted : true;
@@ -948,7 +948,7 @@ const styles = StyleSheet.create({
   stepRow: { flexDirection: "row", alignItems: "center", marginBottom: Spacing.sm },
   stepItem: { flexDirection: "row", alignItems: "center" },
   stepDot: { width: 28, height: 28, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.08)", alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "rgba(255,255,255,0.1)" },
-  stepDotActive: { borderColor: "#00AAFF", backgroundColor: "rgba(0,217,255,0.15)" },
+  stepDotActive: { borderColor: "rgba(192,192,192,0.6)", backgroundColor: "rgba(192,192,192,0.10)" },
   stepDotCompleted: { borderColor: "#00E676", backgroundColor: "#00E676" },
   stepLine: { width: 40, height: 2, backgroundColor: "rgba(255,255,255,0.1)", marginHorizontal: 4 },
   stepLineCompleted: { backgroundColor: "#00E676" },
@@ -962,28 +962,28 @@ const styles = StyleSheet.create({
   inputContainer: { gap: 6 },
   inputLabel: { fontWeight: "500", color: "rgba(255,255,255,0.6)", fontSize: 13 },
   inputWrapper: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: Platform.OS === "ios" ? 14 : 10, borderRadius: 14, gap: 10, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
-  inputWrapperFocused: { borderColor: "rgba(0,217,255,0.4)", backgroundColor: "rgba(0,217,255,0.06)" },
+  inputWrapperFocused: { borderColor: "rgba(192,192,192,0.35)", backgroundColor: "rgba(255,255,255,0.06)" },
   input: { flex: 1, fontSize: 16, color: "#FFF" },
   vehicleTypeRow: { flexDirection: "row", gap: 8 },
   vehicleTypeOption: { flex: 1, alignItems: "center", gap: 6, paddingVertical: 14, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
-  vehicleTypeSelected: { borderColor: "rgba(0,217,255,0.4)", backgroundColor: "rgba(0,217,255,0.08)" },
+  vehicleTypeSelected: { borderColor: "rgba(192,192,192,0.40)", backgroundColor: "rgba(192,192,192,0.08)" },
   serviceGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   serviceChip: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
-  serviceChipSelected: { borderColor: "rgba(0,217,255,0.4)", backgroundColor: "rgba(0,217,255,0.1)" },
+  serviceChipSelected: { borderColor: "rgba(192,192,192,0.40)", backgroundColor: "rgba(192,192,192,0.10)" },
   uploadSection: { gap: 8 },
   uploadArea: { flexDirection: "row", alignItems: "center", gap: 14, padding: 16, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", borderStyle: "dashed" },
   uploadAreaDone: { borderColor: "rgba(0,230,118,0.3)", borderStyle: "solid", backgroundColor: "rgba(0,230,118,0.05)" },
   uploadIcon: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.06)" },
   uploadIconDone: { backgroundColor: "#00E676" },
   uploadHint: { color: "rgba(255,255,255,0.35)", fontSize: 12, marginLeft: 62, marginBottom: 8 },
-  verificationInfo: { flexDirection: "row", alignItems: "flex-start", gap: 10, padding: 14, borderRadius: 12, backgroundColor: "rgba(0,217,255,0.06)", marginBottom: Spacing.lg },
+  verificationInfo: { flexDirection: "row", alignItems: "flex-start", gap: 10, padding: 14, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.04)", marginBottom: Spacing.lg },
   verificationInfoText: { flex: 1, color: "rgba(255,255,255,0.6)", lineHeight: 18 },
   verificationStatus: { marginTop: Spacing.lg },
   verificationBadge: { flexDirection: "row", alignItems: "center", gap: 8, padding: 12, borderRadius: 10, backgroundColor: "rgba(245,158,11,0.08)" },
   legalProgressRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12, paddingHorizontal: 2 },
   legalProgressText: { flex: 1 },
-  acceptAllBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, backgroundColor: "rgba(0,217,255,0.12)", borderWidth: 1, borderColor: "rgba(0,217,255,0.3)" },
-  acceptAllText: { color: "#00AAFF", fontWeight: "600", fontSize: 12 },
+  acceptAllBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, backgroundColor: "rgba(192,192,192,0.10)", borderWidth: 1, borderColor: "rgba(192,192,192,0.25)" },
+  acceptAllText: { color: "#C0C0C0", fontWeight: "600", fontSize: 12 },
   legalSection: { gap: 10 },
   legalCard: { borderRadius: 14, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.1)", backgroundColor: "rgba(255,255,255,0.04)", overflow: "hidden" },
   legalCardAccepted: { borderColor: "rgba(0,230,118,0.4)", backgroundColor: "rgba(0,230,118,0.05)" },
@@ -1006,8 +1006,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 10,
     marginBottom: 4,
-    borderColor: "rgba(0,217,255,0.25)",
-    backgroundColor: "rgba(0,217,255,0.06)",
+    borderColor: "rgba(192,192,192,0.18)",
+    backgroundColor: "rgba(255,255,255,0.04)",
   },
   signupPickerBtn: {
     flexDirection: "row",
@@ -1019,8 +1019,8 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.04)",
   },
   signupPickerBtnFilled: {
-    borderColor: "rgba(0,217,255,0.4)",
-    backgroundColor: "rgba(0,217,255,0.06)",
+    borderColor: "rgba(192,192,192,0.35)",
+    backgroundColor: "rgba(255,255,255,0.06)",
   },
   signupModalOverlay: {
     flex: 1,
@@ -1028,7 +1028,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   signupModalContent: {
-    backgroundColor: "#0D1B2A",
+    backgroundColor: "#0A0A0A",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     height: "70%",

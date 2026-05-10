@@ -1069,7 +1069,7 @@ const styles = StyleSheet.create({
   },
   colorSwatchActive: {
     borderWidth: 3,
-    borderColor: "#00AAFF",
+    borderColor: "rgba(192,192,192,0.5)",
   },
   optionRow: {
     flexDirection: "row",
