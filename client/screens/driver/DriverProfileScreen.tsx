@@ -14,7 +14,7 @@ import { useApp } from "@/context/AppContext";
 import { Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
-const avatarColors = ["#3A3A3A", "#2D2D2D", "#484848", "#3F3F3F", "#424242"];
+const avatarColors = ["#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#14B8A6", "#EC4899", "#EF4444", "#6366F1"];
 
 interface MenuItemProps {
   icon: keyof typeof Feather.glyphMap;

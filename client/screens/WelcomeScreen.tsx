@@ -223,15 +223,15 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   logoClip: {
-    height: 200,
+    height: 260,
     overflow: "hidden",
     alignItems: "center",
     marginTop: -10,
   },
   logoImage: {
     width: "100%",
-    height: 380,
-    marginTop: -90,
+    height: 460,
+    marginTop: -100,
   },
   taglineRow: {
     alignItems: "center",
