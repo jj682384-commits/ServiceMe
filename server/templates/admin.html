@@ -7,16 +7,16 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg: #04060E;
-      --surface: #080C18;
-      --surface2: #0D1428;
-      --surface3: #121C38;
+      --bg: #000000;
+      --surface: #0A0A0A;
+      --surface2: #111111;
+      --surface3: #181818;
       --border: rgba(255,255,255,0.08);
-      --text: #e8eaf6;
-      --muted: rgba(232,234,246,0.5);
-      --cyan: #0066FF;
-      --coral: #D92222;
-      --accent: #00AAFF;
+      --text: #ffffff;
+      --muted: rgba(255,255,255,0.5);
+      --cyan: #C0C0C0;
+      --coral: #CC1B1B;
+      --accent: #A0A0A0;
       --success: #22c55e;
       --warning: #f59e0b;
       --danger: #ef4444;
@@ -33,11 +33,13 @@
       box-shadow: 0 40px 80px rgba(0,0,0,0.5);
     }
     .login-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
+    .btn-primary { background: linear-gradient(135deg,#2A2A2A,#181818); border: 1px solid rgba(192,192,192,0.25); color: #C0C0C0; width: 100%; justify-content: center; padding: 13px; }
+    .btn-primary:hover { border-color: rgba(192,192,192,0.45); color: #fff; }
     .login-logo-icon {
       width: 40px; height: 40px; border-radius: 12px;
-      background: linear-gradient(145deg, #04060E, #0D1428);
+      background: #0A0A0A;
       display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 4px 16px rgba(0,102,255,0.25);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.5), 0 0 0 1px rgba(192,192,192,0.12);
       overflow: hidden;
     }
     .login-logo-text { font-size: 20px; font-weight: 800; }
@@ -58,7 +60,6 @@
     }
     .btn:hover { opacity: .82; }
     .btn:disabled { opacity: .4; cursor: not-allowed; }
-    .btn-primary { background: var(--cyan); color: #04060E; width: 100%; justify-content: center; padding: 13px; }
     .btn-success { background: var(--success); color: #fff; }
     .btn-danger { background: var(--danger); color: #fff; }
     .btn-warning { background: var(--warning); color: #000; }
@@ -78,9 +79,9 @@
     .sidebar-logo-row { display: flex; align-items: center; gap: 10px; }
     .sidebar-logo-icon {
       width: 34px; height: 34px; border-radius: 10px;
-      background: linear-gradient(145deg, #04060E, #0D1428);
+      background: #0A0A0A;
       display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 4px 12px rgba(0,102,255,0.25);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5), 0 0 0 1px rgba(192,192,192,0.12);
       overflow: hidden;
     }
     .sidebar-logo-text { font-size: 16px; font-weight: 800; }
@@ -93,7 +94,7 @@
       transition: all .15s; margin-bottom: 2px;
     }
     .nav-item:hover { background: var(--surface2); color: var(--text); }
-    .nav-item.active { background: rgba(0,102,255,0.12); color: var(--cyan); }
+    .nav-item.active { background: rgba(192,192,192,0.08); color: var(--text); border-left: 2px solid #C0C0C0; }
     .nav-item .nav-icon { width: 18px; text-align: center; font-size: 15px; flex-shrink: 0; }
     .nav-badge {
       margin-left: auto; background: var(--warning); color: #000;
@@ -159,9 +160,9 @@
     .badge.verified { background: rgba(34,197,94,.15); color: var(--success); }
     .badge.not-started { background: rgba(255,255,255,.08); color: var(--muted); }
     .badge.completed { background: rgba(34,197,94,.15); color: var(--success); }
-    .badge.accepted { background: rgba(0,102,255,.15); color: var(--cyan); }
+    .badge.accepted { background: rgba(192,192,192,.1); color: #C0C0C0; }
     .badge.cancelled { background: rgba(239,68,68,.12); color: var(--danger); }
-    .badge.driver { background: rgba(0,102,255,.12); color: var(--cyan); }
+    .badge.driver { background: rgba(192,192,192,.08); color: #C0C0C0; }
     .badge.provider { background: rgba(217,34,34,.12); color: var(--coral); }
     .badge.ev { background: rgba(167,139,250,.12); color: var(--purple); }
     .badge.express { background: rgba(245,158,11,.12); color: var(--warning); }
@@ -230,7 +231,7 @@
     <div class="login-logo">
       <div class="login-logo-icon"><img src="/assets/images/logo.png" alt="ResqRide" style="width:100%;height:100%;object-fit:cover;" /></div>
       <div>
-        <div class="login-logo-text"><span style="color:#fff;">Resq</span><span style="color:#00AAFF;">Ride</span></div>
+        <div class="login-logo-text"><span style="color:#fff;">Resq</span><span style="color:#C0C0C0;">Ride</span></div>
         <div class="login-sub">Admin Dashboard</div>
       </div>
     </div>
@@ -252,7 +253,7 @@
       <div class="sidebar-logo-row">
         <div class="sidebar-logo-icon"><img src="/assets/images/logo.png" alt="ResqRide" style="width:100%;height:100%;object-fit:cover;" /></div>
         <div>
-          <div class="sidebar-logo-text"><span style="color:#fff;">Resq</span><span style="color:#00AAFF;">Ride</span></div>
+          <div class="sidebar-logo-text"><span style="color:#fff;">Resq</span><span style="color:#C0C0C0;">Ride</span></div>
           <div class="sidebar-version">Admin Panel</div>
         </div>
       </div>
