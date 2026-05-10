@@ -11,7 +11,7 @@ interface Particle {
   x: number; y: number;
   vx: number; vy: number;
   r: number; a: number;
-  t: "m" | "r" | "b";
+  s: boolean;
 }
 
 function makePts(): Particle[] {
@@ -20,9 +20,9 @@ function makePts(): Particle[] {
     y: Math.random() * SH,
     vx: (Math.random() - 0.5) * 0.4,
     vy: (Math.random() - 0.5) * 0.4,
-    r: Math.random() * 2.2 + 0.8,
-    a: Math.random() * 0.4 + 0.15,
-    t: (i < 4 ? "r" : i < 8 ? "b" : "m") as "m" | "r" | "b",
+    r: Math.random() * 2.0 + 0.7,
+    a: Math.random() * 0.38 + 0.12,
+    s: i % 4 === 0,
   }));
 }
 
@@ -48,13 +48,13 @@ export default function WelcomeConstellationBg({ isDark }: { isDark: boolean }) 
 
   const pts = ptsRef.current;
 
-  const mainRgb   = isDark ? "255,255,255"   : "25,45,130";
-  const accentRgb = isDark ? "210,55,55"     : "165,25,25";
-  const blueRgb   = isDark ? "90,155,255"    : "15,75,200";
-  const lineRgb   = isDark ? "192,192,192"   : "25,55,155";
-  const lineMax   = isDark ? 0.08            : 0.20;
-  const linePx    = isDark ? 0.65            : 0.9;
-  const aBoost    = isDark ? 1               : 1.7;
+  // Dark: white & silver — identical to website dark mode
+  // Light: charcoal & mid-grey — cool watermark look
+  const mainRgb = isDark ? "255,255,255" : "30,30,30";
+  const secRgb  = isDark ? "200,200,200" : "85,85,85";
+  const lineRgb = isDark ? "192,192,192" : "45,45,45";
+  const lineMax = isDark ? 0.09 : 0.18;
+  const linePx  = isDark ? 0.55 : 0.75;
 
   const lines: React.ReactNode[] = [];
   for (let i = 0; i < pts.length; i++) {
@@ -80,8 +80,8 @@ export default function WelcomeConstellationBg({ isDark }: { isDark: boolean }) 
       <Svg width={SW} height={SH} style={StyleSheet.absoluteFillObject}>
         {lines}
         {pts.map((p, i) => {
-          const rgb = p.t === "r" ? accentRgb : p.t === "b" ? blueRgb : mainRgb;
-          const a = Math.min(p.a * aBoost, 0.85).toFixed(3);
+          const rgb = p.s ? secRgb : mainRgb;
+          const a = Math.min(p.a * (isDark ? 1 : 1.6), 0.82).toFixed(3);
           return (
             <Circle key={i} cx={p.x} cy={p.y} r={p.r}
               fill={`rgba(${rgb},${a})`} />
