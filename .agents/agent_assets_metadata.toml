@@ -1,5 +1,4 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "-RnK0b1uTWIvjEliYnyz5"
@@ -18,3 +17,9 @@ id = "w_dGhNCFCoc-BNu8exUi-"
 uri = "file://assets/adaptive-icon.png"
 type = "image"
 title = "resqride adaptive icon"
+
+[[outputs]]
+id = "rzNACwEkupQemUuqwIcmK"
+uri = "file://attached_assets/resqride_logo_nobg.png"
+type = "image"
+title = "ResqRide Logo - No Background"
