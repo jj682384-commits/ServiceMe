@@ -130,13 +130,13 @@ export default function WelcomeScreen() {
 
       <View style={styles.content}>
         <Animated.View entering={FadeIn.delay(100).duration(600)} style={styles.logoClip}>
-          <Image
-            source={isDark
-              ? require("../../assets/images/logo_chrome.png")
-              : require("../../assets/images/logo.png")}
-            style={styles.logoImage}
-            resizeMode="contain"
-          />
+          <View style={!isDark ? styles.logoLightWrap : undefined}>
+            <Image
+              source={require("../../assets/images/logo_chrome.png")}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
+          </View>
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(200).duration(500).springify()} style={styles.taglineRow}>
@@ -194,6 +194,7 @@ const styles = StyleSheet.create({
   content: { flex: 1, paddingHorizontal: 24, justifyContent: "space-between", paddingBottom: 12 },
   logoClip: { height: 260, overflow: "hidden", alignItems: "center", marginTop: -10 },
   logoImage: { width: "100%", height: 460, marginTop: -100 },
+  logoLightWrap: { borderRadius: 36, overflow: "hidden", backgroundColor: "#000000" },
   taglineRow: { alignItems: "center", gap: 6, marginTop: -8 },
   taglinePill: { borderWidth: 1, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 5 },
   featuresContainer: { flexDirection: "row", justifyContent: "center", gap: 8, flexWrap: "wrap" },
