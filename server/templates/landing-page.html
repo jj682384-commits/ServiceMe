@@ -112,50 +112,129 @@
     /* floating phone mockup */
     .hero-visual {
       position: relative; z-index: 1; margin-top: 60px;
-      display: flex; align-items: flex-end; justify-content: center; gap: 20px;
+      display: flex; align-items: flex-end; justify-content: center; gap: 24px;
     }
     .phone {
-      width: 200px; border-radius: 32px; overflow: hidden;
-      box-shadow: 0 40px 80px rgba(0,0,0,0.6);
-      border: 2px solid rgba(255,255,255,0.1);
+      width: 200px; border-radius: 36px; overflow: hidden;
+      box-shadow: 0 40px 100px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.12), inset 0 1px 0 rgba(255,255,255,0.15);
       background: #080C18;
       animation: float 4s ease-in-out infinite;
+      position: relative;
     }
-    .phone:nth-child(2) { width: 230px; animation-delay: -.5s; margin-bottom: 0; }
-    .phone:nth-child(1), .phone:nth-child(3) { margin-bottom: -40px; opacity: .7; }
+    .phone:nth-child(2) { width: 232px; animation-delay: -.5s; margin-bottom: 0; box-shadow: 0 50px 120px rgba(0,102,255,0.25), 0 0 0 1px rgba(0,102,255,0.2), inset 0 1px 0 rgba(255,255,255,0.2); }
+    .phone:nth-child(1), .phone:nth-child(3) { margin-bottom: -40px; opacity: .75; }
     .phone:nth-child(3) { animation-delay: -1s; }
-    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-14px)} }
     .phone-screen {
       width: 100%; aspect-ratio: 9/19;
-      background: linear-gradient(180deg, #04060E 0%, #080C18 100%);
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      padding: 20px 12px; gap: 12px;
+      background: linear-gradient(175deg, #08101E 0%, #04060E 55%, #0A0408 100%);
+      display: flex; flex-direction: column; align-items: center;
+      padding: 0; overflow: hidden; position: relative;
     }
-    .phone-top-bar {
+    /* dynamic island */
+    .phone-island {
+      width: 60px; height: 10px; border-radius: 100px;
+      background: #000; margin: 10px auto 0; flex-shrink: 0;
+    }
+    /* status bar */
+    .phone-status {
       width: 100%; display: flex; justify-content: space-between; align-items: center;
-      padding: 0 4px; margin-bottom: 4px;
+      padding: 6px 14px 0; flex-shrink: 0;
     }
-    .phone-time { font-size: 10px; font-weight: 700; color: #fff; }
-    .phone-icons { display: flex; gap: 4px; }
-    .phone-icon { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.4); }
-    .phone-title { font-size: 13px; font-weight: 800; color: #fff; }
-    .phone-subtitle { font-size: 9px; color: rgba(255,255,255,0.5); }
-    .phone-map-placeholder {
-      width: 100%; height: 80px; border-radius: 12px;
-      background: linear-gradient(135deg, rgba(0,102,255,0.1), rgba(217,34,34,0.1));
-      border: 1px solid rgba(255,255,255,0.08);
+    .phone-time { font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.9); }
+    .phone-status-right { display: flex; gap: 4px; align-items: center; }
+    .phone-signal { display: flex; gap: 1.5px; align-items: flex-end; }
+    .phone-signal span { width: 2.5px; background: rgba(255,255,255,0.85); border-radius: 1px; }
+    .phone-signal span:nth-child(1) { height: 4px; }
+    .phone-signal span:nth-child(2) { height: 6px; }
+    .phone-signal span:nth-child(3) { height: 8px; }
+    .phone-battery { width: 14px; height: 7px; border: 1px solid rgba(255,255,255,0.5); border-radius: 2px; position: relative; }
+    .phone-battery::after { content:""; position:absolute; left:1px; top:1px; bottom:1px; width:70%; background:rgba(255,255,255,0.8); border-radius:1px; }
+    .phone-battery::before { content:""; position:absolute; right:-3px; top:50%; transform:translateY(-50%); width:2px; height:4px; background:rgba(255,255,255,0.4); border-radius:0 1px 1px 0; }
+    /* map area */
+    .phone-map {
+      width: calc(100% - 20px); margin: 10px; border-radius: 14px; overflow: hidden;
+      position: relative; flex-shrink: 0;
+    }
+    .phone-map-bg {
+      width: 100%; height: 90px;
+      background:
+        linear-gradient(160deg, #0D1F3C 0%, #091629 50%, #050E1C 100%);
+      position: relative; overflow: hidden;
+    }
+    /* road lines */
+    .phone-map-bg::before {
+      content: ""; position: absolute; inset: 0;
+      background:
+        linear-gradient(85deg, transparent 30%, rgba(255,255,255,0.04) 30%, rgba(255,255,255,0.04) 32%, transparent 32%),
+        linear-gradient(160deg, transparent 40%, rgba(255,255,255,0.05) 40%, rgba(255,255,255,0.05) 42%, transparent 42%),
+        linear-gradient(30deg, transparent 55%, rgba(255,255,255,0.03) 55%, rgba(255,255,255,0.03) 57%, transparent 57%);
+    }
+    .phone-map-pin {
+      position: absolute; left: 50%; top: 50%; transform: translate(-50%, -70%);
+      width: 18px; height: 18px; border-radius: 50% 50% 50% 0; rotate: -45deg;
+      background: var(--coral); box-shadow: 0 0 12px rgba(217,34,34,0.7);
+    }
+    .phone-map-pin::after {
+      content:""; position:absolute; inset:4px; border-radius:50%; background:#fff;
+    }
+    .phone-map-pulse {
+      position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+      width: 32px; height: 32px; border-radius: 50%;
+      border: 1.5px solid rgba(217,34,34,0.4);
+      animation: mapPulse 2s ease-out infinite;
+    }
+    @keyframes mapPulse { 0%{transform:translate(-50%,-50%) scale(1);opacity:.6} 100%{transform:translate(-50%,-50%) scale(2);opacity:0} }
+    /* content area */
+    .phone-content {
+      width: 100%; padding: 0 10px; display: flex; flex-direction: column; gap: 8px; flex: 1;
+    }
+    .phone-header {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .phone-title { font-size: 12px; font-weight: 800; color: #fff; letter-spacing: -0.3px; }
+    .phone-subtitle { font-size: 8px; color: rgba(255,255,255,0.45); margin-top: 1px; }
+    .phone-avatar {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--cyan), #005ACC);
       display: flex; align-items: center; justify-content: center;
-      font-size: 22px;
+      font-size: 10px; font-weight: 800; color: #fff;
     }
     .phone-service-btn {
       width: 100%; padding: 8px; border-radius: 10px;
-      background: var(--cyan); color: var(--navy);
-      font-size: 10px; font-weight: 800; text-align: center;
+      background: linear-gradient(135deg, #0066FF, #0052CC);
+      color: #fff; font-size: 9px; font-weight: 800; text-align: center;
+      box-shadow: 0 4px 14px rgba(0,102,255,0.4);
+      letter-spacing: 0.3px;
     }
-    .phone-chips { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+    .phone-service-btn.red {
+      background: linear-gradient(135deg, #D92222, #B01A1A);
+      box-shadow: 0 4px 14px rgba(217,34,34,0.4);
+    }
+    .phone-chips { display: flex; gap: 5px; flex-wrap: wrap; }
     .phone-chip {
-      background: rgba(0,102,255,0.1); border: 1px solid rgba(0,102,255,0.2);
-      color: var(--cyan); border-radius: 100px; padding: 3px 8px; font-size: 8px; font-weight: 600;
+      background: rgba(0,102,255,0.12); border: 1px solid rgba(0,102,255,0.25);
+      color: var(--accent); border-radius: 100px; padding: 3px 7px; font-size: 7.5px; font-weight: 600;
+    }
+    .phone-chip.red { background: rgba(217,34,34,0.12); border-color: rgba(217,34,34,0.25); color: #FF5555; }
+    .phone-card {
+      width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px; padding: 8px; display: flex; align-items: center; gap: 6px;
+    }
+    .phone-card-icon {
+      width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 13px;
+    }
+    .phone-card-body { flex: 1; min-width: 0; }
+    .phone-card-label { font-size: 8px; font-weight: 700; color: #fff; }
+    .phone-card-sub { font-size: 7px; color: rgba(255,255,255,0.45); margin-top: 1px; }
+    .phone-card-badge {
+      font-size: 7px; font-weight: 700; padding: 2px 5px; border-radius: 100px;
+    }
+    .phone-divider { width: 100%; height: 1px; background: rgba(255,255,255,0.06); }
+    .phone-earn {
+      font-size: 10px; font-weight: 800; color: #4ADE80;
+      text-align: center; padding-bottom: 4px;
     }
 
     /* ── Stats ── */
@@ -394,60 +473,140 @@
   <div class="hero-note">Already have the app? <a href="exps://EXPS_URL_PLACEHOLDER">Open in Expo Go</a></div>
 
   <div class="hero-visual">
+
+    <!-- Phone 1: Driver — Nearby Help -->
     <div class="phone">
       <div class="phone-screen">
-        <div class="phone-top-bar">
+        <div class="phone-island"></div>
+        <div class="phone-status">
           <span class="phone-time">9:41</span>
-          <div class="phone-icons"><div class="phone-icon"></div><div class="phone-icon"></div><div class="phone-icon"></div></div>
+          <div class="phone-status-right">
+            <div class="phone-signal"><span></span><span></span><span></span></div>
+            <div class="phone-battery"></div>
+          </div>
         </div>
-        <div class="phone-title">Nearby Help</div>
-        <div class="phone-map-placeholder">&#128205;</div>
-        <div class="phone-chips">
-          <div class="phone-chip">Tow Truck</div>
-          <div class="phone-chip">Jump Start</div>
+        <div class="phone-map">
+          <div class="phone-map-bg">
+            <div class="phone-map-pulse"></div>
+            <div class="phone-map-pin"></div>
+          </div>
+        </div>
+        <div class="phone-content">
+          <div class="phone-header">
+            <div>
+              <div class="phone-title">Nearby Help</div>
+              <div class="phone-subtitle">3 providers available</div>
+            </div>
+            <div class="phone-avatar">JT</div>
+          </div>
+          <div class="phone-card">
+            <div class="phone-card-icon" style="background:rgba(0,102,255,0.15);">&#128664;</div>
+            <div class="phone-card-body">
+              <div class="phone-card-label">Marcus R.</div>
+              <div class="phone-card-sub">0.8 mi away · Verified</div>
+            </div>
+            <div class="phone-card-badge" style="background:rgba(74,222,128,0.15);color:#4ADE80;">Online</div>
+          </div>
+          <div class="phone-chips">
+            <div class="phone-chip">Tow Truck</div>
+            <div class="phone-chip">Jump Start</div>
+            <div class="phone-chip">Fuel</div>
+          </div>
         </div>
       </div>
     </div>
+
+    <!-- Phone 2: Home — Request Service (center, larger) -->
     <div class="phone">
       <div class="phone-screen">
-        <div class="phone-top-bar">
+        <div class="phone-island"></div>
+        <div class="phone-status">
           <span class="phone-time">9:41</span>
-          <div class="phone-icons"><div class="phone-icon"></div><div class="phone-icon"></div><div class="phone-icon"></div></div>
+          <div class="phone-status-right">
+            <div class="phone-signal"><span></span><span></span><span></span></div>
+            <div class="phone-battery"></div>
+          </div>
         </div>
-        <div class="phone-title" style="font-size:15px;">ResqRide</div>
-        <div class="phone-subtitle">Roadside Assistance</div>
-        <div class="phone-map-placeholder" style="height:100px;">&#128664;</div>
-        <div class="phone-service-btn">Request Service</div>
-        <div class="phone-chips">
-          <div class="phone-chip">Flat Tire</div>
-          <div class="phone-chip">Fuel</div>
-          <div class="phone-chip">Lockout</div>
-          <div class="phone-chip">EV</div>
+        <div class="phone-map">
+          <div class="phone-map-bg" style="height:110px;">
+            <div class="phone-map-pulse"></div>
+            <div class="phone-map-pin" style="background:var(--cyan);box-shadow:0 0 14px rgba(0,102,255,0.7);"></div>
+          </div>
+        </div>
+        <div class="phone-content">
+          <div class="phone-header">
+            <div>
+              <div class="phone-title" style="font-size:14px;">ResqRide</div>
+              <div class="phone-subtitle">What do you need?</div>
+            </div>
+            <div class="phone-avatar" style="background:linear-gradient(135deg,#D92222,#8B0000);">SOS</div>
+          </div>
+          <div class="phone-service-btn">Request Service Now</div>
+          <div class="phone-chips">
+            <div class="phone-chip">Flat Tire</div>
+            <div class="phone-chip">Fuel</div>
+            <div class="phone-chip">Lockout</div>
+            <div class="phone-chip">EV</div>
+            <div class="phone-chip">Towing</div>
+          </div>
+          <div class="phone-divider"></div>
+          <div class="phone-card" style="background:rgba(0,102,255,0.08);border-color:rgba(0,102,255,0.2);">
+            <div class="phone-card-icon" style="background:rgba(0,102,255,0.2);">&#9889;</div>
+            <div class="phone-card-body">
+              <div class="phone-card-label" style="color:var(--accent);">Premium Member</div>
+              <div class="phone-card-sub">Priority dispatch active</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
+
+    <!-- Phone 3: Provider — Jobs -->
     <div class="phone">
       <div class="phone-screen">
-        <div class="phone-top-bar">
+        <div class="phone-island"></div>
+        <div class="phone-status">
           <span class="phone-time">9:41</span>
-          <div class="phone-icons"><div class="phone-icon"></div><div class="phone-icon"></div><div class="phone-icon"></div></div>
+          <div class="phone-status-right">
+            <div class="phone-signal"><span></span><span></span><span></span></div>
+            <div class="phone-battery"></div>
+          </div>
         </div>
-        <div class="phone-title">Provider Jobs</div>
-        <div class="phone-map-placeholder">&#128188;</div>
-        <div class="phone-service-btn" style="background: rgba(217,34,34,0.9);">Accept Job</div>
-        <div class="phone-chips">
-          <div class="phone-chip" style="border-color:rgba(217,34,34,0.3);color:#D92222;">Earn $45</div>
+        <div class="phone-map">
+          <div class="phone-map-bg" style="background:linear-gradient(160deg,#1A0A0A,#0D0808,#050404);">
+            <div class="phone-map-pulse" style="border-color:rgba(217,34,34,0.4);"></div>
+            <div class="phone-map-pin" style="background:#D92222;"></div>
+          </div>
+        </div>
+        <div class="phone-content">
+          <div class="phone-header">
+            <div>
+              <div class="phone-title">New Job Request</div>
+              <div class="phone-subtitle">0.4 mi · Flat Tire</div>
+            </div>
+            <div class="phone-card-badge" style="background:rgba(217,34,34,0.15);color:#FF6B6B;font-size:8px;padding:3px 7px;border-radius:100px;">New</div>
+          </div>
+          <div class="phone-card">
+            <div class="phone-card-icon" style="background:rgba(217,34,34,0.15);">&#128739;</div>
+            <div class="phone-card-body">
+              <div class="phone-card-label">Flat Tire — Spare Swap</div>
+              <div class="phone-card-sub">2.1 mi from your location</div>
+            </div>
+          </div>
+          <div class="phone-service-btn red">Accept Job</div>
+          <div class="phone-earn">+ Earn $43</div>
         </div>
       </div>
     </div>
+
   </div>
 </section>
 
 <!-- Stats -->
 <div class="stats-bar">
   <div class="stats-inner">
-    <div class="stat"><h3>2 min</h3><p>Average response time</p></div>
-    <div class="stat"><h3>50+</h3><p>Services offered</p></div>
+    <div class="stat"><h3>~10 min</h3><p>Average response time</p></div>
+    <div class="stat"><h3>8+</h3><p>Services offered</p></div>
     <div class="stat"><h3>24/7</h3><p>Around the clock</p></div>
     <div class="stat"><h3>$0</h3><p>Signup fee, ever</p></div>
   </div>
