@@ -258,21 +258,17 @@ export default function EditProfileScreen() {
     }
 
     setIsSaving(true);
+    try {
+      await apiRequest("PATCH", "/api/auth/profile", {
+        name: name.trim(),
+        phone: phone.trim(),
+        email: email.trim(),
+      });
+    } catch {}
 
     if (authUser) {
-      setAuthUser({
-        ...authUser,
-        name: name.trim(),
-        email: email.trim(),
-        phone: phone.trim(),
-      });
+      setAuthUser({ ...authUser, name: name.trim(), email: email.trim(), phone: phone.trim() });
     }
-
-    apiRequest("PATCH", "/api/auth/profile", {
-      name: name.trim(),
-      phone: phone.trim(),
-      email: email.trim(),
-    }).catch(() => {});
 
     if (isProvider && currentProvider) {
       const updatedProvider = {
@@ -289,15 +285,12 @@ export default function EditProfileScreen() {
       };
       setCurrentProvider(updatedProvider);
       try {
-        await fetch(new URL("/api/providers/register", getApiUrl()).toString(), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(updatedProvider),
-        });
+        await apiRequest("POST", "/api/providers/register", updatedProvider);
       } catch {}
-    } else if (currentDriver) {
+    } else {
+      const base = currentDriver ?? { id: authUser?.id ?? "", avatarPreset: 1, membership: "free" as const };
       setCurrentDriver({
-        ...currentDriver,
+        ...base,
         name: name.trim(),
         phone: phone.trim(),
         email: email.trim(),

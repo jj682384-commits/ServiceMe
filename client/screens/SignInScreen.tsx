@@ -82,7 +82,7 @@ function InputField({ label, value, onChangeText, placeholder, icon, secureTextE
 export default function SignInScreen() {
   const insets = useSafeAreaInsets();
   const { theme, isDark } = useTheme();
-  const { setIsAuthenticated, setAuthUser, userRole, currentDriver, currentProvider, setUserRole, setCurrentProvider } = useApp();
+  const { setIsAuthenticated, setAuthUser, userRole, currentDriver, currentProvider, setUserRole, setCurrentProvider, setCurrentDriver } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const [email, setEmail] = useState("");
@@ -123,7 +123,8 @@ export default function SignInScreen() {
       const data = await res.json() as { userId: string; token: string; role: string; name: string; email: string; phone: string; };
       setAuthToken(data.token);
       await saveAuthToken(data.token);
-      setAuthUser({ id: data.userId, name: data.name, email: data.email, phone: data.phone });
+      const freshUser = { id: data.userId, name: data.name, email: data.email, phone: data.phone };
+      setAuthUser(freshUser);
       setIsAuthenticated(true);
       if (data.role === "provider") {
         setUserRole("provider");
@@ -134,6 +135,10 @@ export default function SignInScreen() {
           .catch(() => {});
       } else {
         setUserRole("driver");
+        setCurrentDriver((prev) => prev
+          ? { ...prev, name: data.name, email: data.email, phone: data.phone }
+          : { id: data.userId, name: data.name, email: data.email, phone: data.phone, avatarPreset: 1, membership: "free" }
+        );
         navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "DriverTabs" }] }));
       }
     } catch (err: unknown) {

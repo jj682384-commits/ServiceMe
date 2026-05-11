@@ -288,6 +288,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           activeRequestRaw,
           savedToken,
           themeRaw,
+          authUserRaw,
         ] = await Promise.all([
           AsyncStorage.getItem("currentDriver"),
           AsyncStorage.getItem("currentProvider"),
@@ -299,13 +300,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
           AsyncStorage.getItem("activeRequest"),
           loadAuthToken(),
           AsyncStorage.getItem("themeOverride"),
+          AsyncStorage.getItem("authUser"),
         ]);
         if (savedToken) setAuthToken(savedToken);
         if (themeRaw === "dark" || themeRaw === "light") setThemeOverride(themeRaw);
+        if (authUserRaw) setAuthUser(JSON.parse(authUserRaw));
         if (driverRaw) setCurrentDriver(JSON.parse(driverRaw));
         if (providerRaw) setCurrentProvider(JSON.parse(providerRaw));
         if (roleRaw) setUserRole(roleRaw as UserRole);
-        if (driverRaw || providerRaw) setIsAuthenticated(true);
+        if (driverRaw || providerRaw || authUserRaw) setIsAuthenticated(true);
         if (vehiclesRaw) setVehicles(JSON.parse(vehiclesRaw));
         if (paymentsRaw) setPaymentMethods(JSON.parse(paymentsRaw));
         if (historyRaw) {
@@ -326,6 +329,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       _setPersisted(true);
     })();
   }, []);
+
+  useEffect(() => {
+    if (!_persisted) return;
+    if (authUser) AsyncStorage.setItem("authUser", JSON.stringify(authUser)).catch(() => {});
+    else AsyncStorage.removeItem("authUser").catch(() => {});
+  }, [authUser, _persisted]);
 
   useEffect(() => {
     if (!_persisted) return;
@@ -614,6 +623,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setAuthToken(null);
     deleteAuthToken().catch(() => {});
     AsyncStorage.multiRemove([
+      "authUser",
       "vehicles",
       "paymentMethods",
       "requestHistory",
