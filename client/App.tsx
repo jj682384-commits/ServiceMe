@@ -23,8 +23,13 @@ import { useProviderJobAlerts } from "@/hooks/useProviderJobAlerts";
 import { navigationRef } from "@/lib/navigationRef";
 import { getApiUrl } from "@/lib/query-client";
 import { useTheme } from "@/hooks/useTheme";
+import { requestNotificationPermission } from "@/lib/notifications";
 
 initializeRevenueCat();
+
+// Request notification permission as early as possible so local notifications
+// work for both drivers and providers regardless of push-token availability.
+requestNotificationPermission().catch(() => {});
 
 const LightNavTheme = {
   ...DefaultTheme,
