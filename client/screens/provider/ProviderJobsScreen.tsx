@@ -25,6 +25,7 @@ import { Spacing, BorderRadius } from "@/constants/theme";
 import { getApiUrl, apiRequest } from "@/lib/query-client";
 import * as Location from "expo-location";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
+import { markJobSeen } from "@/hooks/useProviderJobAlerts";
 
 const EV_CYAN = "#00D4FF";
 
@@ -415,6 +416,11 @@ export default function ProviderJobsScreen() {
     (serverJobs ?? []).forEach((j) => map.set(j.id, j));
     return Array.from(map.values());
   }, [serverJobs, pendingJobs]);
+
+  // Mark all visible jobs as seen so background alerts don't re-fire for them
+  useEffect(() => {
+    merged.forEach((j) => markJobSeen(j.id));
+  }, [merged]);
 
   const handleAccept = async () => {
     if (!selectedJob || accepting) return;

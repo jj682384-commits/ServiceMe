@@ -19,6 +19,7 @@ import { AppProvider } from "@/context/AppContext";
 import { Colors } from "@/constants/theme";
 import { initializeRevenueCat, SubscriptionProvider } from "@/lib/revenuecat";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { useProviderJobAlerts } from "@/hooks/useProviderJobAlerts";
 import { navigationRef } from "@/lib/navigationRef";
 import { getApiUrl } from "@/lib/query-client";
 import { useTheme } from "@/hooks/useTheme";
@@ -51,6 +52,7 @@ const DarkNavTheme = {
 
 function NotificationSetup() {
   usePushNotifications();
+  useProviderJobAlerts();
   return null;
 }
 
