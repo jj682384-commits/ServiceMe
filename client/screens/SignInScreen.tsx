@@ -135,10 +135,10 @@ export default function SignInScreen() {
           .catch(() => {});
       } else {
         setUserRole("driver");
-        setCurrentDriver((prev) => prev
-          ? { ...prev, name: data.name, email: data.email, phone: data.phone }
-          : { id: data.userId, name: data.name, email: data.email, phone: data.phone, avatarPreset: 1, membership: "free" }
-        );
+        const updatedDriver = currentDriver
+          ? { ...currentDriver, name: data.name, email: data.email, phone: data.phone }
+          : { id: data.userId, name: data.name, email: data.email, phone: data.phone, avatarPreset: 1, membership: "free" as const };
+        setCurrentDriver(updatedDriver);
         navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "DriverTabs" }] }));
       }
     } catch (err: unknown) {
