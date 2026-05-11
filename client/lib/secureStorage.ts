@@ -8,7 +8,11 @@ export async function saveAuthToken(token: string): Promise<void> {
   if (Platform.OS === "web") {
     await AsyncStorage.setItem(TOKEN_KEY, token);
   } else {
-    await SecureStore.setItemAsync(TOKEN_KEY, token);
+    try {
+      await SecureStore.setItemAsync(TOKEN_KEY, token);
+    } catch {
+      await AsyncStorage.setItem(TOKEN_KEY, token);
+    }
   }
 }
 
@@ -16,7 +20,11 @@ export async function loadAuthToken(): Promise<string | null> {
   if (Platform.OS === "web") {
     return AsyncStorage.getItem(TOKEN_KEY);
   } else {
-    return SecureStore.getItemAsync(TOKEN_KEY);
+    try {
+      const val = await SecureStore.getItemAsync(TOKEN_KEY);
+      if (val) return val;
+    } catch {}
+    return AsyncStorage.getItem(TOKEN_KEY);
   }
 }
 
@@ -24,6 +32,7 @@ export async function deleteAuthToken(): Promise<void> {
   if (Platform.OS === "web") {
     await AsyncStorage.removeItem(TOKEN_KEY);
   } else {
-    await SecureStore.deleteItemAsync(TOKEN_KEY);
+    try { await SecureStore.deleteItemAsync(TOKEN_KEY); } catch {}
+    await AsyncStorage.removeItem(TOKEN_KEY);
   }
 }

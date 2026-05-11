@@ -118,35 +118,39 @@ export default function SignInScreen() {
       return;
     }
     setIsLoading(true);
+    type AuthData = { userId: string; token: string; role: string; name: string; email: string; phone: string; };
+    let data: AuthData | null = null;
     try {
       const res = await apiRequest("POST", "/api/auth/signin", { email: email.trim(), password });
-      const data = await res.json() as { userId: string; token: string; role: string; name: string; email: string; phone: string; };
-      setAuthToken(data.token);
-      await saveAuthToken(data.token);
-      const freshUser = { id: data.userId, name: data.name, email: data.email, phone: data.phone };
-      setAuthUser(freshUser);
-      setIsAuthenticated(true);
-      if (data.role === "provider") {
-        setUserRole("provider");
-        navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "ProviderTabs" }] }));
-        apiRequest("GET", `/api/providers/by-email/${encodeURIComponent(data.email)}`)
-          .then((r) => r.ok ? r.json() : null)
-          .then((d) => { if (d) setCurrentProvider(d); })
-          .catch(() => {});
-      } else {
-        setUserRole("driver");
-        const updatedDriver = currentDriver
-          ? { ...currentDriver, name: data.name, email: data.email, phone: data.phone }
-          : { id: data.userId, name: data.name, email: data.email, phone: data.phone, avatarPreset: 1, membership: "free" as const };
-        setCurrentDriver(updatedDriver);
-        navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "DriverTabs" }] }));
-      }
+      data = await res.json() as AuthData;
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Sign in failed";
-      Alert.alert("Sign In Failed", msg.includes("401") ? "Email or password is incorrect." : "Could not sign in. Please try again.");
-    } finally {
+      const msg = err instanceof Error ? err.message : "";
+      Alert.alert("Sign In Failed", msg.includes("401") ? "Email or password is incorrect." : "Could not connect to the server. Check your connection and try again.");
       setIsLoading(false);
+      return;
     }
+    if (!data) { setIsLoading(false); return; }
+    setAuthToken(data.token);
+    saveAuthToken(data.token).catch(() => {});
+    const freshUser = { id: data.userId, name: data.name, email: data.email, phone: data.phone };
+    setAuthUser(freshUser);
+    setIsAuthenticated(true);
+    if (data.role === "provider") {
+      setUserRole("provider");
+      navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "ProviderTabs" }] }));
+      apiRequest("GET", `/api/providers/by-email/${encodeURIComponent(data.email)}`)
+        .then((r) => r.ok ? r.json() : null)
+        .then((d) => { if (d) setCurrentProvider(d); })
+        .catch(() => {});
+    } else {
+      setUserRole("driver");
+      const updatedDriver = currentDriver
+        ? { ...currentDriver, name: data.name, email: data.email, phone: data.phone }
+        : { id: data.userId, name: data.name, email: data.email, phone: data.phone, avatarPreset: 1, membership: "free" as const };
+      setCurrentDriver(updatedDriver);
+      navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "DriverTabs" }] }));
+    }
+    setIsLoading(false);
   };
 
   const backBg       = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)";

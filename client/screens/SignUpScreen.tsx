@@ -234,7 +234,7 @@ export default function SignUpScreen() {
       const res = await apiRequest("POST", "/api/auth/signup", { email: email.trim(), name: fullName.trim(), phone: phone.trim(), password });
       const data = await res.json() as { userId: string; token: string; role: string; name: string; email: string; phone: string; };
       setAuthToken(data.token);
-      await saveAuthToken(data.token);
+      saveAuthToken(data.token).catch(() => {});
       setAuthUser({ id: data.userId, name: data.name, email: data.email, phone: data.phone });
       setIsAuthenticated(true);
       setUserRole("driver");
@@ -242,7 +242,7 @@ export default function SignUpScreen() {
       navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "DriverTabs" }] }));
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Sign up failed";
-      Alert.alert("Sign Up Failed", msg.includes("409") ? "An account with this email already exists. Try signing in instead." : "Could not create account. Please try again.");
+      Alert.alert("Sign Up Failed", msg.includes("409") ? "An account with this email already exists. Try signing in instead." : "Could not create account. Please check your connection and try again.");
     } finally {
       setIsLoading(false);
     }
