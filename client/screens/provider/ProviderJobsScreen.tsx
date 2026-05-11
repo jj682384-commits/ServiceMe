@@ -7,6 +7,7 @@ import {
   Modal,
   ScrollView,
   RefreshControl,
+  AppState,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -26,6 +27,7 @@ import { getApiUrl, apiRequest } from "@/lib/query-client";
 import * as Location from "expo-location";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { markJobSeen } from "@/hooks/useProviderJobAlerts";
+import { notifyNewJobRequest } from "@/lib/notifications";
 
 const EV_CYAN = "#00D4FF";
 
@@ -379,7 +381,13 @@ export default function ProviderJobsScreen() {
     staleTime: 3000,
   });
 
-  // WebSocket: instantly receive new job broadcasts instead of waiting for next poll
+  // Track focus in a ref so the WebSocket closure always sees the live value
+  const isFocused = useIsFocused();
+  const isFocusedRef = useRef(isFocused);
+  useEffect(() => { isFocusedRef.current = isFocused; }, [isFocused]);
+
+  // WebSocket: receive new-job broadcasts and fire a local notification immediately
+  // if the provider cannot currently see the Jobs tab.
   const wsRef = useRef<WebSocket | null>(null);
   useEffect(() => {
     const apiUrl = getApiUrl();
@@ -393,6 +401,26 @@ export default function ProviderJobsScreen() {
         try {
           const data = JSON.parse(event.data as string);
           if (data.type === "job_status_update" && data.job?.status === "pending") {
+            const job = data.job as {
+              id: string; serviceType: string; isEV?: boolean; isEmergency?: boolean;
+            };
+            // Provider can see the job only if the Jobs tab is focused AND the
+            // app is in the foreground. In any other case (different tab, app
+            // backgrounded) fire a notification immediately instead of waiting
+            // for the next poll, then mark the job seen to avoid a duplicate.
+            const providerCanSeeIt =
+              isFocusedRef.current && AppState.currentState === "active";
+            if (!providerCanSeeIt) {
+              let label: string;
+              if (job.isEV) {
+                label = job.serviceType === "fuel" ? "EV Mobile Charging" : "EV-Safe Towing";
+              } else {
+                label = serviceTypeLabels[job.serviceType] ?? "Roadside Assistance";
+              }
+              const urgencyPrefix = job.isEmergency ? "EMERGENCY: " : "";
+              notifyNewJobRequest(urgencyPrefix + label, "nearby");
+              markJobSeen(job.id);
+            }
             queryClient.invalidateQueries({ queryKey: ["/api/jobs/pending"] });
           }
         } catch {}
@@ -417,12 +445,11 @@ export default function ProviderJobsScreen() {
     return Array.from(map.values());
   }, [serverJobs, pendingJobs]);
 
-  // Only mark jobs as seen when this tab is actually visible.
-  // If we mark them while the provider is on a different screen, the alert
-  // hook will never detect an "unseen" job and no notification will fire.
-  const isFocused = useIsFocused();
+  // Mark jobs as seen only when the provider is actively viewing this tab
+  // AND the app is in the foreground. This prevents backgrounded queries or
+  // off-tab WebSocket updates from silently swallowing unseen jobs.
   useEffect(() => {
-    if (!isFocused) return;
+    if (!isFocused || AppState.currentState !== "active") return;
     merged.forEach((j) => markJobSeen(j.id));
   }, [merged, isFocused]);
 
