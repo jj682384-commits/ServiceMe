@@ -8,13 +8,16 @@ import {
   checkAndNotifyNewJobs,
 } from "@/lib/providerJobAlerts";
 
-const FOREGROUND_INTERVAL_MS = 30_000; // check every 30 s while app is foregrounded
+const FOREGROUND_INTERVAL_MS = 15_000; // poll every 15 s while app is foregrounded
 
 export function useProviderJobAlerts() {
   const { userRole, currentProvider } = useApp();
   const isProvider = userRole === "provider" && !!currentProvider?.id;
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const appStateRef = useRef(AppState.currentState);
+  // Delay the first check by 3 s so ProviderJobsScreen has time to mark
+  // already-visible jobs as seen before we fire any notifications.
+  const mountedRef = useRef(false);
 
   useEffect(() => {
     if (!isProvider || Platform.OS === "web") return;
@@ -22,12 +25,15 @@ export function useProviderJobAlerts() {
     // Register background fetch so the OS wakes the app periodically
     registerProviderJobAlerts();
 
-    // Run an immediate check when the effect mounts (provider just signed in)
-    checkAndNotifyNewJobs();
+    // Delay first check so visible jobs on the Jobs tab are marked seen first
+    const initialTimer = setTimeout(() => {
+      mountedRef.current = true;
+      checkAndNotifyNewJobs();
+    }, 3000);
 
-    // Also poll while the app is foregrounded (every 30 s)
+    // Poll while app is foregrounded
     intervalRef.current = setInterval(() => {
-      if (appStateRef.current === "active") checkAndNotifyNewJobs();
+      if (mountedRef.current && appStateRef.current === "active") checkAndNotifyNewJobs();
     }, FOREGROUND_INTERVAL_MS);
 
     // Listen for app coming back to foreground — check immediately
@@ -40,6 +46,7 @@ export function useProviderJobAlerts() {
     });
 
     return () => {
+      clearTimeout(initialTimer);
       if (intervalRef.current) clearInterval(intervalRef.current);
       sub.remove();
     };

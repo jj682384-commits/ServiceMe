@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useIsFocused } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -417,10 +417,14 @@ export default function ProviderJobsScreen() {
     return Array.from(map.values());
   }, [serverJobs, pendingJobs]);
 
-  // Mark all visible jobs as seen so background alerts don't re-fire for them
+  // Only mark jobs as seen when this tab is actually visible.
+  // If we mark them while the provider is on a different screen, the alert
+  // hook will never detect an "unseen" job and no notification will fire.
+  const isFocused = useIsFocused();
   useEffect(() => {
+    if (!isFocused) return;
     merged.forEach((j) => markJobSeen(j.id));
-  }, [merged]);
+  }, [merged, isFocused]);
 
   const handleAccept = async () => {
     if (!selectedJob || accepting) return;
