@@ -2,9 +2,9 @@ import { useEffect, useRef } from "react";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 import { initNotifications, NotificationData } from "@/lib/notifications";
-import { navigateTo } from "@/lib/navigationRef";
+import { navigationRef } from "@/lib/navigationRef";
 import { useApp } from "@/context/AppContext";
-import { getApiUrl, apiRequest, getAuthToken } from "@/lib/query-client";
+import { apiRequest, getAuthToken } from "@/lib/query-client";
 
 export function usePushNotifications() {
   const notificationListener = useRef<Notifications.EventSubscription | null>(null);
@@ -22,14 +22,10 @@ export function usePushNotifications() {
 
       if (userRole === "provider" && currentProvider?.id) {
         try {
-          const url = new URL(`/api/providers/${currentProvider.id}/push-token`, getApiUrl());
-          await fetch(url.toString(), {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ pushToken: token }),
-          });
+          // MUST use apiRequest — raw fetch silently hangs on physical iOS in Expo Go
+          await apiRequest("PATCH", `/api/providers/${currentProvider.id}/push-token`, { pushToken: token });
         } catch {
-          // non-critical
+          // non-critical — retry on next mount
         }
       } else if (userRole === "driver" && getAuthToken()) {
         try {
@@ -48,17 +44,21 @@ export function usePushNotifications() {
       const data = response.notification.request.content.data as NotificationData | undefined;
       if (!data?.screen) return;
 
+      if (!navigationRef.isReady()) return;
+
       switch (data.screen) {
         case "ActiveService":
-          navigateTo("ActiveService");
+          navigationRef.navigate("ActiveService" as any);
           break;
         case "EmergencyMode":
-          navigateTo("EmergencyMode");
+          navigationRef.navigate("EmergencyMode" as any);
           break;
         case "EVRangeAlert":
-          navigateTo("EVRangeAlert");
+          navigationRef.navigate("EVRangeAlert" as any);
           break;
         case "ProviderDashboard":
+          // Navigate into the provider tab navigator and open the Jobs tab
+          navigationRef.navigate("ProviderTabs" as any, { screen: "JobsTab" } as any);
           break;
       }
     });
