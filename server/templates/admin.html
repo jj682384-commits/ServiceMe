@@ -266,6 +266,72 @@
       .main-content { margin-left: 0; }
       .stats-row { grid-template-columns: 1fr 1fr; }
     }
+
+    /* ── Detail Drawer ── */
+    .drawer-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 200;
+      opacity: 0; pointer-events: none; transition: opacity .25s;
+    }
+    .drawer-backdrop.open { opacity: 1; pointer-events: all; }
+    .drawer {
+      position: fixed; top: 0; right: 0; bottom: 0; width: 560px; max-width: 100vw;
+      background: var(--surface); border-left: 1px solid var(--border);
+      z-index: 201; display: flex; flex-direction: column;
+      transform: translateX(100%); transition: transform .28s cubic-bezier(.4,0,.2,1);
+      overflow: hidden;
+    }
+    .drawer.open { transform: translateX(0); }
+    .drawer-header {
+      padding: 22px 24px 18px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: flex-start; gap: 14px; flex-shrink: 0;
+    }
+    .drawer-avatar {
+      width: 52px; height: 52px; border-radius: 14px; background: var(--surface2);
+      border: 1px solid var(--border); display: flex; align-items: center;
+      justify-content: center; font-size: 22px; flex-shrink: 0;
+    }
+    .drawer-title { font-size: 18px; font-weight: 900; }
+    .drawer-sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+    .drawer-close {
+      margin-left: auto; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); cursor: pointer; padding: 7px 12px;
+      font-size: 16px; flex-shrink: 0; font-family: inherit; transition: all .15s;
+    }
+    .drawer-close:hover { background: var(--surface3); }
+    .drawer-body { flex: 1; overflow-y: auto; padding: 20px 24px; }
+    .drawer-section { margin-bottom: 24px; }
+    .drawer-section-title {
+      font-size: 10px; font-weight: 800; color: var(--muted); letter-spacing: 1px;
+      text-transform: uppercase; margin-bottom: 10px; padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; }
+    .info-item .info-label { font-size: 10px; color: var(--muted); font-weight: 700; letter-spacing: .5px; text-transform: uppercase; margin-bottom: 3px; }
+    .info-item .info-val { font-size: 13px; font-weight: 600; }
+    .stat-pills { display: flex; gap: 10px; flex-wrap: wrap; }
+    .stat-pill {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+      padding: 10px 16px; flex: 1; min-width: 100px;
+    }
+    .stat-pill .sp-val { font-size: 20px; font-weight: 900; }
+    .stat-pill .sp-label { font-size: 10px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
+    .drawer-job-row {
+      display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+      border-radius: 8px; background: var(--surface2); margin-bottom: 7px;
+      border: 1px solid var(--border);
+    }
+    .drawer-job-row:last-child { margin-bottom: 0; }
+    .djr-type { font-weight: 700; font-size: 13px; flex: 1; }
+    .djr-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .djr-amt { font-weight: 800; font-size: 13px; }
+    .service-tag {
+      display: inline-block; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 6px; padding: 3px 9px; font-size: 11px; margin: 2px;
+    }
+    .provider-card { cursor: pointer; transition: border-color .15s, box-shadow .15s; }
+    .provider-card:hover { border-color: rgba(192,192,192,.35); box-shadow: 0 4px 20px rgba(0,0,0,.18); }
+    tr.clickable-row { cursor: pointer; }
+    tr.clickable-row:hover td { background: rgba(255,255,255,.04) !important; }
   </style>
 </head>
 <body>
@@ -402,7 +468,7 @@
           <input class="search-input" placeholder="Search by name or email..." oninput="filterUsers(this.value)" />
         </div>
         <table>
-          <thead><tr><th>Name</th><th>Email</th><th>Stripe</th><th>Push Token</th><th>Joined</th><th></th></tr></thead>
+          <thead><tr><th>Name / Email</th><th>Joined</th><th>Stripe</th><th>Push Token</th><th>Jobs</th><th></th></tr></thead>
           <tbody id="users-table-body"></tbody>
         </table>
       </div>
@@ -546,6 +612,13 @@
   </div>
 </div>
 
+<!-- Detail Drawer -->
+<div class="drawer-backdrop" id="drawer-backdrop" onclick="closeDrawer()"></div>
+<div class="drawer" id="detail-drawer">
+  <div class="drawer-header" id="drawer-header"></div>
+  <div class="drawer-body" id="drawer-body"></div>
+</div>
+
 <script>
   let token = localStorage.getItem("sm_admin_token") || "";
   let allProviders = [], allUsers = [], allJobs = [], allWaitlist = [], allReports = [];
@@ -661,6 +734,7 @@
         rating: p.rating, reviewCount: p.review_count || p.reviewCount,
         earningsBalance: p.earnings_balance || 0,
         stripeAccountId: p.stripe_account_id || p.stripeAccountId,
+        evCapable: !!(p.ev_capable || p.evCapable),
       }));
       renderProviders();
     } catch (e) {
@@ -693,10 +767,10 @@
     const submittedDate = p.verificationSubmittedAt ? `Submitted ${fmtDate(p.verificationSubmittedAt)}` : "";
     const rejNote = p.verificationNotes ? `<div class="rejection-note">Previous note: ${esc(p.verificationNotes)}</div>` : "";
     const actionsHtml = status === "pending"
-      ? `<input class="reject-input" id="note-${p.id}" placeholder="Rejection reason (optional)" /><button class="btn btn-success btn-sm" onclick="approveProvider('${p.id}')">Approve</button><button class="btn btn-danger btn-sm" onclick="rejectProvider('${p.id}')">Reject</button>`
+      ? `<input class="reject-input" id="note-${p.id}" placeholder="Rejection reason (optional)" onclick="event.stopPropagation()" /><button class="btn btn-success btn-sm" onclick="event.stopPropagation();approveProvider('${p.id}')">Approve</button><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();rejectProvider('${p.id}')">Reject</button>`
       : status === "not_started" ? `<span style="font-size:12px;color:var(--muted)">Awaiting documents</span>`
-      : `<button class="btn btn-danger btn-sm" onclick="revokeProvider('${p.id}')">Revoke</button>`;
-    return `<div class="provider-card ${status}" id="card-${p.id}">
+      : `<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();revokeProvider('${p.id}')">Revoke</button>`;
+    return `<div class="provider-card ${status}" id="card-${p.id}" onclick="openProviderDetail('${p.id}')" style="position:relative">
       <div class="card-header">
         <div><div class="card-name">${esc(p.name)}</div><div class="card-meta">${esc(p.email)} &bull; ${esc(p.phone || "No phone")} &bull; ${p.providerType === "shop" ? "Business / Shop" : "Independent"}</div></div>
         <span class="badge ${status}">${badgeLabel}</span>
@@ -757,13 +831,13 @@
     const drivers = users.filter(u => u.role !== "provider");
     const body = document.getElementById("users-table-body");
     if (!drivers.length) { body.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">&#128100;</div><p>No drivers found.</p></div></td></tr>`; return; }
-    body.innerHTML = drivers.map(u => `<tr>
-      <td><div class="td-name">${esc(u.name)}</div></td>
-      <td>${esc(u.email)}</td>
+    body.innerHTML = drivers.map(u => `<tr class="clickable-row" onclick="openDriverDetail('${u.id}')">
+      <td><div class="td-name">${esc(u.name)}</div><div class="td-sub">${esc(u.email)}</div></td>
+      <td style="color:var(--muted);font-size:12px">${fmtDate(u.created_at)}</td>
       <td><span style="font-size:11px;color:${u.stripe_customer_id ? "var(--success)" : "var(--muted)"}">${u.stripe_customer_id ? "&#10003; Connected" : "Not linked"}</span></td>
       <td><span style="font-size:11px;color:${u.push_token ? "var(--success)" : "var(--muted)"}">${u.push_token ? "&#10003; Registered" : "None"}</span></td>
-      <td style="color:var(--muted);font-size:12px">${fmtDate(u.created_at)}</td>
-      <td><button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}','${esc(u.name)}')">Remove</button></td>
+      <td style="color:var(--muted);font-size:12px">${allJobs.filter(j => j.driver && j.driver.name === u.name).length} jobs</td>
+      <td onclick="event.stopPropagation()"><button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}','${esc(u.name)}')">Remove</button></td>
     </tr>`).join("");
   }
   async function deleteUser(id, name) {
@@ -900,6 +974,169 @@
       document.getElementById("notify-title").value = "";
       document.getElementById("notify-body").value = "";
     } catch { errEl.textContent = "Network error. Try again."; }
+  }
+
+  // ── Detail Drawer ──
+  function openDrawer() {
+    document.getElementById("drawer-backdrop").classList.add("open");
+    document.getElementById("detail-drawer").classList.add("open");
+    document.body.style.overflow = "hidden";
+  }
+  function closeDrawer() {
+    document.getElementById("drawer-backdrop").classList.remove("open");
+    document.getElementById("detail-drawer").classList.remove("open");
+    document.body.style.overflow = "";
+  }
+  document.addEventListener("keydown", e => { if (e.key === "Escape") closeDrawer(); });
+
+  // ── Provider Detail ──
+  function openProviderDetail(id) {
+    const p = allProviders.find(x => x.id === id);
+    if (!p) return;
+    const status = p.verificationStatus || "not_started";
+    const badgeLabel = status === "verified" ? "Verified" : status === "pending" ? "Pending Review" : "Not Started";
+    const providerJobs = allJobs.filter(j => j.provider && (j.provider.name || j.provider) === p.name);
+    const completedJobs = providerJobs.filter(j => j.status === "completed");
+    const totalEarned = completedJobs.reduce((s, j) => s + Number(j.total_cost || j.estimated_cost || 0), 0);
+    const avgPerJob = completedJobs.length ? totalEarned / completedJobs.length : 0;
+    const docs = (REQUIRED_DOCS[p.providerType] || REQUIRED_DOCS.independent);
+
+    document.getElementById("drawer-header").innerHTML = `
+      <div class="drawer-avatar">&#128736;</div>
+      <div style="flex:1;min-width:0">
+        <div class="drawer-title">${esc(p.name)}</div>
+        <div class="drawer-sub">${esc(p.email)} &bull; ${p.providerType === "shop" ? "Business / Shop" : "Independent Provider"}</div>
+        <div style="margin-top:6px"><span class="badge ${status}">${badgeLabel}</span>${p.rating ? `<span style="margin-left:8px;font-size:12px;color:var(--muted)">&#9733; ${Number(p.rating).toFixed(1)} (${p.reviewCount || 0} reviews)</span>` : ""}</div>
+      </div>
+      <button class="drawer-close" onclick="closeDrawer()">&#10005;</button>`;
+
+    document.getElementById("drawer-body").innerHTML = `
+      <div class="drawer-section">
+        <div class="drawer-section-title">Performance</div>
+        <div class="stat-pills">
+          <div class="stat-pill"><div class="sp-val">${providerJobs.length}</div><div class="sp-label">Total Jobs</div></div>
+          <div class="stat-pill"><div class="sp-val success" style="color:var(--success)">${completedJobs.length}</div><div class="sp-label">Completed</div></div>
+          <div class="stat-pill"><div class="sp-val coral" style="color:var(--cyan)">${fmtMoney(totalEarned)}</div><div class="sp-label">Total Earned</div></div>
+          <div class="stat-pill"><div class="sp-val">${fmtMoney(avgPerJob)}</div><div class="sp-label">Avg per Job</div></div>
+        </div>
+      </div>
+
+      <div class="drawer-section">
+        <div class="drawer-section-title">Account Info</div>
+        <div class="info-grid">
+          <div class="info-item"><div class="info-label">Phone</div><div class="info-val">${esc(p.phone || "Not provided")}</div></div>
+          <div class="info-item"><div class="info-label">Provider Type</div><div class="info-val">${p.providerType === "shop" ? "Business / Shop" : "Independent"}</div></div>
+          <div class="info-item"><div class="info-label">Earnings Balance</div><div class="info-val" style="color:var(--success)">${fmtMoney(p.earningsBalance)}</div></div>
+          <div class="info-item"><div class="info-label">Stripe Connect</div><div class="info-val" style="color:${p.stripeAccountId ? "var(--success)" : "var(--muted)"}">${p.stripeAccountId ? "&#10003; Connected" : "Not connected"}</div></div>
+          <div class="info-item"><div class="info-label">Submitted</div><div class="info-val">${p.verificationSubmittedAt ? fmtDate(p.verificationSubmittedAt) : "—"}</div></div>
+          <div class="info-item"><div class="info-label">EV Capable</div><div class="info-val">${p.evCapable ? '<span style="color:var(--purple)">&#10003; Yes</span>' : "No"}</div></div>
+        </div>
+      </div>
+
+      <div class="drawer-section">
+        <div class="drawer-section-title">Vehicle</div>
+        <div class="info-grid">
+          <div class="info-item"><div class="info-label">Make &amp; Model</div><div class="info-val">${esc(p.vehicleMake || "—")} ${esc(p.vehicleModel || "")}</div></div>
+          <div class="info-item"><div class="info-label">License Plate</div><div class="info-val">${esc(p.licensePlate || "—")}</div></div>
+        </div>
+      </div>
+
+      <div class="drawer-section">
+        <div class="drawer-section-title">Services Offered</div>
+        <div>${(p.servicesOffered || []).length ? (p.servicesOffered).map(s => `<span class="service-tag">${s.replace(/_/g," ")}</span>`).join("") : '<span style="color:var(--muted);font-size:13px">None listed</span>'}</div>
+      </div>
+
+      <div class="drawer-section">
+        <div class="drawer-section-title">Verification Documents</div>
+        <div class="docs-list">${docs.map(key => {
+          const up = p.verificationDocuments && p.verificationDocuments[key];
+          return `<span class="doc-chip ${up ? "uploaded" : "missing"}">${up ? "&#10003;" : "&#9675;"} ${DOC_LABELS[key] || key}</span>`;
+        }).join("")}</div>
+        ${p.verificationNotes ? `<div class="rejection-note" style="margin-top:10px">Note: ${esc(p.verificationNotes)}</div>` : ""}
+      </div>
+
+      <div class="drawer-section">
+        <div class="drawer-section-title">Job History (${providerJobs.length})</div>
+        ${providerJobs.length === 0
+          ? '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0">No jobs yet</div>'
+          : providerJobs.slice().sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).slice(0,50).map(j => `
+            <div class="drawer-job-row">
+              <div style="flex:1">
+                <div class="djr-type">${esc((j.service_type||"").replace(/_/g," "))} ${j.is_ev ? '<span class="badge ev" style="font-size:10px">EV</span>' : ""} ${j.is_emergency ? '<span class="badge cancelled" style="font-size:10px">Emergency</span>' : ""}</div>
+                <div class="djr-sub">${esc(j.driver?.name || "Unknown driver")} &bull; ${fmtDate(j.created_at)}</div>
+              </div>
+              <div style="text-align:right">
+                <div class="djr-amt">${fmtMoney(j.total_cost || j.estimated_cost)}</div>
+                <div><span class="badge ${j.status}" style="font-size:10px">${j.status}</span></div>
+              </div>
+            </div>`).join("")
+        }
+      </div>`;
+    openDrawer();
+  }
+
+  // ── Driver Detail ──
+  function openDriverDetail(id) {
+    const u = allUsers.find(x => x.id === id);
+    if (!u) return;
+    const driverJobs = allJobs.filter(j => j.driver && j.driver.name === u.name);
+    const completedJobs = driverJobs.filter(j => j.status === "completed");
+    const totalSpent = completedJobs.reduce((s, j) => s + Number(j.total_cost || j.estimated_cost || 0), 0);
+    const cancelledJobs = driverJobs.filter(j => j.status === "cancelled");
+
+    document.getElementById("drawer-header").innerHTML = `
+      <div class="drawer-avatar">&#128100;</div>
+      <div style="flex:1;min-width:0">
+        <div class="drawer-title">${esc(u.name)}</div>
+        <div class="drawer-sub">${esc(u.email)}</div>
+        <div style="margin-top:6px"><span class="badge driver">Driver</span>${u.stripe_customer_id ? '<span class="badge verified" style="margin-left:6px">&#10003; Stripe</span>' : ""}</div>
+      </div>
+      <button class="drawer-close" onclick="closeDrawer()">&#10005;</button>`;
+
+    document.getElementById("drawer-body").innerHTML = `
+      <div class="drawer-section">
+        <div class="drawer-section-title">Activity Summary</div>
+        <div class="stat-pills">
+          <div class="stat-pill"><div class="sp-val">${driverJobs.length}</div><div class="sp-label">Total Jobs</div></div>
+          <div class="stat-pill"><div class="sp-val success" style="color:var(--success)">${completedJobs.length}</div><div class="sp-label">Completed</div></div>
+          <div class="stat-pill"><div class="sp-val coral" style="color:var(--cyan)">${fmtMoney(totalSpent)}</div><div class="sp-label">Total Spent</div></div>
+          <div class="stat-pill"><div class="sp-val" style="color:var(--danger)">${cancelledJobs.length}</div><div class="sp-label">Cancelled</div></div>
+        </div>
+      </div>
+
+      <div class="drawer-section">
+        <div class="drawer-section-title">Account Info</div>
+        <div class="info-grid">
+          <div class="info-item"><div class="info-label">Member Since</div><div class="info-val">${fmtDate(u.created_at)}</div></div>
+          <div class="info-item"><div class="info-label">Push Notifications</div><div class="info-val" style="color:${u.push_token ? "var(--success)" : "var(--muted)"}">${u.push_token ? "&#10003; Registered" : "Not registered"}</div></div>
+          <div class="info-item"><div class="info-label">Stripe Customer</div><div class="info-val" style="color:${u.stripe_customer_id ? "var(--success)" : "var(--muted)"}">${u.stripe_customer_id ? "&#10003; Linked" : "Not linked"}</div></div>
+          <div class="info-item"><div class="info-label">User ID</div><div class="info-val" style="font-family:monospace;font-size:11px;color:var(--muted)">${u.id}</div></div>
+        </div>
+      </div>
+
+      <div class="drawer-section">
+        <div class="drawer-section-title">Job History (${driverJobs.length})</div>
+        ${driverJobs.length === 0
+          ? '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0">No jobs yet</div>'
+          : driverJobs.slice().sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).slice(0,50).map(j => `
+            <div class="drawer-job-row">
+              <div style="flex:1">
+                <div class="djr-type">${esc((j.service_type||"").replace(/_/g," "))} ${j.is_ev ? '<span class="badge ev" style="font-size:10px">EV</span>' : ""} ${j.is_emergency ? '<span class="badge cancelled" style="font-size:10px">Emergency</span>' : ""}</div>
+                <div class="djr-sub">${esc(j.provider?.name || "No provider yet")} &bull; ${fmtDate(j.created_at)}</div>
+              </div>
+              <div style="text-align:right">
+                <div class="djr-amt">${fmtMoney(j.total_cost || j.estimated_cost)}</div>
+                <div><span class="badge ${j.status}" style="font-size:10px">${j.status}</span></div>
+              </div>
+            </div>`).join("")
+        }
+      </div>
+
+      <div class="drawer-section">
+        <div class="drawer-section-title">Actions</div>
+        <button class="btn btn-danger btn-sm" onclick="closeDrawer(); setTimeout(() => deleteUser('${u.id}', '${esc(u.name).replace(/'/g,"\\'")}'), 200)">Remove Account</button>
+      </div>`;
+    openDrawer();
   }
 
   // ── Auto-login ──
