@@ -123,16 +123,20 @@ export default function EVMobileChargeScreen() {
       createdAt: new Date(),
       isEV: true,
       driver: currentDriver
-        ? { id: currentDriver.id, name: currentDriver.name, phone: currentDriver.phone, email: currentDriver.email }
+        ? { id: currentDriver.id, name: currentDriver.name, phone: currentDriver.phone, email: currentDriver.email, avatarPreset: currentDriver.avatarPreset }
         : undefined,
     };
-
-    // POST to server in background so providers see the job
-    apiRequest("POST", "/api/jobs", { ...pendingJob, createdAt: pendingJob.createdAt.toISOString() }).catch(() => {});
 
     addPendingJob(pendingJob);
     setActiveRequest(pendingJob);
     addToHistory(pendingJob);
+
+    const evPayload = { ...pendingJob, createdAt: pendingJob.createdAt.toISOString() };
+    try { await apiRequest("POST", "/api/jobs", evPayload); } catch {
+      await new Promise((r) => setTimeout(r, 1500));
+      apiRequest("POST", "/api/jobs", evPayload).catch(() => {});
+    }
+
     setIsProcessing(false);
     navigation.replace("ActiveService");
   };

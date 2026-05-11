@@ -136,7 +136,7 @@ export default function TowRequestScreen() {
   const expressFee = isExpress ? EXPRESS_FEE : 0;
   const totalCost = basePrice + winchFee + SERVICE_FEE + expressFee;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!selectedSize || isSubmitting) return;
 
     setIsSubmitting(true);
@@ -175,8 +175,11 @@ export default function TowRequestScreen() {
     setActiveRequest(pendingJob);
     addToHistory(pendingJob);
 
-    // Register with server in background so providers on other devices see the job
-    apiRequest("POST", "/api/jobs", { ...pendingJob, createdAt: pendingJob.createdAt.toISOString() }).catch(() => {});
+    const towPayload = { ...pendingJob, createdAt: pendingJob.createdAt.toISOString() };
+    try { await apiRequest("POST", "/api/jobs", towPayload); } catch {
+      await new Promise((r) => setTimeout(r, 1500));
+      apiRequest("POST", "/api/jobs", towPayload).catch(() => {});
+    }
 
     if (mountedRef.current) {
       setIsSubmitting(false);

@@ -438,7 +438,22 @@ export default function ProviderJobsScreen() {
         providerLocation,
       });
     } catch {
-      // proceed with local state even if server call fails
+      // Job might not be in DB yet (driver's POST may have failed) — upsert it then retry
+      try {
+        await apiRequest("POST", "/api/jobs", {
+          ...selectedJob,
+          createdAt: selectedJob.createdAt instanceof Date
+            ? selectedJob.createdAt.toISOString()
+            : selectedJob.createdAt,
+        });
+        await apiRequest("PATCH", `/api/jobs/${selectedJob.id}/accept`, {
+          provider: currentProvider,
+          eta: 8,
+          providerLocation,
+        });
+      } catch {
+        // Still failed — proceed with local state so provider isn't blocked
+      }
     }
 
     const acceptedJob: ServiceRequest = {

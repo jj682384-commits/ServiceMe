@@ -338,9 +338,13 @@ export default function ServiceRequestScreen() {
         addPendingJob(pendingJob);
         setActiveRequest(pendingJob);
         addToHistory(pendingJob);
+        const freePayload = { ...pendingJob, createdAt: pendingJob.createdAt.toISOString() };
+        try { await apiRequest("POST", "/api/jobs", freePayload); } catch {
+          await new Promise((r) => setTimeout(r, 1500));
+          apiRequest("POST", "/api/jobs", freePayload).catch(() => {});
+        }
         if (mountedRef.current) setIsSubmitting(false);
         navigation.replace("ActiveService");
-        apiRequest("POST", "/api/jobs", { ...pendingJob, createdAt: pendingJob.createdAt.toISOString() }).catch(() => {});
         return;
       }
 
@@ -394,13 +398,20 @@ export default function ServiceRequestScreen() {
       setActiveRequest(pendingJob);
       addToHistory(pendingJob);
 
-      // Navigate immediately — don't block on the server POST
+      // POST to server — must succeed so providers on other devices see the job
+      // Retry once on failure before navigating
+      const jobPayload = { ...pendingJob, createdAt: pendingJob.createdAt.toISOString() };
+      try {
+        await apiRequest("POST", "/api/jobs", jobPayload);
+      } catch {
+        // Retry once after a short delay
+        await new Promise((r) => setTimeout(r, 1500));
+        apiRequest("POST", "/api/jobs", jobPayload).catch(() => {});
+      }
+
       if (!mountedRef.current) return;
       setIsSubmitting(false);
       navigation.replace("ActiveService");
-
-      // POST to server in background so providers on other devices see the job
-      apiRequest("POST", "/api/jobs", { ...pendingJob, createdAt: pendingJob.createdAt.toISOString() }).catch(() => {});
     })();
   };
 
