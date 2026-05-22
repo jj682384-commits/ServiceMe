@@ -7,6 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -332,6 +334,93 @@
     .provider-card:hover { border-color: rgba(192,192,192,.35); box-shadow: 0 4px 20px rgba(0,0,0,.18); }
     tr.clickable-row { cursor: pointer; }
     tr.clickable-row:hover td { background: rgba(255,255,255,.04) !important; }
+
+    /* ── Live Jobs ── */
+    .live-header-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+    .live-pulse {
+      width: 9px; height: 9px; border-radius: 50%; background: var(--success);
+      box-shadow: 0 0 0 0 rgba(34,197,94,.6);
+      animation: livepulse 1.6s infinite;
+      flex-shrink: 0;
+    }
+    .live-pulse.idle { background: var(--muted); box-shadow: none; animation: none; }
+    @keyframes livepulse {
+      0% { box-shadow: 0 0 0 0 rgba(34,197,94,.7); }
+      70% { box-shadow: 0 0 0 8px rgba(34,197,94,0); }
+      100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+    }
+    .live-count-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+    .lchip {
+      padding: 4px 12px; border-radius: 100px; font-size: 12px; font-weight: 700;
+      border: 1px solid transparent;
+    }
+    .lchip.pending  { background: rgba(245,158,11,.12); color: var(--warning);   border-color: rgba(245,158,11,.25); }
+    .lchip.accepted { background: rgba(0,170,255,.10);  color: #00AAFF;          border-color: rgba(0,170,255,.25); }
+    .lchip.en_route { background: rgba(59,130,246,.10); color: #60a5fa;          border-color: rgba(59,130,246,.25); }
+    .lchip.arrived  { background: rgba(167,139,250,.10);color: var(--purple);    border-color: rgba(167,139,250,.25); }
+    .lchip.in_progress { background: rgba(34,197,94,.10);color: var(--success);  border-color: rgba(34,197,94,.25); }
+    .lchip.empty    { background: var(--surface2); color: var(--muted); }
+    .map-toggle-btn {
+      margin-left: auto; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); cursor: pointer; padding: 8px 16px;
+      font-size: 13px; font-weight: 700; font-family: inherit; transition: all .15s;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .map-toggle-btn.active { background: rgba(34,197,94,.12); border-color: rgba(34,197,94,.4); color: var(--success); }
+    .map-toggle-btn:hover { border-color: rgba(255,255,255,.3); }
+    #live-map-container {
+      height: 420px; border-radius: var(--radius); overflow: hidden;
+      border: 1px solid var(--border); margin-bottom: 24px; display: none;
+    }
+    #live-map { width: 100%; height: 100%; }
+    .live-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 16px; }
+    .live-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 18px 20px; cursor: pointer; transition: border-color .15s, box-shadow .15s;
+      position: relative; overflow: hidden;
+    }
+    .live-card::before {
+      content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+    }
+    .live-card.pending::before    { background: var(--warning); }
+    .live-card.accepted::before   { background: #00AAFF; }
+    .live-card.en_route::before   { background: #3b82f6; }
+    .live-card.arrived::before    { background: var(--purple); }
+    .live-card.in_progress::before{ background: var(--success); }
+    .live-card:hover { border-color: rgba(255,255,255,.25); box-shadow: 0 4px 24px rgba(0,0,0,.25); }
+    .lc-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+    .lc-service { font-size: 15px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+    .lc-svc-icon { font-size: 18px; }
+    .lc-badges { display: flex; gap: 5px; flex-wrap: wrap; }
+    .lc-status-badge {
+      padding: 3px 10px; border-radius: 100px; font-size: 11px; font-weight: 800;
+      text-transform: uppercase; letter-spacing: .5px;
+    }
+    .lc-status-badge.pending    { background: rgba(245,158,11,.15);  color: var(--warning); }
+    .lc-status-badge.accepted   { background: rgba(0,170,255,.12);   color: #00AAFF; }
+    .lc-status-badge.en_route   { background: rgba(59,130,246,.12);  color: #60a5fa; }
+    .lc-status-badge.arrived    { background: rgba(167,139,250,.12); color: var(--purple); }
+    .lc-status-badge.in_progress{ background: rgba(34,197,94,.12);   color: var(--success); }
+    .lc-elapsed { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .lc-parties { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+    .lc-party-label { font-size: 10px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 2px; }
+    .lc-party-name { font-size: 13px; font-weight: 700; }
+    .lc-party-sub { font-size: 11px; color: var(--muted); }
+    .lc-address { font-size: 12px; color: var(--muted); margin-bottom: 10px; display: flex; gap: 6px; align-items: flex-start; }
+    .lc-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+    .lc-cost { font-size: 16px; font-weight: 900; }
+    .lc-flags { display: flex; gap: 5px; flex-wrap: wrap; }
+    .lc-actions { display: flex; gap: 8px; align-items: center; }
+    .lc-eta { font-size: 11px; color: var(--success); font-weight: 700; display: flex; align-items: center; gap: 4px; }
+    .live-empty { text-align: center; padding: 80px 20px; color: var(--muted); }
+    .live-empty .le-icon { font-size: 48px; margin-bottom: 16px; }
+    .live-empty h3 { font-size: 18px; font-weight: 800; color: var(--text); margin-bottom: 6px; }
+    .refresh-dot {
+      display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+      background: var(--success); margin-right: 4px; vertical-align: middle;
+      animation: livepulse 2s infinite;
+    }
+    .leaflet-container { background: #111 !important; }
   </style>
 </head>
 <body>
@@ -377,6 +466,10 @@
       <div class="nav-section">Overview</div>
       <div class="nav-item active" onclick="showPage('overview')" id="nav-overview">
         <span class="nav-icon">&#9776;</span> Dashboard
+      </div>
+      <div class="nav-item" onclick="showPage('live')" id="nav-live">
+        <span class="nav-icon">&#128308;</span> Live Jobs
+        <span class="nav-badge red" id="badge-live" style="display:none">0</span>
       </div>
       <div class="nav-section">Users</div>
       <div class="nav-item" onclick="showPage('providers')" id="nav-providers">
@@ -431,6 +524,31 @@
         <div class="stat-card"><div class="stat-label">Platform Revenue</div><div class="stat-value coral" id="ov-revenue">—</div></div>
         <div class="stat-card"><div class="stat-label">Total Volume</div><div class="stat-value" id="ov-volume">—</div></div>
         <div class="stat-card"><div class="stat-label">Waitlist Signups</div><div class="stat-value purple" style="color:var(--purple)" id="ov-waitlist">—</div></div>
+      </div>
+    </div>
+
+    <!-- Live Jobs -->
+    <div class="page" id="page-live">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Live Jobs</div>
+          <div class="page-sub" id="live-last-updated">Loading...</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <button class="map-toggle-btn" id="map-toggle-btn" onclick="toggleLiveMap()">&#127758; Show Map</button>
+          <button class="btn btn-ghost btn-sm" onclick="loadLiveJobs()">&#8635; Refresh</button>
+        </div>
+      </div>
+      <div class="live-header-row">
+        <div class="live-pulse" id="live-pulse-dot"></div>
+        <span id="live-total-label" style="font-size:14px;font-weight:700">Loading...</span>
+        <div class="live-count-chips" id="live-count-chips"></div>
+      </div>
+      <div id="live-map-container">
+        <div id="live-map"></div>
+      </div>
+      <div class="live-grid" id="live-grid">
+        <div class="loading">Loading live jobs...</div>
       </div>
     </div>
 
@@ -668,6 +786,7 @@
   function signOut() {
     token = ""; localStorage.removeItem("sm_admin_token");
     clearInterval(autoRefreshTimer);
+    clearInterval(liveRefreshTimer);
     document.getElementById("dashboard").style.display = "none";
     document.getElementById("login-screen").style.display = "flex";
     document.getElementById("password-input").value = "";
@@ -693,12 +812,20 @@
     if (id === "earnings") loadEarnings();
     if (id === "reports") loadReports();
     if (id === "waitlist") loadWaitlist();
+    if (id === "live") {
+      loadLiveJobs();
+      clearInterval(liveRefreshTimer);
+      liveRefreshTimer = setInterval(loadLiveJobs, 5000);
+    } else {
+      clearInterval(liveRefreshTimer);
+      liveRefreshTimer = null;
+    }
   }
 
   // ── Load All ──
   async function loadAll() {
     document.getElementById("overview-time").textContent = "Last updated " + new Date().toLocaleTimeString();
-    await Promise.all([loadProviders(), loadUsers(), loadJobs(), loadEarnings(), loadReports(), loadWaitlist()]);
+    await Promise.all([loadProviders(), loadUsers(), loadJobs(), loadEarnings(), loadReports(), loadWaitlist(), loadLiveJobs()]);
     updateOverview();
   }
 
@@ -974,6 +1101,332 @@
       document.getElementById("notify-title").value = "";
       document.getElementById("notify-body").value = "";
     } catch { errEl.textContent = "Network error. Try again."; }
+  }
+
+  // ── Live Jobs ──
+  let allLiveJobs = [];
+  let liveMapVisible = false;
+  let leafletMap = null;
+  let leafletMarkers = [];
+  let liveRefreshTimer = null;
+  let liveMapInitialized = false;
+
+  const SVC_ICONS = {
+    flat_tire:"&#128295;", jump_start:"&#9889;", towing:"&#128663;",
+    fuel_delivery:"&#9981;", lockout:"&#128273;", minor_repair:"&#128296;",
+    ev_charging:"&#128267;", ev_towing:"&#9889;", battery_replacement:"&#128267;",
+    tire_rotation:"&#128295;", oil_change:"&#128296;",
+  };
+  function svcIcon(type) { return SVC_ICONS[type] || "&#128736;"; }
+
+  const STATUS_LABEL = {
+    pending:"Pending", accepted:"Accepted", en_route:"En Route",
+    arrived:"Arrived", in_progress:"In Progress",
+  };
+  function statusLabel(s) { return STATUS_LABEL[s] || s; }
+
+  function elapsed(dateStr) {
+    if (!dateStr) return "";
+    const secs = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+    if (secs < 60) return `${secs}s ago`;
+    if (secs < 3600) return `${Math.floor(secs/60)}m ago`;
+    return `${Math.floor(secs/3600)}h ${Math.floor((secs%3600)/60)}m ago`;
+  }
+
+  async function loadLiveJobs() {
+    try {
+      const res = await fetch(`${getBase()}/api/admin/live-jobs`, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.status === 401) { signOut(); return; }
+      allLiveJobs = await res.json();
+      renderLiveJobs();
+      if (liveMapVisible) renderLiveMap();
+      // update sidebar badge
+      const badgeLive = document.getElementById("badge-live");
+      if (allLiveJobs.length > 0) {
+        badgeLive.style.display = "inline";
+        badgeLive.textContent = allLiveJobs.length;
+      } else {
+        badgeLive.style.display = "none";
+      }
+    } catch {
+      document.getElementById("live-grid").innerHTML = '<div class="empty-state"><div class="empty-icon">&#9888;</div><p>Failed to load live jobs.</p></div>';
+    }
+  }
+
+  function renderLiveJobs() {
+    const now = new Date().toLocaleTimeString();
+    document.getElementById("live-last-updated").innerHTML = `<span class="refresh-dot"></span>Auto-refreshing every 5s &bull; Last updated ${now}`;
+    const grid = document.getElementById("live-grid");
+    const pulse = document.getElementById("live-pulse-dot");
+    const label = document.getElementById("live-total-label");
+    const chips = document.getElementById("live-count-chips");
+
+    if (!allLiveJobs.length) {
+      pulse.classList.add("idle");
+      label.textContent = "No active jobs right now";
+      chips.innerHTML = '<span class="lchip empty">All clear</span>';
+      grid.innerHTML = `<div class="live-empty" style="grid-column:1/-1">
+        <div class="le-icon">&#128308;</div>
+        <h3>No active jobs</h3>
+        <p>Jobs will appear here as soon as a driver submits a request.</p>
+      </div>`;
+      return;
+    }
+
+    pulse.classList.remove("idle");
+    label.textContent = `${allLiveJobs.length} active job${allLiveJobs.length !== 1 ? "s" : ""}`;
+
+    const statCounts = {};
+    allLiveJobs.forEach(j => { statCounts[j.status] = (statCounts[j.status] || 0) + 1; });
+    const ORDER = ["pending","accepted","en_route","arrived","in_progress"];
+    chips.innerHTML = ORDER.filter(s => statCounts[s]).map(s =>
+      `<span class="lchip ${s}">${statusLabel(s)} &bull; ${statCounts[s]}</span>`
+    ).join("");
+
+    grid.innerHTML = allLiveJobs.map(j => buildLiveCard(j)).join("");
+  }
+
+  function buildLiveCard(j) {
+    const loc = typeof j.location === "string" ? JSON.parse(j.location) : j.location;
+    const address = loc?.address || "Unknown location";
+    const lat = loc?.latitude; const lng = loc?.longitude;
+    const hasProvLoc = j.provider_location || (typeof j.provider_location === "string" && j.provider_location !== "null");
+    const driverName = j.driver?.name || "Unknown driver";
+    const providerName = j.provider?.name || null;
+    const cost = j.total_cost ?? j.estimated_cost;
+    const flags = [
+      j.is_emergency && `<span class="badge cancelled" style="font-size:10px">Emergency</span>`,
+      j.is_express   && `<span class="badge express"   style="font-size:10px">Express</span>`,
+      j.is_ev        && `<span class="badge ev"        style="font-size:10px">EV</span>`,
+    ].filter(Boolean).join("");
+
+    const etaHtml = j.eta ? `<div class="lc-eta">&#10004; ETA ${j.eta} min</div>` : "";
+    const provLocHtml = hasProvLoc ? `<span style="font-size:11px;color:var(--success)">&#128204; Live GPS</span>` : "";
+
+    return `<div class="live-card ${j.status}" onclick="openLiveJobDetail('${j.id}')">
+      <div class="lc-top">
+        <div>
+          <div class="lc-service"><span class="lc-svc-icon">${svcIcon(j.service_type)}</span>${esc((j.service_type||"").replace(/_/g," "))}</div>
+          <div class="lc-elapsed">${elapsed(j.created_at)} &bull; #${j.id.slice(0,8)}</div>
+        </div>
+        <div style="text-align:right">
+          <div><span class="lc-status-badge ${j.status}">${statusLabel(j.status)}</span></div>
+          ${etaHtml}
+        </div>
+      </div>
+      <div class="lc-parties">
+        <div>
+          <div class="lc-party-label">&#128100; Driver</div>
+          <div class="lc-party-name">${esc(driverName)}</div>
+        </div>
+        <div>
+          <div class="lc-party-label">&#128736; Provider</div>
+          <div class="lc-party-name">${providerName ? esc(providerName) : '<span style="color:var(--muted)">Awaiting...</span>'}</div>
+          <div class="lc-party-sub">${provLocHtml}</div>
+        </div>
+      </div>
+      <div class="lc-address">&#128205; <span>${esc(address)}</span></div>
+      <div class="lc-footer">
+        <div>
+          <div class="lc-cost">${fmtMoney(cost)}</div>
+          <div class="lc-flags">${flags}</div>
+        </div>
+        <div class="lc-actions" onclick="event.stopPropagation()">
+          ${j.notes ? `<button class="btn btn-ghost btn-sm" onclick="alert('Notes: ${esc(j.notes).replace(/'/g,"\\'")}')" title="View notes">&#128221;</button>` : ""}
+          <button class="btn btn-danger btn-sm" onclick="adminCancelJob('${j.id}')">Cancel Job</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function openLiveJobDetail(id) {
+    const j = allLiveJobs.find(x => x.id === id);
+    if (!j) return;
+    const loc = typeof j.location === "string" ? JSON.parse(j.location) : j.location;
+    const provLoc = j.provider_location ? (typeof j.provider_location === "string" ? JSON.parse(j.provider_location) : j.provider_location) : null;
+    const address = loc?.address || "Unknown";
+    const driverName = j.driver?.name || "Unknown driver";
+    const providerName = j.provider?.name || null;
+    const cost = j.total_cost ?? j.estimated_cost;
+    const svcFee = j.service_fee;
+    const flags = [j.is_emergency && "Emergency", j.is_express && "Express", j.is_ev && "EV"].filter(Boolean);
+
+    let distHtml = "";
+    if (provLoc && loc?.latitude && loc?.longitude) {
+      const d = calcDistKm(provLoc.latitude, provLoc.longitude, loc.latitude, loc.longitude);
+      distHtml = `<div class="info-item"><div class="info-label">Provider Distance</div><div class="info-val" style="color:var(--success)">${d.toFixed(2)} km away</div></div>`;
+    }
+
+    const timeline = ["pending","accepted","en_route","arrived","in_progress"];
+    const curIdx = timeline.indexOf(j.status);
+    const timelineHtml = timeline.map((s, i) => {
+      const done = i < curIdx;
+      const active = i === curIdx;
+      const col = active ? "var(--success)" : done ? "var(--muted)" : "rgba(255,255,255,.15)";
+      const weight = active ? "900" : done ? "600" : "400";
+      return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <div style="width:10px;height:10px;border-radius:50%;background:${col};flex-shrink:0;${active?"box-shadow:0 0 0 3px rgba(34,197,94,.25)":""}"></div>
+        <span style="font-size:12px;font-weight:${weight};color:${active?"var(--text)":"var(--muted)"}">${statusLabel(s)}</span>
+        ${active?'<span style="font-size:10px;color:var(--success);font-weight:700">← NOW</span>':""}
+      </div>`;
+    }).join("");
+
+    document.getElementById("drawer-header").innerHTML = `
+      <div class="drawer-avatar">${svcIcon(j.service_type)}</div>
+      <div style="flex:1;min-width:0">
+        <div class="drawer-title">${esc((j.service_type||"").replace(/_/g," "))}</div>
+        <div class="drawer-sub">#${j.id.slice(0,8)} &bull; Started ${elapsed(j.created_at)}</div>
+        <div style="margin-top:6px">
+          <span class="lc-status-badge ${j.status}">${statusLabel(j.status)}</span>
+          ${flags.map(f=>`<span class="badge ${f.toLowerCase()}" style="margin-left:5px;font-size:10px">${f}</span>`).join("")}
+        </div>
+      </div>
+      <button class="drawer-close" onclick="closeDrawer()">&#10005;</button>`;
+
+    document.getElementById("drawer-body").innerHTML = `
+      <div class="drawer-section">
+        <div class="drawer-section-title">Status Timeline</div>
+        ${timelineHtml}
+      </div>
+      <div class="drawer-section">
+        <div class="drawer-section-title">Parties</div>
+        <div class="info-grid">
+          <div class="info-item"><div class="info-label">Driver</div><div class="info-val">${esc(driverName)}</div></div>
+          <div class="info-item"><div class="info-label">Provider</div><div class="info-val">${providerName ? esc(providerName) : '<span style="color:var(--muted)">Awaiting...</span>'}</div></div>
+        </div>
+      </div>
+      <div class="drawer-section">
+        <div class="drawer-section-title">Location</div>
+        <div class="info-grid">
+          <div class="info-item" style="grid-column:1/-1"><div class="info-label">Service Address</div><div class="info-val">${esc(address)}</div></div>
+          ${loc?.latitude ? `<div class="info-item"><div class="info-label">Coordinates</div><div class="info-val" style="font-family:monospace;font-size:11px">${Number(loc.latitude).toFixed(5)}, ${Number(loc.longitude).toFixed(5)}</div></div>` : ""}
+          ${provLoc ? `<div class="info-item"><div class="info-label">Provider GPS</div><div class="info-val" style="font-family:monospace;font-size:11px;color:var(--success)">${Number(provLoc.latitude).toFixed(5)}, ${Number(provLoc.longitude).toFixed(5)}</div></div>` : ""}
+          ${distHtml}
+        </div>
+      </div>
+      <div class="drawer-section">
+        <div class="drawer-section-title">Financials</div>
+        <div class="info-grid">
+          <div class="info-item"><div class="info-label">Est. Cost</div><div class="info-val">${fmtMoney(j.estimated_cost)}</div></div>
+          <div class="info-item"><div class="info-label">Total Cost</div><div class="info-val" style="color:var(--success)">${j.total_cost ? fmtMoney(j.total_cost) : "—"}</div></div>
+          <div class="info-item"><div class="info-label">Tip</div><div class="info-val">${j.tip ? fmtMoney(j.tip) : "—"}</div></div>
+          <div class="info-item"><div class="info-label">Platform Fee</div><div class="info-val">${svcFee ? fmtMoney(svcFee) : "—"}</div></div>
+          ${j.eta ? `<div class="info-item"><div class="info-label">ETA</div><div class="info-val" style="color:var(--success)">${j.eta} min</div></div>` : ""}
+          ${j.receipt_number ? `<div class="info-item"><div class="info-label">Receipt #</div><div class="info-val" style="font-family:monospace;font-size:11px">${esc(j.receipt_number)}</div></div>` : ""}
+        </div>
+      </div>
+      ${j.notes ? `<div class="drawer-section"><div class="drawer-section-title">Driver Notes</div><div style="font-size:13px;line-height:1.5;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px">${esc(j.notes)}</div></div>` : ""}
+      <div class="drawer-section">
+        <div class="drawer-section-title">Admin Actions</div>
+        <button class="btn btn-danger" onclick="closeDrawer(); adminCancelJob('${j.id}')">Cancel This Job</button>
+      </div>`;
+    openDrawer();
+  }
+
+  async function adminCancelJob(id) {
+    if (!confirm("Cancel this job? The driver and provider will be notified.")) return;
+    try {
+      const res = await fetch(`${getBase()}/api/admin/jobs/${id}/cancel`, {
+        method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
+      });
+      const data = await res.json();
+      if (!res.ok) { alert(data.error || "Failed to cancel."); return; }
+      loadLiveJobs();
+    } catch { alert("Network error. Try again."); }
+  }
+
+  function calcDistKm(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+
+  function toggleLiveMap() {
+    liveMapVisible = !liveMapVisible;
+    const container = document.getElementById("live-map-container");
+    const btn = document.getElementById("map-toggle-btn");
+    if (liveMapVisible) {
+      container.style.display = "block";
+      btn.classList.add("active");
+      btn.innerHTML = "&#127758; Hide Map";
+      if (!liveMapInitialized) initLeafletMap();
+      else renderLiveMap();
+    } else {
+      container.style.display = "none";
+      btn.classList.remove("active");
+      btn.innerHTML = "&#127758; Show Map";
+    }
+  }
+
+  function initLeafletMap() {
+    liveMapInitialized = true;
+    const isDark = document.documentElement.getAttribute("data-theme") !== "light";
+    leafletMap = L.map("live-map", { zoomControl: true, attributionControl: false });
+    const tileUrl = isDark
+      ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+      : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+    L.tileLayer(tileUrl, { maxZoom: 19, subdomains: "abcd" }).addTo(leafletMap);
+    L.control.attribution({ prefix: "© OSM / CartoDB" }).addTo(leafletMap);
+    renderLiveMap();
+  }
+
+  function renderLiveMap() {
+    if (!leafletMap) return;
+    leafletMarkers.forEach(m => leafletMap.removeLayer(m));
+    leafletMarkers = [];
+    const bounds = [];
+
+    allLiveJobs.forEach(j => {
+      const loc = typeof j.location === "string" ? JSON.parse(j.location) : j.location;
+      const provLoc = j.provider_location ? (typeof j.provider_location === "string" ? JSON.parse(j.provider_location) : j.provider_location) : null;
+      const driverName = j.driver?.name || "Driver";
+      const providerName = j.provider?.name || null;
+
+      if (loc?.latitude && loc?.longitude && loc.latitude !== 0) {
+        const STATUS_COLORS = { pending:"#f59e0b", accepted:"#00AAFF", en_route:"#3b82f6", arrived:"#a78bfa", in_progress:"#22c55e" };
+        const color = STATUS_COLORS[j.status] || "#888";
+        const icon = L.divIcon({
+          className: "",
+          html: `<div style="background:${color};width:14px;height:14px;border-radius:50%;border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.4)"></div>`,
+          iconSize: [14, 14], iconAnchor: [7, 7],
+        });
+        const m = L.marker([loc.latitude, loc.longitude], { icon })
+          .addTo(leafletMap)
+          .bindPopup(`<b>${esc((j.service_type||"").replace(/_/g," "))}</b><br>Driver: ${esc(driverName)}<br>Status: ${statusLabel(j.status)}<br>Cost: ${fmtMoney(j.total_cost ?? j.estimated_cost)}<br><small>${esc(loc.address||"")}</small>`);
+        m.on("click", () => { openLiveJobDetail(j.id); });
+        leafletMarkers.push(m);
+        bounds.push([loc.latitude, loc.longitude]);
+      }
+
+      if (provLoc?.latitude && provLoc.latitude !== 0) {
+        const provIcon = L.divIcon({
+          className: "",
+          html: `<div style="background:#22c55e;width:11px;height:11px;border-radius:3px;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.4)" title="${esc(providerName||'Provider')}"></div>`,
+          iconSize: [11, 11], iconAnchor: [5, 5],
+        });
+        const pm = L.marker([provLoc.latitude, provLoc.longitude], { icon: provIcon })
+          .addTo(leafletMap)
+          .bindPopup(`<b>${esc(providerName||"Provider")}</b><br>Live provider location`);
+        leafletMarkers.push(pm);
+
+        if (loc?.latitude && loc?.longitude && loc.latitude !== 0) {
+          const line = L.polyline([[provLoc.latitude, provLoc.longitude],[loc.latitude, loc.longitude]], {
+            color: "#22c55e", weight: 1.5, opacity: 0.45, dashArray: "5,7"
+          }).addTo(leafletMap);
+          leafletMarkers.push(line);
+        }
+        bounds.push([provLoc.latitude, provLoc.longitude]);
+      }
+    });
+
+    if (bounds.length > 0) {
+      try { leafletMap.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 }); }
+      catch {}
+    } else {
+      leafletMap.setView([37.7749, -122.4194], 11);
+    }
   }
 
   // ── Detail Drawer ──

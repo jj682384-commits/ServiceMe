@@ -744,6 +744,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── Admin: live jobs (active only, full detail) ───────────────────────────────
+  app.get("/api/admin/live-jobs", adminAuth, async (_req: Request, res: Response) => {
+    try {
+      const { rows } = await pool.query(
+        `SELECT id, service_type, status, estimated_cost, total_cost, tip,
+                driver, provider, provider_location, eta, notes,
+                created_at, is_express, is_ev, is_emergency, scheduled_date,
+                receipt_number, location, service_fee
+         FROM jobs
+         WHERE status IN ('pending','accepted','en_route','arrived','in_progress')
+         ORDER BY created_at DESC`
+      );
+      res.json(rows);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── Admin: cancel a job ───────────────────────────────────────────────────────
+  app.post("/api/admin/jobs/:id/cancel", adminAuth, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { rows } = await pool.query(
+        `UPDATE jobs SET status='cancelled' WHERE id=$1 AND status NOT IN ('completed','cancelled') RETURNING id`,
+        [id]
+      );
+      if (!rows.length) return res.status(404).json({ error: "Job not found or already finished." });
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // ── Admin: earnings & payouts ─────────────────────────────────────────────────
 
   app.get("/api/admin/earnings", adminAuth, async (_req: Request, res: Response) => {
