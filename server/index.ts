@@ -564,11 +564,10 @@ process.on("unhandledRejection", (reason) => {
 
   setupErrorHandler(app);
 
-  // Graceful shutdown — release the port so restarts don't hit EADDRINUSE
+  // Immediate shutdown — release the port instantly so restarts never hit EADDRINUSE
   const shutdown = () => {
     server.closeAllConnections?.();
-    server.close(() => process.exit(0));
-    setTimeout(() => process.exit(0), 3000);
+    process.exit(0);
   };
   process.on("SIGTERM", shutdown);
   process.on("SIGINT", shutdown);
