@@ -3,7 +3,7 @@ import type { Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import * as fs from "fs";
 import * as path from "path";
-import { execSync } from "child_process";
+
 import { WebhookHandlers } from "./webhookHandlers";
 import { getStripeSync, getStripePublishableKey, getUncachableStripeClient } from "./stripeClient";
 import { runMigrations } from "stripe-replit-sync";
@@ -575,11 +575,16 @@ process.on("unhandledRejection", (reason) => {
 
   const port = parseInt(process.env.PORT || "5000", 10);
 
-  // Kill any leftover process on this port before binding (prevents EADDRINUSE on restart)
-  try {
-    execSync(`fuser -k ${port}/tcp 2>/dev/null || true`);
-    await new Promise((r) => setTimeout(r, 800));
-  } catch { /* fuser not available — ignore */ }
+  // Gracefully handle EADDRINUSE: wait and retry rather than crashing
+  server.on("error", (err: NodeJS.ErrnoException) => {
+    if (err.code === "EADDRINUSE") {
+      log(`Port ${port} in use, retrying in 4s...`);
+      setTimeout(() => server.listen(port, "0.0.0.0"), 4000);
+    } else {
+      console.error("Server error:", err);
+      process.exit(1);
+    }
+  });
 
   server.listen(port, "0.0.0.0", async () => {
       log(`express server serving on port ${port}`);
