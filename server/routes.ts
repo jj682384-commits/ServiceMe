@@ -262,6 +262,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ALTER TABLE providers
       ADD COLUMN IF NOT EXISTS earnings_balance NUMERIC(10,2) DEFAULT 0
   `).catch(() => {});
+  // ── Jobs table column migrations ──────────────────────────────────────────
+  await pool.query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS express_fee NUMERIC DEFAULT NULL`).catch(() => {});
+  await pool.query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS service_fee  NUMERIC DEFAULT NULL`).catch(() => {});
+  await pool.query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS total_cost   NUMERIC DEFAULT NULL`).catch(() => {});
+  await pool.query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS tip          NUMERIC DEFAULT NULL`).catch(() => {});
+  await pool.query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS receipt_number TEXT DEFAULT NULL`).catch(() => {});
+  await pool.query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS scheduled_date TIMESTAMPTZ DEFAULT NULL`).catch(() => {});
+  await pool.query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS is_ev        BOOLEAN DEFAULT FALSE`).catch(() => {});
+  await pool.query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS is_emergency BOOLEAN DEFAULT FALSE`).catch(() => {});
+  await pool.query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS provider_location JSONB DEFAULT NULL`).catch(() => {});
   await pool.query(`
     CREATE TABLE IF NOT EXISTS provider_payouts (
       id TEXT PRIMARY KEY,

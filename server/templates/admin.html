@@ -991,11 +991,14 @@
     try {
       const res = await fetch(`${getBase()}/api/admin/jobs`, { headers: { Authorization: `Bearer ${token}` } });
       if (res.status === 401) { signOut(); return; }
+      if (!res.ok) { console.warn("[admin] loadJobs failed:", res.status); return; }
       allJobs = await res.json();
       renderJobs(allJobs);
       const el = document.getElementById("jobs-updated");
       if (el) el.textContent = `${allJobs.length} jobs · updated ${new Date().toLocaleTimeString()}`;
-    } catch {}
+      // Keep overview stats in sync whenever jobs refresh
+      updateOverview();
+    } catch (e) { console.warn("[admin] loadJobs error:", e); }
   }
   function filterJobs(q) { renderJobs(allJobs.filter(j => `${j.id} ${j.service_type}`.toLowerCase().includes(q.toLowerCase()) && (!jobStatusFilter || j.status === jobStatusFilter))); }
   function filterJobsByStatus(s) { jobStatusFilter = s; renderJobs(allJobs.filter(j => (!s || j.status === s))); }
@@ -1149,7 +1152,14 @@
     try {
       const res = await fetch(`${getBase()}/api/admin/live-jobs`, { headers: { Authorization: `Bearer ${token}` } });
       if (res.status === 401) { signOut(); return; }
+      if (!res.ok) {
+        const errText = await res.text().catch(() => res.status);
+        console.warn("[admin] loadLiveJobs failed:", errText);
+        document.getElementById("live-grid").innerHTML = `<div class="empty-state"><div class="empty-icon">&#9888;</div><p>Server error loading live jobs (${res.status}). Check console.</p></div>`;
+        return;
+      }
       allLiveJobs = await res.json();
+      if (!Array.isArray(allLiveJobs)) { allLiveJobs = []; }
       renderLiveJobs();
       if (liveMapVisible) renderLiveMap();
       // update sidebar badge
@@ -1160,8 +1170,10 @@
       } else {
         badgeLive.style.display = "none";
       }
-    } catch {
-      document.getElementById("live-grid").innerHTML = '<div class="empty-state"><div class="empty-icon">&#9888;</div><p>Failed to load live jobs.</p></div>';
+    } catch (e) {
+      console.warn("[admin] loadLiveJobs error:", e);
+      const grid = document.getElementById("live-grid");
+      if (grid) grid.innerHTML = '<div class="empty-state"><div class="empty-icon">&#9888;</div><p>Failed to load live jobs.</p></div>';
     }
   }
 
