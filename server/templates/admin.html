@@ -783,7 +783,7 @@
     finally { btn.disabled = false; btn.textContent = "Sign In"; }
   }
 
-  function signOut() {
+  function signOut(expired = false) {
     token = ""; localStorage.removeItem("sm_admin_token");
     clearInterval(autoRefreshTimer);
     clearInterval(liveRefreshTimer);
@@ -791,6 +791,12 @@
     document.getElementById("dashboard").style.display = "none";
     document.getElementById("login-screen").style.display = "flex";
     document.getElementById("password-input").value = "";
+    if (expired) {
+      document.getElementById("login-error").textContent = "Session expired — please sign in again.";
+      document.getElementById("login-error").style.color = "var(--warning, #f59e0b)";
+    } else {
+      document.getElementById("login-error").textContent = "";
+    }
   }
 
   function showDashboard() {
@@ -799,6 +805,8 @@
     loadAll();
     clearInterval(autoRefreshTimer);
     autoRefreshTimer = setInterval(loadAll, 60000);
+    // Default to Live Jobs tab so real-time updates are visible immediately
+    showPage("live");
   }
 
   // ── Navigation ──
@@ -855,7 +863,7 @@
   async function loadProviders() {
     try {
       const res = await fetch(`${getBase()}/api/admin/providers`, { headers: { Authorization: `Bearer ${token}` } });
-      if (res.status === 401) { signOut(); return; }
+      if (res.status === 401) { signOut(true); return; }
       const raw = await res.json();
       allProviders = raw.map(p => ({
         id: p.id, name: p.name, email: p.email, phone: p.phone,
@@ -954,7 +962,7 @@
   async function loadUsers() {
     try {
       const res = await fetch(`${getBase()}/api/admin/users`, { headers: { Authorization: `Bearer ${token}` } });
-      if (res.status === 401) { signOut(); return; }
+      if (res.status === 401) { signOut(true); return; }
       allUsers = await res.json();
       renderUsers(allUsers);
     } catch {}
@@ -990,7 +998,7 @@
   async function loadJobs() {
     try {
       const res = await fetch(`${getBase()}/api/admin/jobs`, { headers: { Authorization: `Bearer ${token}` } });
-      if (res.status === 401) { signOut(); return; }
+      if (res.status === 401) { signOut(true); return; }
       if (!res.ok) { console.warn("[admin] loadJobs failed:", res.status); return; }
       allJobs = await res.json();
       renderJobs(allJobs);
@@ -1026,7 +1034,7 @@
   async function loadEarnings() {
     try {
       const res = await fetch(`${getBase()}/api/admin/earnings`, { headers: { Authorization: `Bearer ${token}` } });
-      if (res.status === 401) { signOut(); return; }
+      if (res.status === 401) { signOut(true); return; }
       const data = await res.json();
       const s = data.stats || {};
       document.getElementById("ov-revenue").textContent = fmtMoney(s.total_fees);
@@ -1050,7 +1058,7 @@
   async function loadReports() {
     try {
       const res = await fetch(`${getBase()}/api/admin/reports`, { headers: { Authorization: `Bearer ${token}` } });
-      if (res.status === 401) { signOut(); return; }
+      if (res.status === 401) { signOut(true); return; }
       allReports = await res.json();
       const body = document.getElementById("reports-table-body");
       if (!allReports.length) { body.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">&#10003;</div><p>No reports — everything looks good!</p></div></td></tr>`; return; }
@@ -1069,7 +1077,7 @@
   async function loadWaitlist() {
     try {
       const res = await fetch(`${getBase()}/api/admin/waitlist`, { headers: { Authorization: `Bearer ${token}` } });
-      if (res.status === 401) { signOut(); return; }
+      if (res.status === 401) { signOut(true); return; }
       allWaitlist = await res.json();
       renderWaitlist(allWaitlist);
     } catch {}
@@ -1152,7 +1160,7 @@
   async function loadLiveJobs() {
     try {
       const res = await fetch(`${getBase()}/api/admin/live-jobs`, { headers: { Authorization: `Bearer ${token}` } });
-      if (res.status === 401) { signOut(); return; }
+      if (res.status === 401) { signOut(true); return; }
       if (!res.ok) {
         const errText = await res.text().catch(() => res.status);
         console.warn("[admin] loadLiveJobs failed:", errText);
