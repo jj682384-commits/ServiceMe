@@ -41,24 +41,28 @@ const STATUS_ORDER: ServiceStatus[] = [
   "pending", "accepted", "en_route", "arrived", "in_progress", "completed", "cancelled",
 ];
 
-const serviceTypeLabels: Record<ServiceType, string> = {
-  flat_tire: "Flat Tire",
-  jump_start: "Jump Start",
-  tow: "Tow Service",
-  fuel: "Fuel Delivery",
-  lockout: "Lockout",
+const serviceTypeLabels: Record<string, string> = {
+  flat_tire:      "Flat Tire",
+  jump_start:     "Jump Start",
+  tow:            "Tow Service",
+  fuel:           "Fuel Delivery",
+  lockout:        "Lockout",
   obd_diagnostic: "OBD Diagnostic",
-  other: "Other",
+  ev_charging:    "EV Mobile Charging",
+  ev_towing:      "EV-Safe Towing",
+  other:          "Other",
 };
 
-const serviceTypeIcons: Record<ServiceType, keyof typeof Feather.glyphMap> = {
-  flat_tire: "disc",
-  jump_start: "battery-charging",
-  tow: "truck",
-  fuel: "droplet",
-  lockout: "key",
+const serviceTypeIcons: Record<string, keyof typeof Feather.glyphMap> = {
+  flat_tire:      "disc",
+  jump_start:     "battery-charging",
+  tow:            "truck",
+  fuel:           "droplet",
+  lockout:        "key",
   obd_diagnostic: "cpu",
-  other: "more-horizontal",
+  ev_charging:    "zap",
+  ev_towing:      "truck",
+  other:          "more-horizontal",
 };
 
 const statusConfig: Record<ServiceStatus, { label: string; color: string; nextLabel?: string }> = {
@@ -86,6 +90,8 @@ export default function ProviderActiveJobScreen() {
   const pollRef          = useRef<ReturnType<typeof setInterval> | null>(null);
   const gpsRef           = useRef<ReturnType<typeof setInterval> | null>(null);
   const activeRequestRef = useRef(activeRequest);
+  const gpsPermittedRef  = useRef<boolean | null>(null);
+  const gpsInFlightRef   = useRef(false);
   const [advancing, setAdvancing] = useState(false);
 
   useEffect(() => { activeRequestRef.current = activeRequest; }, [activeRequest]);
@@ -136,31 +142,43 @@ export default function ProviderActiveJobScreen() {
   ).current;
 
   // ── GPS push ────────────────────────────────────────────────────────────────
+  // Deps: [activeRequest?.id] only — status is read from ref inside the callback so this
+  // effect never tears down mid-status-advance (which was blocking the JS thread on device).
   useEffect(() => {
     if (!activeRequest?.id) return;
-    const activeStatuses: ServiceStatus[] = ["accepted", "en_route", "arrived", "in_progress"];
-    if (!activeStatuses.includes(activeRequest.status)) {
-      if (gpsRef.current) { clearInterval(gpsRef.current); gpsRef.current = null; }
-      return;
-    }
+    const GPS_ACTIVE: ServiceStatus[] = ["accepted", "en_route", "arrived", "in_progress"];
+
     const pushLocation = async () => {
+      const cur = activeRequestRef.current;
+      if (!cur || !GPS_ACTIVE.includes(cur.status)) return;
+      if (gpsInFlightRef.current) return; // don't stack concurrent location calls
+      gpsInFlightRef.current = true;
       try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== "granted") return;
+        // Cache permission — only call the native API once per job session
+        if (gpsPermittedRef.current === null) {
+          const { status } = await Location.requestForegroundPermissionsAsync();
+          gpsPermittedRef.current = status === "granted";
+        }
+        if (!gpsPermittedRef.current) return;
         const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-        await apiRequest("PATCH", `/api/jobs/${activeRequest.id}/location`, {
+        await apiRequest("PATCH", `/api/jobs/${cur.id}/location`, {
           latitude: loc.coords.latitude,
           longitude: loc.coords.longitude,
         });
       } catch { /* silent */ }
+      finally { gpsInFlightRef.current = false; }
     };
-    pushLocation();
-    gpsRef.current = setInterval(pushLocation, 8000);
-    return () => { if (gpsRef.current) { clearInterval(gpsRef.current); gpsRef.current = null; } };
-  }, [activeRequest?.id, activeRequest?.status]);
 
-  // ── Cancel polling ──────────────────────────────────────────────────────────
-  // deps: [activeRequest?.id] only — reads live state via ref to avoid stale closures
+    // Start interval — no immediate call here; first push fires after 12 s to avoid
+    // competing with the status PATCH that triggered this component mount/update.
+    gpsRef.current = setInterval(pushLocation, 12000);
+    return () => { if (gpsRef.current) { clearInterval(gpsRef.current); gpsRef.current = null; } };
+  }, [activeRequest?.id]);
+
+  // ── Cancel / completion polling ──────────────────────────────────────────────
+  // Watches for driver cancellation. When activeRequest becomes null (id disappears),
+  // this effect re-runs and safeGoBack() handles navigation — so we only call
+  // setActiveRequest(null) in the poll, never safeGoBack(), to avoid double-navigation.
   useEffect(() => {
     if (!activeRequest?.id) { safeGoBack(); return; }
     const poll = async () => {
@@ -179,7 +197,8 @@ export default function ProviderActiveJobScreen() {
         if (job.status === "cancelled") {
           if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
           setActiveRequest(null);
-          safeGoBack();
+          // safeGoBack() intentionally omitted — the effect re-runs when activeRequest
+          // becomes null and handles navigation via the guard at the top of this effect.
         }
       } catch { }
     };
@@ -343,10 +362,10 @@ export default function ProviderActiveJobScreen() {
           <View style={[styles.card, { backgroundColor: theme.backgroundSecondary, borderWidth: 1, borderColor: theme.border }]}>
             <View style={styles.cardHeader}>
               <View style={[styles.iconBox, { backgroundColor: theme.primary + "15" }]}>
-                <Feather name={serviceTypeIcons[activeRequest.serviceType]} size={24} color={theme.primary} />
+                <Feather name={serviceTypeIcons[activeRequest.serviceType] ?? "more-horizontal"} size={24} color={theme.primary} />
               </View>
               <View style={{ flex: 1, marginLeft: Spacing.md }}>
-                <ThemedText type="h4">{serviceTypeLabels[activeRequest.serviceType]}</ThemedText>
+                <ThemedText type="h4">{serviceTypeLabels[activeRequest.serviceType] ?? "Service"}</ThemedText>
                 <ThemedText type="small" style={{ color: theme.textSecondary }}>Service Request</ThemedText>
               </View>
               <ThemedText type="h4" style={{ color: theme.success }}>${activeRequest.estimatedCost}</ThemedText>

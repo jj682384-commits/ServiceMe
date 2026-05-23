@@ -35,22 +35,26 @@ const STATUS_ORDER: ServiceStatus[] = [
   "pending", "accepted", "en_route", "arrived", "in_progress", "completed", "cancelled",
 ];
 
-const serviceTypeLabels: Record<ServiceType, string> = {
+const serviceTypeLabels: Record<string, string> = {
   flat_tire:      "Flat Tire",
   jump_start:     "Jump Start",
   tow:            "Tow Service",
   fuel:           "Fuel Delivery",
   lockout:        "Lockout",
   obd_diagnostic: "OBD Diagnostic",
+  ev_charging:    "EV Mobile Charging",
+  ev_towing:      "EV-Safe Towing",
 };
 
-const serviceTypeIcons: Record<ServiceType, keyof typeof Feather.glyphMap> = {
+const serviceTypeIcons: Record<string, keyof typeof Feather.glyphMap> = {
   flat_tire:      "disc",
   jump_start:     "battery-charging",
   tow:            "truck",
   fuel:           "droplet",
   lockout:        "key",
   obd_diagnostic: "cpu",
+  ev_charging:    "zap",
+  ev_towing:      "truck",
 };
 
 const statusConfig: Record<ServiceStatus, { label: string; color: string }> = {
@@ -180,22 +184,16 @@ export default function ActiveServiceScreen() {
   ).current;
 
   // ── ETA countdown ───────────────────────────────────────────────────────────
+  // Note: we only count down the visual ETA — we do NOT mutate activeRequest status
+  // from here. Actual status transitions come from the provider (via the PATCH /status
+  // endpoint) and are picked up by useActiveJobTracker (WS + poll).
   useEffect(() => {
     if (!activeRequest) {
       if (isFocused) safeGoBack();
       return;
     }
     const timer = setInterval(() => {
-      setEta((prev) => {
-        if (prev <= 1) {
-          const cur = activeRequestRef.current;
-          if (cur && (cur.status === "accepted" || cur.status === "en_route")) {
-            setActiveRequest({ ...cur, status: "arrived" });
-          }
-          return 0;
-        }
-        return prev - 1;
-      });
+      setEta((prev) => (prev <= 1 ? 0 : prev - 1));
     }, 60000);
     return () => clearInterval(timer);
   }, [activeRequest?.id, isFocused]);
@@ -481,10 +479,10 @@ export default function ActiveServiceScreen() {
           <View style={[styles.card, { backgroundColor: theme.backgroundSecondary, borderWidth: 1, borderColor: theme.border }]}>
             <View style={styles.cardHeader}>
               <View style={[styles.iconBox, { backgroundColor: theme.primary + "15" }]}>
-                <Feather name={serviceTypeIcons[activeRequest.serviceType]} size={24} color={theme.primary} />
+                <Feather name={serviceTypeIcons[activeRequest.serviceType] ?? "more-horizontal"} size={24} color={theme.primary} />
               </View>
               <View style={{ flex: 1, marginLeft: Spacing.md }}>
-                <ThemedText type="h4">{serviceTypeLabels[activeRequest.serviceType]}</ThemedText>
+                <ThemedText type="h4">{serviceTypeLabels[activeRequest.serviceType] ?? "Service"}</ThemedText>
                 <ThemedText type="small" style={{ color: theme.textSecondary }}>Service Request</ThemedText>
               </View>
               <ThemedText type="h4" style={{ color: theme.success }}>${activeRequest.estimatedCost}</ThemedText>
