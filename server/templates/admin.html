@@ -597,7 +597,7 @@
       <div class="page-header">
         <div>
           <div class="page-title">Jobs</div>
-          <div class="page-sub">All service requests (last 200)</div>
+          <div class="page-sub" id="jobs-updated">All service requests (last 200)</div>
         </div>
         <button class="btn btn-ghost btn-sm" onclick="loadJobs()">&#8635; Refresh</button>
       </div>
@@ -787,6 +787,7 @@
     token = ""; localStorage.removeItem("sm_admin_token");
     clearInterval(autoRefreshTimer);
     clearInterval(liveRefreshTimer);
+    clearInterval(jobsRefreshTimer);
     document.getElementById("dashboard").style.display = "none";
     document.getElementById("login-screen").style.display = "flex";
     document.getElementById("password-input").value = "";
@@ -801,6 +802,8 @@
   }
 
   // ── Navigation ──
+  let jobsRefreshTimer = null;
+
   function showPage(id) {
     document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
     document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
@@ -808,10 +811,17 @@
     document.getElementById(`nav-${id}`).classList.add("active");
     if (id === "providers") loadProviders();
     if (id === "users") loadUsers();
-    if (id === "jobs") loadJobs();
     if (id === "earnings") loadEarnings();
     if (id === "reports") loadReports();
     if (id === "waitlist") loadWaitlist();
+    if (id === "jobs") {
+      loadJobs();
+      clearInterval(jobsRefreshTimer);
+      jobsRefreshTimer = setInterval(loadJobs, 15000);
+    } else {
+      clearInterval(jobsRefreshTimer);
+      jobsRefreshTimer = null;
+    }
     if (id === "live") {
       loadLiveJobs();
       clearInterval(liveRefreshTimer);
@@ -983,6 +993,8 @@
       if (res.status === 401) { signOut(); return; }
       allJobs = await res.json();
       renderJobs(allJobs);
+      const el = document.getElementById("jobs-updated");
+      if (el) el.textContent = `${allJobs.length} jobs · updated ${new Date().toLocaleTimeString()}`;
     } catch {}
   }
   function filterJobs(q) { renderJobs(allJobs.filter(j => `${j.id} ${j.service_type}`.toLowerCase().includes(q.toLowerCase()) && (!jobStatusFilter || j.status === jobStatusFilter))); }
