@@ -1125,6 +1125,7 @@
   let leafletMarkers = [];
   let liveRefreshTimer = null;
   let liveMapInitialized = false;
+  let liveMapFitted = false; // true after first auto-fit — never re-fit so user can pan freely
 
   const SVC_ICONS = {
     flat_tire:"&#128295;", jump_start:"&#9889;", towing:"&#128663;",
@@ -1386,6 +1387,7 @@
 
   function initLeafletMap() {
     liveMapInitialized = true;
+    liveMapFitted = false; // reset so first render auto-fits to job locations
     const isDark = document.documentElement.getAttribute("data-theme") !== "light";
     leafletMap = L.map("live-map", { zoomControl: true, attributionControl: false });
     const tileUrl = isDark
@@ -1393,6 +1395,8 @@
       : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
     L.tileLayer(tileUrl, { maxZoom: 19, subdomains: "abcd" }).addTo(leafletMap);
     L.control.attribution({ prefix: "© OSM / CartoDB" }).addTo(leafletMap);
+    // Start at a neutral world view until jobs load
+    leafletMap.setView([20, 0], 2);
     renderLiveMap();
   }
 
@@ -1445,11 +1449,16 @@
       }
     });
 
-    if (bounds.length > 0) {
-      try { leafletMap.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 }); }
-      catch {}
-    } else {
-      leafletMap.setView([37.7749, -122.4194], 11);
+    // Only auto-fit the viewport once (on first render with real data).
+    // After that, the user is free to pan/zoom without being snapped back every 5 s.
+    if (!liveMapFitted) {
+      if (bounds.length > 0) {
+        try { leafletMap.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 }); }
+        catch {}
+        liveMapFitted = true;
+      }
+      // If no jobs yet, leave the world view from initLeafletMap in place —
+      // we'll fit when the first job appears (liveMapFitted stays false).
     }
   }
 
