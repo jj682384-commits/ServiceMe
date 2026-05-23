@@ -3,6 +3,7 @@ import type { Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import * as fs from "fs";
 import * as path from "path";
+import { execSync } from "child_process";
 import { WebhookHandlers } from "./webhookHandlers";
 import { getStripeSync, getStripePublishableKey, getUncachableStripeClient } from "./stripeClient";
 import { runMigrations } from "stripe-replit-sync";
@@ -574,19 +575,13 @@ process.on("unhandledRejection", (reason) => {
 
   const port = parseInt(process.env.PORT || "5000", 10);
 
-  // Retry listen — handles EADDRINUSE when old process hasn't released the port yet
-  const startListening = (attemptsLeft: number) => {
-    const onError = (err: NodeJS.ErrnoException) => {
-      if (err.code === "EADDRINUSE" && attemptsLeft > 0) {
-        log(`Port ${port} busy, retrying in 2s (${attemptsLeft} attempts left)...`);
-        server.removeListener("error", onError);
-        setTimeout(() => startListening(attemptsLeft - 1), 2000);
-      } else {
-        throw err;
-      }
-    };
-    server.once("error", onError);
-    server.listen(port, "0.0.0.0", async () => {
+  // Kill any leftover process on this port before binding (prevents EADDRINUSE on restart)
+  try {
+    execSync(`fuser -k ${port}/tcp 2>/dev/null || true`);
+    await new Promise((r) => setTimeout(r, 800));
+  } catch { /* fuser not available — ignore */ }
+
+  server.listen(port, "0.0.0.0", async () => {
       log(`express server serving on port ${port}`);
       // Initialize Stripe schema and sync in the background
       try {
@@ -610,6 +605,4 @@ process.on("unhandledRejection", (reason) => {
         console.error("[stripe] init error (non-fatal):", err.message);
       }
     });
-  };
-  startListening(5);
 })();
