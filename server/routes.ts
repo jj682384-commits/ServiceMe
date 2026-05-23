@@ -619,16 +619,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/admin", (_req: Request, res: Response) => {
+  function serveAdminPage(_req: Request, res: Response) {
     const adminPage = path.resolve(process.cwd(), "server", "templates", "admin.html");
     if (fs.existsSync(adminPage)) {
       res.setHeader("Content-Type", "text/html; charset=utf-8");
       res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+      // Force browser to clear service worker cache so Expo SW can't intercept this page
+      res.setHeader("Clear-Site-Data", '"cache"');
       res.send(fs.readFileSync(adminPage, "utf-8"));
     } else {
       res.status(404).send("Admin page not found");
     }
-  });
+  }
+  app.get("/admin", serveAdminPage);
+  app.get("/resqadmin", serveAdminPage);
 
   // ── Admin auth ────────────────────────────────────────────────────────────────
 
