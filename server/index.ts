@@ -573,29 +573,43 @@ process.on("unhandledRejection", (reason) => {
   process.on("SIGINT", shutdown);
 
   const port = parseInt(process.env.PORT || "5000", 10);
-  server.listen(port, "0.0.0.0", async () => {
-    log(`express server serving on port ${port}`);
 
-    // Initialize Stripe schema and sync in the background
-    try {
-      const databaseUrl = process.env.DATABASE_URL;
-      if (databaseUrl) {
-        await runMigrations({ databaseUrl, schema: "stripe" });
-        const stripeSync = await getStripeSync();
-        const domain = process.env.REPLIT_DOMAINS?.split(",")[0] ||
-          process.env.REPLIT_DEV_DOMAIN;
-        if (domain) {
-          await stripeSync.findOrCreateManagedWebhook(
-            `https://${domain}/api/stripe/webhook`
-          );
-        }
-        stripeSync.syncBackfill().catch((err: any) =>
-          console.error("[stripe] syncBackfill error:", err.message)
-        );
-        log("[stripe] initialized");
+  // Retry listen — handles EADDRINUSE when old process hasn't released the port yet
+  const startListening = (attemptsLeft: number) => {
+    const onError = (err: NodeJS.ErrnoException) => {
+      if (err.code === "EADDRINUSE" && attemptsLeft > 0) {
+        log(`Port ${port} busy, retrying in 2s (${attemptsLeft} attempts left)...`);
+        server.removeListener("error", onError);
+        setTimeout(() => startListening(attemptsLeft - 1), 2000);
+      } else {
+        throw err;
       }
-    } catch (err: any) {
-      console.error("[stripe] init error (non-fatal):", err.message);
-    }
-  });
+    };
+    server.once("error", onError);
+    server.listen(port, "0.0.0.0", async () => {
+      log(`express server serving on port ${port}`);
+      // Initialize Stripe schema and sync in the background
+      try {
+        const databaseUrl = process.env.DATABASE_URL;
+        if (databaseUrl) {
+          await runMigrations({ databaseUrl, schema: "stripe" });
+          const stripeSync = await getStripeSync();
+          const domain = process.env.REPLIT_DOMAINS?.split(",")[0] ||
+            process.env.REPLIT_DEV_DOMAIN;
+          if (domain) {
+            await stripeSync.findOrCreateManagedWebhook(
+              `https://${domain}/api/stripe/webhook`
+            );
+          }
+          stripeSync.syncBackfill().catch((err: any) =>
+            console.error("[stripe] syncBackfill error:", err.message)
+          );
+          log("[stripe] initialized");
+        }
+      } catch (err: any) {
+        console.error("[stripe] init error (non-fatal):", err.message);
+      }
+    });
+  };
+  startListening(5);
 })();

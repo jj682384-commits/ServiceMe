@@ -633,6 +633,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
   app.get("/admin", serveAdminPage);
   app.get("/resqadmin", serveAdminPage);
+  // Served under /api/ so the Expo service worker never intercepts it
+  app.get("/api/admin-hub", serveAdminPage);
 
   // ── Admin auth ────────────────────────────────────────────────────────────────
 
