@@ -764,7 +764,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 receipt_number, location, service_fee
          FROM jobs
          WHERE status IN ('pending','accepted','en_route','arrived','in_progress')
-         ORDER BY created_at DESC`
+            OR (status IN ('completed','cancelled')
+                AND updated_at > NOW() - INTERVAL '30 minutes')
+         ORDER BY
+           CASE WHEN status IN ('pending','accepted','en_route','arrived','in_progress') THEN 0 ELSE 1 END,
+           created_at DESC`
       );
       res.json(rows);
     } catch (err: any) {
@@ -1497,6 +1501,7 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
   app.post("/api/jobs", async (req: Request, res: Response) => {
     const data = req.body as Partial<JobRecord>;
     if (!data.id || !data.serviceType) return res.status(400).json({ error: "id and serviceType required" });
+    console.log(`[jobs POST] received id=${data.id} type=${data.serviceType} status=${(data as any).status ?? "pending"}`);
     // Detect EV job: explicit flag or notes convention ("EV " prefix)
     const isEV = data.isEV ?? (typeof data.notes === "string" && data.notes.startsWith("EV "));
     try {

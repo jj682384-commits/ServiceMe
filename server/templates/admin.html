@@ -825,7 +825,7 @@
     if (id === "live") {
       loadLiveJobs();
       clearInterval(liveRefreshTimer);
-      liveRefreshTimer = setInterval(loadLiveJobs, 5000);
+      liveRefreshTimer = setInterval(loadLiveJobs, 2000);
     } else {
       clearInterval(liveRefreshTimer);
       liveRefreshTimer = null;
@@ -1180,11 +1180,15 @@
 
   function renderLiveJobs() {
     const now = new Date().toLocaleTimeString();
-    document.getElementById("live-last-updated").innerHTML = `<span class="refresh-dot"></span>Auto-refreshing every 5s &bull; Last updated ${now}`;
+    document.getElementById("live-last-updated").innerHTML = `<span class="refresh-dot"></span>Auto-refreshing every 2s &bull; Last updated ${now}`;
     const grid = document.getElementById("live-grid");
     const pulse = document.getElementById("live-pulse-dot");
     const label = document.getElementById("live-total-label");
     const chips = document.getElementById("live-count-chips");
+
+    const ACTIVE_STATUSES = new Set(["pending","accepted","en_route","arrived","in_progress"]);
+    const activeJobs  = allLiveJobs.filter(j => ACTIVE_STATUSES.has(j.status));
+    const recentJobs  = allLiveJobs.filter(j => !ACTIVE_STATUSES.has(j.status));
 
     if (!allLiveJobs.length) {
       pulse.classList.add("idle");
@@ -1198,24 +1202,42 @@
       return;
     }
 
-    pulse.classList.remove("idle");
-    label.textContent = `${allLiveJobs.length} active job${allLiveJobs.length !== 1 ? "s" : ""}`;
+    if (activeJobs.length > 0) {
+      pulse.classList.remove("idle");
+      label.textContent = `${activeJobs.length} active job${activeJobs.length !== 1 ? "s" : ""}`;
+    } else {
+      pulse.classList.add("idle");
+      label.textContent = "No active jobs right now";
+    }
 
     const statCounts = {};
-    allLiveJobs.forEach(j => { statCounts[j.status] = (statCounts[j.status] || 0) + 1; });
+    activeJobs.forEach(j => { statCounts[j.status] = (statCounts[j.status] || 0) + 1; });
     const ORDER = ["pending","accepted","en_route","arrived","in_progress"];
     chips.innerHTML = ORDER.filter(s => statCounts[s]).map(s =>
       `<span class="lchip ${s}">${statusLabel(s)} &bull; ${statCounts[s]}</span>`
-    ).join("");
+    ).join("") || '<span class="lchip empty">All clear</span>';
 
-    grid.innerHTML = allLiveJobs.map(j => buildLiveCard(j)).join("");
+    let html = "";
+    if (activeJobs.length > 0) {
+      html += activeJobs.map(j => buildLiveCard(j)).join("");
+    } else {
+      html += `<div class="live-empty" style="grid-column:1/-1;padding:16px 0 8px">
+        <p style="color:var(--muted);font-size:13px">No in-progress jobs right now.</p>
+      </div>`;
+    }
+    if (recentJobs.length > 0) {
+      html += `<div style="grid-column:1/-1;border-top:1px solid var(--border);margin:8px 0 4px;padding-top:12px">
+        <span style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Recently Finished (last 30 min)</span>
+      </div>`;
+      html += recentJobs.map(j => buildLiveCard(j, true)).join("");
+    }
+    grid.innerHTML = html;
   }
 
-  function buildLiveCard(j) {
+  function buildLiveCard(j, isDimmed = false) {
     const loc = typeof j.location === "string" ? JSON.parse(j.location) : j.location;
     const address = loc?.address || "Unknown location";
-    const lat = loc?.latitude; const lng = loc?.longitude;
-    const hasProvLoc = j.provider_location || (typeof j.provider_location === "string" && j.provider_location !== "null");
+    const hasProvLoc = j.provider_location && j.provider_location !== "null";
     const driverName = j.driver?.name || "Unknown driver";
     const providerName = j.provider?.name || null;
     const cost = j.total_cost ?? j.estimated_cost;
@@ -1227,8 +1249,12 @@
 
     const etaHtml = j.eta ? `<div class="lc-eta">&#10004; ETA ${j.eta} min</div>` : "";
     const provLocHtml = hasProvLoc ? `<span style="font-size:11px;color:var(--success)">&#128204; Live GPS</span>` : "";
+    const dimStyle = isDimmed ? "opacity:0.55;filter:grayscale(0.4)" : "";
+    const cancelBtn = !isDimmed
+      ? `<button class="btn btn-danger btn-sm" onclick="adminCancelJob('${j.id}')">Cancel Job</button>`
+      : "";
 
-    return `<div class="live-card ${j.status}" onclick="openLiveJobDetail('${j.id}')">
+    return `<div class="live-card ${j.status}" style="${dimStyle}" onclick="openLiveJobDetail('${j.id}')">
       <div class="lc-top">
         <div>
           <div class="lc-service"><span class="lc-svc-icon">${svcIcon(j.service_type)}</span>${esc((j.service_type||"").replace(/_/g," "))}</div>
@@ -1258,7 +1284,7 @@
         </div>
         <div class="lc-actions" onclick="event.stopPropagation()">
           ${j.notes ? `<button class="btn btn-ghost btn-sm" onclick="alert('Notes: ${esc(j.notes).replace(/'/g,"\\'")}')" title="View notes">&#128221;</button>` : ""}
-          <button class="btn btn-danger btn-sm" onclick="adminCancelJob('${j.id}')">Cancel Job</button>
+          ${cancelBtn}
         </div>
       </div>
     </div>`;

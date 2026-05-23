@@ -323,9 +323,11 @@ export default function ServiceRequestScreen() {
     };
 
     (async () => {
-      // Scheduled requests don't need upfront payment
+      // Scheduled requests don't need upfront payment — but still persist to DB
       if (isScheduled) {
         addToHistory(newRequest);
+        const scheduledPayload = { ...newRequest, createdAt: newRequest.createdAt.toISOString() };
+        apiRequest("POST", "/api/jobs", scheduledPayload).catch(() => {});
         if (mountedRef.current) setIsSubmitting(false);
         navigation.goBack();
         return;

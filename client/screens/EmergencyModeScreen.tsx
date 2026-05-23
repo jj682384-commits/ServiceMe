@@ -19,7 +19,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { notifySOSActivated } from "@/lib/notifications";
-import { getApiUrl } from "@/lib/query-client";
+import { apiRequest } from "@/lib/query-client";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
@@ -145,12 +145,7 @@ export default function EmergencyModeScreen() {
     };
 
     try {
-      const url = new URL("/api/jobs", getApiUrl());
-      await fetch(url.toString(), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(job),
-      });
+      await apiRequest("POST", "/api/jobs", job);
     } catch {
       // offline — still set local state so driver can track when reconnected
     }
