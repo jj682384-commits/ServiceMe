@@ -146,12 +146,33 @@ function broadcastToConversation(conversationId: string, payload: object, exclud
 
 // ── Admin ─────────────────────────────────────────────────────────────────────
 
-const adminTokens = new Set<string>();
+// ── Admin auth — HMAC-signed tokens (survive server restarts) ────────────────
+// Token format: "<expiry_ms>.<hmac_hex>"
+// Signed with SESSION_SECRET so no server-side state needed.
+const ADMIN_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+function signAdminToken(): string {
+  const secret = process.env.SESSION_SECRET || "fallback-secret";
+  const expiry = (Date.now() + ADMIN_TOKEN_TTL_MS).toString();
+  const mac = crypto.createHmac("sha256", secret).update(expiry).digest("hex");
+  return `${expiry}.${mac}`;
+}
+
+function verifyAdminToken(token: string): boolean {
+  if (!token) return false;
+  const parts = token.split(".");
+  if (parts.length !== 2) return false;
+  const [expiry, mac] = parts;
+  const secret = process.env.SESSION_SECRET || "fallback-secret";
+  const expected = crypto.createHmac("sha256", secret).update(expiry).digest("hex");
+  if (!crypto.timingSafeEqual(Buffer.from(mac, "hex").slice(0, 32), Buffer.from(expected, "hex").slice(0, 32))) return false;
+  return Date.now() < parseInt(expiry, 10);
+}
 
 function adminAuth(req: Request, res: Response, next: NextFunction) {
   const auth = req.headers["authorization"] || "";
   const token = auth.replace("Bearer ", "").trim();
-  if (!token || !adminTokens.has(token)) {
+  if (!verifyAdminToken(token)) {
     return res.status(401).json({ error: "Unauthorized" });
   }
   next();
@@ -617,8 +638,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const submitted = (password || "").trim();
     if (!adminPassword) return res.status(503).json({ error: "ADMIN_PASSWORD not configured" });
     if (!submitted || submitted !== adminPassword) return res.status(401).json({ error: "Invalid password" });
-    const token = crypto.randomBytes(32).toString("hex");
-    adminTokens.add(token);
+    const token = signAdminToken();
     res.json({ token });
   });
 
