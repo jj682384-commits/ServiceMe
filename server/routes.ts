@@ -635,28 +635,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/resqadmin", serveAdminPage);
   app.get("/api/admin-hub", serveAdminPage);
 
-  // SW-reset gateway: a page your browser has never cached, so the SW can't intercept it.
-  // It unregisters all SWs + clears all caches, then hard-navigates to admin.
-  app.get("/go-admin", (_req: Request, res: Response) => {
-    res.setHeader("Content-Type", "text/html; charset=utf-8");
-    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
-    res.setHeader("Clear-Site-Data", '"cache", "cookies", "storage"');
-    res.send(`<!DOCTYPE html><html><head><title>Loading Admin…</title></head><body>
-<p style="font-family:sans-serif;padding:20px">Clearing cache, loading admin…</p>
-<script>
-(async function() {
-  try {
-    if ('serviceWorker' in navigator) {
-      const regs = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(regs.map(r => r.unregister()));
-    }
-    const keys = await caches.keys();
-    await Promise.all(keys.map(k => caches.delete(k)));
-  } catch(e) {}
-  window.location.replace('/api/admin-hub');
-})();
-</script></body></html>`);
-  });
+  // /go-admin — direct alias that also serves admin.html (used in landing page footer)
+  app.get("/go-admin", serveAdminPage);
 
   // ── Admin auth ────────────────────────────────────────────────────────────────
 
