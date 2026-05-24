@@ -306,6 +306,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `).catch(() => {});
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS waitlist (
+      id SERIAL PRIMARY KEY,
+      email VARCHAR(255) UNIQUE NOT NULL,
+      role VARCHAR(50),
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `).catch(() => {});
 
   function getSmartcarRedirectUri(): string {
     const prodDomain = process.env.REPLIT_INTERNAL_APP_DOMAIN;
