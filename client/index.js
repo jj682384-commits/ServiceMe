@@ -2,23 +2,19 @@ import { registerRootComponent } from "expo";
 
 import App from "@/App";
 
-// If the Expo app bundle was served by a stale service worker for an admin
-// path, unregister all SWs (so the next request hits the server directly) and
-// reload once.  A sessionStorage flag stops the loop after the first reload.
-if (typeof window !== "undefined" && window.location) {
-  const _adminPaths = ["/admin", "/go-admin", "/resqadmin", "/rr-ops", "/api/admin-hub"];
+// If a stale service worker served this page for an admin path, unregister all
+// SWs and reload so the server can respond directly.  Using
+// navigator.serviceWorker.controller (null when NOT SW-controlled) means this
+// self-limits: after the reload the controller is null and the block is skipped.
+if (typeof window !== "undefined" && window.location && "serviceWorker" in navigator) {
+  const _adminPaths = ["/admin", "/go-admin", "/resqadmin", "/rr-ops", "/api/admin-hub", "/clear"];
   const _onAdminPath = _adminPaths.some((p) => window.location.pathname.startsWith(p));
-  if (_onAdminPath && sessionStorage.getItem("_sw_cleared") !== "1") {
-    sessionStorage.setItem("_sw_cleared", "1");
+  if (_onAdminPath && navigator.serviceWorker.controller) {
     Promise.all([
-      "serviceWorker" in navigator
-        ? navigator.serviceWorker.getRegistrations().then((regs) =>
-            Promise.all(regs.map((r) => r.unregister()))
-          )
-        : Promise.resolve(),
-      "caches" in window
-        ? caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
-        : Promise.resolve(),
+      navigator.serviceWorker.getRegistrations().then((regs) =>
+        Promise.all(regs.map((r) => r.unregister()))
+      ),
+      caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k)))),
     ]).then(() => window.location.reload(true));
   }
 }
