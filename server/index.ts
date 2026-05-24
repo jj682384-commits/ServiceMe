@@ -558,6 +558,49 @@ process.on("unhandledRejection", (reason) => {
     res.send("<html><body><h2>Session expired — please re-open the payout setup from the ResqRide app.</h2></body></html>");
   });
 
+  // ── Kill-SW routes (registered BEFORE configureExpoAndLanding) ───────────────
+  // Serve a self-unregistering SW at every common Expo/web SW path so the
+  // browser auto-updates the stale SW and removes it.
+  const killSwPath = path.resolve(process.cwd(), "server", "kill-sw.js");
+  const killSwHandler = (_req: Request, res: Response) => {
+    res.setHeader("Content-Type", "application/javascript");
+    res.setHeader("Cache-Control", "no-store");
+    res.sendFile(killSwPath);
+  };
+  const swPaths = [
+    "/expo-service-worker.js",
+    "/service-worker.js",
+    "/sw.js",
+    "/ExpoServiceWorker.worker.js",
+  ];
+  swPaths.forEach((p) => app.get(p, killSwHandler));
+
+  // /clear — manual SW reset page; also redirects to admin after clearing
+  app.get("/clear", (_req: Request, res: Response) => {
+    res.setHeader("Cache-Control", "no-store");
+    res.setHeader("Clear-Site-Data", '"cache", "storage"');
+    res.send(`<!DOCTYPE html><html><head><title>Clearing…</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{font-family:sans-serif;background:#000;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;flex-direction:column;gap:16px}</style>
+</head><body>
+<p>Clearing browser cache…</p>
+<script>
+(async()=>{
+  try{
+    if('serviceWorker' in navigator){
+      const regs=await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r=>r.unregister()));
+    }
+    const keys=await caches.keys();
+    await Promise.all(keys.map(k=>caches.delete(k)));
+  }catch(e){}
+  window.location.replace('/rr-ops');
+})();
+</script>
+<noscript><a href="/rr-ops" style="color:#0af">Go to Admin</a></noscript>
+</body></html>`);
+  });
+
   configureExpoAndLanding(app);
 
   const server = await registerRoutes(app);
