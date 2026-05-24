@@ -635,8 +635,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/resqadmin", serveAdminPage);
   app.get("/api/admin-hub", serveAdminPage);
 
-  // /go-admin — direct alias that also serves admin.html (used in landing page footer)
+  // /go-admin and /rr-ops — aliases for the admin dashboard
   app.get("/go-admin", serveAdminPage);
+  app.get("/rr-ops", serveAdminPage);
 
   // ── Admin auth ────────────────────────────────────────────────────────────────
 
