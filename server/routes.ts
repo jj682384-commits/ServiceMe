@@ -794,7 +794,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
          FROM jobs
          WHERE status IN ('pending','accepted','en_route','arrived','in_progress')
             OR (status IN ('completed','cancelled')
-                AND updated_at > NOW() - INTERVAL '30 minutes')
+                AND updated_at > NOW() - INTERVAL '24 hours')
          ORDER BY
            CASE WHEN status IN ('pending','accepted','en_route','arrived','in_progress') THEN 0 ELSE 1 END,
            created_at DESC`
