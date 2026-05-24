@@ -5,7 +5,7 @@ import App from "@/App";
 // If the Expo app bundle was served by a stale service worker for an admin
 // path, unregister all SWs (so the next request hits the server directly) and
 // reload once.  A sessionStorage flag stops the loop after the first reload.
-if (typeof window !== "undefined") {
+if (typeof window !== "undefined" && window.location) {
   const _adminPaths = ["/admin", "/go-admin", "/resqadmin", "/rr-ops", "/api/admin-hub"];
   const _onAdminPath = _adminPaths.some((p) => window.location.pathname.startsWith(p));
   if (_onAdminPath && sessionStorage.getItem("_sw_cleared") !== "1") {
