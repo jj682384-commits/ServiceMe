@@ -53,7 +53,7 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "bash -c 'node server/kill-port.js 5000 8081 2>/dev/null; sleep 2; trap \"kill 0\" EXIT SIGTERM SIGINT; (CI=1 EXPO_PACKAGER_PROXY_URL=https://$REPLIT_DEV_DOMAIN REACT_NATIVE_PACKAGER_HOSTNAME=$REPLIT_DEV_DOMAIN EXPO_PUBLIC_DOMAIN=resqride.co npx expo start --localhost) & (NODE_ENV=development tsx server/index.ts); wait'"
+args = "bash -c 'node server/kill-port.js 5000 8081 2>/dev/null; sleep 2; trap \"kill 0\" EXIT SIGTERM SIGINT; (EXPO_PACKAGER_PROXY_URL=https://$REPLIT_DEV_DOMAIN REACT_NATIVE_PACKAGER_HOSTNAME=$REPLIT_DEV_DOMAIN EXPO_PUBLIC_DOMAIN=resqride.co npx expo start --localhost) & (NODE_ENV=development tsx server/index.ts); wait'"
 waitForPort = 5000
 
 [userenv]

@@ -101,8 +101,10 @@ Real server-side auth: `POST /api/auth/signup` and `POST /api/auth/signin` hash/
 - **Twilio upgrade pending**: Account suspended on signup; reactivation email sent. Once reinstated, store `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER` as secrets and replace expo-sms with a `/api/sos/sms` server endpoint for silent background sending.
 
 ### Expo Go / Metro Dev Server Rules
-- **ALWAYS keep `CI=1` in the workflow command** for the Expo start process. Without it, Expo CLI shows interactive "Log in or proceed anonymously" prompts when a physical device connects, which block Metro in Replit's non-interactive terminal. `CI=1` suppresses all interactive prompts. It does NOT break hot module reloading (HMR via WebSockets still works); it only disables terminal keyboard shortcuts (r/m/etc.) which don't work in Replit anyway.
-- **NEVER add `owner` to `app.json`**. It triggers an ownership verification prompt on startup. The `projectId` in `extra.eas.projectId` is sufficient for push notifications.
+- **NEVER add `owner` to `app.json`**. It triggers an ownership verification prompt on startup that blocks Metro in Replit's non-interactive terminal. The `projectId` in `extra.eas.projectId` is sufficient for push notifications.
+- **NEVER use `CI=1`** in the Expo start command. While it suppresses the "proceed anonymously" terminal prompt, it causes a `500 CommandError: Input required in non-interactive mode` error when a physical device tries to connect, because CI mode demands `EXPO_TOKEN` authentication.
+- **NEVER use `--offline`** with `--localhost` — they are mutually exclusive flags in Expo CLI.
+- The **"proceed anonymously" / "unverified app" terminal prompt** that appears when a device connects is cosmetic — Metro still serves the bundle fine. It does not block connections.
 - **`react-native-purchases` (RevenueCat) is a native module** that does not work in Expo Go. All Purchases calls are guarded with `isPurchasesAvailable()` in `client/lib/revenuecat.tsx` — if the native module isn't linked, all RevenueCat calls silently no-op so the app still loads.
 
 ### Critical Networking Rule
