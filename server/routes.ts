@@ -735,36 +735,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/migrate-users", adminAuth, async (req: Request, res: Response) => {
-    const { users, providers } = req.body as { users: any[]; providers: any[] };
-    const results: string[] = [];
-    try {
-      for (const u of (users || [])) {
-        await pool.query(
-          `INSERT INTO auth_users (id, email, name, phone, role, password_hash, stripe_customer_id, created_at)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-           ON CONFLICT (id) DO UPDATE SET email=EXCLUDED.email, name=EXCLUDED.name, phone=EXCLUDED.phone,
-             role=EXCLUDED.role, password_hash=EXCLUDED.password_hash, stripe_customer_id=EXCLUDED.stripe_customer_id`,
-          [u.id, u.email, u.name, u.phone || null, u.role, u.password_hash, u.stripe_customer_id || null, u.created_at]
-        );
-        results.push(`user ${u.email} upserted`);
-      }
-      for (const p of (providers || [])) {
-        const cols = Object.keys(p);
-        const vals = cols.map((_, i) => `$${i + 1}`).join(",");
-        const setClauses = cols.filter(c => c !== "id").map((c, i) => `${c}=EXCLUDED.${c}`).join(",");
-        await pool.query(
-          `INSERT INTO providers (${cols.join(",")}) VALUES (${vals}) ON CONFLICT (id) DO UPDATE SET ${setClauses}`,
-          cols.map(c => p[c])
-        );
-        results.push(`provider ${p.name} upserted`);
-      }
-      res.json({ success: true, results });
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
-    }
-  });
-
   app.delete("/api/admin/users/:id", adminAuth, async (req: Request, res: Response) => {
     try {
       await pool.query("DELETE FROM sessions WHERE user_id = $1", [req.params.id]);
