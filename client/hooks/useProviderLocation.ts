@@ -1,16 +1,11 @@
 import { useEffect, useRef } from "react";
 import { Platform } from "react-native";
 import * as Location from "expo-location";
-import { getApiUrl } from "@/lib/query-client";
+import { getApiUrl, apiRequest } from "@/lib/query-client";
 
 async function patchLocation(providerId: string, latitude: number, longitude: number) {
   try {
-    const url = new URL(`/api/providers/${providerId}/location`, getApiUrl());
-    await fetch(url.toString(), {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ latitude, longitude }),
-    });
+    await apiRequest("PATCH", `/api/providers/${providerId}/location`, { latitude, longitude });
   } catch {
   }
 }
@@ -34,14 +29,9 @@ export async function registerProviderOnServer(provider: {
   location?: { latitude: number; longitude: number };
 }) {
   try {
-    const url = new URL("/api/providers/register", getApiUrl());
-    await fetch(url.toString(), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...provider,
-        ...(provider.location ? { location: provider.location } : {}),
-      }),
+    await apiRequest("POST", "/api/providers/register", {
+      ...provider,
+      ...(provider.location ? { location: provider.location } : {}),
     });
   } catch {
   }
@@ -49,12 +39,7 @@ export async function registerProviderOnServer(provider: {
 
 export async function updateProviderAvailability(providerId: string, isAvailable: boolean) {
   try {
-    const url = new URL(`/api/providers/${providerId}/availability`, getApiUrl());
-    await fetch(url.toString(), {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ isAvailable }),
-    });
+    await apiRequest("PATCH", `/api/providers/${providerId}/availability`, { isAvailable });
   } catch {
   }
 }

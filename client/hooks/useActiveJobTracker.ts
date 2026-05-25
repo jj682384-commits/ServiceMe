@@ -105,6 +105,7 @@ export function useActiveJobTracker() {
       }
       try {
         const url = new URL(`/api/jobs/${cur.id}`, getApiUrl());
+        url.searchParams.set("t", String(Date.now()));
         const res = await fetch(url.toString(), {
           headers: { "Cache-Control": "no-cache", "Pragma": "no-cache" },
         });

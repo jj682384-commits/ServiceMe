@@ -36,7 +36,7 @@ const PREMIUM_DISCOUNT_YEARLY  = 0.25;
 
 const serviceTypes: { type: ServiceType; label: string; icon: keyof typeof Feather.glyphMap; price: number }[] = [
   { type: "flat_tire", label: "Flat Tire", icon: "disc", price: 40 },
-  { type: "jump_start", label: "Jump Start", icon: "battery-charging", price: 30 },
+  { type: "jump_start", label: "Jump Start", icon: "battery-charging", price: 25 },
   { type: "fuel", label: "Fuel Delivery", icon: "droplet", price: 0 },
   { type: "lockout", label: "Lockout", icon: "key", price: 55 },
   { type: "obd_diagnostic", label: "OBD Diagnostic", icon: "cpu", price: 21 },
