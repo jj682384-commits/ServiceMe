@@ -10,24 +10,35 @@ const REVENUECAT_ANDROID_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_AP
 
 export const REVENUECAT_ENTITLEMENT_IDENTIFIER = "premium";
 
-function getRevenueCatApiKey() {
-  if (!REVENUECAT_TEST_API_KEY || !REVENUECAT_IOS_API_KEY || !REVENUECAT_ANDROID_API_KEY) {
-    throw new Error("RevenueCat Public API Keys not found");
+function getRevenueCatApiKey(): string | null {
+  if (Platform.OS === "web") return REVENUECAT_TEST_API_KEY || null;
+  if (__DEV__ || Constants.executionEnvironment === "storeClient") {
+    return REVENUECAT_TEST_API_KEY || null;
   }
+  if (Platform.OS === "ios") return REVENUECAT_IOS_API_KEY || null;
+  if (Platform.OS === "android") return REVENUECAT_ANDROID_API_KEY || null;
+  return REVENUECAT_TEST_API_KEY || null;
+}
 
-  if (__DEV__ || Platform.OS === "web" || Constants.executionEnvironment === "storeClient") {
-    return REVENUECAT_TEST_API_KEY;
+function isPurchasesAvailable(): boolean {
+  try {
+    return typeof Purchases !== "undefined" && typeof Purchases.configure === "function";
+  } catch {
+    return false;
   }
-
-  if (Platform.OS === "ios") return REVENUECAT_IOS_API_KEY;
-  if (Platform.OS === "android") return REVENUECAT_ANDROID_API_KEY;
-
-  return REVENUECAT_TEST_API_KEY;
 }
 
 export function initializeRevenueCat() {
   try {
+    if (!isPurchasesAvailable()) {
+      console.log("RevenueCat: native module not available (Expo Go), skipping init");
+      return;
+    }
     const apiKey = getRevenueCatApiKey();
+    if (!apiKey) {
+      console.log("RevenueCat: no API key configured, skipping init");
+      return;
+    }
     Purchases.setLogLevel(Purchases.LOG_LEVEL.DEBUG);
     Purchases.configure({ apiKey });
     console.log("RevenueCat configured");
@@ -40,7 +51,10 @@ function useSubscriptionContext() {
   const customerInfoQuery = useQuery({
     queryKey: ["revenuecat", "customer-info"],
     queryFn: async () => {
-      try { return await Purchases.getCustomerInfo(); } catch { return null; }
+      try {
+        if (!isPurchasesAvailable()) return null;
+        return await Purchases.getCustomerInfo();
+      } catch { return null; }
     },
     staleTime: 60 * 1000,
   });
@@ -48,13 +62,17 @@ function useSubscriptionContext() {
   const offeringsQuery = useQuery({
     queryKey: ["revenuecat", "offerings"],
     queryFn: async () => {
-      try { return await Purchases.getOfferings(); } catch { return null; }
+      try {
+        if (!isPurchasesAvailable()) return null;
+        return await Purchases.getOfferings();
+      } catch { return null; }
     },
     staleTime: 300 * 1000,
   });
 
   const purchaseMutation = useMutation({
     mutationFn: async (pkg: PurchasesPackage) => {
+      if (!isPurchasesAvailable()) throw new Error("not available");
       const { customerInfo } = await Purchases.purchasePackage(pkg);
       return customerInfo;
     },
@@ -79,7 +97,10 @@ function useSubscriptionContext() {
   });
 
   const restoreMutation = useMutation({
-    mutationFn: async () => Purchases.restorePurchases(),
+    mutationFn: async () => {
+      if (!isPurchasesAvailable()) return null;
+      return Purchases.restorePurchases();
+    },
     onSuccess: () => customerInfoQuery.refetch(),
   });
 
