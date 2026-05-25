@@ -531,6 +531,7 @@
         <div class="stat-card"><div class="stat-label">Completed Jobs</div><div class="stat-value success" id="ov-completed">—</div></div>
         <div class="stat-card"><div class="stat-label">Platform Revenue</div><div class="stat-value coral" id="ov-revenue">—</div></div>
         <div class="stat-card"><div class="stat-label">Total Volume</div><div class="stat-value" id="ov-volume">—</div></div>
+        <div class="stat-card"><div class="stat-label">Direct Requests</div><div class="stat-value" style="color:#c084fc" id="ov-direct">—</div><div class="stat-sub" style="font-size:11px;color:var(--muted);margin-top:2px">Provider-specific jobs</div></div>
         <div class="stat-card"><div class="stat-label">Waitlist Signups</div><div class="stat-value purple" style="color:var(--purple)" id="ov-waitlist">—</div></div>
       </div>
     </div>
@@ -618,6 +619,7 @@
             <option value="accepted">Accepted</option>
             <option value="completed">Completed</option>
             <option value="cancelled">Cancelled</option>
+            <option value="__direct__">Direct Requests only</option>
           </select>
         </div>
         <table>
@@ -862,6 +864,7 @@
     document.getElementById("ov-pending").textContent = pending;
     document.getElementById("ov-jobs").textContent = allJobs.length;
     document.getElementById("ov-completed").textContent = allJobs.filter(j => j.status === "completed").length;
+    document.getElementById("ov-direct").textContent = allJobs.filter(j => j.requested_provider_id).length;
     document.getElementById("ov-waitlist").textContent = allWaitlist.length;
     if (pending > 0) { document.getElementById("badge-pending").style.display = "inline"; document.getElementById("badge-pending").textContent = pending; }
     if (allReports.length > 0) { document.getElementById("badge-reports").style.display = "inline"; document.getElementById("badge-reports").textContent = allReports.length; }
@@ -1016,8 +1019,18 @@
       updateOverview();
     } catch (e) { console.warn("[admin] loadJobs error:", e); }
   }
-  function filterJobs(q) { renderJobs(allJobs.filter(j => `${j.id} ${j.service_type}`.toLowerCase().includes(q.toLowerCase()) && (!jobStatusFilter || j.status === jobStatusFilter))); }
-  function filterJobsByStatus(s) { jobStatusFilter = s; renderJobs(allJobs.filter(j => (!s || j.status === s))); }
+  function applyJobFilters(jobs) {
+    return jobs.filter(j => {
+      if (jobStatusFilter === "__direct__") return !!j.requested_provider_id;
+      if (jobStatusFilter && j.status !== jobStatusFilter) return false;
+      return true;
+    });
+  }
+  function filterJobs(q) {
+    const matched = allJobs.filter(j => `${j.id} ${j.service_type}`.toLowerCase().includes(q.toLowerCase()));
+    renderJobs(applyJobFilters(matched));
+  }
+  function filterJobsByStatus(s) { jobStatusFilter = s; renderJobs(applyJobFilters(allJobs)); }
   function renderJobs(jobs) {
     const body = document.getElementById("jobs-table-body");
     if (!jobs.length) { body.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">&#128203;</div><p>No jobs found.</p></div></td></tr>`; return; }
@@ -1025,6 +1038,9 @@
       const driverName = j.driver?.name || "—";
       const providerName = j.provider?.name || "—";
       const flags = [j.is_express && "express", j.is_ev && "ev", j.is_emergency && "emergency"].filter(Boolean);
+      const directBadge = j.requested_provider_id
+        ? `<span title="Provider ID: ${esc(j.requested_provider_id)}" style="display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;background:rgba(192,132,252,0.18);color:#c084fc;border:1px solid rgba(192,132,252,0.35);margin-right:3px;cursor:default;">direct</span>`
+        : "";
       return `<tr>
         <td style="font-size:11px;color:var(--muted);font-family:monospace">${j.id.slice(0,8)}</td>
         <td>${esc((j.service_type || "").replace(/_/g," "))}</td>
@@ -1032,7 +1048,7 @@
         <td>${esc(driverName)}</td>
         <td>${esc(providerName)}</td>
         <td>${fmtMoney(j.total_cost || j.estimated_cost)}</td>
-        <td>${flags.map(f => `<span class="badge ${f}" style="margin-right:3px">${f}</span>`).join("")}</td>
+        <td>${directBadge}${flags.map(f => `<span class="badge ${f}" style="margin-right:3px">${f}</span>`).join("")}</td>
         <td style="color:var(--muted);font-size:12px">${fmtDate(j.created_at)}</td>
       </tr>`;
     }).join("");

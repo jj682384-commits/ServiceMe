@@ -754,7 +754,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { rows } = await pool.query(
         `SELECT id, service_type, status, estimated_cost, total_cost, tip,
                 driver, provider, created_at, is_express, is_ev, is_emergency,
-                receipt_number, location
+                receipt_number, location, requested_provider_id
          FROM jobs ORDER BY created_at DESC LIMIT 200`
       );
       res.json(rows);
