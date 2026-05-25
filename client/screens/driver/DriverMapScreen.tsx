@@ -215,6 +215,7 @@ function QuickRequestCard({
   provider,
   isPreferred,
   slideAnim,
+  bottomInset,
   onRequestService,
   onViewProfile,
   onDismiss,
@@ -222,6 +223,7 @@ function QuickRequestCard({
   provider: Provider;
   isPreferred: boolean;
   slideAnim: RNAnimated.Value;
+  bottomInset: number;
   onRequestService: () => void;
   onViewProfile: () => void;
   onDismiss: () => void;
@@ -241,6 +243,7 @@ function QuickRequestCard({
           backgroundColor: theme.backgroundDefault,
           borderTopColor: statusColor,
           transform: [{ translateY: slideAnim }],
+          paddingBottom: bottomInset,
           ...Shadows.xl,
         },
       ]}
@@ -977,6 +980,7 @@ export default function DriverMapScreen() {
             provider={selectedProvider}
             isPreferred={isPreferredProvider(selectedProvider.id)}
             slideAnim={slideAnim}
+            bottomInset={tabBarHeight}
             onRequestService={() => handleRequestService(selectedProvider.id)}
             onViewProfile={() => {
               hideQuickCard();
@@ -1140,7 +1144,7 @@ const styles = StyleSheet.create({
   quickCard: {
     position: "absolute", left: 0, right: 0, bottom: 0,
     borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    borderTopWidth: 3, zIndex: 40, paddingBottom: 24,
+    borderTopWidth: 3, zIndex: 40,
   },
   quickCardDismissBar: { alignItems: "center", paddingTop: 10, paddingBottom: 4 },
   quickCardHandle: { width: 40, height: 4, borderRadius: 2 },
