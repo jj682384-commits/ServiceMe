@@ -34,7 +34,7 @@ import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { useApp } from "@/context/AppContext";
 import { useTheme } from "@/hooks/useTheme";
 import EVAnimatedBackground from "@/components/EVAnimatedBackground";
-import { getApiUrl } from "@/lib/query-client";
+import { getApiUrl, apiRequest } from "@/lib/query-client";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -691,7 +691,7 @@ export default function EVModeScreen() {
         text: "Disconnect",
         style: "destructive",
         onPress: async () => {
-          await fetch(`${apiBase}/api/smartcar/disconnect?userId=${encodeURIComponent(userId)}`, { method: "DELETE" });
+          await apiRequest("DELETE", `/api/smartcar/disconnect?userId=${encodeURIComponent(userId)}`).catch(() => {});
           await AsyncStorage.removeItem(`smartcar_vehicle_${userId}`);
           setSmartcarConnected(false);
           setSmartcarVehicleId(null);

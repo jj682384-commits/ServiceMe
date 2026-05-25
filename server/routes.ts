@@ -316,6 +316,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `).catch(() => {});
+  // ── auth_users column migrations ────────────────────────────────────────────
+  await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS push_token TEXT DEFAULT NULL`).catch(() => {});
+  await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT DEFAULT NULL`).catch(() => {});
+  await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW()`).catch(() => {});
+  // ── providers column migrations ─────────────────────────────────────────────
+  await pool.query(`ALTER TABLE providers ADD COLUMN IF NOT EXISTS push_token TEXT DEFAULT NULL`).catch(() => {});
+  await pool.query(`ALTER TABLE providers ADD COLUMN IF NOT EXISTS stripe_account_id TEXT DEFAULT NULL`).catch(() => {});
+  await pool.query(`ALTER TABLE providers ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW()`).catch(() => {});
+  // ── jobs column migration ───────────────────────────────────────────────────
+  await pool.query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW()`).catch(() => {});
 
   function getSmartcarRedirectUri(): string {
     const prodDomain = process.env.REPLIT_INTERNAL_APP_DOMAIN;
@@ -1685,6 +1695,21 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
     const jobId = req.params.id;
     console.log(`[ACCEPT] job=${jobId}`);
     try {
+      // Guard: if this is a direct request, only the intended provider may accept
+      const jobCheck = await pool.query<{ requested_provider_id: string | null; status: string }>(
+        "SELECT requested_provider_id, status FROM jobs WHERE id = $1",
+        [jobId]
+      );
+      if (!jobCheck.rows.length) return res.status(404).json({ error: "Job not found" });
+      if (jobCheck.rows[0].status !== "pending") return res.status(409).json({ error: "Job already taken" });
+      const intendedProvider = jobCheck.rows[0].requested_provider_id;
+      if (intendedProvider) {
+        const acceptingId = req.body.provider?.id as string | undefined;
+        if (!acceptingId || acceptingId !== intendedProvider) {
+          return res.status(403).json({ error: "This job was sent directly to another provider" });
+        }
+      }
+
       const provLoc = req.body.providerLocation;
       const { rows } = await pool.query<JobRow>(
         `UPDATE jobs
@@ -1701,9 +1726,6 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
         ]
       );
       if (!rows.length) {
-        // Check if it exists but was already taken
-        const check = await pool.query("SELECT status FROM jobs WHERE id = $1", [jobId]);
-        if (!check.rows.length) return res.status(404).json({ error: "Job not found" });
         return res.status(409).json({ error: "Job already taken" });
       }
       const job = rowToJob(rows[0]);

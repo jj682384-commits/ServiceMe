@@ -354,18 +354,11 @@ export default function ServiceRequestScreen() {
       // ── Stripe payment sheet ──────────────────────────────────────────────
       try {
         const chargeAmount = newRequest.totalCost ?? totalCost;
-        const piRes = await fetch(
-          new URL("/api/create-payment-intent", getApiUrl()).toString(),
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              amount: chargeAmount,
-              jobId: requestId,
-              serviceType: selectedService,
-            }),
-          }
-        );
+        const piRes = await apiRequest("POST", "/api/create-payment-intent", {
+          amount: chargeAmount,
+          jobId: requestId,
+          serviceType: selectedService,
+        });
         const piData = await piRes.json();
         if (!piData.clientSecret) throw new Error("Payment setup failed");
 

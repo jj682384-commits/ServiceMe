@@ -98,14 +98,7 @@ export default function EVTowScreen() {
 
     // Step 1 — Create payment intent on server
     try {
-      const piRes = await fetch(
-        new URL("/api/create-payment-intent", getApiUrl()).toString(),
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ amount: total, jobId, serviceType: "tow" }),
-        }
-      );
+      const piRes = await apiRequest("POST", "/api/create-payment-intent", { amount: total, jobId, serviceType: "tow" });
       const piData = await piRes.json();
       if (!piData.clientSecret) throw new Error("Payment setup failed");
 

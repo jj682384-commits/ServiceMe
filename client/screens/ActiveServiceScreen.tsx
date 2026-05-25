@@ -453,7 +453,7 @@ export default function ActiveServiceScreen() {
                   <View style={styles.ratingRow}>
                     <Feather name="star" size={13} color={theme.warning} />
                     <ThemedText type="small" style={{ marginLeft: 4 }}>
-                      {activeRequest.provider.rating.toFixed(1)} ({activeRequest.provider.reviewCount} reviews)
+                      {activeRequest.provider.rating != null ? activeRequest.provider.rating.toFixed(1) : "New"} ({activeRequest.provider.reviewCount ?? 0} reviews)
                     </ThemedText>
                   </View>
                 </View>
