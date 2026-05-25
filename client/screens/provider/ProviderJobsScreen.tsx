@@ -30,6 +30,7 @@ import { markJobSeen } from "@/hooks/useProviderJobAlerts";
 import { notifyNewJobRequest } from "@/lib/notifications";
 
 const EV_CYAN = "#00D4FF";
+const DIRECT_COLOR = "#E91E63";
 
 const serviceTypeLabels: Record<string, string> = {
   flat_tire: "Flat Tire",
@@ -284,8 +285,6 @@ function JobDetailSheet({
   );
 }
 
-const DIRECT_COLOR = "#E91E63";
-
 function JobCard({ job, onPress, isDirectRequest }: { job: ServiceRequest; onPress: () => void; isDirectRequest?: boolean }) {
   const { theme } = useTheme();
 
@@ -434,6 +433,12 @@ export default function ProviderJobsScreen() {
   const isFocusedRef = useRef(isFocused);
   useEffect(() => { isFocusedRef.current = isFocused; }, [isFocused]);
 
+  // Track providerId in a ref so the WS closure always has the current value
+  // (the closure is only created once at mount, so the outer let-binding would
+  // be stale if currentProvider loads asynchronously after mount).
+  const providerIdRef = useRef(providerId);
+  useEffect(() => { providerIdRef.current = providerId; }, [providerId]);
+
   // WebSocket: receive new-job broadcasts and fire a local notification immediately
   // if the provider cannot currently see the Jobs tab.
   const wsRef = useRef<WebSocket | null>(null);
@@ -451,7 +456,15 @@ export default function ProviderJobsScreen() {
           if (data.type === "job_status_update" && data.job?.status === "pending") {
             const job = data.job as {
               id: string; serviceType: string; isEV?: boolean; isEmergency?: boolean;
+              requestedProviderId?: string;
             };
+            const myProviderId = providerIdRef.current;
+
+            // If this job is a direct request and it's NOT for us, ignore it entirely.
+            if (job.requestedProviderId && job.requestedProviderId !== myProviderId) {
+              return;
+            }
+
             // Provider can see the job only if the Jobs tab is focused AND the
             // app is in the foreground. In any other case (different tab, app
             // backgrounded) fire a notification immediately instead of waiting
@@ -469,7 +482,8 @@ export default function ProviderJobsScreen() {
               notifyNewJobRequest(urgencyPrefix + label, "nearby");
               markJobSeen(job.id);
             }
-            queryClient.invalidateQueries({ queryKey: ["/api/jobs/pending", providerId] });
+            // Use the ref so we always invalidate the correct query key
+            queryClient.invalidateQueries({ queryKey: ["/api/jobs/pending", myProviderId] });
           }
         } catch {}
       };
