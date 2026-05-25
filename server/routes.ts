@@ -1052,9 +1052,22 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
         const userLat = parseFloat(lat);
         const userLng = parseFloat(lng);
         result = result
-          .map((p) => ({ ...p, distance: calcDistance(userLat, userLng, p.location.latitude, p.location.longitude) }))
-          .filter((p) => (p as ProviderRecord & { distance: number; isBusy: boolean }).distance <= maxRadius)
-          .sort((a, b) => ((a as ProviderRecord & { distance: number }).distance ?? 0) - ((b as ProviderRecord & { distance: number }).distance ?? 0));
+          .map((p) => {
+            const hasRealLocation = p.location.latitude !== 0 || p.location.longitude !== 0;
+            const distance = hasRealLocation
+              ? calcDistance(userLat, userLng, p.location.latitude, p.location.longitude)
+              : null;
+            return { ...p, distance };
+          })
+          .filter((p) => {
+            const d = (p as ProviderRecord & { distance: number | null }).distance;
+            return d === null || d <= maxRadius;
+          })
+          .sort((a, b) => {
+            const dA = (a as ProviderRecord & { distance: number | null }).distance ?? 9999;
+            const dB = (b as ProviderRecord & { distance: number | null }).distance ?? 9999;
+            return dA - dB;
+          });
       }
       res.json(result);
     } catch (err) {
