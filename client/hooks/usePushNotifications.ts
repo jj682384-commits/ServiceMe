@@ -60,6 +60,10 @@ export function usePushNotifications() {
           // Navigate into the provider tab navigator and open the Jobs tab
           navigationRef.navigate("ProviderTabs" as any, { screen: "JobsTab" } as any);
           break;
+        case "ProviderJobs":
+          // Direct request — go straight to the Jobs tab
+          navigationRef.navigate("ProviderTabs" as any, { screen: "JobsTab" } as any);
+          break;
       }
     });
 

@@ -27,7 +27,7 @@ import { getApiUrl, apiRequest } from "@/lib/query-client";
 import * as Location from "expo-location";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { markJobSeen } from "@/hooks/useProviderJobAlerts";
-import { notifyNewJobRequest } from "@/lib/notifications";
+import { notifyNewJobRequest, notifyDirectJobRequest } from "@/lib/notifications";
 
 const EV_CYAN = "#00D4FF";
 const DIRECT_COLOR = "#E91E63";
@@ -478,8 +478,13 @@ export default function ProviderJobsScreen() {
               } else {
                 label = serviceTypeLabels[job.serviceType] ?? "Roadside Assistance";
               }
-              const urgencyPrefix = job.isEmergency ? "EMERGENCY: " : "";
-              notifyNewJobRequest(urgencyPrefix + label, "nearby");
+              // Direct requests get a special "specifically requested" notification
+              if (job.requestedProviderId && job.requestedProviderId === myProviderId) {
+                notifyDirectJobRequest(label);
+              } else {
+                const urgencyPrefix = job.isEmergency ? "EMERGENCY: " : "";
+                notifyNewJobRequest(urgencyPrefix + label, "nearby");
+              }
               markJobSeen(job.id);
             }
             // Use the ref so we always invalidate the correct query key

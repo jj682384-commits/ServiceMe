@@ -15,33 +15,71 @@ const SERVICE_LABELS: Record<string, string> = {
   obd_diagnostic: "OBD Diagnostic",
 };
 
-type JobShape = { id: string; serviceType: string; estimatedCost?: number; isEmergency?: boolean };
+type JobShape = {
+  id: string; serviceType: string; estimatedCost?: number;
+  isEmergency?: boolean; requestedProviderId?: string;
+};
 
-async function fireNewJobNotification(jobs: JobShape[]) {
+async function fireNewJobNotification(jobs: JobShape[], myProviderId?: string | null) {
   if (Platform.OS === "web") return;
-  const latest = jobs[jobs.length - 1];
-  const label = SERVICE_LABELS[latest.serviceType] ?? "Roadside Assistance";
-  const extra = jobs.length > 1 ? ` (+${jobs.length - 1} more)` : "";
-  const isEmergency = jobs.some((j) => j.isEmergency);
 
-  await Notifications.scheduleNotificationAsync({
-    content: {
-      title: isEmergency ? "EMERGENCY Job Request" : "New Job Request",
-      body: `${label} needed nearby${extra} — tap to accept.`,
-      data: { screen: "ProviderDashboard" },
-      sound: "default",
-    },
-    trigger: null,
-    ...(Platform.OS === "android"
-      ? { channelId: isEmergency ? "emergency" : "default" }
-      : {}),
-  } as Notifications.NotificationRequestInput);
+  // Separate direct requests from open jobs
+  const directJobs = myProviderId
+    ? jobs.filter((j) => j.requestedProviderId === myProviderId)
+    : [];
+  const openJobs = jobs.filter((j) => !j.requestedProviderId);
+
+  // Fire a specific notification for direct requests first
+  if (directJobs.length > 0) {
+    const label = SERVICE_LABELS[directJobs[0].serviceType] ?? "Roadside Assistance";
+    const extra = directJobs.length > 1 ? ` (+${directJobs.length - 1} more direct requests)` : "";
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "You Were Specifically Requested!",
+        body: `A driver chose you for ${label}${extra} — tap to accept.`,
+        data: { screen: "ProviderJobs" },
+        sound: "default",
+      },
+      trigger: null,
+      ...(Platform.OS === "android" ? { channelId: "default" } : {}),
+    } as Notifications.NotificationRequestInput);
+  }
+
+  // Fire a generic notification for open jobs
+  if (openJobs.length > 0) {
+    const latest = openJobs[openJobs.length - 1];
+    const label = SERVICE_LABELS[latest.serviceType] ?? "Roadside Assistance";
+    const extra = openJobs.length > 1 ? ` (+${openJobs.length - 1} more)` : "";
+    const isEmergency = openJobs.some((j) => j.isEmergency);
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: isEmergency ? "EMERGENCY Job Request" : "New Job Request",
+        body: `${label} needed nearby${extra} — tap to accept.`,
+        data: { screen: "ProviderDashboard" },
+        sound: "default",
+      },
+      trigger: null,
+      ...(Platform.OS === "android"
+        ? { channelId: isEmergency ? "emergency" : "default" }
+        : {}),
+    } as Notifications.NotificationRequestInput);
+  }
+}
+
+const PROVIDER_ID_KEY = "provider_id_for_alerts";
+
+export async function setProviderIdForAlerts(id: string): Promise<void> {
+  try { await AsyncStorage.setItem(PROVIDER_ID_KEY, id); } catch {}
 }
 
 export async function checkAndNotifyNewJobs(): Promise<void> {
   try {
-    const url = new URL("/api/jobs/pending", getApiUrl()).toString();
-    const res = await fetch(url, { headers: { Accept: "application/json" } });
+    // Read provider ID so we can filter direct requests correctly
+    const myProviderId = await AsyncStorage.getItem(PROVIDER_ID_KEY).catch(() => null);
+
+    const url = new URL("/api/jobs/pending", getApiUrl());
+    if (myProviderId) url.searchParams.set("providerId", myProviderId);
+    const res = await fetch(url.toString(), { headers: { Accept: "application/json" } });
     if (!res.ok) return;
 
     const jobs: JobShape[] = await res.json();
@@ -54,7 +92,7 @@ export async function checkAndNotifyNewJobs(): Promise<void> {
 
     const merged = [...seenSet, ...newJobs.map((j) => j.id)];
     await AsyncStorage.setItem(SEEN_JOBS_KEY, JSON.stringify(merged.slice(-100)));
-    await fireNewJobNotification(newJobs);
+    await fireNewJobNotification(newJobs, myProviderId);
   } catch {
     // Network errors are expected — ignore silently
   }

@@ -19,6 +19,7 @@ export type NotificationData =
   | { screen: "ActiveService" }
   | { screen: "EmergencyMode" }
   | { screen: "ProviderDashboard" }
+  | { screen: "ProviderJobs" }
   | { screen: "EVRangeAlert" };
 
 // ── Step 1: Request permission early and independently ────────────────────
@@ -171,6 +172,15 @@ export async function notifyNewJobRequest(serviceType: string, distance: string)
     "New Job Request",
     `${serviceType} needed ${distance} away. Tap to accept.`,
     { screen: "ProviderDashboard" }
+  );
+}
+
+export async function notifyDirectJobRequest(serviceType: string) {
+  await scheduleNotification(
+    "You Were Specifically Requested!",
+    `A driver chose you for ${serviceType}. Tap to accept their direct request.`,
+    { screen: "ProviderJobs" },
+    "default"
   );
 }
 

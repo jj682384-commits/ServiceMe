@@ -345,8 +345,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!_persisted) return;
-    if (currentProvider) AsyncStorage.setItem("currentProvider", JSON.stringify(currentProvider)).catch(() => {});
-    else AsyncStorage.removeItem("currentProvider").catch(() => {});
+    if (currentProvider) {
+      AsyncStorage.setItem("currentProvider", JSON.stringify(currentProvider)).catch(() => {});
+      // Keep the background alert task aware of this provider's ID so it can
+      // filter direct-request jobs and fire the correct notification title.
+      import("@/lib/providerJobAlerts").then(({ setProviderIdForAlerts }) => {
+        setProviderIdForAlerts(currentProvider.id);
+      }).catch(() => {});
+    } else {
+      AsyncStorage.removeItem("currentProvider").catch(() => {});
+    }
   }, [currentProvider, _persisted]);
 
   useEffect(() => {
