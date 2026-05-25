@@ -179,7 +179,14 @@ export default function SignInScreen() {
         <View style={styles.form}>
           <InputField label="Email Address" value={email} onChangeText={setEmail} placeholder="Enter your email" icon="mail" keyboardType="email-address" autoCapitalize="none" />
           <InputField label="Password" value={password} onChangeText={setPassword} placeholder="Enter your password" icon="lock" secureTextEntry autoCapitalize="none" />
-          <Pressable style={styles.forgotPassword}>
+          <Pressable
+            style={styles.forgotPassword}
+            onPress={() => Alert.alert(
+              "Reset Password",
+              "To reset your password, email us at support@resqride.co with your account email and we'll send reset instructions within a few minutes.",
+              [{ text: "OK" }]
+            )}
+          >
             <ThemedText type="small" style={{ color: forgotColor }}>Forgot Password?</ThemedText>
           </Pressable>
         </View>

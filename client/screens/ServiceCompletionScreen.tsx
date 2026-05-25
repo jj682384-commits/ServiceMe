@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, StyleSheet, Pressable, ScrollView } from "react-native";
+import { View, StyleSheet, Pressable, ScrollView, Share, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Feather } from "@expo/vector-icons";
@@ -156,6 +156,36 @@ export default function ServiceCompletionScreen() {
         routes: [{ name: "DriverTabs" }],
       })
     );
+  };
+
+  const handleDownloadReceipt = async () => {
+    const jobId = activeRequest?.id;
+    const receiptNumber = jobId ? "RR-" + jobId.slice(0, 8).toUpperCase() : "N/A";
+    const date = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+    const providerName = activeRequest?.provider?.name || "Your Provider";
+    const serviceLabel = activeRequest?.serviceType
+      ? activeRequest.serviceType.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
+      : "Service";
+    const lines = [
+      "ResqRide Receipt",
+      "────────────────────",
+      `Receipt #: ${receiptNumber}`,
+      `Date: ${date}`,
+      "",
+      `Service: ${serviceLabel}`,
+      `Provider: ${providerName}`,
+      "",
+      `Service Cost:  $${serviceCost.toFixed(2)}`,
+      `Service Fee:   $${SERVICE_FEE.toFixed(2)}`,
+      `Tip:           $${tipAmount.toFixed(2)}`,
+      "────────────────────",
+      `Total:         $${totalAmount.toFixed(2)}`,
+      "",
+      "Thank you for using ResqRide!",
+    ];
+    try {
+      await Share.share({ message: lines.join("\n"), title: `ResqRide Receipt ${receiptNumber}` });
+    } catch {}
   };
 
   const ratingLabels = ["", "Poor", "Fair", "Good", "Great", "Excellent"];
@@ -318,7 +348,7 @@ export default function ServiceCompletionScreen() {
 
         <Pressable
           style={[styles.downloadButton, { borderColor: theme.border }]}
-          onPress={() => {}}
+          onPress={handleDownloadReceipt}
         >
           <Feather name="download" size={18} color={theme.primary} />
           <ThemedText type="body" style={{ color: theme.primary, fontWeight: "600", marginLeft: Spacing.sm }}>

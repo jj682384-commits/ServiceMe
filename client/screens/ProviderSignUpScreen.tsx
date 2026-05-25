@@ -13,6 +13,7 @@ import Animated, {
   SlideOutLeft,
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
+import * as ImagePicker from "expo-image-picker";
 import { Feather } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
@@ -387,8 +388,24 @@ export default function ProviderSignUpScreen() {
     setSelectedServices((prev) => prev.includes(service) ? prev.filter((s) => s !== service) : [...prev, service]);
   }, []);
 
-  const handleUpload = useCallback((docKey: string) => {
-    setUploadedDocs((prev) => ({ ...prev, [docKey]: true }));
+  const handleUpload = useCallback(async (docKey: string) => {
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert("Permission Required", "Allow access to your photo library to upload documents.");
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets.length > 0) {
+        setUploadedDocs((prev) => ({ ...prev, [docKey]: true }));
+      }
+    } catch {
+      Alert.alert("Upload Failed", "Could not open photo library. Please try again.");
+    }
   }, []);
 
   const toggleAccept = useCallback((key: string) => {

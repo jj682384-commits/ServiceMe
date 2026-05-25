@@ -293,6 +293,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await pool.query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS is_ev        BOOLEAN DEFAULT FALSE`).catch(() => {});
   await pool.query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS is_emergency BOOLEAN DEFAULT FALSE`).catch(() => {});
   await pool.query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS provider_location JSONB DEFAULT NULL`).catch(() => {});
+  await pool.query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS earnings_credited BOOLEAN DEFAULT FALSE`).catch(() => {});
   await pool.query(`
     CREATE TABLE IF NOT EXISTS provider_payouts (
       id TEXT PRIMARY KEY,
@@ -1730,6 +1731,32 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
       const job = rowToJob(rows[0]);
       broadcastJobUpdate(job as JobRecord);
 
+      // On completion, immediately credit provider's base earnings so they are paid
+      // even if the driver never reaches the tip/rating screen.
+      if (status === "completed") {
+        const completedProviderId = (job.provider as Record<string, unknown> | undefined)?.id as string | undefined;
+        if (completedProviderId) {
+          try {
+            const { rows: prov } = await pool.query<{ accepts_priority_jobs: boolean }>(
+              "SELECT accepts_priority_jobs FROM providers WHERE id = $1",
+              [completedProviderId]
+            );
+            const gross = job.totalCost ?? job.estimatedCost ?? 0;
+            const feeRate = (job.isExpress && prov[0]?.accepts_priority_jobs) ? 0.10 : 0.15;
+            const netBase = Math.round(gross * (1 - feeRate) * 100) / 100;
+            if (netBase > 0) {
+              await pool.query(
+                "UPDATE providers SET earnings_balance = COALESCE(earnings_balance, 0) + $2 WHERE id = $1",
+                [completedProviderId, netBase]
+              );
+              await pool.query("UPDATE jobs SET earnings_credited = TRUE WHERE id = $1", [req.params.id]);
+            }
+          } catch (e: any) {
+            console.error("[earnings/completion]", e.message);
+          }
+        }
+      }
+
       // Push to driver on meaningful status changes
       const statusPush: Record<string, { title: string; body: string }> = {
         en_route:    { title: "Provider En Route", body: `${(job.provider as any)?.name || "Your provider"} is heading your way` },
@@ -1832,9 +1859,14 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
           const gross = job.totalCost ?? job.estimatedCost ?? 0;
           const feeRate = (job.isExpress && provRows[0]?.accepts_priority_jobs) ? 0.10 : 0.15;
           const tipAmt = typeof job.tip === "number" ? job.tip : 0;
-          const netAmount = Math.round((gross * (1 - feeRate) + tipAmt) * 100) / 100;
+          // If base earnings were already credited when status was set to "completed",
+          // only add the tip delta to avoid double-counting the base service amount.
+          const earningsCredited = (rows[0] as any).earnings_credited ?? false;
+          const netAmount = earningsCredited
+            ? Math.round(tipAmt * 100) / 100
+            : Math.round((gross * (1 - feeRate) + tipAmt) * 100) / 100;
 
-          // Always credit the in-app earnings balance so providers can cash out anytime
+          // Credit the in-app earnings balance so providers can cash out anytime
           if (netAmount > 0) {
             await pool.query(
               "UPDATE providers SET earnings_balance = COALESCE(earnings_balance, 0) + $2 WHERE id = $1",

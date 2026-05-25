@@ -9,6 +9,8 @@ import {
   PanResponder,
   Dimensions,
   ScrollView,
+  Linking,
+  Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
@@ -463,6 +465,12 @@ export default function ActiveServiceScreen() {
                   </ThemedText>
                 </Pressable>
                 <Pressable
+                  onPress={() => {
+                    const phone = activeRequest.provider?.phone;
+                    if (!phone) { Alert.alert("No Phone", "Provider phone number is unavailable."); return; }
+                    const url = Platform.OS === "android" ? `tel:${phone}` : `telprompt:${phone}`;
+                    Linking.openURL(url).catch(() => Alert.alert("Cannot Call", "Please dial " + phone + " directly."));
+                  }}
                   style={({ pressed }) => [
                     styles.actionBtn,
                     { backgroundColor: theme.backgroundSecondary, opacity: pressed ? 0.8 : 1 },
@@ -485,7 +493,7 @@ export default function ActiveServiceScreen() {
                 <ThemedText type="h4">{serviceTypeLabels[activeRequest.serviceType] ?? "Service"}</ThemedText>
                 <ThemedText type="small" style={{ color: theme.textSecondary }}>Service Request</ThemedText>
               </View>
-              <ThemedText type="h4" style={{ color: theme.success }}>${activeRequest.estimatedCost}</ThemedText>
+              <ThemedText type="h4" style={{ color: theme.success }}>${activeRequest.totalCost?.toFixed(2) ?? activeRequest.estimatedCost}</ThemedText>
             </View>
             <View style={[styles.divider, { backgroundColor: theme.border }]} />
             <View style={styles.detailRow}>
