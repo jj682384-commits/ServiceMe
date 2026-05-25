@@ -320,6 +320,7 @@ export default function ServiceRequestScreen() {
       receiptNumber: `SM-${Date.now().toString(36).toUpperCase()}`,
       timeSaved: isScheduled ? undefined : Math.floor(Math.random() * 30) + 15,
       scheduledDate,
+      requestedProviderId: selectedProviderId || undefined,
     };
 
     (async () => {

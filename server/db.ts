@@ -78,6 +78,7 @@ export interface JobRow {
   is_emergency: boolean | null;
   is_ev: boolean;
   created_at: string;
+  requested_provider_id: string | null;
 }
 
 export function rowToProvider(r: ProviderRow) {
@@ -133,5 +134,6 @@ export function rowToJob(r: JobRow) {
     isEmergency: r.is_emergency ?? undefined,
     isEV: r.is_ev ?? false,
     createdAt: r.created_at,
+    requestedProviderId: r.requested_provider_id ?? undefined,
   };
 }

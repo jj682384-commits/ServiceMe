@@ -101,6 +101,7 @@ function JobDetailSheet({
   canAccept,
   isEvCapable,
   acceptsPriorityJobs,
+  isDirectRequest,
 }: {
   job: ServiceRequest;
   visible: boolean;
@@ -110,6 +111,7 @@ function JobDetailSheet({
   canAccept: boolean;
   isEvCapable: boolean;
   acceptsPriorityJobs?: boolean;
+  isDirectRequest?: boolean;
 }) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -121,8 +123,8 @@ function JobDetailSheet({
     return `${Math.floor(minutes / 60)}h ago`;
   };
 
-  const iconColor = job.isEV ? EV_CYAN : theme.primary;
-  const iconBg = job.isEV ? EV_CYAN + "20" : theme.primary + "20";
+  const iconColor = isDirectRequest ? DIRECT_COLOR : job.isEV ? EV_CYAN : theme.primary;
+  const iconBg = isDirectRequest ? DIRECT_COLOR + "20" : job.isEV ? EV_CYAN + "20" : theme.primary + "20";
 
   return (
     <Modal
@@ -135,6 +137,20 @@ function JobDetailSheet({
         <Pressable style={sheetStyles.backdrop} onPress={onClose} />
         <View style={[sheetStyles.sheet, { backgroundColor: theme.backgroundDefault, paddingBottom: insets.bottom + Spacing.lg }]}>
           <View style={sheetStyles.handle} />
+
+          {isDirectRequest ? (
+            <View style={[sheetStyles.directRequestHeader, { backgroundColor: DIRECT_COLOR + "12", borderColor: DIRECT_COLOR + "50" }]}>
+              <Feather name="user-check" size={16} color={DIRECT_COLOR} />
+              <View style={{ flex: 1, marginLeft: Spacing.sm }}>
+                <ThemedText type="body" style={{ color: DIRECT_COLOR, fontWeight: "700" }}>
+                  Direct Request
+                </ThemedText>
+                <ThemedText type="small" style={{ color: DIRECT_COLOR, opacity: 0.85 }}>
+                  This driver chose you specifically
+                </ThemedText>
+              </View>
+            </View>
+          ) : null}
 
           <View style={sheetStyles.sheetHeader}>
             <View style={[sheetStyles.sheetIcon, { backgroundColor: iconBg }]}>
@@ -268,7 +284,9 @@ function JobDetailSheet({
   );
 }
 
-function JobCard({ job, onPress }: { job: ServiceRequest; onPress: () => void }) {
+const DIRECT_COLOR = "#E91E63";
+
+function JobCard({ job, onPress, isDirectRequest }: { job: ServiceRequest; onPress: () => void; isDirectRequest?: boolean }) {
   const { theme } = useTheme();
 
   const getTimeAgo = (date: Date) => {
@@ -278,10 +296,11 @@ function JobCard({ job, onPress }: { job: ServiceRequest; onPress: () => void })
     return `${Math.floor(minutes / 60)}h ago`;
   };
 
-  const iconColor = job.isEV ? EV_CYAN : theme.primary;
-  const iconBg = job.isEV ? EV_CYAN + "25" : theme.primary + "15";
-  const cardBg = job.isEV ? "#0A1A2E" : theme.backgroundDefault;
-  const cardBorderColor = job.isEV ? EV_CYAN + "50" : "transparent";
+  const accentColor = isDirectRequest ? DIRECT_COLOR : job.isEV ? EV_CYAN : null;
+  const iconColor = isDirectRequest ? DIRECT_COLOR : job.isEV ? EV_CYAN : theme.primary;
+  const iconBg = isDirectRequest ? DIRECT_COLOR + "20" : job.isEV ? EV_CYAN + "25" : theme.primary + "15";
+  const cardBg = isDirectRequest ? theme.backgroundDefault : job.isEV ? "#0A1A2E" : theme.backgroundDefault;
+  const cardBorderColor = isDirectRequest ? DIRECT_COLOR + "70" : job.isEV ? EV_CYAN + "50" : "transparent";
 
   return (
     <Pressable
@@ -290,14 +309,22 @@ function JobCard({ job, onPress }: { job: ServiceRequest; onPress: () => void })
         styles.jobCard,
         {
           backgroundColor: cardBg,
-          borderWidth: 1,
+          borderWidth: isDirectRequest ? 1.5 : 1,
           borderColor: cardBorderColor,
           opacity: pressed ? 0.92 : 1,
         },
       ]}
     >
-      {job.isEV ? (
-        <View style={{ height: 3, backgroundColor: EV_CYAN, marginHorizontal: -Spacing.lg, marginTop: -Spacing.lg, marginBottom: Spacing.md, borderTopLeftRadius: BorderRadius.md, borderTopRightRadius: BorderRadius.md }} />
+      {accentColor ? (
+        <View style={{ height: 3, backgroundColor: accentColor, marginHorizontal: -Spacing.lg, marginTop: -Spacing.lg, marginBottom: Spacing.md, borderTopLeftRadius: BorderRadius.md, borderTopRightRadius: BorderRadius.md }} />
+      ) : null}
+      {isDirectRequest ? (
+        <View style={[styles.directRequestBanner, { backgroundColor: DIRECT_COLOR + "15", borderColor: DIRECT_COLOR + "40" }]}>
+          <Feather name="user-check" size={13} color={DIRECT_COLOR} />
+          <ThemedText type="small" style={{ color: DIRECT_COLOR, fontWeight: "700", marginLeft: 5, fontSize: 11 }}>
+            Driver requested you specifically
+          </ThemedText>
+        </View>
       ) : null}
       <View style={styles.jobHeader}>
         <View style={[styles.serviceIcon, { backgroundColor: iconBg }]}>
@@ -349,9 +376,9 @@ function JobCard({ job, onPress }: { job: ServiceRequest; onPress: () => void })
 
       <View style={[styles.tapHint, { borderTopColor: theme.border }]}>
         <ThemedText type="small" style={{ color: theme.textSecondary, fontSize: 11 }}>
-          Tap to view details and accept
+          {isDirectRequest ? "Tap to view your direct request" : "Tap to view details and accept"}
         </ThemedText>
-        <Feather name="chevron-right" size={14} color={theme.textSecondary} />
+        <Feather name="chevron-right" size={14} color={isDirectRequest ? DIRECT_COLOR : theme.textSecondary} />
       </View>
     </Pressable>
   );
@@ -370,8 +397,19 @@ export default function ProviderJobsScreen() {
   const [accepting, setAccepting] = React.useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  const providerId = currentProvider?.id ?? null;
+
   const { data: serverJobs } = useQuery<ServiceRequest[]>({
-    queryKey: ["/api/jobs/pending"],
+    queryKey: ["/api/jobs/pending", providerId],
+    queryFn: async () => {
+      const url = new URL("/api/jobs/pending", getApiUrl());
+      if (providerId) url.searchParams.set("providerId", providerId);
+      const res = await fetch(url.toString(), {
+        headers: { "Cache-Control": "no-cache", "Pragma": "no-cache" },
+      });
+      if (!res.ok) throw new Error("Failed to fetch pending jobs");
+      return res.json();
+    },
     select: (data: unknown) =>
       Array.isArray(data)
         ? (data as Record<string, unknown>[]).map((j) => ({
@@ -387,8 +425,8 @@ export default function ProviderJobsScreen() {
   // so tapping a push notification always shows the new job right away.
   useFocusEffect(
     useCallback(() => {
-      queryClient.invalidateQueries({ queryKey: ["/api/jobs/pending"] });
-    }, [queryClient])
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs/pending", providerId] });
+    }, [queryClient, providerId])
   );
 
   // Track focus in a ref so the WebSocket closure always sees the live value
@@ -431,7 +469,7 @@ export default function ProviderJobsScreen() {
               notifyNewJobRequest(urgencyPrefix + label, "nearby");
               markJobSeen(job.id);
             }
-            queryClient.invalidateQueries({ queryKey: ["/api/jobs/pending"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/jobs/pending", providerId] });
           }
         } catch {}
       };
@@ -450,10 +488,21 @@ export default function ProviderJobsScreen() {
 
   const merged = React.useMemo(() => {
     const map = new Map<string, ServiceRequest>();
-    (pendingJobs ?? []).forEach((j) => map.set(j.id, j));
+    // From local AppContext pendingJobs — only include jobs that are either
+    // open (no requestedProviderId) or directed specifically at this provider.
+    (pendingJobs ?? [])
+      .filter((j) => !j.requestedProviderId || j.requestedProviderId === providerId)
+      .forEach((j) => map.set(j.id, j));
+    // Server jobs are already filtered correctly by the API query.
     (serverJobs ?? []).forEach((j) => map.set(j.id, j));
-    return Array.from(map.values());
-  }, [serverJobs, pendingJobs]);
+    // Sort: direct requests first, then by creation time
+    return Array.from(map.values()).sort((a, b) => {
+      const aIsDirect = a.requestedProviderId === providerId ? 0 : 1;
+      const bIsDirect = b.requestedProviderId === providerId ? 0 : 1;
+      if (aIsDirect !== bIsDirect) return aIsDirect - bIsDirect;
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    });
+  }, [serverJobs, pendingJobs, providerId]);
 
   // Mark jobs as seen only when the provider is actively viewing this tab
   // AND the app is in the foreground. This prevents backgrounded queries or
@@ -517,7 +566,7 @@ export default function ProviderJobsScreen() {
       removePendingJob(jobSnapshot.id);
       addToHistory(acceptedJob);
       setActiveRequest(acceptedJob);
-      queryClient.invalidateQueries({ queryKey: ["/api/jobs/pending"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs/pending", providerId] });
       setSelectedJob(null);
       navigation.navigate("ProviderActiveJob");
     } finally {
@@ -528,11 +577,11 @@ export default function ProviderJobsScreen() {
   const onRefresh = useCallback(async () => {
     setIsRefreshing(true);
     try {
-      await queryClient.refetchQueries({ queryKey: ["/api/jobs/pending"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/jobs/pending", providerId] });
     } finally {
       setIsRefreshing(false);
     }
-  }, [queryClient]);
+  }, [queryClient, providerId]);
 
   return (
     <ThemedView style={styles.container}>
@@ -544,6 +593,7 @@ export default function ProviderJobsScreen() {
           <JobCard
             job={item}
             onPress={() => setSelectedJob(item)}
+            isDirectRequest={!!item.requestedProviderId && item.requestedProviderId === providerId}
           />
         )}
         contentContainerStyle={{
@@ -602,6 +652,7 @@ export default function ProviderJobsScreen() {
           canAccept={currentProvider?.isAvailable ?? false}
           isEvCapable={isEvCapable}
           acceptsPriorityJobs={currentProvider?.acceptsPriorityJobs}
+          isDirectRequest={!!selectedJob.requestedProviderId && selectedJob.requestedProviderId === providerId}
         />
       ) : null}
     </ThemedView>
@@ -671,6 +722,14 @@ const sheetStyles = StyleSheet.create({
     alignItems: "flex-start",
     padding: Spacing.md,
   },
+  directRequestHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    marginBottom: Spacing.md,
+  },
   evBlockedBanner: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -717,6 +776,15 @@ const styles = StyleSheet.create({
   jobCard: {
     borderRadius: BorderRadius.md,
     padding: Spacing.lg,
+  },
+  directRequestBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 6,
+    borderRadius: BorderRadius.xs,
+    borderWidth: 1,
+    marginBottom: Spacing.md,
   },
   jobHeader: {
     flexDirection: "row",

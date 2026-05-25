@@ -294,6 +294,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await pool.query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS is_emergency BOOLEAN DEFAULT FALSE`).catch(() => {});
   await pool.query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS provider_location JSONB DEFAULT NULL`).catch(() => {});
   await pool.query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS earnings_credited BOOLEAN DEFAULT FALSE`).catch(() => {});
+  await pool.query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS requested_provider_id TEXT DEFAULT NULL`).catch(() => {});
   await pool.query(`
     CREATE TABLE IF NOT EXISTS provider_payouts (
       id TEXT PRIMARY KEY,
@@ -1522,7 +1523,8 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
   app.post("/api/jobs", async (req: Request, res: Response) => {
     const data = req.body as Partial<JobRecord>;
     if (!data.id || !data.serviceType) return res.status(400).json({ error: "id and serviceType required" });
-    console.log(`[jobs POST] received id=${data.id} type=${data.serviceType} status=${(data as any).status ?? "pending"}`);
+    const requestedProviderId: string | null = (data as any).requestedProviderId ?? null;
+    console.log(`[jobs POST] received id=${data.id} type=${data.serviceType} status=${(data as any).status ?? "pending"} requestedProviderId=${requestedProviderId ?? "none"}`);
     // Detect EV job: explicit flag or notes convention ("EV " prefix)
     const isEV = data.isEV ?? (typeof data.notes === "string" && data.notes.startsWith("EV "));
     try {
@@ -1530,8 +1532,9 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
         `INSERT INTO jobs (
            id, service_type, location, notes, status, estimated_cost,
            driver, eta, is_express, express_fee, service_fee, total_cost,
-           receipt_number, time_saved, created_at, is_emergency, is_ev
-         ) VALUES ($1,$2,$3,$4,'pending',$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+           receipt_number, time_saved, created_at, is_emergency, is_ev,
+           requested_provider_id
+         ) VALUES ($1,$2,$3,$4,'pending',$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
          ON CONFLICT (id) DO NOTHING
          RETURNING *`,
         [
@@ -1546,6 +1549,7 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
           data.createdAt ?? new Date().toISOString(),
           data.isEmergency ?? null,
           isEV,
+          requestedProviderId,
         ]
       );
 
@@ -1565,35 +1569,65 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
         broadcastJobUpdate(job as JobRecord);
       }
 
-      // Push notifications — EV jobs only go to EV-capable providers
-      const providerQuery = isEV
-        ? "SELECT push_token FROM providers WHERE is_available = true AND ev_capable = true AND push_token IS NOT NULL"
-        : "SELECT push_token FROM providers WHERE is_available = true AND push_token IS NOT NULL";
-      const { rows: providers } = await pool.query<ProviderRow>(providerQuery);
-      const tokens = providers.map((p) => p.push_token as string).filter(Boolean);
-      if (tokens.length > 0) {
-        const serviceLabels: Record<string, string> = {
-          flat_tire: "Flat Tire", jump_start: "Jump Start", tow: "Tow Service",
-          fuel: "Fuel Delivery", lockout: "Lockout", obd_diagnostic: "OBD Diagnostic",
-        };
-        const baseLabel = serviceLabels[job.serviceType] || "Roadside Assistance";
-        const serviceLabel = isEV
-          ? (job.serviceType === "fuel" ? "EV Mobile Charging" : "EV-Safe Towing")
-          : baseLabel;
-        const urgency = job.isEmergency ? "EMERGENCY: " : (isEV ? "EV Job: " : "");
-        const messages = tokens.map((to) => ({
-          to, title: `${urgency}New Job Request`,
-          body: `${serviceLabel} needed nearby — ~$${Math.round((job.totalCost ?? job.estimatedCost ?? 0) * 0.85)} payout. Tap to accept.`,
-          data: { screen: "ProviderDashboard" }, sound: "default",
-          priority: job.isEmergency ? "high" : "normal",
-          channelId: job.isEmergency ? "emergency" : "default",
-        }));
-        fetch("https://exp.host/--/api/v2/push/send", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Accept": "application/json" },
-          body: JSON.stringify(messages),
-        }).catch((err) => console.error("[PUSH] Failed:", err));
+      // ── Push notifications ────────────────────────────────────────────────
+      // If a specific provider was requested, notify only them (direct request).
+      // Otherwise broadcast to all available/matching providers.
+      const serviceLabels: Record<string, string> = {
+        flat_tire: "Flat Tire", jump_start: "Jump Start", tow: "Tow Service",
+        fuel: "Fuel Delivery", lockout: "Lockout", obd_diagnostic: "OBD Diagnostic",
+      };
+      const baseLabel = serviceLabels[job.serviceType] || "Roadside Assistance";
+      const serviceLabel = isEV
+        ? (job.serviceType === "fuel" ? "EV Mobile Charging" : "EV-Safe Towing")
+        : baseLabel;
+
+      if (requestedProviderId) {
+        // Direct request — push only to the targeted provider
+        const { rows: targeted } = await pool.query<ProviderRow>(
+          "SELECT push_token FROM providers WHERE id = $1 AND push_token IS NOT NULL",
+          [requestedProviderId]
+        );
+        const token = targeted[0]?.push_token as string | undefined;
+        if (token) {
+          console.log(`[PUSH] Direct request → provider ${requestedProviderId}`);
+          fetch("https://exp.host/--/api/v2/push/send", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            body: JSON.stringify([{
+              to: token,
+              title: "You Were Specifically Requested!",
+              body: `A driver is requesting you directly for ${serviceLabel} — ~$${Math.round((job.totalCost ?? job.estimatedCost ?? 0) * 0.85)} payout. Tap to accept.`,
+              data: { screen: "ProviderJobs" },
+              sound: "default",
+              priority: "high",
+              channelId: "default",
+            }]),
+          }).catch((err) => console.error("[PUSH] Failed:", err));
+        }
+      } else {
+        // General broadcast — all available/matching providers
+        const providerQuery = isEV
+          ? "SELECT push_token FROM providers WHERE is_available = true AND ev_capable = true AND push_token IS NOT NULL"
+          : "SELECT push_token FROM providers WHERE is_available = true AND push_token IS NOT NULL";
+        const { rows: providers } = await pool.query<ProviderRow>(providerQuery);
+        const tokens = providers.map((p) => p.push_token as string).filter(Boolean);
+        if (tokens.length > 0) {
+          const urgency = job.isEmergency ? "EMERGENCY: " : (isEV ? "EV Job: " : "");
+          const messages = tokens.map((to) => ({
+            to, title: `${urgency}New Job Request`,
+            body: `${serviceLabel} needed nearby — ~$${Math.round((job.totalCost ?? job.estimatedCost ?? 0) * 0.85)} payout. Tap to accept.`,
+            data: { screen: "ProviderDashboard" }, sound: "default",
+            priority: job.isEmergency ? "high" : "normal",
+            channelId: job.isEmergency ? "emergency" : "default",
+          }));
+          fetch("https://exp.host/--/api/v2/push/send", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            body: JSON.stringify(messages),
+          }).catch((err) => console.error("[PUSH] Failed:", err));
+        }
       }
+
       res.json(job);
     } catch (err) {
       console.error("[jobs POST]", err);
@@ -1601,15 +1635,30 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
     }
   });
 
-  app.get("/api/jobs/pending", async (_req: Request, res: Response) => {
+  app.get("/api/jobs/pending", async (req: Request, res: Response) => {
+    const providerId = (req.query.providerId as string | undefined) ?? null;
     try {
       // Auto-expire jobs older than 30 minutes so stale requests never linger
       await pool.query(
         "UPDATE jobs SET status = 'expired' WHERE status = 'pending' AND created_at::timestamptz < NOW() - INTERVAL '30 minutes'"
       ).catch(() => {});
-      const { rows } = await pool.query<JobRow>(
-        "SELECT * FROM jobs WHERE status = 'pending' ORDER BY created_at ASC"
-      );
+      // A provider sees:
+      //   1. Jobs with no specific target (open to anyone), OR
+      //   2. Jobs explicitly directed at them
+      // If no providerId is supplied (unauthenticated or legacy call), return only open jobs.
+      const { rows } = providerId
+        ? await pool.query<JobRow>(
+            `SELECT * FROM jobs
+             WHERE status = 'pending'
+               AND (requested_provider_id IS NULL OR requested_provider_id = $1)
+             ORDER BY
+               CASE WHEN requested_provider_id = $1 THEN 0 ELSE 1 END,
+               created_at ASC`,
+            [providerId]
+          )
+        : await pool.query<JobRow>(
+            "SELECT * FROM jobs WHERE status = 'pending' AND requested_provider_id IS NULL ORDER BY created_at ASC"
+          );
       res.set("Cache-Control", "no-store, no-cache, must-revalidate");
       res.set("Pragma", "no-cache");
       res.removeHeader("ETag");

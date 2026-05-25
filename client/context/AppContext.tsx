@@ -70,6 +70,7 @@ export interface ServiceRequest {
   timeSaved?: number;
   scheduledDate?: Date;
   isEV?: boolean;
+  requestedProviderId?: string;  // set when driver picks a specific provider from the map
   lastChatMessage?: string;      // set when the first real message is sent
   lastChatMessageAt?: Date;      // timestamp for sorting
 }
