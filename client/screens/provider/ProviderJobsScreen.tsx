@@ -13,7 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
-import { useNavigation, useIsFocused } from "@react-navigation/native";
+import { useNavigation, useIsFocused, useFocusEffect } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -380,8 +380,16 @@ export default function ProviderJobsScreen() {
           })) as ServiceRequest[]
         : [],
     refetchInterval: 4000,
-    staleTime: 3000,
+    staleTime: 0,
   });
+
+  // Refetch immediately every time the provider navigates to this tab —
+  // so tapping a push notification always shows the new job right away.
+  useFocusEffect(
+    useCallback(() => {
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs/pending"] });
+    }, [queryClient])
+  );
 
   // Track focus in a ref so the WebSocket closure always sees the live value
   const isFocused = useIsFocused();

@@ -138,10 +138,21 @@ export default function ActiveServiceScreen() {
 
   const [eta, setEta]                   = useState(activeRequest?.eta || 8);
   const [providerLocation, setProviderLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-  const locPollRef       = useRef<ReturnType<typeof setInterval> | null>(null);
-  const activeRequestRef = useRef(activeRequest);
+  const locPollRef           = useRef<ReturnType<typeof setInterval> | null>(null);
+  const activeRequestRef     = useRef(activeRequest);
+  const hasNavigatedDoneRef  = useRef(false);
 
   useEffect(() => { activeRequestRef.current = activeRequest; }, [activeRequest]);
+
+  // Navigate to ServiceCompletion as soon as the provider marks the job done.
+  // Using the local navigation prop (not the global navigationRef) is more
+  // reliable because it's always available while this screen is mounted.
+  useEffect(() => {
+    if (activeRequest?.status === "completed" && !hasNavigatedDoneRef.current) {
+      hasNavigatedDoneRef.current = true;
+      navigation.navigate("ServiceCompletion");
+    }
+  }, [activeRequest?.status]);
 
   // ── Bottom-sheet ────────────────────────────────────────────────────────────
   const translateY  = useRef(new Animated.Value(CLOSED_Y)).current;
