@@ -100,6 +100,11 @@ Real server-side auth: `POST /api/auth/signup` and `POST /api/auth/signin` hash/
 - Silently skipped on web and when no contacts are saved
 - **Twilio upgrade pending**: Account suspended on signup; reactivation email sent. Once reinstated, store `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER` as secrets and replace expo-sms with a `/api/sos/sms` server endpoint for silent background sending.
 
+### Expo Go / Metro Dev Server Rules
+- **ALWAYS keep `CI=1` in the workflow command** for the Expo start process. Without it, Expo CLI shows interactive "Log in or proceed anonymously" prompts when a physical device connects, which block Metro in Replit's non-interactive terminal. `CI=1` suppresses all interactive prompts. It does NOT break hot module reloading (HMR via WebSockets still works); it only disables terminal keyboard shortcuts (r/m/etc.) which don't work in Replit anyway.
+- **NEVER add `owner` to `app.json`**. It triggers an ownership verification prompt on startup. The `projectId` in `extra.eas.projectId` is sufficient for push notifications.
+- **`react-native-purchases` (RevenueCat) is a native module** that does not work in Expo Go. All Purchases calls are guarded with `isPurchasesAvailable()` in `client/lib/revenuecat.tsx` — if the native module isn't linked, all RevenueCat calls silently no-op so the app still loads.
+
 ### Critical Networking Rule
 - **ALWAYS use `apiRequest` from `@/lib/query-client` for ALL write requests (POST, PATCH, DELETE)**. Raw `fetch` silently hangs on physical iOS in Expo Go, meaning the server never receives the call. This was the root cause of provider status changes not reaching the driver. Only use raw `fetch` for GET requests inside polling loops where fire-and-forget semantics are acceptable.
 - **Navigation fallbacks**: `ProviderActiveJobScreen` falls back to `"ProviderTabs"`. `ActiveServiceScreen` falls back to `"DriverTabs"`. Using `"Home"` is wrong — it is not a valid route name.
