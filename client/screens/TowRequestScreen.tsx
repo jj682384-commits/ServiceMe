@@ -19,7 +19,8 @@ import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollV
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceRequest } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
-import { apiRequest } from "@/lib/query-client";
+import { apiRequest, getApiUrl } from "@/lib/query-client";
+import { useStripe } from "@/lib/stripe";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -115,6 +116,7 @@ export default function TowRequestScreen() {
   const { theme } = useTheme();
   const { setActiveRequest, addToHistory, addPendingJob, currentDriver } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const mountedRef = useRef(true);
 
   const [selectedSize, setSelectedSize] = useState<VehicleSize | null>(null);
@@ -163,9 +165,41 @@ export default function TowRequestScreen() {
 
     const estimatedCost = hasDistance ? pricing.base : HOOKUP_FEE + surcharge;
     const totalCost     = hasDistance ? pricing.total : HOOKUP_FEE + surcharge + SERVICE_FEE + (needsWinch ? WINCH_FEE : 0) + (isExpress ? EXPRESS_FEE : 0);
+    const requestId     = `tow-${Date.now()}`;
+
+    // ── Stripe payment sheet ───────────────────────────────────────────────
+    try {
+      const piData = await apiRequest("POST", "/api/create-payment-intent", {
+        amount: totalCost,
+        jobId: requestId,
+        serviceType: "tow",
+      });
+      if (!piData.clientSecret) throw new Error("Payment setup failed");
+
+      const { error: initError } = await initPaymentSheet({
+        paymentIntentClientSecret: piData.clientSecret,
+        merchantDisplayName: "ResqRide",
+        allowsDelayedPaymentMethods: false,
+      });
+      if (initError) throw new Error(initError.message);
+
+      const { error: payError } = await presentPaymentSheet();
+      if (payError) {
+        if (mountedRef.current) setIsSubmitting(false);
+        if (payError.code !== "Canceled") {
+          Alert.alert("Payment Failed", payError.message);
+        }
+        return;
+      }
+    } catch (err: any) {
+      if (mountedRef.current) setIsSubmitting(false);
+      Alert.alert("Payment Error", err.message || "Could not process payment. Please try again.");
+      return;
+    }
+    // ──────────────────────────────────────────────────────────────────────
 
     const pendingJob: ServiceRequest = {
-      id: `tow-${Date.now()}`,
+      id: requestId,
       serviceType: "tow",
       location: {
         address: "Current Location",

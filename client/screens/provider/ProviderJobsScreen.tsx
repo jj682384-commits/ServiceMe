@@ -459,61 +459,62 @@ export default function ProviderJobsScreen() {
     if (!selectedJob || accepting) return;
     setAccepting(true);
 
-    let providerLocation: { latitude: number; longitude: number } | undefined;
-    try {
-      const { status } = await Location.getForegroundPermissionsAsync();
-      if (status === "granted") {
-        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-        providerLocation = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
-      }
-    } catch {
-      // location unavailable — continue without it
-    }
+    const jobSnapshot = selectedJob;
 
     try {
-      await apiRequest("PATCH", `/api/jobs/${selectedJob.id}/accept`, {
-        provider: currentProvider,
-        eta: 8,
-        providerLocation,
-      });
-    } catch {
-      // Job might not be in DB yet (driver's POST may have failed) — upsert it then retry
+      let providerLocation: { latitude: number; longitude: number } | undefined;
       try {
-        await apiRequest("POST", "/api/jobs", {
-          ...selectedJob,
-          createdAt: selectedJob.createdAt instanceof Date
-            ? selectedJob.createdAt.toISOString()
-            : selectedJob.createdAt,
-        });
-        await apiRequest("PATCH", `/api/jobs/${selectedJob.id}/accept`, {
+        const { status } = await Location.getForegroundPermissionsAsync();
+        if (status === "granted") {
+          const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+          providerLocation = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+        }
+      } catch {
+        // location unavailable — continue without it
+      }
+
+      try {
+        await apiRequest("PATCH", `/api/jobs/${jobSnapshot.id}/accept`, {
           provider: currentProvider,
           eta: 8,
           providerLocation,
         });
       } catch {
-        // Still failed — proceed with local state so provider isn't blocked
+        // Job might not be in DB yet — upsert it then retry the accept
+        try {
+          await apiRequest("POST", "/api/jobs", {
+            ...jobSnapshot,
+            createdAt: jobSnapshot.createdAt instanceof Date
+              ? jobSnapshot.createdAt.toISOString()
+              : jobSnapshot.createdAt,
+          });
+          await apiRequest("PATCH", `/api/jobs/${jobSnapshot.id}/accept`, {
+            provider: currentProvider,
+            eta: 8,
+            providerLocation,
+          });
+        } catch {
+          // Still failed — proceed with local state so provider isn't blocked
+        }
       }
+
+      const acceptedJob: ServiceRequest = {
+        ...jobSnapshot,
+        status: "accepted",
+        provider: currentProvider ?? undefined,
+        eta: 8,
+      };
+
+      updateHistoryEntry(jobSnapshot.id, { status: "accepted", provider: currentProvider ?? undefined });
+      removePendingJob(jobSnapshot.id);
+      addToHistory(acceptedJob);
+      setActiveRequest(acceptedJob);
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs/pending"] });
+      setSelectedJob(null);
+      navigation.navigate("ProviderActiveJob");
+    } finally {
+      setAccepting(false);
     }
-
-    const acceptedJob: ServiceRequest = {
-      ...selectedJob,
-      status: "accepted",
-      provider: currentProvider ?? undefined,
-      eta: 8,
-    };
-
-    updateHistoryEntry(selectedJob.id, {
-      status: "accepted",
-      provider: currentProvider ?? undefined,
-    });
-    removePendingJob(selectedJob.id);
-    addToHistory(acceptedJob);
-    setActiveRequest(acceptedJob);
-    queryClient.invalidateQueries({ queryKey: ["/api/jobs/pending"] });
-
-    setSelectedJob(null);
-    setAccepting(false);
-    navigation.navigate("ProviderActiveJob");
   };
 
   const onRefresh = useCallback(async () => {
