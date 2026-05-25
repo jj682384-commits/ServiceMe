@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { View, StyleSheet, Pressable, TextInput, Alert } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Feather } from "@expo/vector-icons";
@@ -215,9 +216,20 @@ export default function TowRequestScreen() {
           { paddingTop: headerHeight + Spacing.lg, paddingBottom: insets.bottom + 100 },
         ]}
       >
-        <View style={[styles.heroSection, { backgroundColor: theme.secondary }]}>
-          <View style={styles.heroIconContainer}>
-            <Feather name="truck" size={40} color="#FFFFFF" />
+        <LinearGradient
+          colors={["#0055CC", "#0077FF", "#00AAFF"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.heroSection}
+        >
+          <View style={styles.heroGlowRing1} />
+          <View style={styles.heroGlowRing2} />
+          <View style={styles.heroIconWrapper}>
+            <View style={styles.heroIconOuter}>
+              <View style={styles.heroIconInner}>
+                <Feather name="truck" size={38} color="#FFFFFF" />
+              </View>
+            </View>
           </View>
           <ThemedText type="h2" style={styles.heroTitle}>Tow Service</ThemedText>
           <ThemedText type="body" style={styles.heroSubtitle}>
@@ -226,37 +238,53 @@ export default function TowRequestScreen() {
           <View style={styles.heroBadges}>
             {(["Insured", "24/7 Available", "Elite Partners"] as const).map((b, i) => (
               <View key={i} style={styles.heroBadge}>
-                <Feather name={i === 0 ? "shield" : i === 1 ? "clock" : "award"} size={13} color="#FFF" />
+                <Feather name={i === 0 ? "shield" : i === 1 ? "clock" : "award"} size={13} color="#FFFFFF" />
                 <ThemedText type="small" style={styles.heroBadgeText}>{b}</ThemedText>
               </View>
             ))}
           </View>
-        </View>
+        </LinearGradient>
 
-        <View style={[styles.pricingCard, { backgroundColor: theme.secondary + "12", borderColor: theme.secondary + "40" }]}>
+        <LinearGradient
+          colors={[theme.secondary + "22", theme.secondary + "08"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.pricingCard, { borderColor: theme.secondary + "50" }]}
+        >
           <View style={styles.pricingCardRow}>
-            <Feather name="info" size={16} color={theme.secondary} />
+            <View style={[styles.pricingCardIcon, { backgroundColor: theme.secondary + "25" }]}>
+              <Feather name="tag" size={14} color={theme.secondary} />
+            </View>
             <ThemedText type="body" style={[styles.pricingCardTitle, { color: theme.secondary }]}>
               How Tow Pricing Works
             </ThemedText>
           </View>
           <View style={styles.pricingSteps}>
-            <View style={styles.pricingStep}>
-              <ThemedText type="h4" style={{ color: theme.secondary }}>${HOOKUP_FEE}</ThemedText>
-              <ThemedText type="small" style={{ color: theme.textSecondary }}>Hookup fee{"\n"}(incl. first {FREE_MILES} mi)</ThemedText>
+            <View style={[styles.pricingPill, { backgroundColor: theme.secondary + "18" }]}>
+              <Feather name="anchor" size={15} color={theme.secondary} />
+              <ThemedText type="h3" style={{ color: "#FFFFFF", fontWeight: "800" }}>${HOOKUP_FEE}</ThemedText>
+              <ThemedText type="small" style={{ color: theme.textSecondary, textAlign: "center" }}>
+                hookup{"\n"}(+{FREE_MILES} mi free)
+              </ThemedText>
             </View>
-            <ThemedText type="h4" style={{ color: theme.textSecondary }}>+</ThemedText>
-            <View style={styles.pricingStep}>
-              <ThemedText type="h4" style={{ color: theme.secondary }}>${RATE_PER_MILE.toFixed(2)}</ThemedText>
-              <ThemedText type="small" style={{ color: theme.textSecondary }}>per mile{"\n"}after {FREE_MILES} mi</ThemedText>
+            <ThemedText type="h4" style={{ color: theme.textSecondary, marginBottom: Spacing.lg }}>+</ThemedText>
+            <View style={[styles.pricingPill, { backgroundColor: theme.secondary + "18" }]}>
+              <Feather name="navigation" size={15} color={theme.secondary} />
+              <ThemedText type="h3" style={{ color: "#FFFFFF", fontWeight: "800" }}>${RATE_PER_MILE}</ThemedText>
+              <ThemedText type="small" style={{ color: theme.textSecondary, textAlign: "center" }}>
+                per mile{"\n"}after {FREE_MILES} mi
+              </ThemedText>
             </View>
-            <ThemedText type="h4" style={{ color: theme.textSecondary }}>+</ThemedText>
-            <View style={styles.pricingStep}>
-              <ThemedText type="h4" style={{ color: theme.secondary }}>Size</ThemedText>
-              <ThemedText type="small" style={{ color: theme.textSecondary }}>surcharge{"\n"}(if applicable)</ThemedText>
+            <ThemedText type="h4" style={{ color: theme.textSecondary, marginBottom: Spacing.lg }}>+</ThemedText>
+            <View style={[styles.pricingPill, { backgroundColor: theme.secondary + "18" }]}>
+              <Feather name="truck" size={15} color={theme.secondary} />
+              <ThemedText type="h3" style={{ color: "#FFFFFF", fontWeight: "800" }}>Size</ThemedText>
+              <ThemedText type="small" style={{ color: theme.textSecondary, textAlign: "center" }}>
+                surcharge{"\n"}if applicable
+              </ThemedText>
             </View>
           </View>
-        </View>
+        </LinearGradient>
 
         <ThemedText type="h4" style={styles.sectionTitle}>Vehicle Size</ThemedText>
         <View style={styles.sizeGrid}>
@@ -471,33 +499,66 @@ const styles = StyleSheet.create({
     marginHorizontal: -Spacing.lg,
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing["2xl"],
+    paddingTop: Spacing.xl,
     alignItems: "center",
     marginBottom: Spacing.lg,
+    overflow: "hidden",
   },
-  heroIconContainer: {
+  heroGlowRing1: {
+    position: "absolute",
+    width: 260, height: 260, borderRadius: 130,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    top: -80, right: -60,
+  },
+  heroGlowRing2: {
+    position: "absolute",
+    width: 180, height: 180, borderRadius: 90,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    bottom: -60, left: -40,
+  },
+  heroIconWrapper: {
+    marginBottom: Spacing.md,
+  },
+  heroIconOuter: {
+    width: 96, height: 96, borderRadius: 48,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    alignItems: "center", justifyContent: "center",
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.3)",
+  },
+  heroIconInner: {
     width: 72, height: 72, borderRadius: 36,
     backgroundColor: "rgba(255,255,255,0.2)",
     alignItems: "center", justifyContent: "center",
-    marginBottom: Spacing.md,
   },
-  heroTitle:    { color: "#FFFFFF", marginBottom: Spacing.xs },
-  heroSubtitle: { color: "rgba(255,255,255,0.9)", marginBottom: Spacing.lg },
-  heroBadges:   { flexDirection: "row", gap: Spacing.md },
+  heroTitle:    { color: "#FFFFFF", marginBottom: Spacing.xs, fontWeight: "800" },
+  heroSubtitle: { color: "rgba(255,255,255,0.85)", marginBottom: Spacing.lg },
+  heroBadges:   { flexDirection: "row", gap: Spacing.sm, flexWrap: "wrap", justifyContent: "center" },
   heroBadge: {
     flexDirection: "row", alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.2)",
-    paddingVertical: Spacing.xs, paddingHorizontal: Spacing.sm,
-    borderRadius: BorderRadius.full, gap: 4,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    paddingVertical: 6, paddingHorizontal: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1, borderColor: "rgba(255,255,255,0.25)",
+    gap: 5,
   },
-  heroBadgeText: { color: "#FFFFFF", fontWeight: "500" },
+  heroBadgeText: { color: "#FFFFFF", fontWeight: "600" },
   pricingCard: {
-    borderRadius: BorderRadius.md, borderWidth: 1,
-    padding: Spacing.md, marginBottom: Spacing.md,
+    borderRadius: BorderRadius.lg, borderWidth: 1,
+    padding: Spacing.lg, marginBottom: Spacing.md,
   },
-  pricingCardRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginBottom: Spacing.md },
-  pricingCardTitle: { fontWeight: "700" },
-  pricingSteps: { flexDirection: "row", alignItems: "center", justifyContent: "space-around" },
-  pricingStep:  { alignItems: "center", gap: 2 },
+  pricingCardRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, marginBottom: Spacing.lg },
+  pricingCardIcon: {
+    width: 28, height: 28, borderRadius: 8,
+    alignItems: "center", justifyContent: "center",
+  },
+  pricingCardTitle: { fontWeight: "700", fontSize: 15 },
+  pricingSteps: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  pricingPill: {
+    flex: 1, alignItems: "center", gap: 4,
+    paddingVertical: Spacing.md, paddingHorizontal: Spacing.sm,
+    borderRadius: BorderRadius.md,
+  },
   sectionTitle: { marginBottom: Spacing.md, marginTop: Spacing.lg },
   sizeGrid:     { gap: Spacing.sm },
   sizeCard: {
