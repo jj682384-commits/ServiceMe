@@ -60,24 +60,28 @@ export async function initNotifications(): Promise<string | null> {
   if (!granted) return null;
 
   try {
-    // Prefer EAS projectId; fall back to expo.dev owner/slug experienceId
+    // Prefer EAS projectId; fall back to owner/slug experienceId for Expo Go
     const projectId =
       (Constants.easConfig as { projectId?: string } | null)?.projectId ??
       (Constants.expoConfig?.extra as { eas?: { projectId?: string } } | undefined)?.eas?.projectId;
 
+    const owner = Constants.expoConfig?.owner;
+    const slug = Constants.expoConfig?.slug;
+    const experienceId = owner && slug ? `@${owner}/${slug}` : undefined;
+
     const tokenOptions: Parameters<typeof Notifications.getExpoPushTokenAsync>[0] = projectId
       ? { projectId }
-      : {};
+      : experienceId
+        ? { experienceId }
+        : {};
 
     const token = await Notifications.getExpoPushTokenAsync(tokenOptions);
     console.log("[PUSH] Token registered:", token.data?.slice(0, 30) + "...");
     return token.data;
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    // Only warn once — this is expected in Expo Go without a projectId
     if (!_pushWarnedOnce) {
       console.warn("[PUSH] Push token unavailable (app-closed notifications won't work):", msg);
-      console.warn("[PUSH] Fix: add your Expo username as `owner` in app.json, or add `extra.eas.projectId`.");
       _pushWarnedOnce = true;
     }
     return null;
