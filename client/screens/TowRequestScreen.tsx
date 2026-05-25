@@ -169,11 +169,12 @@ export default function TowRequestScreen() {
 
     // ── Stripe payment sheet ───────────────────────────────────────────────
     try {
-      const piData = await apiRequest("POST", "/api/create-payment-intent", {
+      const piRes = await apiRequest("POST", "/api/create-payment-intent", {
         amount: totalCost,
         jobId: requestId,
         serviceType: "tow",
       });
+      const piData = await piRes.json();
       if (!piData.clientSecret) throw new Error("Payment setup failed");
 
       const { error: initError } = await initPaymentSheet({
