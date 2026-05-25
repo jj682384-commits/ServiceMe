@@ -368,7 +368,9 @@ export default function ProviderActiveJobScreen() {
                 <ThemedText type="h4">{serviceTypeLabels[activeRequest.serviceType] ?? "Service"}</ThemedText>
                 <ThemedText type="small" style={{ color: theme.textSecondary }}>Service Request</ThemedText>
               </View>
-              <ThemedText type="h4" style={{ color: theme.success }}>${activeRequest.estimatedCost}</ThemedText>
+              <ThemedText type="h4" style={{ color: theme.success }}>
+                ~${(Math.round((activeRequest.totalCost ?? activeRequest.estimatedCost) * (activeRequest.isExpress ? 0.90 : 0.85) * 100) / 100).toFixed(2)} payout
+              </ThemedText>
             </View>
             <View style={[styles.divider, { backgroundColor: theme.border }]} />
             <View style={styles.detailRow}>

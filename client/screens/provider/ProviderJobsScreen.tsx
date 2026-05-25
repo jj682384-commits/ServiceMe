@@ -160,12 +160,12 @@ function JobDetailSheet({
             <Feather name="dollar-sign" size={20} color={theme.success} />
             <View style={{ flex: 1 }}>
               <ThemedText type="h3" style={{ color: theme.success, fontWeight: "800" }}>
-                ${job.estimatedCost}
+                ~${(Math.round((job.totalCost ?? job.estimatedCost) * (1 - (job.isExpress && acceptsPriorityJobs ? 0.10 : 0.15)) * 100) / 100).toFixed(2)}
               </ThemedText>
               <ThemedText type="small" style={{ color: theme.success, opacity: 0.8 }}>
                 {job.isExpress && acceptsPriorityJobs
-                  ? "Estimated payout (after 10% priority fee)"
-                  : "Estimated payout (after 15% fee)"}
+                  ? "Your payout (10% priority fee applied)"
+                  : "Your payout (15% platform fee applied)"}
               </ThemedText>
             </View>
             {job.isExpress ? (
@@ -313,7 +313,9 @@ function JobCard({ job, onPress }: { job: ServiceRequest; onPress: () => void })
           </ThemedText>
         </View>
         <View style={styles.rightColumn}>
-          <ThemedText type="h4" style={{ color: theme.success }}>${job.estimatedCost}</ThemedText>
+          <ThemedText type="h4" style={{ color: theme.success }}>
+            ~${Math.round((job.totalCost ?? job.estimatedCost) * (job.isExpress ? 0.90 : 0.85))}
+          </ThemedText>
           {job.isExpress ? (
             <View style={[styles.priorityBadge, { backgroundColor: theme.warning + "20" }]}>
               <ThemedText type="small" style={{ color: theme.warning, fontSize: 10, fontWeight: "700" }}>

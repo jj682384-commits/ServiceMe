@@ -1599,7 +1599,7 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
         const urgency = job.isEmergency ? "EMERGENCY: " : (isEV ? "EV Job: " : "");
         const messages = tokens.map((to) => ({
           to, title: `${urgency}New Job Request`,
-          body: `${serviceLabel} needed nearby — $${job.estimatedCost} estimated. Tap to accept.`,
+          body: `${serviceLabel} needed nearby — ~$${Math.round((job.totalCost ?? job.estimatedCost ?? 0) * 0.85)} payout. Tap to accept.`,
           data: { screen: "ProviderDashboard" }, sound: "default",
           priority: job.isEmergency ? "high" : "normal",
           channelId: job.isEmergency ? "emergency" : "default",
@@ -1830,7 +1830,7 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
             [providerId]
           );
           const gross = job.totalCost ?? job.estimatedCost ?? 0;
-          const feeRate = (job.isExpress && provRows[0]?.accepts_priority_jobs) ? 0.10 : 0.20;
+          const feeRate = (job.isExpress && provRows[0]?.accepts_priority_jobs) ? 0.10 : 0.15;
           const tipAmt = typeof job.tip === "number" ? job.tip : 0;
           const netAmount = Math.round((gross * (1 - feeRate) + tipAmt) * 100) / 100;
 
