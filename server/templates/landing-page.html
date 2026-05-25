@@ -675,14 +675,105 @@
     .footer-copy { color: var(--muted); font-size: 12px; }
 
     /* ── Responsive ── */
+    /* Direct Request Section */
+    .direct-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
+      margin-top: 56px;
+      align-items: center;
+    }
+    .direct-steps { display: flex; flex-direction: column; gap: 32px; }
+    .direct-step { display: flex; gap: 20px; align-items: flex-start; }
+    .direct-step-num {
+      width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg, #E91E63, #9C27B0);
+      color: #fff; font-size: 14px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 16px rgba(233,30,99,0.4);
+    }
+    .direct-step-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+    .direct-step-desc { font-size: 14px; color: var(--muted); line-height: 1.6; }
+    .direct-callout {
+      background: var(--card);
+      border: 1px solid rgba(233,30,99,0.2);
+      border-radius: 20px;
+      padding: 36px;
+      position: relative;
+      overflow: hidden;
+    }
+    .direct-callout::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(233,30,99,0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .direct-callout-icon { font-size: 40px; margin-bottom: 16px; }
+    .direct-callout-title { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 12px; }
+    .direct-callout-desc { font-size: 15px; color: var(--muted); line-height: 1.7; margin-bottom: 24px; }
+    .direct-callout-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+    .direct-tag {
+      font-size: 12px; font-weight: 600; padding: 5px 14px; border-radius: 100px;
+      background: rgba(233,30,99,0.1); color: #E91E63;
+      border: 1px solid rgba(233,30,99,0.25); letter-spacing: .3px;
+    }
+    html[data-theme="light"] .direct-callout { border-color: rgba(233,30,99,0.15); }
+    html[data-theme="light"] .direct-callout-title { color: #111; }
+
+    /* Towing Structure Section */
+    .tow-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      margin-top: 56px;
+    }
+    .tow-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 28px 22px;
+      display: flex; flex-direction: column; gap: 10px;
+      transition: border-color .2s, transform .2s;
+    }
+    .tow-card:hover { border-color: rgba(192,192,192,0.25); transform: translateY(-3px); }
+    .tow-card.ev-tow { border-color: rgba(74,222,128,0.18); }
+    .tow-card.ev-tow:hover { border-color: rgba(74,222,128,0.35); }
+    .tow-card-badge {
+      display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .6px;
+      text-transform: uppercase; padding: 4px 12px; border-radius: 100px;
+      background: rgba(192,192,192,0.12); color: rgba(192,192,192,0.9);
+      border: 1px solid rgba(192,192,192,0.2); width: fit-content;
+    }
+    .tow-card-badge.medium { background: rgba(255,165,0,0.1); color: rgba(255,165,0,0.9); border-color: rgba(255,165,0,0.2); }
+    .tow-card-badge.heavy { background: rgba(192,80,80,0.12); color: rgba(255,120,120,0.9); border-color: rgba(200,80,80,0.25); }
+    .tow-card-badge.ev-badge { background: rgba(74,222,128,0.1); color: rgba(74,222,128,0.9); border-color: rgba(74,222,128,0.2); }
+    .tow-card-icon { font-size: 32px; margin-top: 4px; }
+    .tow-card-name { font-size: 17px; font-weight: 700; color: var(--text); }
+    .tow-card-weight { font-size: 13px; font-weight: 600; color: var(--muted); }
+    .tow-card-desc { font-size: 13px; color: var(--muted); line-height: 1.6; flex: 1; }
+    .tow-card-prices { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
+    .tow-card-prices span {
+      font-size: 12px; font-weight: 600; color: rgba(74,222,128,0.85);
+      background: rgba(74,222,128,0.07); border: 1px solid rgba(74,222,128,0.15);
+      border-radius: 8px; padding: 5px 10px;
+    }
+    html[data-theme="light"] .tow-card { border-color: rgba(0,0,0,0.1); }
+    html[data-theme="light"] .tow-card-name { color: #111; }
+    html[data-theme="light"] .tow-card-badge { background: rgba(0,0,0,0.07); color: rgba(0,0,0,0.6); border-color: rgba(0,0,0,0.12); }
+
     @media (max-width: 768px) {
       nav { padding: 14px 20px; }
       .nav-links { display: none; }
       .stats-inner { grid-template-columns: 1fr 1fr; }
       .steps-grid { grid-template-columns: 1fr; }
       .dual-grid { grid-template-columns: 1fr; }
+      .direct-grid { grid-template-columns: 1fr; gap: 32px; }
+      .tow-grid { grid-template-columns: 1fr 1fr; }
       .hero-visual { display: none; }
       .hero { padding: 100px 20px 60px; }
+    }
+    @media (max-width: 480px) {
+      .tow-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -698,6 +789,8 @@
     <a href="#how-it-works">How It Works</a>
     <a href="#services">Services</a>
     <a href="#earn">Earn With Us</a>
+    <a href="#direct-request">Request a Provider</a>
+    <a href="#towing">Towing</a>
     <a href="#premium">Premium</a>
     <a href="#waitlist">Early Access</a>
   </div>
@@ -930,7 +1023,7 @@
       <div class="service-card">
         <div class="service-card-top">
           <div class="service-icon">&#9889;</div>
-          <div class="service-price">From $30</div>
+          <div class="service-price">From $25</div>
         </div>
         <div class="service-name">Jump Start</div>
         <div class="service-desc">Professional jump start using commercial-grade booster cables. Provider connects safely and stays until the engine holds a charge.</div>
@@ -1028,6 +1121,95 @@
           <li>Priority jobs for verified providers</li>
           <li>EV-certified service opportunities</li>
         </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Request Specific Provider -->
+<section id="direct-request">
+  <div class="section-inner">
+    <div class="section-label">New Feature</div>
+    <h2>Request a provider <span>you actually trust</span></h2>
+    <p class="section-sub">Browse nearby verified providers, see their ratings and specialties, and send a direct request to someone you know — instead of waiting for whoever accepts first.</p>
+
+    <div class="direct-grid">
+      <div class="direct-steps">
+        <div class="direct-step">
+          <div class="direct-step-num">1</div>
+          <div class="direct-step-body">
+            <div class="direct-step-title">Browse Providers Near You</div>
+            <div class="direct-step-desc">See verified providers sorted by distance, complete with ratings, specialties, vehicle type, and verified badges — all before you request anything.</div>
+          </div>
+        </div>
+        <div class="direct-step">
+          <div class="direct-step-num">2</div>
+          <div class="direct-step-body">
+            <div class="direct-step-title">Tap "Request This Provider"</div>
+            <div class="direct-step-desc">Found someone you trust? Select your service type and send them a direct job request — no open bidding, no hoping the right person shows up.</div>
+          </div>
+        </div>
+        <div class="direct-step">
+          <div class="direct-step-num">3</div>
+          <div class="direct-step-body">
+            <div class="direct-step-title">They Get Notified First</div>
+            <div class="direct-step-desc">Your chosen provider receives a highlighted "You Were Specifically Requested" alert. If they accept, the job is locked to them — no one else can take it.</div>
+          </div>
+        </div>
+      </div>
+      <div class="direct-callout">
+        <div class="direct-callout-icon">&#128100;</div>
+        <div class="direct-callout-title">Your Trusted Crew, On Demand</div>
+        <div class="direct-callout-desc">Perfect for repeat customers who've worked with a great provider before — or anyone who simply wants more control over who shows up. Direct requests mix seamlessly with standard dispatch at no extra cost.</div>
+        <div class="direct-callout-tags">
+          <span class="direct-tag">No Extra Cost</span>
+          <span class="direct-tag">Completely Optional</span>
+          <span class="direct-tag">Same Fast Response</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Towing Structure -->
+<section id="towing">
+  <div class="section-inner">
+    <div class="section-label">Towing Services</div>
+    <h2>The right tow truck <span>for your vehicle</span></h2>
+    <p class="section-sub">Not every breakdown needs the same rig. ResqRide matches you with the correct class of wrecker for your vehicle size — including EV-certified flatbeds that protect your battery and drivetrain.</p>
+
+    <div class="tow-grid">
+      <div class="tow-card">
+        <div class="tow-card-badge">Light-Duty</div>
+        <div class="tow-card-icon">&#128652;</div>
+        <div class="tow-card-name">Light-Duty Wrecker</div>
+        <div class="tow-card-weight">Up to 10,000 lbs</div>
+        <div class="tow-card-desc">For passenger cars, sedans, small SUVs, and light pickup trucks. The most common tow type — handles the majority of everyday breakdowns quickly and affordably.</div>
+      </div>
+      <div class="tow-card">
+        <div class="tow-card-badge medium">Medium-Duty</div>
+        <div class="tow-card-icon">&#128657;</div>
+        <div class="tow-card-name">Medium-Duty Wrecker</div>
+        <div class="tow-card-weight">Up to 26,000 lbs</div>
+        <div class="tow-card-desc">For cargo vans, box trucks, sprinters, and medium-weight commercial vehicles. Handles jobs that exceed standard passenger tow capacity with ease.</div>
+      </div>
+      <div class="tow-card">
+        <div class="tow-card-badge heavy">Heavy-Duty</div>
+        <div class="tow-card-icon">&#128665;</div>
+        <div class="tow-card-name">Heavy-Duty Wrecker</div>
+        <div class="tow-card-weight">26,000+ lbs</div>
+        <div class="tow-card-desc">For semi-trucks, buses, RVs, and heavy commercial vehicles. Fully equipped recovery rigs operated by experienced heavy-haul professionals.</div>
+      </div>
+      <div class="tow-card ev-tow">
+        <div class="tow-card-badge ev-badge">EV-Safe</div>
+        <div class="tow-card-icon">&#9889;</div>
+        <div class="tow-card-name">EV-Safe Towing</div>
+        <div class="tow-card-weight">Flatbed &middot; Wheel-Lift</div>
+        <div class="tow-card-desc">Providers trained in EV-safe rigging — no dragging the driven axle, no battery damage. Choose your method at booking.</div>
+        <div class="tow-card-prices">
+          <span>Flatbed / Rollback &mdash; $127</span>
+          <span>Wheel-Lift &mdash; $84</span>
+        </div>
       </div>
     </div>
   </div>
