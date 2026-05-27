@@ -809,6 +809,78 @@
     html[data-theme="light"] .tow-card-name { color: #111; }
     html[data-theme="light"] .tow-card-badge { background: rgba(0,0,0,0.07); color: rgba(0,0,0,0.6); border-color: rgba(0,0,0,0.12); }
 
+    /* ── Tow pricing formula ── */
+    .tow-formula {
+      display: flex; align-items: center; justify-content: center; flex-wrap: wrap;
+      gap: 10px; background: rgba(255,255,255,0.025);
+      border: 1px solid rgba(255,255,255,0.07); border-radius: 20px;
+      padding: 28px 32px; margin-top: 48px;
+    }
+    .tow-formula-pill {
+      display: flex; flex-direction: column; align-items: center; gap: 5px;
+      background: rgba(192,192,192,0.06); border: 1px solid rgba(192,192,192,0.14);
+      border-radius: 14px; padding: 18px 24px; min-width: 110px; text-align: center;
+    }
+    .tow-formula-amount {
+      font-size: 28px; font-weight: 800; line-height: 1;
+      background: linear-gradient(135deg,#fff 0%,#C0C0C0 60%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .tow-formula-desc { font-size: 12px; color: var(--muted); line-height: 1.55; }
+    .tow-formula-desc span { color: rgba(255,255,255,0.35); font-size: 11px; }
+    .tow-formula-op { font-size: 22px; font-weight: 700; color: rgba(255,255,255,0.18); }
+    .tow-formula-eq {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      background: rgba(204,27,27,0.07); border: 1px solid rgba(204,27,27,0.2);
+      border-radius: 14px; padding: 18px 26px; text-align: center; min-width: 150px;
+    }
+    .tow-formula-eq-label { font-size: 18px; font-weight: 800; color: #fff; }
+    .tow-formula-eq-sub { font-size: 11px; color: var(--muted); line-height: 1.4; }
+
+    /* ── Vehicle size table ── */
+    .tow-size-table {
+      border: 1px solid rgba(255,255,255,0.07); border-radius: 18px;
+      overflow: hidden; margin-top: 24px;
+    }
+    .tow-size-table-title {
+      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px;
+      color: var(--muted); padding: 16px 24px 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.015);
+    }
+    .tow-size-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      padding: 13px 24px; border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .tow-size-row:last-of-type { border-bottom: none; }
+    .tow-size-name { font-size: 14px; color: var(--text); flex: 1; }
+    .tow-size-name small { display: block; font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .tow-size-surcharge {
+      font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 8px; white-space: nowrap;
+      background: rgba(255,165,0,0.08); color: rgba(255,165,0,0.9); border: 1px solid rgba(255,165,0,0.18);
+    }
+    .tow-size-surcharge.free { background: rgba(74,222,128,0.08); color: rgba(74,222,128,0.9); border-color: rgba(74,222,128,0.18); }
+    .tow-size-surcharge.heavy { background: rgba(220,60,60,0.08); color: rgba(255,110,110,0.9); border-color: rgba(200,60,60,0.2); }
+    .tow-addons-row {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      padding: 14px 24px; border-top: 1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.015);
+    }
+    .tow-addon-pill {
+      font-size: 12px; color: var(--muted); background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07); border-radius: 8px; padding: 5px 12px;
+    }
+    .tow-addon-pill strong { color: var(--text); }
+
+    html[data-theme="light"] .tow-formula { background: rgba(0,0,0,0.02); border-color: rgba(0,0,0,0.08); }
+    html[data-theme="light"] .tow-formula-pill { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.1); }
+    html[data-theme="light"] .tow-formula-amount { background: linear-gradient(135deg,#111,#555); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    html[data-theme="light"] .tow-size-table { border-color: rgba(0,0,0,0.08); }
+    html[data-theme="light"] .tow-size-table-title { background: rgba(0,0,0,0.02); border-color: rgba(0,0,0,0.07); }
+    html[data-theme="light"] .tow-size-row { border-color: rgba(0,0,0,0.06); }
+    html[data-theme="light"] .tow-addons-row { background: rgba(0,0,0,0.02); border-color: rgba(0,0,0,0.07); }
+    html[data-theme="light"] .tow-addon-pill { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.09); }
+
     @media (max-width: 768px) {
       nav { padding: 14px 20px; }
       .nav-links { display: none; }
@@ -1312,8 +1384,62 @@
   <div class="section-inner">
     <div class="section-label">Towing Services</div>
     <h2>The right tow truck <span>for your vehicle</span></h2>
-    <p class="section-sub">Not every breakdown needs the same rig. ResqRide matches you with the correct class of wrecker for your vehicle size — including EV-certified flatbeds that protect your battery and drivetrain.</p>
+    <p class="section-sub">Not every breakdown needs the same rig. ResqRide matches you with the correct class of wrecker and calculates your price live — based on hookup, distance, and your vehicle size — before you ever submit a request. EV-certified flatbeds are available to protect your battery and drivetrain.</p>
 
+    <!-- Live Pricing Formula -->
+    <div class="tow-formula">
+      <div class="tow-formula-pill">
+        <div class="tow-formula-amount">$65</div>
+        <div class="tow-formula-desc">Hookup fee<br><span>First 5 miles included</span></div>
+      </div>
+      <div class="tow-formula-op">+</div>
+      <div class="tow-formula-pill">
+        <div class="tow-formula-amount">$3.50</div>
+        <div class="tow-formula-desc">Per mile<br><span>After first 5 miles</span></div>
+      </div>
+      <div class="tow-formula-op">+</div>
+      <div class="tow-formula-pill">
+        <div class="tow-formula-amount">Size</div>
+        <div class="tow-formula-desc">Surcharge<br><span>If applicable</span></div>
+      </div>
+      <div class="tow-formula-op">=</div>
+      <div class="tow-formula-eq">
+        <div class="tow-formula-eq-label">Your total</div>
+        <div class="tow-formula-eq-sub">Calculated live in-app<br>before you submit</div>
+      </div>
+    </div>
+
+    <!-- Vehicle Size Surcharges -->
+    <div class="tow-size-table">
+      <div class="tow-size-table-title">Vehicle Size &amp; Surcharges</div>
+      <div class="tow-size-row">
+        <span class="tow-size-name">Compact / Small <small>Hatchback, Mini, Smart car</small></span>
+        <span class="tow-size-surcharge free">No surcharge</span>
+      </div>
+      <div class="tow-size-row">
+        <span class="tow-size-name">Sedan / Coupe <small>Most standard passenger cars</small></span>
+        <span class="tow-size-surcharge free">No surcharge</span>
+      </div>
+      <div class="tow-size-row">
+        <span class="tow-size-name">SUV / Crossover <small>CRV, RAV4, Explorer, Tahoe</small></span>
+        <span class="tow-size-surcharge">+$15</span>
+      </div>
+      <div class="tow-size-row">
+        <span class="tow-size-name">Pickup Truck <small>F-150, Silverado, Ram, Tundra</small></span>
+        <span class="tow-size-surcharge">+$25</span>
+      </div>
+      <div class="tow-size-row">
+        <span class="tow-size-name">Commercial Van <small>Transit, Sprinter, work vans</small></span>
+        <span class="tow-size-surcharge heavy">+$50</span>
+      </div>
+      <div class="tow-addons-row">
+        <div class="tow-addon-pill">&#128309; Winch Recovery &mdash; <strong>+$35</strong></div>
+        <div class="tow-addon-pill">&#9889; Express Dispatch &mdash; <strong>+$9.99</strong></div>
+        <div class="tow-addon-pill">Platform fee &mdash; <strong>$3.99</strong></div>
+      </div>
+    </div>
+
+    <!-- Wrecker Class Cards -->
     <div class="tow-grid">
       <div class="tow-card">
         <div class="tow-card-badge">Light-Duty</div>
@@ -1341,11 +1467,7 @@
         <div class="tow-card-icon">&#9889;</div>
         <div class="tow-card-name">EV-Safe Towing</div>
         <div class="tow-card-weight">Flatbed &middot; Wheel-Lift</div>
-        <div class="tow-card-desc">Providers trained in EV-safe rigging — no dragging the driven axle, no battery damage. Choose your method at booking.</div>
-        <div class="tow-card-prices">
-          <span>Flatbed / Rollback &mdash; $127</span>
-          <span>Wheel-Lift &mdash; $84</span>
-        </div>
+        <div class="tow-card-desc">Providers trained in EV-safe rigging — no dragging the driven axle, no battery damage. Choose flatbed rollback or wheel-lift at booking. Same distance-based pricing applies.</div>
       </div>
     </div>
   </div>
