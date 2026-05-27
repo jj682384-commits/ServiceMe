@@ -3,7 +3,6 @@ import {
   View,
   StyleSheet,
   Pressable,
-  ScrollView,
   Alert,
   TextInput,
 } from "react-native";
@@ -20,6 +19,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { useApp, ServiceRequest } from "@/context/AppContext";
 import { useTheme } from "@/hooks/useTheme";
 import { getEVColors } from "@/constants/evColors";
@@ -183,14 +183,13 @@ export default function EVTowScreen() {
         end={{ x: 0.5, y: 0.4 }}
         style={StyleSheet.absoluteFill}
       />
-      <ScrollView
+      <KeyboardAwareScrollViewCompat
         contentContainerStyle={{
           paddingTop: insets.top + 16,
           paddingBottom: insets.bottom + 40,
           paddingHorizontal: 20,
         }}
         showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
       >
         <Pressable onPress={() => navigation.goBack()} style={styles.backButton} hitSlop={12}>
           <Feather name="arrow-left" size={22} color={EV.white} />
@@ -408,7 +407,7 @@ export default function EVTowScreen() {
             Secured by Stripe — charged only when a provider is dispatched
           </Animated.Text>
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollViewCompat>
     </View>
   );
 }
