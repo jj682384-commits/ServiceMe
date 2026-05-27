@@ -17,7 +17,7 @@ import Animated, {
   Easing,
   cancelAnimation,
 } from "react-native-reanimated";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { useApp, ServiceRequest } from "@/context/AppContext";
@@ -69,6 +69,7 @@ function calcEVTowPrice(hookup: number, miles: number) {
 export default function EVTowScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, "EVTow">>();
   const { getDefaultVehicle, userLocation, currentDriver, setActiveRequest, addToHistory, addPendingJob } = useApp();
   const { isDark } = useTheme();
   const EV = getEVColors(isDark);
@@ -79,6 +80,16 @@ export default function EVTowScreen() {
   const [selectedDest, setSelectedDest] = useState(0);
   const [customMiles, setCustomMiles] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [pickedCharger, setPickedCharger] = useState<{ name: string; address: string; miles: number } | null>(null);
+
+  // Receive charger selection passed back from EVChargerPickerScreen
+  useEffect(() => {
+    const charger = route.params?.selectedCharger;
+    if (charger) {
+      setPickedCharger(charger);
+      setSelectedDest(0); // ensure "Nearest Charging Station" row is selected
+    }
+  }, [route.params?.selectedCharger]);
 
   const pulseAnim = useSharedValue(0.5);
   useEffect(() => {
@@ -97,16 +108,23 @@ export default function EVTowScreen() {
   const towOpt = TOW_OPTIONS[selectedTow];
   const dest = DESTINATIONS[selectedDest];
 
-  // Resolve tow distance from selected destination or custom input
-  const towMiles: number = dest.miles !== null
-    ? dest.miles
-    : parseFloat(customMiles) || 0;
+  // Resolve tow distance: charger picker result, preset, or custom input
+  const towMiles: number =
+    selectedDest === 0
+      ? pickedCharger?.miles ?? 0
+      : dest.miles !== null
+      ? dest.miles
+      : parseFloat(customMiles) || 0;
 
   const { base, mileageCharge, billable, total } = calcEVTowPrice(towOpt.hookup, towMiles);
 
   const handleReviewAndPay = async () => {
     if (isProcessing) return;
-    if (dest.miles === null && (!customMiles || parseFloat(customMiles) <= 0)) {
+    if (selectedDest === 0 && !pickedCharger) {
+      Alert.alert("Select a Charger", "Tap 'Nearest Charging Station' to pick the charger you want to be towed to.");
+      return;
+    }
+    if (selectedDest === DESTINATIONS.length - 1 && (!customMiles || parseFloat(customMiles) <= 0)) {
       Alert.alert("Enter Distance", "Please enter the estimated distance to your destination.");
       return;
     }
@@ -148,7 +166,7 @@ export default function EVTowScreen() {
     const pendingJob: ServiceRequest = {
       id: jobId,
       serviceType: "tow",
-      notes: `EV Tow — ${towOpt.label} to ${dest.label} (${towMiles} mi)`,
+      notes: `EV Tow — ${towOpt.label} to ${selectedDest === 0 && pickedCharger ? pickedCharger.name : dest.label} (${towMiles} mi)`,
       location: { address: "Current Location", latitude: coords.latitude, longitude: coords.longitude },
       status: "pending",
       estimatedCost: base,
@@ -306,10 +324,15 @@ export default function EVTowScreen() {
 
         {DESTINATIONS.map((d, index) => {
           const isSelected = selectedDest === index;
+          const isChargerRow = index === 0;
+          const chargerPicked = isChargerRow && pickedCharger !== null;
           return (
             <Pressable
               key={index}
-              onPress={() => setSelectedDest(index)}
+              onPress={() => {
+                setSelectedDest(index);
+                if (isChargerRow) navigation.navigate("EVChargerPicker");
+              }}
               style={[
                 styles.destCard,
                 {
@@ -320,9 +343,23 @@ export default function EVTowScreen() {
             >
               <View style={[styles.destDot, { backgroundColor: isSelected ? EV.neonCyan : EV.whiteGhost }]} />
               <Feather name={d.icon} size={16} color={isSelected ? EV.neonCyan : EV.whiteDim} />
-              <Animated.Text style={[styles.destName, { color: isSelected ? EV.neonCyan : EV.white }]}>
-                {d.label}
-              </Animated.Text>
+              <View style={{ flex: 1 }}>
+                <Animated.Text style={[styles.destName, { color: isSelected ? EV.neonCyan : EV.white }]}>
+                  {chargerPicked ? pickedCharger!.name : d.label}
+                </Animated.Text>
+                {chargerPicked ? (
+                  <Animated.Text style={[styles.destSub, { color: EV.whiteDim }]} numberOfLines={1}>
+                    {pickedCharger!.address} · {pickedCharger!.miles} mi
+                  </Animated.Text>
+                ) : isChargerRow ? (
+                  <Animated.Text style={[styles.destSub, { color: EV.whiteGhost }]}>
+                    Tap to choose a charger
+                  </Animated.Text>
+                ) : null}
+              </View>
+              {isChargerRow ? (
+                <Feather name="chevron-right" size={16} color={EV.whiteGhost} />
+              ) : null}
             </Pressable>
           );
         })}
@@ -456,7 +493,8 @@ const styles = StyleSheet.create({
     borderRadius: 14, borderWidth: 1, padding: 14, marginBottom: 10,
   },
   destDot: { width: 8, height: 8, borderRadius: 4 },
-  destName: { fontSize: 14, fontWeight: "600", flex: 1 },
+  destName: { fontSize: 14, fontWeight: "600" },
+  destSub: { fontSize: 11, marginTop: 2 },
   destDist: { fontSize: 12 },
   customMilesRow: {
     flexDirection: "row", alignItems: "center", gap: 10,

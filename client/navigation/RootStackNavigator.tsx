@@ -31,6 +31,7 @@ import EVRangeAlertScreen from "@/screens/ev/EVRangeAlertScreen";
 import EVAddVehicleScreen from "@/screens/ev/EVAddVehicleScreen";
 import EVDiagnosticScreen from "@/screens/ev/EVDiagnosticScreen";
 import EVChargerMapScreen from "@/screens/ev/EVChargerMapScreen";
+import EVChargerPickerScreen from "@/screens/ev/EVChargerPickerScreen";
 import PreferredProvidersScreen from "@/screens/PreferredProvidersScreen";
 import PaymentMethodsScreen from "@/screens/PaymentMethodsScreen";
 import BillingHistoryScreen from "@/screens/BillingHistoryScreen";
@@ -67,7 +68,8 @@ export type RootStackParamList = {
   EmergencyMode: undefined;
   VehicleManagement: undefined;
   EVMobileCharge: undefined;
-  EVTow: undefined;
+  EVTow: { selectedCharger?: { name: string; address: string; miles: number } } | undefined;
+  EVChargerPicker: undefined;
   EVRangeAlert: undefined;
   EVAddVehicle: undefined;
   EVDiagnostic: undefined;
@@ -301,6 +303,14 @@ export default function RootStackNavigator() {
           headerShown: false,
           presentation: "modal",
           animation: "slide_from_bottom",
+        }}
+      />
+      <Stack.Screen
+        name="EVChargerPicker"
+        component={EVChargerPickerScreen}
+        options={{
+          headerShown: false,
+          animation: "slide_from_right",
         }}
       />
       <Stack.Screen
