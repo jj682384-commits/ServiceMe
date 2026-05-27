@@ -323,9 +323,6 @@ export default function EVTowScreen() {
               <Animated.Text style={[styles.destName, { color: isSelected ? EV.neonCyan : EV.white }]}>
                 {d.label}
               </Animated.Text>
-              {d.miles !== null ? (
-                <Animated.Text style={[styles.destDist, { color: EV.whiteDim }]}>{d.miles} mi</Animated.Text>
-              ) : null}
             </Pressable>
           );
         })}
