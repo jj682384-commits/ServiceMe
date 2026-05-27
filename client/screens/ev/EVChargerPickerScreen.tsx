@@ -24,6 +24,7 @@ import * as Location from "expo-location";
 
 import { useTheme } from "@/hooks/useTheme";
 import { getEVColors } from "@/constants/evColors";
+import { getApiUrl } from "@/lib/query-client";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 interface ChargerStation {
@@ -36,46 +37,6 @@ interface ChargerStation {
   available: number;
   speed: string;
   network: string;
-}
-
-function haversineDistMi(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
-  return 3959 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-function mapApiToCharger(item: Record<string, unknown>, userLat: number, userLon: number): ChargerStation | null {
-  const addr = item.AddressInfo as Record<string, unknown> | undefined;
-  if (!addr) return null;
-  const lat = addr.Latitude as number;
-  const lon = addr.Longitude as number;
-  if (!lat || !lon) return null;
-
-  const connections = (item.Connections as Record<string, unknown>[] | undefined) || [];
-  const maxKw = connections.reduce((max: number, c: Record<string, unknown>) => {
-    const kw = (c.PowerKW as number) || 0;
-    return kw > max ? kw : max;
-  }, 0);
-  const speed = maxKw >= 50 ? "DC Fast" : "Level 2";
-  const points = (item.NumberOfPoints as number) || 1;
-  const isOp = (item.StatusType as Record<string, unknown> | undefined)?.IsOperationalBool;
-  const available = isOp === false ? 0 : points;
-  const distMi = haversineDistMi(userLat, userLon, lat, lon);
-
-  return {
-    id: String(item.ID),
-    name: (addr.Title as string) || "Charging Station",
-    address: (addr.AddressLine1 as string) || (addr.Town as string) || "",
-    distanceMi: distMi,
-    distance: distMi < 0.1 ? "< 0.1 mi" : `${distMi.toFixed(1)} mi`,
-    chargerCount: points,
-    available,
-    speed,
-    network: (item.OperatorInfo as Record<string, unknown> | undefined)?.Title as string || "Unknown",
-  };
 }
 
 export default function EVChargerPickerScreen() {
@@ -103,17 +64,13 @@ export default function EVChargerPickerScreen() {
   const fetchChargers = useCallback(async (lat: number, lon: number) => {
     setError(false);
     try {
-      const url =
-        `https://api.openchargemap.io/v3/poi/?output=json&latitude=${lat}&longitude=${lon}` +
-        `&distance=20&distanceunit=Miles&maxresults=30&compact=true&verbose=false`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("fetch failed");
-      const data: Record<string, unknown>[] = await res.json();
-      const mapped = data
-        .map((item) => mapApiToCharger(item, lat, lon))
-        .filter((c): c is ChargerStation => c !== null)
-        .sort((a, b) => a.distanceMi - b.distanceMi);
-      setChargers(mapped);
+      const url = new URL("/api/ev/chargers", getApiUrl());
+      url.searchParams.set("lat", String(lat));
+      url.searchParams.set("lon", String(lon));
+      const res = await fetch(url.toString());
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data: ChargerStation[] = await res.json();
+      setChargers(data);
     } catch {
       setError(true);
     } finally {

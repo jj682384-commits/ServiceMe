@@ -540,34 +540,24 @@ export default function EVModeScreen() {
       try {
         const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
         const { latitude, longitude } = loc.coords;
-        const url =
-          `https://api.openchargemap.io/v3/poi/?output=json` +
-          `&latitude=${latitude}&longitude=${longitude}` +
-          `&distance=10&distanceunit=Miles&maxresults=4&compact=true&verbose=false`;
-        const res = await fetch(url);
+        const url = new URL("/api/ev/chargers", apiBase);
+        url.searchParams.set("lat", String(latitude));
+        url.searchParams.set("lon", String(longitude));
+        const res = await fetch(url.toString());
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json() as Array<{
-          ID: number;
-          AddressInfo?: { Title?: string; Distance?: number };
-          Connections?: Array<{ PowerKW?: number | null; Quantity?: number }>;
+          id: string; name: string; distance: string;
+          speed: string; available: number; chargerCount: number;
         }>;
         if (!cancelled) {
-          const chargers: NearbyCharger[] = data.map((poi) => {
-            const maxKW = Math.max(
-              0,
-              ...(poi.Connections ?? []).map((c) => c.PowerKW ?? 0)
-            );
-            const total = (poi.Connections ?? []).reduce((s, c) => s + (c.Quantity ?? 1), 0);
-            const rawDist = poi.AddressInfo?.Distance ?? 0;
-            const dist = rawDist < 0.1 ? "<0.1" : rawDist.toFixed(1);
-            return {
-              id: poi.ID,
-              name: poi.AddressInfo?.Title ?? "Charging Station",
-              distance: `${dist} mi`,
-              speed: maxKW >= 50 ? "DC Fast" : "Level 2",
-              available: 0,
-              total,
-            };
-          });
+          const chargers: NearbyCharger[] = data.slice(0, 4).map((s) => ({
+            id: parseInt(s.id) || 0,
+            name: s.name,
+            distance: s.distance,
+            speed: s.speed,
+            available: s.available,
+            total: s.chargerCount,
+          }));
           setNearbyChargers(chargers);
           setChargersLoading(false);
         }
@@ -591,37 +581,30 @@ export default function EVModeScreen() {
     try {
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       const { latitude, longitude } = loc.coords;
-      const url =
-        `https://api.openchargemap.io/v3/poi/?output=json` +
-        `&latitude=${latitude}&longitude=${longitude}` +
-        `&distance=10&distanceunit=Miles&maxresults=4&compact=true&verbose=false`;
-      const res = await fetch(url);
+      const url = new URL("/api/ev/chargers", apiBase);
+      url.searchParams.set("lat", String(latitude));
+      url.searchParams.set("lon", String(longitude));
+      const res = await fetch(url.toString());
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json() as Array<{
-        ID: number;
-        AddressInfo?: { Title?: string; Distance?: number };
-        Connections?: Array<{ PowerKW?: number | null; Quantity?: number }>;
+        id: string; name: string; distance: string;
+        speed: string; available: number; chargerCount: number;
       }>;
-      const chargers: NearbyCharger[] = data.map((poi) => {
-        const maxKW = Math.max(0, ...(poi.Connections ?? []).map((c) => c.PowerKW ?? 0));
-        const total = (poi.Connections ?? []).reduce((s, c) => s + (c.Quantity ?? 1), 0);
-        const rawDist = poi.AddressInfo?.Distance ?? 0;
-        const dist = rawDist < 0.1 ? "<0.1" : rawDist.toFixed(1);
-        return {
-          id: poi.ID,
-          name: poi.AddressInfo?.Title ?? "Charging Station",
-          distance: `${dist} mi`,
-          speed: maxKW >= 50 ? "DC Fast" : "Level 2",
-          available: 0,
-          total,
-        };
-      });
+      const chargers: NearbyCharger[] = data.slice(0, 4).map((s) => ({
+        id: parseInt(s.id) || 0,
+        name: s.name,
+        distance: s.distance,
+        speed: s.speed,
+        available: s.available,
+        total: s.chargerCount,
+      }));
       setNearbyChargers(chargers);
     } catch {
       /* silently ignore */
     } finally {
       setChargersLoading(false);
     }
-  }, []);
+  }, [apiBase]);
 
   const handleConnectCar = useCallback(async () => {
     setSmartcarLoading(true);
