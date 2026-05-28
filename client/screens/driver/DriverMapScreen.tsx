@@ -544,12 +544,13 @@ export default function DriverMapScreen() {
   });
 
   useEffect(() => {
-    if (apiProviders && apiProviders.length > 0) {
+    if (apiProviders) {
       setNearbyProviders(apiProviders);
       // Keep selectedProvider data fresh
       if (selectedProvider) {
         const fresh = apiProviders.find((p) => p.id === selectedProvider.id);
         if (fresh) setSelectedProvider(fresh);
+        else if (apiProviders.length === 0) setSelectedProvider(null);
       }
     }
   }, [apiProviders]);
