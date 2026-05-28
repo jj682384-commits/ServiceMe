@@ -399,30 +399,26 @@ export default function DriverMapScreen() {
   // Swipe-down gesture — covers the entire expanded panel (handle + list)
   // Coordinates with the inner ScrollView: only drags when list is scrolled to top
   const swipeDownGesture = Gesture.Pan()
-    .activeOffsetY(2)          // activate after 2px — feels nearly instant
-    .failOffsetY(-20)          // generous tolerance so diagonal touches don't abort early
+    .minDistance(1)            // activate on first pixel of movement — zero dead zone
     .simultaneousWithExternalGesture(nativeGesture)
     .onUpdate((e) => {
       if (!hubIsOpen.value) return;
-      // When list is scrolled down, let the ScrollView handle the gesture
-      if (scrollOffset.value > 1) return;
-      dragY.value = Math.max(0, e.translationY);
+      if (scrollOffset.value > 1) return;  // let ScrollView scroll when not at top
+      if (e.translationY <= 0) return;      // ignore upward movement — no direction check overhead
+      dragY.value = e.translationY;
     })
     .onEnd((e) => {
       if (!hubIsOpen.value) return;
       if (scrollOffset.value > 1) {
-        // List not at top — snap back, don't dismiss
         dragY.value = withSpring(0, { damping: 22, stiffness: 350 });
         return;
       }
       if (e.translationY > 40 || e.velocityY > 300) {
-        // Snap shut — fast 140ms collapse so it feels instant
         hubAnim.value = withTiming(0, { duration: 140, easing: Easing.in(Easing.quad) });
         dragY.value = withTiming(0, { duration: 140 });
         hubIsOpen.value = false;
         runOnJS(collapseHub)();
       } else {
-        // Bounce back to fully open
         dragY.value = withSpring(0, { damping: 22, stiffness: 350 });
       }
     });
