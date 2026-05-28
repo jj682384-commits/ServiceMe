@@ -324,6 +324,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await pool.query(`ALTER TABLE providers ADD COLUMN IF NOT EXISTS push_token TEXT DEFAULT NULL`).catch(() => {});
   await pool.query(`ALTER TABLE providers ADD COLUMN IF NOT EXISTS stripe_account_id TEXT DEFAULT NULL`).catch(() => {});
   await pool.query(`ALTER TABLE providers ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW()`).catch(() => {});
+  await pool.query(`ALTER TABLE providers ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMPTZ DEFAULT NULL`).catch(() => {});
   // ── jobs column migration ───────────────────────────────────────────────────
   await pool.query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW()`).catch(() => {});
 
@@ -1045,7 +1046,9 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
     const maxRadius = parseFloat(radius || "25");
     try {
       const { rows } = await pool.query<ProviderRow>(
-        "SELECT * FROM providers WHERE is_available = true"
+        `SELECT * FROM providers
+         WHERE is_available = true
+           AND last_seen_at > NOW() - INTERVAL '5 minutes'`
       );
       // Check which providers have an active (non-terminal) job
       const { rows: activeJobs } = await pool.query<{ provider_id: string }>(
@@ -1166,13 +1169,27 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
     }
     try {
       const { rowCount } = await pool.query(
-        "UPDATE providers SET location = $2, last_location_update = $3, updated_at = NOW() WHERE id = $1",
+        "UPDATE providers SET location = $2, last_location_update = $3, last_seen_at = NOW(), updated_at = NOW() WHERE id = $1",
         [req.params.id, JSON.stringify({ latitude, longitude }), new Date().toISOString()]
       );
       if (!rowCount) return res.status(404).json({ error: "Provider not found" });
       res.json({ success: true });
     } catch (err) {
       console.error("[providers/location]", err);
+      res.status(500).json({ error: "Database error" });
+    }
+  });
+
+  // Heartbeat — called periodically by online providers to prove they're still active
+  app.patch("/api/providers/:id/heartbeat", async (req: Request, res: Response) => {
+    try {
+      await pool.query(
+        "UPDATE providers SET last_seen_at = NOW(), updated_at = NOW() WHERE id = $1",
+        [req.params.id]
+      );
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("[providers/heartbeat]", err);
       res.status(500).json({ error: "Database error" });
     }
   });

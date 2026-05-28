@@ -9,7 +9,7 @@ import AnimatedBackground from "@/components/AnimatedBackground";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceRequest } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
-import { useProviderLocation, updateProviderAvailability, registerProviderOnServer } from "@/hooks/useProviderLocation";
+import { useProviderLocation, useProviderHeartbeat, updateProviderAvailability, registerProviderOnServer } from "@/hooks/useProviderLocation";
 import { getApiUrl } from "@/lib/query-client";
 
 const PLATFORM_FEE_STANDARD = 0.15;
@@ -61,6 +61,7 @@ export default function ProviderDashboardScreen() {
   const cardBg = theme.cardAnimatedBg;
 
   useProviderLocation(currentProvider?.id ?? null, isAvailable);
+  useProviderHeartbeat(currentProvider?.id ?? null, isAvailable);
 
   useEffect(() => {
     if (currentProvider) {

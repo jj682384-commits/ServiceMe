@@ -44,6 +44,22 @@ export async function updateProviderAvailability(providerId: string, isAvailable
   }
 }
 
+// Sends a heartbeat every 60s while the provider is online so they remain visible
+// in the nearby list. Works on all platforms including web (where location is skipped).
+export function useProviderHeartbeat(providerId: string | null, isAvailable: boolean) {
+  useEffect(() => {
+    if (!providerId || !isAvailable) return;
+
+    const beat = () => {
+      apiRequest("PATCH", `/api/providers/${providerId}/heartbeat`, {}).catch(() => {});
+    };
+
+    beat(); // immediate ping when going online
+    const interval = setInterval(beat, 60_000);
+    return () => clearInterval(interval);
+  }, [providerId, isAvailable]);
+}
+
 export function useProviderLocation(providerId: string | null, isAvailable: boolean) {
   const lastPos = useRef<{ latitude: number; longitude: number } | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
