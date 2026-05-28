@@ -17,7 +17,7 @@ import Animated, {
   Easing,
   cancelAnimation,
 } from "react-native-reanimated";
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { useNavigation, useRoute, RouteProp, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { useApp, ServiceRequest } from "@/context/AppContext";
@@ -26,6 +26,7 @@ import { getEVColors } from "@/constants/evColors";
 import { useStripe } from "@/lib/stripe";
 import { getApiUrl, apiRequest } from "@/lib/query-client";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
+import { consumePendingCharger } from "@/lib/chargerSelection";
 
 const FLATBED_HOOKUP  = 85;   // EV-certified flatbed premium
 const WHEELLIFT_HOOKUP = 65;  // Same as standard tow hookup
@@ -82,14 +83,16 @@ export default function EVTowScreen() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [pickedCharger, setPickedCharger] = useState<{ name: string; address: string; miles: number } | null>(null);
 
-  // Receive charger selection passed back from EVChargerPickerScreen
-  useEffect(() => {
-    const charger = route.params?.selectedCharger;
-    if (charger) {
-      setPickedCharger(charger);
-      setSelectedDest(0); // ensure "Nearest Charging Station" row is selected
-    }
-  }, [route.params?.selectedCharger]);
+  // Pick up charger selected in EVChargerPickerScreen when we regain focus
+  useFocusEffect(
+    React.useCallback(() => {
+      const charger = consumePendingCharger();
+      if (charger) {
+        setPickedCharger(charger);
+        setSelectedDest(0);
+      }
+    }, [])
+  );
 
   const pulseAnim = useSharedValue(0.5);
   useEffect(() => {

@@ -25,6 +25,7 @@ import * as Location from "expo-location";
 import { useTheme } from "@/hooks/useTheme";
 import { getEVColors } from "@/constants/evColors";
 import { fetchNearbyChargers, type ChargerStation } from "@/lib/evChargers";
+import { setPendingCharger } from "@/lib/chargerSelection";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 export default function EVChargerPickerScreen() {
@@ -78,9 +79,8 @@ export default function EVChargerPickerScreen() {
 
   const handleSelect = (charger: ChargerStation) => {
     const miles = parseFloat(charger.distanceMi.toFixed(1));
-    navigation.navigate("EVTow", {
-      selectedCharger: { name: charger.name, address: charger.address, miles },
-    });
+    setPendingCharger({ name: charger.name, address: charger.address, miles });
+    navigation.goBack();
   };
 
   const renderCharger = ({ item, index }: { item: ChargerStation; index: number }) => {
