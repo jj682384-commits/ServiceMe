@@ -1070,7 +1070,7 @@ const styles = StyleSheet.create({
   evPromptRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   evToggle: { width: 48, height: 28, borderRadius: 14, padding: 3, justifyContent: "center" },
   evToggleOn: { backgroundColor: "#00E676" },
-  evToggleOff: { backgroundColor: "rgba(255,255,255,0.15)" },
+  evToggleOff: { backgroundColor: "#B0B0B8", borderWidth: 1, borderColor: "rgba(0,0,0,0.12)" },
   evToggleThumb: { width: 22, height: 22, borderRadius: 11, backgroundColor: "#FFF" },
   evToggleThumbOn: { alignSelf: "flex-end" },
   evToggleThumbOff: { alignSelf: "flex-start" },
