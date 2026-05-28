@@ -177,7 +177,7 @@ export default function PreferredProvidersScreen() {
           <PreferredProviderCard
             provider={item.provider}
             serviceCount={item.serviceCount}
-            onPress={() => navigation.navigate("ProviderDetail", { providerId: item.provider.id })}
+            onPress={() => navigation.navigate("ProviderDetail", { providerId: item.provider.id, providerData: item.provider })}
           />
         )}
         contentContainerStyle={{
@@ -224,7 +224,7 @@ export default function PreferredProvidersScreen() {
               {nonPreferredProgress.map((item) => (
                 <Pressable
                   key={item.provider.id}
-                  onPress={() => navigation.navigate("ProviderDetail", { providerId: item.provider.id })}
+                  onPress={() => navigation.navigate("ProviderDetail", { providerId: item.provider.id, providerData: item.provider })}
                   style={[styles.progressItem, { backgroundColor: theme.backgroundSecondary }]}
                 >
                   <ThemedText type="body" style={{ fontWeight: "600", flex: 1 }}>
