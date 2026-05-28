@@ -346,9 +346,10 @@ async function getOrCreateStripeCustomer(userId: string, email: string, name: st
   return customer.id;
 }
 
-// ── DB broadcast helper ───────────────────────────────────────────────────────
+// ── DB broadcast helpers ──────────────────────────────────────────────────────
 
 let broadcastJobUpdate: (job: JobRecord) => void = () => {};
+let broadcastProviderStatus: (providerId: string, isAvailable: boolean) => void = () => {};
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 
@@ -1663,9 +1664,7 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
         [req.params.id, isAvailable]
       );
       if (!rowCount) return res.status(404).json({ error: "Provider not found" });
-      // Push real-time update to all connected driver clients
-      const statusMsg = JSON.stringify({ type: "provider_status_update", providerId: req.params.id, isAvailable });
-      wss.clients.forEach((c) => { if (c.readyState === WebSocket.OPEN) c.send(statusMsg); });
+      broadcastProviderStatus(req.params.id, isAvailable);
       res.json({ success: true });
     } catch (err) {
       console.error("[providers/availability]", err);
@@ -2752,6 +2751,13 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
       if (client.readyState === WebSocket.OPEN) client.send(data);
     });
     console.log(`[WS BROADCAST] job=${job.id} status=${job.status} clients=${wss.clients.size}`);
+  };
+
+  broadcastProviderStatus = (providerId: string, isAvailable: boolean) => {
+    const data = JSON.stringify({ type: "provider_status_update", providerId, isAvailable });
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) client.send(data);
+    });
   };
 
   wss.on("connection", (ws: WebSocket) => {
