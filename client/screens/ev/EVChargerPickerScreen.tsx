@@ -24,20 +24,8 @@ import * as Location from "expo-location";
 
 import { useTheme } from "@/hooks/useTheme";
 import { getEVColors } from "@/constants/evColors";
-import { getApiUrl } from "@/lib/query-client";
+import { fetchNearbyChargers, type ChargerStation } from "@/lib/evChargers";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
-
-interface ChargerStation {
-  id: string;
-  name: string;
-  address: string;
-  distanceMi: number;
-  distance: string;
-  chargerCount: number;
-  available: number;
-  speed: string;
-  network: string;
-}
 
 export default function EVChargerPickerScreen() {
   const insets = useSafeAreaInsets();
@@ -64,12 +52,7 @@ export default function EVChargerPickerScreen() {
   const fetchChargers = useCallback(async (lat: number, lon: number) => {
     setError(false);
     try {
-      const url = new URL("/api/ev/chargers", getApiUrl());
-      url.searchParams.set("lat", String(lat));
-      url.searchParams.set("lon", String(lon));
-      const res = await fetch(url.toString());
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data: ChargerStation[] = await res.json();
+      const data = await fetchNearbyChargers(lat, lon);
       setChargers(data);
     } catch {
       setError(true);

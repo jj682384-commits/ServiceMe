@@ -35,6 +35,7 @@ import { useApp } from "@/context/AppContext";
 import { useTheme } from "@/hooks/useTheme";
 import EVAnimatedBackground from "@/components/EVAnimatedBackground";
 import { getApiUrl, apiRequest } from "@/lib/query-client";
+import { fetchNearbyChargers } from "@/lib/evChargers";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -540,15 +541,7 @@ export default function EVModeScreen() {
       try {
         const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
         const { latitude, longitude } = loc.coords;
-        const url = new URL("/api/ev/chargers", apiBase);
-        url.searchParams.set("lat", String(latitude));
-        url.searchParams.set("lon", String(longitude));
-        const res = await fetch(url.toString());
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json() as Array<{
-          id: string; name: string; distance: string;
-          speed: string; available: number; chargerCount: number;
-        }>;
+        const data = await fetchNearbyChargers(latitude, longitude);
         if (!cancelled) {
           const chargers: NearbyCharger[] = data.slice(0, 4).map((s) => ({
             id: parseInt(s.id) || 0,
@@ -581,15 +574,7 @@ export default function EVModeScreen() {
     try {
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       const { latitude, longitude } = loc.coords;
-      const url = new URL("/api/ev/chargers", apiBase);
-      url.searchParams.set("lat", String(latitude));
-      url.searchParams.set("lon", String(longitude));
-      const res = await fetch(url.toString());
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json() as Array<{
-        id: string; name: string; distance: string;
-        speed: string; available: number; chargerCount: number;
-      }>;
+      const data = await fetchNearbyChargers(latitude, longitude);
       const chargers: NearbyCharger[] = data.slice(0, 4).map((s) => ({
         id: parseInt(s.id) || 0,
         name: s.name,

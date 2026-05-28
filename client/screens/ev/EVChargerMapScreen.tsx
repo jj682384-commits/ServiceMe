@@ -33,6 +33,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { getEVColors } from "@/constants/evColors";
 import { GoogleMapView } from "@/components/GoogleMapView";
 import { getApiUrl } from "@/lib/query-client";
+import { fetchNearbyChargers } from "@/lib/evChargers";
 
 const { height: SH, width: SW } = Dimensions.get("window");
 
@@ -257,14 +258,8 @@ export default function EVChargerMapScreen() {
   const fetchChargers = useCallback(async (lat: number, lon: number) => {
     try {
       setFetchError(false);
-      setMapPannedCenter(null); // reset the panned-away state when loading starts
-      const base = getApiUrl();
-      const url = new URL("/api/ev/chargers", base);
-      url.searchParams.set("lat", String(lat));
-      url.searchParams.set("lon", String(lon));
-      const res = await fetch(url.toString());
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = (await res.json()) as ChargerStation[];
+      setMapPannedCenter(null);
+      const data = await fetchNearbyChargers(lat, lon);
       setChargers(data);
       setLoadedCenter({ latitude: lat, longitude: lon });
     } catch {
