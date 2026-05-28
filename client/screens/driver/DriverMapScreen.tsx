@@ -713,9 +713,9 @@ export default function DriverMapScreen() {
         </Pressable>
       </View>
 
-      {/* Online indicator legend */}
+      {/* Online indicator legend — sits below filter chips row (chips row is at +56, chip height ~36px) */}
       {providers.length > 0 && (
-        <View style={[styles.legend, { top: insets.top + Spacing.lg + 56, backgroundColor: theme.backgroundDefault + "EE", ...Shadows.sm }]}>
+        <View style={[styles.legend, { top: insets.top + Spacing.lg + 56 + 44, backgroundColor: theme.backgroundDefault + "EE", ...Shadows.sm }]}>
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: COLOR_FREE }]} />
             <ThemedText type="small" style={{ color: theme.textSecondary, fontSize: 10 }}>Free</ThemedText>
