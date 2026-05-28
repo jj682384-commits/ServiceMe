@@ -5,10 +5,14 @@ import {
   Pressable,
   Alert,
   ScrollView,
+  Image,
+  Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Feather } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
+import * as ImageManipulator from "expo-image-manipulator";
 
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -30,30 +34,16 @@ const SHOP_DOCS: { key: string; label: string; description: string; icon: keyof 
 ];
 
 type StepStatus = "complete" | "active" | "upcoming";
+type DocValue = string | boolean;
 
 function StepRow({
-  number,
-  label,
-  subtitle,
-  status,
+  number, label, subtitle, status,
 }: {
-  number: number;
-  label: string;
-  subtitle?: string;
-  status: StepStatus;
+  number: number; label: string; subtitle?: string; status: StepStatus;
 }) {
   const { theme } = useTheme();
-
-  const color =
-    status === "complete" ? theme.success :
-    status === "active" ? theme.warning :
-    theme.textSecondary;
-
-  const bgColor =
-    status === "complete" ? theme.success + "20" :
-    status === "active" ? theme.warning + "20" :
-    theme.backgroundSecondary;
-
+  const color = status === "complete" ? theme.success : status === "active" ? theme.warning : theme.textSecondary;
+  const bgColor = status === "complete" ? theme.success + "20" : status === "active" ? theme.warning + "20" : theme.backgroundSecondary;
   return (
     <View style={styles.stepRow}>
       <View style={[styles.stepBubble, { backgroundColor: bgColor }]}>
@@ -78,27 +68,28 @@ function StepRow({
 }
 
 function DocRow({
-  label,
-  description,
-  icon,
-  isUploaded,
-  onUpload,
-  locked,
+  label, description, icon, docValue, onUpload, locked,
 }: {
   label: string;
   description: string;
   icon: keyof typeof Feather.glyphMap;
-  isUploaded: boolean;
+  docValue: DocValue | undefined;
   onUpload: () => void;
   locked: boolean;
 }) {
   const { theme } = useTheme();
+  const isUploaded = !!docValue;
+  const imageUri = typeof docValue === "string" && docValue.startsWith("data:") ? docValue : null;
 
   return (
     <View style={[styles.docRow, { borderBottomColor: theme.border }]}>
-      <View style={[styles.docIcon, { backgroundColor: isUploaded ? theme.success + "20" : theme.backgroundSecondary }]}>
-        <Feather name={icon} size={20} color={isUploaded ? theme.success : theme.textSecondary} />
-      </View>
+      {imageUri ? (
+        <Image source={{ uri: imageUri }} style={styles.docThumb} resizeMode="cover" />
+      ) : (
+        <View style={[styles.docIcon, { backgroundColor: isUploaded ? theme.success + "20" : theme.backgroundSecondary }]}>
+          <Feather name={icon} size={20} color={isUploaded ? theme.success : theme.textSecondary} />
+        </View>
+      )}
       <View style={styles.docInfo}>
         <ThemedText type="body" style={{ fontWeight: "600" }}>{label}</ThemedText>
         <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: 2 }}>{description}</ThemedText>
@@ -129,6 +120,46 @@ function DocRow({
   );
 }
 
+async function pickAndCompressImage(useCamera: boolean): Promise<string | null> {
+  if (useCamera) {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission Needed", "Camera access is required to take a photo of your document.");
+      return null;
+    }
+    const result = await ImagePicker.launchCameraAsync({ allowsEditing: false, quality: 0.8 });
+    if (result.canceled || !result.assets?.length) return null;
+    const uri = result.assets[0].uri;
+    const resized = await ImageManipulator.manipulateAsync(
+      uri,
+      [{ resize: { width: 800 } }],
+      { compress: 0.65, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+    );
+    return `data:image/jpeg;base64,${resized.base64}`;
+  } else {
+    if (Platform.OS !== "web") {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permission Needed", "Photo library access is required to select a document photo.");
+        return null;
+      }
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: false,
+      quality: 0.8,
+    });
+    if (result.canceled || !result.assets?.length) return null;
+    const uri = result.assets[0].uri;
+    const resized = await ImageManipulator.manipulateAsync(
+      uri,
+      [{ resize: { width: 800 } }],
+      { compress: 0.65, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+    );
+    return `data:image/jpeg;base64,${resized.base64}`;
+  }
+}
+
 export default function ProviderVerificationScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
@@ -140,14 +171,15 @@ export default function ProviderVerificationScreen() {
   const requiredDocs = isIndependent ? INDEPENDENT_DOCS : SHOP_DOCS;
   const isVerified = status === "verified";
 
-  const [docs, setDocs] = useState<Record<string, boolean>>(
-    currentProvider?.verificationDocuments ?? {}
+  const [docs, setDocs] = useState<Record<string, DocValue>>(
+    (currentProvider?.verificationDocuments as Record<string, DocValue>) ?? {}
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadingKey, setUploadingKey] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const allDocsUploaded = requiredDocs.every((d) => docs[d.key]);
-  const anyDocUploaded = requiredDocs.some((d) => docs[d.key]);
+  const allDocsUploaded = requiredDocs.every((d) => !!docs[d.key]);
+  const anyDocUploaded = requiredDocs.some((d) => !!docs[d.key]);
   const submittedAt = currentProvider?.verificationSubmittedAt;
 
   useEffect(() => {
@@ -172,7 +204,7 @@ export default function ProviderVerificationScreen() {
             clearInterval(pollRef.current!);
           }
         } catch {
-          // silent — polling, not critical
+          // silent — polling
         }
       }, 15000);
     }
@@ -180,21 +212,54 @@ export default function ProviderVerificationScreen() {
   }, [status, currentProvider?.id]);
 
   const handleUpload = (key: string) => {
+    if (Platform.OS === "web") {
+      Alert.alert(
+        "Upload Document",
+        "On web, document capture is simulated. Tap Confirm to mark this document as ready.",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Confirm",
+            onPress: () => {
+              const updated = { ...docs, [key]: true };
+              setDocs(updated);
+              if (currentProvider) setCurrentProvider({ ...currentProvider, verificationDocuments: updated as Record<string, boolean> });
+            },
+          },
+        ]
+      );
+      return;
+    }
+
     Alert.alert(
       "Upload Document",
-      "In a production build this opens your camera or photo library. Tap Confirm to mark this document as ready.",
+      "Choose how to provide your document photo",
       [
-        { text: "Cancel", style: "cancel" },
         {
-          text: "Confirm Upload",
-          onPress: () => {
-            const updated = { ...docs, [key]: true };
+          text: "Take Photo",
+          onPress: async () => {
+            setUploadingKey(key);
+            const base64 = await pickAndCompressImage(true);
+            setUploadingKey(null);
+            if (!base64) return;
+            const updated = { ...docs, [key]: base64 };
             setDocs(updated);
-            if (currentProvider) {
-              setCurrentProvider({ ...currentProvider, verificationDocuments: updated });
-            }
+            if (currentProvider) setCurrentProvider({ ...currentProvider, verificationDocuments: updated as Record<string, boolean> });
           },
         },
+        {
+          text: "Choose from Library",
+          onPress: async () => {
+            setUploadingKey(key);
+            const base64 = await pickAndCompressImage(false);
+            setUploadingKey(null);
+            if (!base64) return;
+            const updated = { ...docs, [key]: base64 };
+            setDocs(updated);
+            if (currentProvider) setCurrentProvider({ ...currentProvider, verificationDocuments: updated as Record<string, boolean> });
+          },
+        },
+        { text: "Cancel", style: "cancel" },
       ]
     );
   };
@@ -220,7 +285,7 @@ export default function ProviderVerificationScreen() {
         setCurrentProvider({
           ...currentProvider,
           verificationStatus: "pending",
-          verificationDocuments: docs,
+          verificationDocuments: docs as Record<string, boolean>,
           verificationSubmittedAt: now,
         });
       }
@@ -234,15 +299,9 @@ export default function ProviderVerificationScreen() {
   };
 
   const stepStatuses = (): { account: StepStatus; documents: StepStatus; review: StepStatus; verified: StepStatus } => {
-    if (isVerified) {
-      return { account: "complete", documents: "complete", review: "complete", verified: "complete" };
-    }
-    if (status === "pending") {
-      return { account: "complete", documents: "complete", review: "active", verified: "upcoming" };
-    }
-    if (anyDocUploaded || allDocsUploaded) {
-      return { account: "complete", documents: "active", review: "upcoming", verified: "upcoming" };
-    }
+    if (isVerified) return { account: "complete", documents: "complete", review: "complete", verified: "complete" };
+    if (status === "pending") return { account: "complete", documents: "complete", review: "active", verified: "upcoming" };
+    if (anyDocUploaded || allDocsUploaded) return { account: "complete", documents: "active", review: "upcoming", verified: "upcoming" };
     return { account: "complete", documents: "upcoming", review: "upcoming", verified: "upcoming" };
   };
 
@@ -330,13 +389,13 @@ export default function ProviderVerificationScreen() {
             <ThemedText type="small" style={[styles.cardTitle, { color: theme.textSecondary }]}>
               {isIndependent ? "REQUIRED DOCUMENTS" : "REQUIRED BUSINESS DOCUMENTS"}
             </ThemedText>
-            {requiredDocs.map((doc, i) => (
+            {requiredDocs.map((doc) => (
               <DocRow
                 key={doc.key}
                 label={doc.label}
-                description={doc.description}
-                icon={doc.icon}
-                isUploaded={!!docs[doc.key]}
+                description={uploadingKey === doc.key ? "Uploading..." : doc.description}
+                icon={uploadingKey === doc.key ? "loader" : doc.icon}
+                docValue={docs[doc.key]}
                 onUpload={() => handleUpload(doc.key)}
                 locked={status === "pending" || isVerified}
               />
@@ -357,11 +416,7 @@ export default function ProviderVerificationScreen() {
                 <Feather name="send" size={18} color={allDocsUploaded ? "#FFFFFF" : theme.textSecondary} />
                 <ThemedText
                   type="body"
-                  style={{
-                    color: allDocsUploaded ? "#FFFFFF" : theme.textSecondary,
-                    fontWeight: "600",
-                    marginLeft: Spacing.sm,
-                  }}
+                  style={{ color: allDocsUploaded ? "#FFFFFF" : theme.textSecondary, fontWeight: "600", marginLeft: Spacing.sm }}
                 >
                   {isSubmitting ? "Submitting..." : "Submit for Verification"}
                 </ThemedText>
@@ -377,7 +432,7 @@ export default function ProviderVerificationScreen() {
           </View>
         ) : null}
 
-        {/* Benefits of verification */}
+        {/* Benefits */}
         <View style={[styles.card, { backgroundColor: theme.backgroundDefault }]}>
           <ThemedText type="small" style={[styles.cardTitle, { color: theme.textSecondary }]}>
             WHY VERIFICATION MATTERS
@@ -451,13 +506,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginTop: 1,
   },
-  stepConnectorCol: {
-    flex: 1,
-  },
-  stepDivider: {
-    height: 1,
-    marginLeft: 42,
-  },
+  stepConnectorCol: { flex: 1 },
+  stepDivider: { height: 1, marginLeft: 42 },
   docRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -472,9 +522,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  docInfo: {
-    flex: 1,
+  docThumb: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    backgroundColor: "#000",
   },
+  docInfo: { flex: 1 },
   docStatus: {
     flexDirection: "row",
     alignItems: "center",

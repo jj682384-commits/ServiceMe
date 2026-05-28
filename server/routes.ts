@@ -742,6 +742,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           vehicleMake: p.vehicleMake, vehicleModel: p.vehicleModel,
           licensePlate: p.licensePlate, rating: p.rating, reviewCount: p.reviewCount,
           isAvailable: p.isAvailable,
+          earningsBalance: p.earningsBalance ?? 0,
+          stripeAccountId: p.stripeAccountId || null,
+          evCapable: p.evCapable ?? false,
+          createdAt: r.created_at,
         };
       }));
     } catch (err) {

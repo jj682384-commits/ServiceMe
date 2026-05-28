@@ -762,6 +762,25 @@
     if (!str) return "—";
     return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
   }
+
+  function viewDoc(providerId, docKey) {
+    const p = allProviders.find(x => x.id === providerId);
+    if (!p || !p.verificationDocuments) return;
+    const val = p.verificationDocuments[docKey];
+    if (typeof val !== "string" || !val.startsWith("data:")) return;
+    const w = window.open("", "_blank");
+    if (!w) return;
+    const label = DOC_LABELS[docKey] || docKey;
+    w.document.write(`<!DOCTYPE html><html><head><title>${label} — ${p.name}</title><style>body{margin:0;background:#111;display:flex;align-items:center;justify-content:center;min-height:100vh}img{max-width:100%;max-height:100vh;object-fit:contain;border-radius:4px}</style></head><body><img src="${val}" alt="${label}"></body></html>`);
+  }
+
+  function buildDocChip(providerId, key, val) {
+    const isImg = typeof val === "string" && val.startsWith("data:");
+    if (isImg) {
+      return `<span class="doc-chip uploaded" style="cursor:pointer" onclick="event.stopPropagation();viewDoc('${providerId}','${key}')">&#10003; ${DOC_LABELS[key]||key} <span style="font-size:10px;opacity:.7">&#128065; view</span></span>`;
+    }
+    return `<span class="doc-chip ${val ? "uploaded" : "missing"}">${val ? "&#10003;" : "&#9675;"} ${DOC_LABELS[key]||key}</span>`;
+  }
   function fmtDate(str) {
     if (!str) return "—";
     return new Date(str).toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric", hour:"2-digit", minute:"2-digit" });
@@ -888,9 +907,10 @@
         licensePlate: p.license_plate || p.licensePlate,
         servicesOffered: p.services_offered || p.servicesOffered || [],
         rating: p.rating, reviewCount: p.review_count || p.reviewCount,
-        earningsBalance: p.earnings_balance || 0,
-        stripeAccountId: p.stripe_account_id || p.stripeAccountId,
+        earningsBalance: p.earnings_balance ?? p.earningsBalance ?? 0,
+        stripeAccountId: p.stripe_account_id || p.stripeAccountId || null,
         evCapable: !!(p.ev_capable || p.evCapable),
+        createdAt: p.created_at || p.createdAt,
       }));
       renderProviders();
     } catch (e) {
@@ -917,8 +937,8 @@
     const badgeLabel = status === "verified" ? "Verified" : status === "pending" ? "Pending Review" : "Not Started";
     const docs = REQUIRED_DOCS[p.providerType] || REQUIRED_DOCS.independent;
     const docsHtml = docs.map(key => {
-      const up = p.verificationDocuments && p.verificationDocuments[key];
-      return `<span class="doc-chip ${up ? "uploaded" : "missing"}">${up ? "&#10003;" : "&#9675;"} ${DOC_LABELS[key] || key}</span>`;
+      const val = p.verificationDocuments && p.verificationDocuments[key];
+      return buildDocChip(p.id, key, val);
     }).join("");
     const submittedDate = p.verificationSubmittedAt ? `Submitted ${fmtDate(p.verificationSubmittedAt)}` : "";
     const rejNote = p.verificationNotes ? `<div class="rejection-note">Previous note: ${esc(p.verificationNotes)}</div>` : "";
@@ -1570,9 +1590,10 @@
         <div class="info-grid">
           <div class="info-item"><div class="info-label">Phone</div><div class="info-val">${esc(p.phone || "Not provided")}</div></div>
           <div class="info-item"><div class="info-label">Provider Type</div><div class="info-val">${p.providerType === "shop" ? "Business / Shop" : "Independent"}</div></div>
+          <div class="info-item"><div class="info-label">Member Since</div><div class="info-val">${fmtDate(p.createdAt)}</div></div>
           <div class="info-item"><div class="info-label">Earnings Balance</div><div class="info-val" style="color:var(--success)">${fmtMoney(p.earningsBalance)}</div></div>
           <div class="info-item"><div class="info-label">Stripe Connect</div><div class="info-val" style="color:${p.stripeAccountId ? "var(--success)" : "var(--muted)"}">${p.stripeAccountId ? "&#10003; Connected" : "Not connected"}</div></div>
-          <div class="info-item"><div class="info-label">Submitted</div><div class="info-val">${p.verificationSubmittedAt ? fmtDate(p.verificationSubmittedAt) : "—"}</div></div>
+          <div class="info-item"><div class="info-label">Docs Submitted</div><div class="info-val">${p.verificationSubmittedAt ? fmtDate(p.verificationSubmittedAt) : "—"}</div></div>
           <div class="info-item"><div class="info-label">EV Capable</div><div class="info-val">${p.evCapable ? '<span style="color:var(--purple)">&#10003; Yes</span>' : "No"}</div></div>
         </div>
       </div>
@@ -1593,9 +1614,16 @@
       <div class="drawer-section">
         <div class="drawer-section-title">Verification Documents</div>
         <div class="docs-list">${docs.map(key => {
-          const up = p.verificationDocuments && p.verificationDocuments[key];
-          return `<span class="doc-chip ${up ? "uploaded" : "missing"}">${up ? "&#10003;" : "&#9675;"} ${DOC_LABELS[key] || key}</span>`;
+          const val = p.verificationDocuments && p.verificationDocuments[key];
+          return buildDocChip(p.id, key, val);
         }).join("")}</div>
+        ${docs.some(key => { const v = p.verificationDocuments && p.verificationDocuments[key]; return typeof v === "string" && v.startsWith("data:"); })
+          ? `<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px">${docs.map(key => {
+              const val = p.verificationDocuments && p.verificationDocuments[key];
+              if (typeof val !== "string" || !val.startsWith("data:")) return "";
+              return `<div onclick="viewDoc('${p.id}','${key}')" style="cursor:pointer;position:relative"><img src="${val}" style="width:120px;height:80px;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,.15)" /><div style="font-size:10px;color:var(--muted);text-align:center;margin-top:3px">${DOC_LABELS[key]||key}</div></div>`;
+            }).join("")}</div>`
+          : ""}
         ${p.verificationNotes ? `<div class="rejection-note" style="margin-top:10px">Note: ${esc(p.verificationNotes)}</div>` : ""}
       </div>
 
