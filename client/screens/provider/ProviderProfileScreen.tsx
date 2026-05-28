@@ -5,6 +5,7 @@ import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation, CommonActions } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import * as WebBrowser from "expo-web-browser";
 
 import { ThemedText } from "@/components/ThemedText";
 import AnimatedBackground from "@/components/AnimatedBackground";
@@ -438,10 +439,15 @@ export default function ProviderProfileScreen() {
             label="Report a Problem" 
             onPress={() => navigation.navigate("ReportProblem")}
           />
-          <MenuItem 
-            icon="file-text" 
-            label="Terms & Privacy" 
-            onPress={() => navigation.navigate("LegalDocuments")}
+          <MenuItem
+            icon="shield"
+            label="Privacy Policy"
+            onPress={() => WebBrowser.openBrowserAsync("https://resqride.co/privacy")}
+          />
+          <MenuItem
+            icon="file-text"
+            label="Terms of Service"
+            onPress={() => WebBrowser.openBrowserAsync("https://resqride.co/terms")}
           />
           <MenuItem 
             icon="book" 

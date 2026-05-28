@@ -16,6 +16,7 @@ import { Spacing } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { apiRequest, setAuthToken } from "@/lib/query-client";
 import { saveAuthToken } from "@/lib/secureStorage";
+import * as WebBrowser from "expo-web-browser";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -156,9 +157,22 @@ function LegalDocumentCard({ doc, isAccepted, isExpanded, onToggleAccept, onTogg
               <ThemedText type="small" style={{ color: contentColor, lineHeight: 20 }}>{section.content}</ThemedText>
             </View>
           ))}
-          <ThemedText type="small" style={{ marginTop: Spacing.sm, fontWeight: "500", fontStyle: "italic", color: fullDocColor }}>
-            View full document in Settings after sign up
-          </ThemedText>
+          <Pressable
+            onPress={() => {
+              const url = doc.key === "privacy"
+                ? "https://resqride.co/privacy"
+                : doc.key === "terms"
+                ? "https://resqride.co/terms"
+                : undefined;
+              if (url) WebBrowser.openBrowserAsync(url);
+            }}
+            style={{ marginTop: Spacing.sm, flexDirection: "row", alignItems: "center", gap: 4 }}
+          >
+            <Feather name="external-link" size={12} color={fullDocColor} />
+            <ThemedText type="small" style={{ fontWeight: "500", fontStyle: "italic", color: fullDocColor }}>
+              {doc.key === "liability" ? "View in Settings after sign up" : "View full document"}
+            </ThemedText>
+          </Pressable>
         </View>
       ) : null}
 

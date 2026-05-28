@@ -353,6 +353,99 @@ process.on("unhandledRejection", (reason) => {
   setupBodyParsing(app);
   setupRequestLogging(app);
 
+  // ── Legal pages (publicly accessible for App Store review) ───────────────
+  function buildLegalHtml(title: string, lastUpdated: string, sections: Array<{ heading: string; content: string }>): string {
+    const sectionsHtml = sections.map(s => `
+      <section>
+        <h2>${s.heading}</h2>
+        <p>${s.content.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>")}</p>
+      </section>`).join("\n");
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${title} — ResqRide</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#04060E;color:#e0e0e0;line-height:1.7;padding:0 16px 60px}
+    header{background:#04060E;border-bottom:1px solid #1a1f2e;padding:20px 0;margin-bottom:40px;position:sticky;top:0}
+    .inner{max-width:760px;margin:0 auto}
+    .logo{display:flex;align-items:center;gap:10px}
+    .logo-name{font-size:20px;font-weight:700;color:#fff}
+    .logo-name span{color:#0066FF}
+    h1{font-size:28px;font-weight:700;color:#fff;margin-bottom:8px}
+    .meta{font-size:13px;color:#6b7280;margin-bottom:40px}
+    section{margin-bottom:36px}
+    h2{font-size:16px;font-weight:600;color:#fff;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #1a1f2e}
+    p{font-size:15px;color:#b0b8c8;line-height:1.8}
+    footer{border-top:1px solid #1a1f2e;padding-top:24px;margin-top:40px;font-size:13px;color:#4b5563;text-align:center}
+    a{color:#0066FF;text-decoration:none}
+    a:hover{text-decoration:underline}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="inner">
+      <div class="logo">
+        <div class="logo-name">Resq<span>Ride</span></div>
+      </div>
+    </div>
+  </header>
+  <div class="inner">
+    <h1>${title}</h1>
+    <p class="meta">Last updated: ${lastUpdated}</p>
+    ${sectionsHtml}
+    <footer>
+      <p>&copy; ${new Date().getFullYear()} ResqRide Inc. &nbsp;·&nbsp;
+        <a href="/privacy">Privacy Policy</a> &nbsp;·&nbsp;
+        <a href="/terms">Terms of Service</a>
+      </p>
+    </footer>
+  </div>
+</body>
+</html>`;
+  }
+
+  const LEGAL_LAST_UPDATED = "February 19, 2026";
+
+  const PRIVACY_SECTIONS = [
+    { heading: "Introduction", content: `ResqRide ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our mobile application and related services (collectively, the "Service").\n\nBy using ResqRide, you agree to the collection and use of information in accordance with this policy.` },
+    { heading: "Information We Collect", content: `We collect several types of information:\n\nPersonal Information:\n- Name, email address, and phone number\n- Profile photo (optional)\n- Payment and billing information\n- Vehicle information (make, model, year, license plate)\n\nLocation Data:\n- Real-time GPS location when you request roadside assistance\n- Location is shared with service providers to facilitate service delivery\n- Location tracking ends after your service request is completed\n\nDevice Information:\n- Device type, operating system, and unique device identifiers\n- Mobile network information\n- App usage statistics and crash reports` },
+    { heading: "How We Use Your Information", content: `We use the collected information to:\n- Connect you with nearby roadside assistance providers\n- Process and fulfill your service requests\n- Calculate accurate arrival times and distances\n- Facilitate communication between you and service providers\n- Process payments and manage billing\n- Prevent fraudulent transactions\n- Analyze usage patterns and improve our app\n- Send service updates and notifications` },
+    { heading: "Information Sharing", content: `We may share your information in the following situations:\n\nWith Service Providers:\n- Your location and contact information are shared with assigned service providers to complete your request\n\nThird-Party Service Providers:\n- Payment processors (Stripe)\n- Analytics providers\n- Cloud storage providers\n- Map services (Google Maps)\n\nLegal Requirements:\n- When required by law or legal process\n- To protect our rights, privacy, safety, or property` },
+    { heading: "Data Security", content: `We implement appropriate technical and organizational security measures:\n- Encryption of data in transit and at rest\n- Secure authentication mechanisms\n- Regular security assessments and updates\n- Access controls limiting data access to authorized personnel\n\nNo method of transmission over the Internet is 100% secure. While we strive to use commercially acceptable means to protect your data, we cannot guarantee its absolute security.` },
+    { heading: "Data Retention", content: `We retain your personal information for as long as necessary to provide our services, comply with legal obligations, resolve disputes, and enforce our agreements.\n\nService request history is retained for up to 3 years for quality assurance and dispute resolution purposes. You may request deletion of your account and associated data at any time.` },
+    { heading: "Your Rights", content: `Depending on your location, you may have certain rights regarding your personal information:\n\nAccess: Request a copy of the personal information we hold about you\nCorrection: Request correction of inaccurate or incomplete information\nDeletion: Request deletion of your personal information\nPortability: Request a copy of your data in a portable format\nOpt-Out: Opt out of marketing communications at any time\n\nTo exercise these rights, please contact us at privacy@resqride.app` },
+    { heading: "Children's Privacy", content: `Our Service is not intended for use by children under the age of 18. We do not knowingly collect personal information from children under 18. If you believe your child has provided us with personal information, please contact us immediately.` },
+    { heading: "Changes to This Policy", content: `We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last Updated" date. Significant changes will also be communicated via email.` },
+    { heading: "Contact Us", content: `If you have any questions about this Privacy Policy, please contact us:\n\nEmail: privacy@resqride.app\nAddress: ResqRide Inc., 123 Roadside Way, San Francisco, CA 94102, United States\n\nFor data protection inquiries in the EU, contact our Data Protection Officer at dpo@resqride.app` },
+  ];
+
+  const TERMS_SECTIONS = [
+    { heading: "Agreement to Terms", content: `Welcome to ResqRide. These Terms of Service ("Terms") govern your access to and use of the ResqRide mobile application and related services operated by ResqRide Inc.\n\nBy accessing or using our Service, you agree to be bound by these Terms. You must be at least 18 years old to use this Service.` },
+    { heading: "Description of Service", content: `ResqRide is an on-demand roadside assistance platform that connects drivers in need of help with nearby service providers. Our services include flat tire assistance, jump starts, towing, fuel delivery, and lockout assistance.\n\nResqRide acts as a platform connecting users with independent service providers. We do not directly provide roadside assistance services. Service providers are independent contractors, not employees of ResqRide.` },
+    { heading: "User Accounts", content: `To use certain features of the Service, you must create an account. When you create an account, you agree to:\n- Provide accurate, current, and complete information\n- Maintain the security of your password and account\n- Accept responsibility for all activities that occur under your account\n- Notify us immediately of any unauthorized use of your account` },
+    { heading: "User Responsibilities", content: `As a user of ResqRide, you agree to use the Service only for lawful purposes, provide accurate information about your location and vehicle, be present when a service provider arrives, treat service providers with respect, and pay all applicable fees.\n\nYou agree NOT to submit false or misleading service requests, harass or abuse service providers, or interfere with the proper working of the Service.` },
+    { heading: "Pricing and Payment", content: `Service prices are displayed before you confirm a request. Payment is processed after service completion. We accept major credit cards and digital payment methods. All fees are non-refundable except as stated in our Refund Policy.\n\nPremium members receive discounted rates and priority service. Membership fees are billed monthly and auto-renew. You may cancel your membership at any time.` },
+    { heading: "Cancellation and Refund Policy", content: `You may cancel a service request before a provider is assigned at no charge. Cancellation after provider assignment may result in a cancellation fee.\n\nIf a provider cancels, we will attempt to find an alternative. If no alternative is available, you will receive a full refund. Refund requests must be submitted within 48 hours of service and are processed within 5-10 business days.` },
+    { heading: "Limitation of Liability", content: `TO THE MAXIMUM EXTENT PERMITTED BY LAW, ResqRide provides the Service on an "AS IS" and "AS AVAILABLE" basis. We make no warranties regarding the reliability or availability of the Service.\n\nIN NO EVENT SHALL RESQRIDE BE LIABLE FOR any indirect, incidental, special, or consequential damages. Our total liability shall not exceed the amount paid for services in the past 12 months.` },
+    { heading: "Dispute Resolution", content: `Before filing any legal claim, you agree to attempt to resolve disputes informally by contacting us at legal@resqride.app.\n\nAny disputes not resolved informally shall be resolved through binding arbitration in accordance with the rules of the American Arbitration Association. Arbitration shall take place in San Francisco, California. You waive any right to participate in a class action lawsuit.` },
+    { heading: "Governing Law", content: `These Terms shall be governed by the laws of the State of California, without regard to its conflict of law provisions.` },
+    { heading: "Changes to Terms", content: `We reserve the right to modify or replace these Terms at any time. Material changes will be communicated through in-app notifications and email. Your continued use of the Service after changes constitutes acceptance of the new Terms.` },
+    { heading: "Contact Information", content: `If you have any questions about these Terms, please contact us:\n\nEmail: legal@resqride.app\nAddress: ResqRide Inc., 123 Roadside Way, San Francisco, CA 94102, United States\nPhone: 1-800-SERVICE (1-800-737-8423)\nHours: 24/7 Support Available` },
+  ];
+
+  app.get("/privacy", (_req: Request, res: Response) => {
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.send(buildLegalHtml("Privacy Policy", LEGAL_LAST_UPDATED, PRIVACY_SECTIONS));
+  });
+
+  app.get("/terms", (_req: Request, res: Response) => {
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.send(buildLegalHtml("Terms of Service", LEGAL_LAST_UPDATED, TERMS_SECTIONS));
+  });
+
   // ── Metro bundle proxy — lets Expo Go download the live JS bundle via the public domain ──
   app.get(["/client/index.bundle", "/index.bundle", "/:any/index.bundle"], async (req: Request, res: Response, next: NextFunction) => {
     try {
