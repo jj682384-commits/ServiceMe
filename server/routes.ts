@@ -41,6 +41,7 @@ interface ProviderRecord {
   evCapable?: boolean;
   evServices?: string[];
   acceptsPriorityJobs?: boolean;
+  serviceRadiusMiles?: number;
 }
 
 interface JobRecord {
@@ -100,6 +101,34 @@ const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
+
+// ── Rate Limiting ──────────────────────────────────────────────────────────────
+const _rlStore = new Map<string, { count: number; resetAt: number }>();
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, v] of _rlStore) { if (now > v.resetAt) _rlStore.delete(k); }
+}, 5 * 60 * 1000);
+
+function makeRateLimiter(limit: number, windowMs: number) {
+  return function rlMiddleware(req: Request, res: Response, next: NextFunction) {
+    const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || "x";
+    const key = `${ip}::${limit}::${windowMs}`;
+    const now = Date.now();
+    const entry = _rlStore.get(key);
+    if (!entry || now > entry.resetAt) {
+      _rlStore.set(key, { count: 1, resetAt: now + windowMs });
+      return next();
+    }
+    entry.count++;
+    if (entry.count > limit) {
+      res.setHeader("Retry-After", String(Math.ceil((entry.resetAt - now) / 1000)));
+      return res.status(429).json({ error: "Too many requests. Please wait a moment and try again." });
+    }
+    return next();
+  };
+}
+const generalLimit = makeRateLimiter(100, 60_000);  // 100 req/min per IP
+const authLimit    = makeRateLimiter(10,  60_000);  // 10 req/min per IP (auth endpoints)
 
 // ── Chat (in-memory — ephemeral real-time only) ───────────────────────────────
 
@@ -270,10 +299,33 @@ let broadcastJobUpdate: (job: JobRecord) => void = () => {};
 
 export async function registerRoutes(app: Express): Promise<Server> {
 
+  // ── Rate limiting: 100 req/min per IP on all /api routes ─────────────────────
+  app.use("/api", generalLimit);
+
   // ── DB column migrations (idempotent) ────────────────────────────────────────
   await pool.query(`
     ALTER TABLE providers
       ADD COLUMN IF NOT EXISTS accepts_priority_jobs BOOLEAN DEFAULT FALSE
+  `).catch(() => {});
+
+  await pool.query(`
+    ALTER TABLE providers
+      ADD COLUMN IF NOT EXISTS service_radius_miles INT DEFAULT 25
+  `).catch(() => {});
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS chat_messages (
+      id           TEXT PRIMARY KEY,
+      conversation_id TEXT NOT NULL,
+      sender_id    TEXT NOT NULL,
+      sender_role  TEXT,
+      content      TEXT NOT NULL,
+      created_at   TIMESTAMPTZ DEFAULT NOW()
+    )
+  `).catch(() => {});
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS chat_messages_conv_idx ON chat_messages(conversation_id)
   `).catch(() => {});
   await pool.query(`
     ALTER TABLE providers
@@ -350,7 +402,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ── Auth ─────────────────────────────────────────────────────────────────────
 
-  app.post("/api/auth/signup", async (req: Request, res: Response) => {
+  app.post("/api/auth/signup", authLimit, async (req: Request, res: Response) => {
     const { email, name, phone, password, role } = req.body as {
       email: string; name: string; phone?: string; password: string; role?: string;
     };
@@ -381,7 +433,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/auth/signin", async (req: Request, res: Response) => {
+  app.post("/api/auth/signin", authLimit, async (req: Request, res: Response) => {
     const { email, password } = req.body as { email: string; password: string };
     if (!email || !password) {
       return res.status(400).json({ error: "email and password are required" });
@@ -1092,9 +1144,34 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
 
   // ── Chat history ──────────────────────────────────────────────────────────────
 
-  app.get("/api/chat/:conversationId/messages", (req: Request, res: Response) => {
-    const history = messageHistory.get(req.params.conversationId) || [];
-    res.json({ messages: history });
+  app.get("/api/chat/:conversationId/messages", async (req: Request, res: Response) => {
+    try {
+      const { rows } = await pool.query<{
+        id: string; conversation_id: string; sender_id: string;
+        sender_role: string; content: string; created_at: string;
+      }>(
+        "SELECT * FROM chat_messages WHERE conversation_id = $1 ORDER BY created_at ASC LIMIT 200",
+        [req.params.conversationId]
+      );
+      const messages = rows.map((r) => ({
+        id: r.id,
+        conversationId: r.conversation_id,
+        senderId: r.sender_id,
+        senderRole: r.sender_role as "driver" | "provider" | null,
+        content: r.content,
+        timestamp: r.created_at,
+      }));
+      // Merge with any in-memory messages not yet flushed
+      const memHistory = messageHistory.get(req.params.conversationId) || [];
+      const persisted = new Set(messages.map((m) => m.id));
+      const merged = [...messages, ...memHistory.filter((m) => !persisted.has(m.id))]
+        .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+        .slice(-200);
+      res.json({ messages: merged });
+    } catch {
+      const history = messageHistory.get(req.params.conversationId) || [];
+      res.json({ messages: history });
+    }
   });
 
   // ── Providers: nearby & register ─────────────────────────────────────────────
@@ -1133,7 +1210,9 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
           })
           .filter((p) => {
             const d = (p as ProviderRecord & { distance: number | null }).distance;
-            return d === null || d <= maxRadius;
+            const providerRadius = (p as ProviderRecord & { serviceRadiusMiles?: number }).serviceRadiusMiles ?? 25;
+            // Respect both the caller's max radius and the provider's own service radius
+            return d === null || d <= Math.min(maxRadius, providerRadius);
           })
           .sort((a, b) => {
             const dA = (a as ProviderRecord & { distance: number | null }).distance ?? 9999;
@@ -1298,6 +1377,25 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
       res.json({ success: true });
     } catch (err) {
       console.error("[providers/settings]", err);
+      res.status(500).json({ error: "Database error" });
+    }
+  });
+
+  app.patch("/api/providers/:id/service-radius", async (req: Request, res: Response) => {
+    const { serviceRadiusMiles } = req.body as { serviceRadiusMiles?: number };
+    const miles = Number(serviceRadiusMiles);
+    if (!miles || miles < 1 || miles > 200) {
+      return res.status(400).json({ error: "serviceRadiusMiles must be between 1 and 200" });
+    }
+    try {
+      const { rowCount } = await pool.query(
+        "UPDATE providers SET service_radius_miles = $2, updated_at = NOW() WHERE id = $1",
+        [req.params.id, miles]
+      );
+      if (!rowCount) return res.status(404).json({ error: "Provider not found" });
+      res.json({ success: true, serviceRadiusMiles: miles });
+    } catch (err) {
+      console.error("[providers/service-radius]", err);
       res.status(500).json({ error: "Database error" });
     }
   });
@@ -1869,12 +1967,40 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
 
   app.patch("/api/jobs/:id/cancel", async (req: Request, res: Response) => {
     try {
+      const check = await pool.query<{ status: string; created_at: string }>(
+        "SELECT status, created_at FROM jobs WHERE id = $1",
+        [req.params.id]
+      );
+      if (!check.rows.length) return res.status(404).json({ error: "Job not found" });
+      const { status, created_at } = check.rows[0];
+      if (["completed", "cancelled", "expired"].includes(status)) {
+        return res.status(409).json({ error: "Job already ended" });
+      }
+
+      // Cancellation fee policy: free if cancelled within 2 min AND still pending
+      const ageMs = Date.now() - new Date(created_at).getTime();
+      const providerAssigned = !["pending", "expired"].includes(status);
+      const cancellationFee = (ageMs > 2 * 60 * 1000 || providerAssigned) ? 5 : 0;
+
       const { rows } = await pool.query<JobRow>(
         "UPDATE jobs SET status = 'cancelled', updated_at = NOW() WHERE id = $1 RETURNING *",
         [req.params.id]
       );
       if (!rows.length) return res.status(404).json({ error: "Job not found" });
-      res.json(rowToJob(rows[0]));
+      const job = rowToJob(rows[0]);
+
+      // Notify provider if they were assigned
+      const provId = (job.provider as Record<string, unknown> | undefined)?.id as string | undefined;
+      if (provId) {
+        const { rows: pr } = await pool.query<{ push_token: string }>(
+          "SELECT push_token FROM providers WHERE id = $1 AND push_token IS NOT NULL", [provId]
+        );
+        if (pr[0]?.push_token) {
+          sendPush([pr[0].push_token], "Job Cancelled", "The driver cancelled this request.", { screen: "ProviderTabs" });
+        }
+      }
+
+      res.json({ ...job, cancellationFee });
     } catch (err) {
       console.error("[jobs/cancel]", err);
       res.status(500).json({ error: "Database error" });
@@ -2294,8 +2420,37 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
           const { conversationId, senderId, senderRole, isNotifier } = data;
           clientRecord = { ws, conversationId, senderId, senderRole, isNotifier: !!isNotifier };
           clients.add(clientRecord);
-          const history = messageHistory.get(conversationId) || [];
-          ws.send(JSON.stringify({ type: "history", messages: history }));
+          // Load persisted history from DB, merge with in-memory cache
+          pool.query<{
+            id: string; conversation_id: string; sender_id: string;
+            sender_role: string; content: string; created_at: string;
+          }>(
+            "SELECT * FROM chat_messages WHERE conversation_id = $1 ORDER BY created_at ASC LIMIT 200",
+            [conversationId]
+          ).then((result) => {
+            const dbMessages = result.rows.map((r) => ({
+              id: r.id,
+              conversationId: r.conversation_id,
+              senderId: r.sender_id,
+              senderRole: r.sender_role as "driver" | "provider" | null,
+              content: r.content,
+              timestamp: r.created_at,
+            }));
+            const memHistory = messageHistory.get(conversationId) || [];
+            const persisted = new Set(dbMessages.map((m) => m.id));
+            const merged = [...dbMessages, ...memHistory.filter((m) => !persisted.has(m.id))]
+              .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+              .slice(-200);
+            messageHistory.set(conversationId, merged);
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({ type: "history", messages: merged }));
+            }
+          }).catch(() => {
+            const history = messageHistory.get(conversationId) || [];
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({ type: "history", messages: history }));
+            }
+          });
           return;
         }
 
@@ -2310,6 +2465,12 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
           history.push(message);
           if (history.length > 200) history.splice(0, history.length - 200);
           messageHistory.set(conversationId, history);
+
+          // Persist to DB (fire-and-forget)
+          pool.query(
+            "INSERT INTO chat_messages (id, conversation_id, sender_id, sender_role, content) VALUES ($1,$2,$3,$4,$5)",
+            [message.id, conversationId, senderId, senderRole || null, content]
+          ).catch((err) => console.error("[chat persist]", err));
 
           ws.send(JSON.stringify({ type: "message", message }));
           broadcastToConversation(conversationId, { type: "message", message }, clientRecord);
@@ -2337,6 +2498,11 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
               const autoHistory = messageHistory.get(conversationId) || [];
               autoHistory.push(autoReply);
               messageHistory.set(conversationId, autoHistory);
+              // Persist auto-reply to DB too
+              pool.query(
+                "INSERT INTO chat_messages (id, conversation_id, sender_id, sender_role, content) VALUES ($1,$2,$3,$4,$5)",
+                [autoReply.id, conversationId, autoReply.senderId, autoReply.senderRole || null, autoReply.content]
+              ).catch(() => {});
               if (ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify({ type: "message", message: autoReply }));
               }
@@ -2352,6 +2518,52 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
       if (clientRecord) clients.delete(clientRecord);
     });
   });
+
+  // ── Job timeout: auto-cancel jobs stuck for 45+ minutes ──────────────────────
+  setInterval(async () => {
+    try {
+      const { rows: stuckJobs } = await pool.query<{
+        id: string; driver: Record<string, unknown> | null; provider: Record<string, unknown> | null;
+      }>(
+        `UPDATE jobs SET status = 'cancelled', updated_at = NOW()
+         WHERE status IN ('accepted', 'en_route', 'arrived', 'in_progress')
+           AND updated_at < NOW() - INTERVAL '45 minutes'
+         RETURNING id,
+           (driver)::text AS driver,
+           (provider)::text AS provider`
+      );
+      for (const job of stuckJobs) {
+        console.log(`[JOB TIMEOUT] auto-cancelled stuck job ${job.id}`);
+        // Notify driver
+        const driverObj = typeof job.driver === "string" ? JSON.parse(job.driver) : job.driver;
+        const driverEmail = driverObj?.email as string | undefined;
+        if (driverEmail) {
+          const { rows: du } = await pool.query<{ push_token: string | null }>(
+            "SELECT push_token FROM auth_users WHERE email = $1 AND push_token IS NOT NULL", [driverEmail]
+          ).catch(() => ({ rows: [] }));
+          if (du[0]?.push_token) {
+            sendPush([du[0].push_token], "Request Timed Out", "Your service request was cancelled after extended inactivity. Please submit a new request.", { screen: "DriverTabs" });
+          }
+        }
+        // Notify provider
+        const provObj = typeof job.provider === "string" ? JSON.parse(job.provider) : job.provider;
+        const provId = provObj?.id as string | undefined;
+        if (provId) {
+          const { rows: pu } = await pool.query<{ push_token: string | null }>(
+            "SELECT push_token FROM providers WHERE id = $1 AND push_token IS NOT NULL", [provId]
+          ).catch(() => ({ rows: [] }));
+          if (pu[0]?.push_token) {
+            sendPush([pu[0].push_token], "Job Timed Out", "A job you accepted was auto-cancelled due to inactivity.", { screen: "ProviderTabs" });
+          }
+        }
+      }
+      if (stuckJobs.length > 0) {
+        console.log(`[JOB TIMEOUT] cancelled ${stuckJobs.length} stuck job(s)`);
+      }
+    } catch (err) {
+      console.error("[JOB TIMEOUT] error:", err);
+    }
+  }, 60_000);
 
   return httpServer;
 }

@@ -121,6 +121,9 @@ export interface Provider {
   };
   distance?: number;
   isBusy?: boolean;
+  serviceRadiusMiles?: number;
+  pushToken?: string;
+  verificationNotes?: string;
 }
 
 export interface UserLocation {

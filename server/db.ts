@@ -41,6 +41,7 @@ export interface ProviderRow {
   payout_bank_info: PayoutBankInfo | null;
   earnings_balance: number | null;
   stripe_account_id?: string | null;
+  service_radius_miles: number | null;
 }
 
 export interface PayoutRow {
@@ -108,6 +109,7 @@ export function rowToProvider(r: ProviderRow) {
     evCapable: r.ev_capable ?? false,
     evServices: r.ev_services ?? [],
     acceptsPriorityJobs: r.accepts_priority_jobs ?? false,
+    serviceRadiusMiles: r.service_radius_miles ?? 25,
   };
 }
 

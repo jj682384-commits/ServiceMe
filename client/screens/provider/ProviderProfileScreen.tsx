@@ -1,5 +1,5 @@
-import React from "react";
-import { View, StyleSheet, ScrollView, Pressable, Switch, Alert } from "react-native";
+import React, { useState } from "react";
+import { View, StyleSheet, ScrollView, Pressable, Switch, Alert, TextInput } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
@@ -81,6 +81,25 @@ export default function ProviderProfileScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
   const [priorityOptIn, setPriorityOptIn] = React.useState(currentProvider?.acceptsPriorityJobs ?? false);
+  const [radiusInput, setRadiusInput] = useState(String(currentProvider?.serviceRadiusMiles ?? 25));
+  const [savingRadius, setSavingRadius] = useState(false);
+
+  const handleSaveRadius = async () => {
+    const miles = parseInt(radiusInput, 10);
+    if (isNaN(miles) || miles < 1 || miles > 200) {
+      Alert.alert("Invalid Radius", "Please enter a number between 1 and 200.");
+      return;
+    }
+    setSavingRadius(true);
+    try {
+      await apiRequest("PATCH", `/api/providers/${currentProvider?.id}/service-radius`, { serviceRadiusMiles: miles });
+      if (currentProvider) setCurrentProvider({ ...currentProvider, serviceRadiusMiles: miles });
+    } catch {
+      Alert.alert("Error", "Could not save service radius.");
+    } finally {
+      setSavingRadius(false);
+    }
+  };
 
   const handlePriorityToggle = async (value: boolean) => {
     setPriorityOptIn(value);
@@ -306,6 +325,59 @@ export default function ProviderProfileScreen() {
           <MenuItem icon="dollar-sign" label="Payout Settings" onPress={() => navigation.navigate("ProviderPaymentSettings")} />
           <MenuItem icon="bar-chart-2" label="Earnings History" onPress={() => navigation.navigate("ProviderEarningsHistory")} />
           <MenuItem icon="download" label="Tax Documents" onPress={() => navigation.navigate("ProviderPaymentSettings")} />
+        </View>
+
+        <View style={[styles.section, { backgroundColor: sectionBg }]}>
+          <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
+            SERVICE RADIUS
+          </ThemedText>
+          <View style={[styles.menuItem, { flexDirection: "column", alignItems: "flex-start", gap: Spacing.sm }]}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: Spacing.sm }}>
+              <Feather name="map-pin" size={20} color={theme.secondary} />
+              <ThemedText type="body" style={{ fontWeight: "600" }}>
+                How far will you travel for jobs?
+              </ThemedText>
+            </View>
+            <ThemedText type="small" style={{ color: theme.textSecondary, marginLeft: 28 }}>
+              You will only receive requests within this radius.
+            </ThemedText>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: Spacing.sm, marginLeft: 28, marginTop: 4 }}>
+              <TextInput
+                value={radiusInput}
+                onChangeText={setRadiusInput}
+                keyboardType="number-pad"
+                maxLength={3}
+                style={{
+                  width: 72,
+                  height: 40,
+                  borderWidth: 1.5,
+                  borderColor: theme.secondary,
+                  borderRadius: BorderRadius.md,
+                  textAlign: "center",
+                  fontSize: 18,
+                  fontWeight: "700",
+                  color: theme.text,
+                  backgroundColor: theme.cardAnimatedBg,
+                }}
+              />
+              <ThemedText type="body" style={{ color: theme.textSecondary }}>miles</ThemedText>
+              <Pressable
+                onPress={handleSaveRadius}
+                disabled={savingRadius}
+                style={({ pressed }) => ({
+                  backgroundColor: pressed ? theme.secondary + "CC" : theme.secondary,
+                  borderRadius: BorderRadius.md,
+                  paddingHorizontal: Spacing.lg,
+                  paddingVertical: 10,
+                  opacity: savingRadius ? 0.6 : 1,
+                })}
+              >
+                <ThemedText type="small" style={{ color: "#fff", fontWeight: "700" }}>
+                  {savingRadius ? "Saving..." : "Save"}
+                </ThemedText>
+              </Pressable>
+            </View>
+          </View>
         </View>
 
         <View style={[styles.section, { backgroundColor: sectionBg }]}>

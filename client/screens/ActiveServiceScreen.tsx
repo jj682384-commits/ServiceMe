@@ -265,16 +265,30 @@ export default function ActiveServiceScreen() {
 
   // ── Pending state ────────────────────────────────────────────────────────────
   const handleCancel = () => {
+    const createdAt = activeRequest?.createdAt ? new Date(activeRequest.createdAt).getTime() : Date.now();
+    const ageMs = Date.now() - createdAt;
+    const isLate = ageMs > 2 * 60 * 1000;
+    const hasProvider = activeRequest?.status !== "pending";
+    const willHaveFee = isLate || hasProvider;
+
     Alert.alert(
       "Cancel Service",
-      "Are you sure you want to cancel this service request?",
+      willHaveFee
+        ? "A $5 cancellation fee applies because a provider was assigned or more than 2 minutes have passed. Do you still want to cancel?"
+        : "Cancel your request? This is free since your request hasn't been accepted yet.",
       [
-        { text: "No, Keep It", style: "cancel" },
+        { text: "Keep Request", style: "cancel" },
         {
-          text: "Yes, Cancel",
+          text: willHaveFee ? "Cancel ($5 fee)" : "Yes, Cancel (Free)",
           style: "destructive",
           onPress: async () => {
-            try { await apiRequest("PATCH", `/api/jobs/${activeRequest.id}/cancel`); } catch {}
+            try {
+              const res = await apiRequest("PATCH", `/api/jobs/${activeRequest.id}/cancel`);
+              const data = await res.json().catch(() => ({}));
+              if (data.cancellationFee && data.cancellationFee > 0) {
+                Alert.alert("Cancellation Fee", `A $${data.cancellationFee} fee has been applied to your account.`);
+              }
+            } catch {}
             updateHistoryEntry(activeRequest.id, { status: "cancelled" });
             setActiveRequest(null);
             safeGoBack();

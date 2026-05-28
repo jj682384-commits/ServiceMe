@@ -1,5 +1,7 @@
 import React, { useState } from "react";
-import { View, StyleSheet, Pressable, ScrollView, Share, Platform } from "react-native";
+import { View, StyleSheet, Pressable, ScrollView, Share, Platform, Alert } from "react-native";
+import * as Print from "expo-print";
+import * as Sharing from "expo-sharing";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Feather } from "@expo/vector-icons";
@@ -162,27 +164,92 @@ export default function ServiceCompletionScreen() {
     const jobId = activeRequest?.id;
     const receiptNumber = jobId ? "RR-" + jobId.slice(0, 8).toUpperCase() : "N/A";
     const date = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+    const time = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
     const providerName = activeRequest?.provider?.name || "Your Provider";
     const serviceLabel = activeRequest?.serviceType
-      ? activeRequest.serviceType.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
+      ? SERVICE_TYPE_LABELS[activeRequest.serviceType as ServiceType] ||
+        activeRequest.serviceType.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
       : "Service";
+
+    if (Platform.OS !== "web") {
+      try {
+        const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+<style>
+  body { font-family: -apple-system, Arial, sans-serif; padding: 40px; color: #1a1a1a; max-width: 500px; margin: 0 auto; }
+  .header { text-align: center; margin-bottom: 32px; }
+  .logo { font-size: 28px; font-weight: 900; color: #0066FF; letter-spacing: -1px; }
+  .logo span { color: #D92222; }
+  .subtitle { color: #666; font-size: 13px; margin-top: 4px; }
+  .receipt-num { font-size: 12px; color: #888; margin-top: 2px; }
+  .section { margin: 20px 0; padding: 16px; background: #f8f9fa; border-radius: 8px; }
+  .row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; }
+  .row.total { font-weight: 700; font-size: 16px; border-top: 2px solid #ddd; padding-top: 12px; margin-top: 6px; }
+  .row.total span:last-child { color: #0066FF; }
+  .label { color: #555; }
+  .divider { border: none; border-top: 1px solid #e0e0e0; margin: 12px 0; }
+  .footer { text-align: center; margin-top: 32px; font-size: 12px; color: #888; }
+  .badge { display: inline-block; background: #e8f0ff; color: #0066FF; padding: 4px 12px; border-radius: 100px; font-size: 12px; font-weight: 600; }
+</style></head>
+<body>
+<div class="header">
+  <div class="logo">Resq<span>Ride</span></div>
+  <div class="subtitle">Roadside Assistance Receipt</div>
+  <div class="receipt-num">Receipt ${receiptNumber}</div>
+</div>
+<div class="section">
+  <div class="row"><span class="label">Date</span><span>${date} at ${time}</span></div>
+  <div class="row"><span class="label">Service</span><span>${serviceLabel}</span></div>
+  <div class="row"><span class="label">Provider</span><span>${providerName}</span></div>
+  ${activeRequest?.location?.address ? `<div class="row"><span class="label">Location</span><span style="max-width:200px;text-align:right">${activeRequest.location.address}</span></div>` : ""}
+</div>
+<div class="section">
+  <div class="row"><span class="label">Base Cost</span><span>$${serviceCost.toFixed(2)}</span></div>
+  <div class="row"><span class="label">Service Fee</span><span>$${SERVICE_FEE.toFixed(2)}</span></div>
+  ${activeRequest?.isExpress ? `<div class="row"><span class="label" style="color:#f59e0b">Express Fee</span><span style="color:#f59e0b">$${(activeRequest.expressFee || 0).toFixed(2)}</span></div>` : ""}
+  ${tipAmount > 0 ? `<div class="row"><span class="label">Tip</span><span>$${tipAmount.toFixed(2)}</span></div>` : ""}
+  <div class="row total"><span>Total Paid</span><span>$${totalAmount.toFixed(2)}</span></div>
+</div>
+<div class="footer">
+  <div class="badge">Paid via ResqRide</div>
+  <p style="margin-top:12px">Thank you for using ResqRide!<br>Keep this receipt for insurance or reimbursement claims.</p>
+  <p style="margin-top:8px">resqride.co &nbsp;|&nbsp; support@resqride.co</p>
+</div>
+</body></html>`;
+
+        const { uri } = await Print.printToFileAsync({ html, base64: false });
+        const canShare = await Sharing.isAvailableAsync();
+        if (canShare) {
+          await Sharing.shareAsync(uri, {
+            mimeType: "application/pdf",
+            dialogTitle: `ResqRide Receipt ${receiptNumber}`,
+            UTI: "com.adobe.pdf",
+          });
+        } else {
+          Alert.alert("Receipt saved", `PDF saved to: ${uri}`);
+        }
+        return;
+      } catch {
+        // fallback to text share below
+      }
+    }
+
+    // Web / fallback: plain-text share
     const lines = [
       "ResqRide Receipt",
-      "────────────────────",
-      `Receipt #: ${receiptNumber}`,
-      `Date: ${date}`,
+      "─────────────────────",
+      `Receipt #:  ${receiptNumber}`,
+      `Date:       ${date}`,
+      `Service:    ${serviceLabel}`,
+      `Provider:   ${providerName}`,
       "",
-      `Service: ${serviceLabel}`,
-      `Provider: ${providerName}`,
-      "",
-      `Service Cost:  $${serviceCost.toFixed(2)}`,
-      `Service Fee:   $${SERVICE_FEE.toFixed(2)}`,
-      `Tip:           $${tipAmount.toFixed(2)}`,
-      "────────────────────",
-      `Total:         $${totalAmount.toFixed(2)}`,
+      `Base Cost:  $${serviceCost.toFixed(2)}`,
+      `Service Fee: $${SERVICE_FEE.toFixed(2)}`,
+      tipAmount > 0 ? `Tip:        $${tipAmount.toFixed(2)}` : null,
+      "─────────────────────",
+      `Total:      $${totalAmount.toFixed(2)}`,
       "",
       "Thank you for using ResqRide!",
-    ];
+    ].filter(Boolean) as string[];
     try {
       await Share.share({ message: lines.join("\n"), title: `ResqRide Receipt ${receiptNumber}` });
     } catch {}
