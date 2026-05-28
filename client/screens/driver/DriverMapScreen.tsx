@@ -555,6 +555,7 @@ export default function DriverMapScreen() {
     }
   }, [apiProviders]);
 
+  const providersLoaded = apiProviders !== undefined;
   const providers = apiProviders ?? [];
   const filteredProviders =
     selectedFilter === "all"
@@ -712,6 +713,29 @@ export default function DriverMapScreen() {
           <Feather name={hubOpen ? "x" : "list"} size={20} color={theme.primary} />
         </Pressable>
       </View>
+
+      {/* Empty state — shown when location is known but no providers are in the area */}
+      {hasPermission && providersLoaded && providers.length === 0 && userLocation && !selectedProvider && (
+        <View
+          style={[
+            styles.emptyMapCard,
+            {
+              top: insets.top + Spacing.lg + 56 + 52,
+              backgroundColor: theme.backgroundDefault,
+              borderColor: theme.border,
+              ...Shadows.md,
+            },
+          ]}
+        >
+          <Feather name="map-pin" size={18} color={theme.primary} />
+          <ThemedText type="small" style={{ color: theme.text, fontWeight: "600", marginLeft: Spacing.sm }}>
+            No providers in your area yet
+          </ThemedText>
+          <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: 2, textAlign: "center" }}>
+            We're growing fast — check back soon or try expanding your search radius.
+          </ThemedText>
+        </View>
+      )}
 
       {/* Online indicator legend — sits below filter chips row (chips row is at +56, chip height ~36px) */}
       {providers.length > 0 && (
@@ -1082,6 +1106,7 @@ const styles = StyleSheet.create({
   },
   listScroll: { maxHeight: 200 },
   emptyState: { padding: Spacing.xl, alignItems: "center" },
+  emptyMapCard: { position: "absolute", left: 20, right: 20, borderRadius: 16, borderWidth: 1, paddingHorizontal: 16, paddingVertical: 14, alignItems: "center", gap: 4 },
   mechanicCard: {
     flexDirection: "row", alignItems: "center",
     padding: Spacing.md, borderBottomWidth: StyleSheet.hairlineWidth,

@@ -162,6 +162,40 @@ export default function ProviderProfileScreen() {
     );
   };
 
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      "Delete Account",
+      "This will permanently delete your account and all your data. This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete Account",
+          style: "destructive",
+          onPress: () => {
+            Alert.alert(
+              "Are you absolutely sure?",
+              "Your profile, history, earnings, and all data will be permanently removed.",
+              [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Yes, Delete Everything",
+                  style: "destructive",
+                  onPress: async () => {
+                    try {
+                      await apiRequest("DELETE", "/api/auth/account", undefined);
+                    } catch {}
+                    logout();
+                    navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "Welcome" }] }));
+                  },
+                },
+              ]
+            );
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: isDark ? "#000000" : theme.backgroundRoot }]}>
       <AnimatedBackground />
@@ -459,6 +493,7 @@ export default function ProviderProfileScreen() {
         <View style={[styles.section, { backgroundColor: sectionBg }]}>
           <MenuItem icon="refresh-cw" label="Switch to Driver Mode" onPress={handleSwitchRole} />
           <MenuItem icon="log-out" label="Sign Out" isDestructive onPress={handleSignOut} />
+          <MenuItem icon="trash-2" label="Delete Account" isDestructive onPress={handleDeleteAccount} />
         </View>
       </ScrollView>
     </View>

@@ -590,6 +590,119 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ success: true });
   });
 
+  // ── Forgot / Reset Password ──────────────────────────────────────────────
+  const _resetCodes = new Map<string, { code: string; expiry: number }>();
+
+  app.post("/api/auth/forgot-password", authLimit, async (req: Request, res: Response) => {
+    const { email } = req.body as { email?: string };
+    if (!email?.trim()) return res.status(400).json({ error: "Email is required" });
+    const normalizedEmail = email.toLowerCase().trim();
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiry = Date.now() + 15 * 60 * 1000;
+    try {
+      const { rows } = await pool.query("SELECT id FROM auth_users WHERE email = $1", [normalizedEmail]);
+      if (rows.length) {
+        _resetCodes.set(normalizedEmail, { code, expiry });
+        console.log(`[FORGOT PASSWORD] Reset code for ${normalizedEmail}: ${code}`);
+      }
+      // Always return same response to prevent email enumeration
+      const isDev = process.env.NODE_ENV !== "production";
+      res.json({
+        success: true,
+        message: "If an account with that email exists, a 6-digit reset code has been sent.",
+        ...(isDev ? { debug_code: rows.length ? code : null } : {}),
+      });
+    } catch (err) {
+      console.error("[auth/forgot-password]", err);
+      res.status(500).json({ error: "Server error" });
+    }
+  });
+
+  app.post("/api/auth/reset-password", authLimit, async (req: Request, res: Response) => {
+    const { email, code, newPassword } = req.body as { email?: string; code?: string; newPassword?: string };
+    if (!email?.trim() || !code?.trim() || !newPassword) {
+      return res.status(400).json({ error: "email, code, and newPassword are required" });
+    }
+    if (newPassword.length < 8) return res.status(400).json({ error: "Password must be at least 8 characters" });
+    const normalizedEmail = email.toLowerCase().trim();
+    const stored = _resetCodes.get(normalizedEmail);
+    if (!stored || stored.code !== code.trim() || Date.now() > stored.expiry) {
+      return res.status(400).json({ error: "Invalid or expired reset code. Please request a new one." });
+    }
+    try {
+      const newHash = await hashPassword(newPassword);
+      const { rowCount } = await pool.query(
+        "UPDATE auth_users SET password_hash = $1, updated_at = NOW() WHERE email = $2",
+        [newHash, normalizedEmail]
+      );
+      if (!rowCount) return res.status(404).json({ error: "Account not found" });
+      _resetCodes.delete(normalizedEmail);
+      await pool.query("DELETE FROM sessions WHERE user_id IN (SELECT id FROM auth_users WHERE email = $1)", [normalizedEmail]);
+      console.log(`[AUTH] password reset for ${normalizedEmail}`);
+      res.json({ success: true, message: "Password reset successfully. Please sign in with your new password." });
+    } catch (err) {
+      console.error("[auth/reset-password]", err);
+      res.status(500).json({ error: "Server error" });
+    }
+  });
+
+  // ── Apple Sign-In ─────────────────────────────────────────────────────────
+  app.post("/api/auth/apple-signin", authLimit, async (req: Request, res: Response) => {
+    const { appleUserId, email, fullName } = req.body as { appleUserId?: string; email?: string; fullName?: string };
+    if (!appleUserId) return res.status(400).json({ error: "Apple user ID is required" });
+    try {
+      const normalizedEmail = email?.toLowerCase().trim();
+      let userId: string | null = null;
+      let userName = fullName?.trim() || "ResqRide User";
+      let userEmail = normalizedEmail || `apple_${appleUserId}@users.resqride.app`;
+      let userPhone = "";
+
+      if (normalizedEmail) {
+        const { rows } = await pool.query<{ id: string; name: string; phone: string }>(
+          "SELECT id, name, phone FROM auth_users WHERE email = $1", [normalizedEmail]
+        );
+        if (rows.length) {
+          userId = rows[0].id;
+          userName = rows[0].name;
+          userPhone = rows[0].phone || "";
+        }
+      }
+      if (!userId) {
+        userId = `user_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
+        await pool.query(
+          "INSERT INTO auth_users (id, email, password_hash, name, phone, role) VALUES ($1, $2, $3, $4, $5, $6)",
+          [userId, userEmail, "APPLE_SSO_" + appleUserId, userName, userPhone, "driver"]
+        );
+        console.log(`[AUTH] apple-signin new user userId=${userId} email=${userEmail}`);
+      } else {
+        console.log(`[AUTH] apple-signin existing user userId=${userId}`);
+      }
+      const token = await createSession(userId);
+      res.json({ token, userId, name: userName, email: userEmail, phone: userPhone, role: "driver" });
+    } catch (err) {
+      console.error("[auth/apple-signin]", err);
+      res.status(500).json({ error: "Sign in failed" });
+    }
+  });
+
+  // ── Delete Account ────────────────────────────────────────────────────────
+  app.delete("/api/auth/account", async (req: Request, res: Response) => {
+    const token = extractToken(req.headers["authorization"]);
+    if (!token) return res.status(401).json({ error: "Authentication required" });
+    const user = await getUserByToken(token);
+    if (!user) return res.status(401).json({ error: "Unauthorized" });
+    try {
+      await pool.query("DELETE FROM sessions WHERE user_id = $1", [user.id]);
+      await pool.query("DELETE FROM providers WHERE email = $1", [user.email]);
+      await pool.query("DELETE FROM auth_users WHERE id = $1", [user.id]);
+      console.log(`[AUTH] account deleted userId=${user.id}`);
+      res.json({ success: true, message: "Account permanently deleted." });
+    } catch (err) {
+      console.error("[auth/delete-account]", err);
+      res.status(500).json({ error: "Could not delete account" });
+    }
+  });
+
   // ── Change Password + session token rotation ────────────────────────────────
   app.patch("/api/auth/password", authLimit, async (req: Request, res: Response) => {
     const token = extractToken(req.headers["authorization"]);

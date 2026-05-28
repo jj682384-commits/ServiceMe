@@ -16,6 +16,7 @@ import { Spacing } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { apiRequest, setAuthToken } from "@/lib/query-client";
 import { saveAuthToken } from "@/lib/secureStorage";
+import * as AppleAuthentication from "expo-apple-authentication";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -102,6 +103,43 @@ export default function SignInScreen() {
     }
   };
 
+  const handleAppleSignIn = async () => {
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      const fullName = credential.fullName
+        ? [credential.fullName.givenName, credential.fullName.familyName].filter(Boolean).join(" ")
+        : undefined;
+      const res = await apiRequest("POST", "/api/auth/apple-signin", {
+        appleUserId: credential.user,
+        email: credential.email ?? undefined,
+        fullName,
+      });
+      type AuthData = { userId: string; token: string; role: string; name: string; email: string; phone: string };
+      const data = await res.json() as AuthData;
+      setAuthToken(data.token);
+      saveAuthToken(data.token).catch(() => {});
+      const freshUser = { id: data.userId, name: data.name, email: data.email, phone: data.phone };
+      setAuthUser(freshUser);
+      setIsAuthenticated(true);
+      setUserRole("driver");
+      const updatedDriver = currentDriver
+        ? { ...currentDriver, name: data.name, email: data.email, phone: data.phone }
+        : { id: data.userId, name: data.name, email: data.email, phone: data.phone, avatarPreset: 1, membership: "free" as const };
+      setCurrentDriver(updatedDriver);
+      navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "DriverTabs" }] }));
+    } catch (e: unknown) {
+      const err = e as { code?: string; message?: string };
+      if (err.code !== "ERR_REQUEST_CANCELED") {
+        Alert.alert("Apple Sign-In Failed", err.message || "Something went wrong. Please try again.");
+      }
+    }
+  };
+
   const handleGoogleSuccess = (googleUser: { id: string; name: string; email: string }) => {
     setAuthUser({ id: `google_${googleUser.id}`, name: googleUser.name, email: googleUser.email, phone: "" });
     setIsAuthenticated(true);
@@ -181,11 +219,7 @@ export default function SignInScreen() {
           <InputField label="Password" value={password} onChangeText={setPassword} placeholder="Enter your password" icon="lock" secureTextEntry autoCapitalize="none" />
           <Pressable
             style={styles.forgotPassword}
-            onPress={() => Alert.alert(
-              "Reset Password",
-              "To reset your password, email us at support@resqride.co with your account email and we'll send reset instructions within a few minutes.",
-              [{ text: "OK" }]
-            )}
+            onPress={() => navigation.navigate("ForgotPassword")}
           >
             <ThemedText type="small" style={{ color: forgotColor }}>Forgot Password?</ThemedText>
           </Pressable>
@@ -206,6 +240,16 @@ export default function SignInScreen() {
           </AnimatedPressable>
 
           <GoogleSignInButton onSuccess={handleGoogleSuccess} onError={handleGoogleError} />
+
+          {Platform.OS === "ios" && (
+            <AppleAuthentication.AppleAuthenticationButton
+              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+              cornerRadius={14}
+              style={{ width: "100%", height: 50 }}
+              onPress={handleAppleSignIn}
+            />
+          )}
 
           <View style={styles.signUpRow}>
             <ThemedText type="body" style={{ color: mutedColor }}>Don't have an account?</ThemedText>

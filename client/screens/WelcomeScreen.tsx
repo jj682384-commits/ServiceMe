@@ -1,12 +1,14 @@
 import React, { useEffect } from "react";
 import { View, StyleSheet, Image, Pressable, Platform } from "react-native";
 import * as Haptics from "expo-haptics";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import WelcomeConstellationBg from "@/components/WelcomeConstellationBg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { CommonActions } from "@react-navigation/native";
 import { useApp } from "@/context/AppContext";
+import { ONBOARDING_KEY } from "@/screens/OnboardingScreen";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -103,9 +105,17 @@ export default function WelcomeScreen() {
   const { hydrated, isAuthenticated, userRole, toggleTheme } = useApp();
 
   useEffect(() => {
-    if (!hydrated || !isAuthenticated) return;
-    const dest = userRole === "provider" ? "ProviderTabs" : "DriverTabs";
-    navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: dest }] }));
+    if (!hydrated) return;
+    if (isAuthenticated) {
+      const dest = userRole === "provider" ? "ProviderTabs" : "DriverTabs";
+      navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: dest }] }));
+      return;
+    }
+    AsyncStorage.getItem(ONBOARDING_KEY).then((val) => {
+      if (!val) {
+        navigation.replace("Onboarding");
+      }
+    }).catch(() => {});
   }, [hydrated, isAuthenticated, userRole]);
 
   const pillBg     = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)";

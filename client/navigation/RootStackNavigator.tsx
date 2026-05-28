@@ -42,11 +42,15 @@ import ProviderPaymentSettingsScreen from "@/screens/provider/ProviderPaymentSet
 import ProviderEarningsHistoryScreen from "@/screens/provider/ProviderEarningsHistoryScreen";
 import ProviderVehicleScreen from "@/screens/provider/ProviderVehicleScreen";
 import ProviderVerificationScreen from "@/screens/provider/ProviderVerificationScreen";
+import ForgotPasswordScreen from "@/screens/ForgotPasswordScreen";
+import OnboardingScreen from "@/screens/OnboardingScreen";
 
 export type RootStackParamList = {
+  Onboarding: undefined;
   Welcome: undefined;
   SignUp: undefined;
   SignIn: undefined;
+  ForgotPassword: undefined;
   RoleSelection: undefined;
   ProviderTypeSelection: undefined;
   DriverTabs: undefined;
@@ -94,9 +98,19 @@ export default function RootStackNavigator() {
   return (
     <Stack.Navigator screenOptions={screenOptions}>
       <Stack.Screen
+        name="Onboarding"
+        component={OnboardingScreen}
+        options={{ headerShown: false, animation: "fade" }}
+      />
+      <Stack.Screen
         name="Welcome"
         component={WelcomeScreen}
         options={{ headerShown: false, animation: "fade" }}
+      />
+      <Stack.Screen
+        name="ForgotPassword"
+        component={ForgotPasswordScreen}
+        options={{ headerShown: false, animation: "slide_from_right" }}
       />
       <Stack.Screen
         name="SignUp"

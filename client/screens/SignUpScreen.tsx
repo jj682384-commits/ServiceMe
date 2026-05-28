@@ -17,6 +17,7 @@ import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { apiRequest, setAuthToken } from "@/lib/query-client";
 import { saveAuthToken } from "@/lib/secureStorage";
 import * as WebBrowser from "expo-web-browser";
+import * as AppleAuthentication from "expo-apple-authentication";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -218,6 +219,38 @@ export default function SignUpScreen() {
     if (error && !error.toLowerCase().includes("cancel")) Alert.alert("Google Sign-In Failed", error);
   };
 
+  const handleAppleSignIn = async () => {
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      const name = credential.fullName
+        ? [credential.fullName.givenName, credential.fullName.familyName].filter(Boolean).join(" ")
+        : "ResqRide User";
+      const res = await apiRequest("POST", "/api/auth/apple-signin", {
+        appleUserId: credential.user,
+        email: credential.email ?? undefined,
+        fullName: name,
+      });
+      const data = await res.json() as { userId: string; token: string; name: string; email: string; phone: string };
+      setAuthToken(data.token);
+      saveAuthToken(data.token).catch(() => {});
+      setAuthUser({ id: data.userId, name: data.name, email: data.email, phone: data.phone });
+      setIsAuthenticated(true);
+      setUserRole("driver");
+      setCurrentDriver({ id: data.userId, name: data.name, email: data.email, phone: data.phone, avatarPreset: Math.floor(Math.random() * 5) + 1, membership: "free" });
+      navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "DriverTabs" }] }));
+    } catch (e: unknown) {
+      const err = e as { code?: string; message?: string };
+      if (err.code !== "ERR_REQUEST_CANCELED") {
+        Alert.alert("Apple Sign-In Failed", err.message || "Something went wrong. Please try again.");
+      }
+    }
+  };
+
   const toggleAccept = useCallback((key: string) => {
     setAcceptedDocs((prev) => ({ ...prev, [key]: !prev[key] }));
   }, []);
@@ -293,6 +326,15 @@ export default function SignUpScreen() {
 
         <View style={styles.googleSection}>
           <GoogleSignInButton onSuccess={handleGoogleSuccess} onError={handleGoogleError} showDivider={false} />
+          {Platform.OS === "ios" && (
+            <AppleAuthentication.AppleAuthenticationButton
+              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_UP}
+              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+              cornerRadius={14}
+              style={{ width: "100%", height: 50, marginTop: 10 }}
+              onPress={handleAppleSignIn}
+            />
+          )}
         </View>
 
         <View style={styles.form}>
