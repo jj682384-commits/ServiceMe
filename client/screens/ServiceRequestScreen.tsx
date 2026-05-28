@@ -34,8 +34,11 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const PREMIUM_DISCOUNT_MONTHLY = 0.20;
 const PREMIUM_DISCOUNT_YEARLY  = 0.25;
 
+const FLAT_TIRE_PRICES = { change: 40, inflation: 28 } as const;
+type FlatTireSubType = keyof typeof FLAT_TIRE_PRICES;
+
 const serviceTypes: { type: ServiceType; label: string; icon: keyof typeof Feather.glyphMap; price: number }[] = [
-  { type: "flat_tire", label: "Flat Tire", icon: "disc", price: 40 },
+  { type: "flat_tire", label: "Flat Tire", icon: "disc", price: 28 },
   { type: "jump_start", label: "Jump Start", icon: "battery-charging", price: 25 },
   { type: "fuel", label: "Fuel Delivery", icon: "droplet", price: 0 },
   { type: "lockout", label: "Lockout", icon: "key", price: 55 },
@@ -94,6 +97,7 @@ function ServiceTypeCard({ type, label, icon, price, discountedPrice, isPremium,
   const { theme } = useTheme();
   const scale = useSharedValue(1);
   const isFuel = type === "fuel";
+  const isFlatTireCard = type === "flat_tire";
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -129,9 +133,9 @@ function ServiceTypeCard({ type, label, icon, price, discountedPrice, isPremium,
       >
         {label}
       </ThemedText>
-      {isFuel ? (
+      {isFuel || isFlatTireCard ? (
         <ThemedText type="small" style={{ color: theme.textSecondary }}>
-          From $10
+          {isFlatTireCard ? "From $28" : "From $10"}
         </ThemedText>
       ) : isPremium && discountedPrice ? (
         <View style={styles.priceContainer}>
@@ -228,12 +232,22 @@ export default function ServiceRequestScreen() {
   const selectedServiceData = serviceTypes.find((s) => s.type === selectedService);
   const isFuelSelected = selectedService === "fuel";
   const isJumpStart = selectedService === "jump_start";
+  const isFlatTire = selectedService === "flat_tire";
+
+  // Jump Start add-on
   const [addBatteryCheck, setAddBatteryCheck] = useState(false);
   const batteryCheckFee = isJumpStart && addBatteryCheck ? 8 : 0;
+
+  // Flat Tire sub-type + add-on
+  const [flatTireSubType, setFlatTireSubType] = useState<FlatTireSubType | null>(null);
+  const [addTireCheck, setAddTireCheck] = useState(false);
+  const tireCheckFee = isFlatTire && addTireCheck ? 12 : 0;
+  const flatTireBasePrice = flatTireSubType ? FLAT_TIRE_PRICES[flatTireSubType] : FLAT_TIRE_PRICES.change;
+
   const parsedCustom = parseFloat(customFuelAmount);
   const customFuelValid = useCustomFuel && !isNaN(parsedCustom) && parsedCustom > 0;
   const fuelPrice = useCustomFuel ? (customFuelValid ? parsedCustom : 0) : (FUEL_AMOUNTS[selectedFuelIndex]?.price || 0);
-  const basePrice = isFuelSelected ? fuelPrice : (selectedServiceData?.price || 0);
+  const basePrice = isFuelSelected ? fuelPrice : isFlatTire ? flatTireBasePrice : (selectedServiceData?.price || 0);
   const premiumDiscount = currentDriver?.billingCycle === "yearly" ? PREMIUM_DISCOUNT_YEARLY : PREMIUM_DISCOUNT_MONTHLY;
   const discountAmount = isPremium ? basePrice * premiumDiscount : 0;
   const discountedBasePrice = basePrice - discountAmount;
@@ -257,8 +271,11 @@ export default function ServiceRequestScreen() {
   const effectiveBase = isUsingFree ? 0 : discountedBasePrice;
   const effectiveSvcFee = isUsingFree ? 0 : SERVICE_FEE;
   const effectiveExpressFee = isUsingFree ? 0 : expressFee;
-  const totalCost = effectiveBase + effectiveSvcFee + effectiveExpressFee + batteryCheckFee;
-  const canSubmit = selectedService && !(isFuelSelected && useCustomFuel && !customFuelValid) && scheduleValid;
+  const totalCost = effectiveBase + effectiveSvcFee + effectiveExpressFee + batteryCheckFee + tireCheckFee;
+  const canSubmit = selectedService
+    && !(isFuelSelected && useCustomFuel && !customFuelValid)
+    && !(isFlatTire && !flatTireSubType)
+    && scheduleValid;
 
   const getScheduledDate = (): Date | undefined => {
     if (!isScheduled || selectedTimeIndex === null) return undefined;
@@ -306,7 +323,11 @@ export default function ServiceRequestScreen() {
         latitude: coords.latitude,
         longitude: coords.longitude,
       },
-      notes: notes + (addBatteryCheck && isJumpStart ? "\n[Battery Health Check included]" : ""),
+      notes: notes
+        + (addBatteryCheck && isJumpStart ? "\n[Battery Health Check included]" : "")
+        + (isFlatTire && flatTireSubType === "change" ? "\n[Tire Change (own spare)]" : "")
+        + (isFlatTire && flatTireSubType === "inflation" ? "\n[Mobile Tire Inflation]" : "")
+        + (isFlatTire && addTireCheck ? "\n[Tire Check add-on included]" : ""),
       status: isScheduled ? "pending" : "accepted",
       estimatedCost: effectiveBase,
       createdAt: new Date(),
@@ -499,7 +520,13 @@ export default function ServiceRequestScreen() {
                 discountedPrice={isPremium ? service.price * (1 - premiumDiscount) : undefined}
                 isPremium={isPremium}
                 isSelected={selectedService === service.type}
-                onPress={() => setSelectedService(service.type)}
+                onPress={() => {
+                  setSelectedService(service.type);
+                  if (service.type !== "flat_tire") {
+                    setFlatTireSubType(null);
+                    setAddTireCheck(false);
+                  }
+                }}
               />
             </Animated.View>
           ))}
@@ -548,6 +575,95 @@ export default function ServiceRequestScreen() {
               ]}
             >
               {addBatteryCheck ? <Feather name="check" size={14} color="#FFFFFF" /> : null}
+            </View>
+          </Pressable>
+        ) : null}
+
+        {isFlatTire ? (
+          <ThemedText type="h4" style={styles.sectionTitle}>
+            What do you need?
+          </ThemedText>
+        ) : null}
+        {isFlatTire ? (
+          <View style={styles.flatTireRow}>
+            {([
+              { key: "change" as FlatTireSubType, icon: "tool" as const, label: "Tire Change", desc: "Using your spare", price: 40 },
+              { key: "inflation" as FlatTireSubType, icon: "wind" as const, label: "Tire Inflation", desc: "Mobile air inflation", price: 28 },
+            ] as const).map((option) => {
+              const selected = flatTireSubType === option.key;
+              return (
+                <Pressable
+                  key={option.key}
+                  onPress={() => setFlatTireSubType(option.key)}
+                  style={[
+                    styles.flatTireOption,
+                    {
+                      backgroundColor: selected ? theme.primary + "15" : theme.backgroundSecondary,
+                      borderColor: selected ? theme.primary : "transparent",
+                      borderWidth: 2,
+                    },
+                  ]}
+                >
+                  <View style={[styles.flatTireIconWrap, { backgroundColor: selected ? theme.primary + "20" : theme.backgroundDefault }]}>
+                    <Feather name={option.icon} size={22} color={selected ? theme.primary : theme.textSecondary} />
+                  </View>
+                  <ThemedText type="body" style={{ fontWeight: "600", color: selected ? theme.primary : theme.text, marginTop: Spacing.xs }}>
+                    {option.label}
+                  </ThemedText>
+                  <ThemedText type="small" style={{ color: theme.textSecondary, textAlign: "center" }}>
+                    {option.desc}
+                  </ThemedText>
+                  <ThemedText type="small" style={{ color: selected ? theme.primary : theme.textSecondary, fontWeight: "600", marginTop: Spacing.xs }}>
+                    ${option.price}
+                  </ThemedText>
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : null}
+        {isFlatTire ? (
+          <ThemedText type="h4" style={styles.sectionTitle}>
+            Optional Add-On
+          </ThemedText>
+        ) : null}
+        {isFlatTire ? (
+          <Pressable
+            onPress={() => setAddTireCheck(!addTireCheck)}
+            style={[
+              styles.addOnCard,
+              {
+                backgroundColor: addTireCheck ? theme.secondary + "15" : theme.backgroundSecondary,
+                borderColor: addTireCheck ? theme.secondary : "transparent",
+                borderWidth: 2,
+              },
+            ]}
+          >
+            <View style={[styles.addOnIcon, { backgroundColor: addTireCheck ? theme.secondary : theme.backgroundDefault }]}>
+              <Feather name="search" size={20} color={addTireCheck ? theme.primary : theme.textSecondary} />
+            </View>
+            <View style={styles.addOnContent}>
+              <View style={styles.addOnHeader}>
+                <ThemedText type="body" style={{ fontWeight: "600", color: addTireCheck ? theme.secondary : theme.text }}>
+                  Tire Check
+                </ThemedText>
+                <ThemedText type="body" style={{ fontWeight: "600", color: theme.secondary }}>
+                  +$12.00
+                </ThemedText>
+              </View>
+              <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                Full inspection of all 4 tires — tread depth, pressure, and sidewall condition
+              </ThemedText>
+            </View>
+            <View
+              style={[
+                styles.addOnCheckbox,
+                {
+                  backgroundColor: addTireCheck ? theme.secondary : "transparent",
+                  borderColor: addTireCheck ? theme.secondary : theme.border,
+                },
+              ]}
+            >
+              {addTireCheck ? <Feather name="check" size={14} color="#FFFFFF" /> : null}
             </View>
           </Pressable>
         ) : null}
@@ -958,7 +1074,11 @@ export default function ServiceRequestScreen() {
             <View style={styles.costBreakdown}>
               <View style={styles.costRow}>
                 <ThemedText type="body" style={{ color: theme.text }}>
-                  {isFuelSelected ? (useCustomFuel ? `Fuel Delivery (Custom)` : `Fuel Delivery (${FUEL_AMOUNTS[selectedFuelIndex]?.label})`) : (selectedServiceData?.label || "Service")}
+                  {isFuelSelected
+                    ? (useCustomFuel ? `Fuel Delivery (Custom)` : `Fuel Delivery (${FUEL_AMOUNTS[selectedFuelIndex]?.label})`)
+                    : isFlatTire
+                      ? (flatTireSubType === "change" ? "Tire Change (Spare)" : flatTireSubType === "inflation" ? "Mobile Tire Inflation" : "Flat Tire")
+                      : (selectedServiceData?.label || "Service")}
                 </ThemedText>
                 {isUsingFree ? (
                   <View style={styles.priceWithDiscount}>
@@ -1011,6 +1131,16 @@ export default function ServiceRequestScreen() {
                   </ThemedText>
                   <ThemedText type="small" style={{ color: theme.secondary }}>
                     $8.00
+                  </ThemedText>
+                </View>
+              ) : null}
+              {tireCheckFee > 0 ? (
+                <View style={styles.costRow}>
+                  <ThemedText type="small" style={{ color: theme.secondary }}>
+                    Tire Check Add-On
+                  </ThemedText>
+                  <ThemedText type="small" style={{ color: theme.secondary }}>
+                    $12.00
                   </ThemedText>
                 </View>
               ) : null}
@@ -1305,6 +1435,25 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     borderWidth: 2,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  flatTireRow: {
+    flexDirection: "row",
+    gap: Spacing.md,
+    marginBottom: Spacing.xs,
+  },
+  flatTireOption: {
+    flex: 1,
+    alignItems: "center",
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    gap: 2,
+  },
+  flatTireIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: "center",
     alignItems: "center",
   },
