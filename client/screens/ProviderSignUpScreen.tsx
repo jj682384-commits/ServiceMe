@@ -246,6 +246,116 @@ const EV_SERVICES: { key: EVService; label: string; desc: string; icon: keyof ty
   { key: "hv_certified",label: "High-Voltage Certified", desc: "Trained to work safely around EV battery packs", icon: "shield" },
 ];
 
+const FLAT_TIRE_ADDONS: { key: "replacement" | "inflation" | "tireCheck"; label: string; desc: string }[] = [
+  { key: "replacement", label: "Tire Replacement", desc: "Can physically swap out a flat with a spare" },
+  { key: "inflation",   label: "Mobile Inflation",  desc: "Portable air compressor / inflator" },
+  { key: "tireCheck",  label: "Tire Pressure Check", desc: "Inspect & report pressure on all tires" },
+];
+const JUMP_START_ADDONS: { key: "batteryCheck"; label: string; desc: string }[] = [
+  { key: "batteryCheck", label: "Battery Health Check", desc: "Diagnose battery condition with a tester" },
+];
+
+function ServiceAddonsSection({
+  selectedServices,
+  flatTireAddons, setFlatTireAddons,
+  jumpStartAddons, setJumpStartAddons,
+}: {
+  selectedServices: ServiceType[];
+  flatTireAddons: { replacement: boolean; inflation: boolean; tireCheck: boolean };
+  setFlatTireAddons: React.Dispatch<React.SetStateAction<{ replacement: boolean; inflation: boolean; tireCheck: boolean }>>;
+  jumpStartAddons: { batteryCheck: boolean };
+  setJumpStartAddons: React.Dispatch<React.SetStateAction<{ batteryCheck: boolean }>>;
+}) {
+  const { theme, isDark } = useTheme();
+  const hasFlatTire = selectedServices.includes("flat_tire");
+  const hasJumpStart = selectedServices.includes("jump_start");
+  if (!hasFlatTire && !hasJumpStart) return null;
+
+  const cardBg    = isDark ? "rgba(255,255,255,0.04)" : theme.backgroundDefault;
+  const cardBorder= isDark ? "rgba(255,255,255,0.08)" : theme.border;
+  const titleColor= isDark ? "#FFF" : theme.text;
+  const subColor  = isDark ? "rgba(255,255,255,0.45)" : theme.textSecondary;
+  const labelColor= isDark ? "rgba(255,255,255,0.6)" : theme.textSecondary;
+  const divColor  = isDark ? "rgba(255,255,255,0.06)" : theme.border;
+
+  const renderAddonRow = (label: string, desc: string, active: boolean, onPress: () => void) => (
+    <Pressable key={label} onPress={onPress} style={[
+      styles.evServiceRow,
+      active ? styles.evServiceRowActive : { backgroundColor: isDark ? "rgba(255,255,255,0.03)" : theme.backgroundSecondary, borderColor: isDark ? "rgba(255,255,255,0.06)" : theme.border },
+    ]}>
+      <View style={{ flex: 1 }}>
+        <ThemedText type="small" style={{ color: active ? (isDark ? "#FFF" : theme.text) : (isDark ? "rgba(255,255,255,0.7)" : theme.textSecondary), fontWeight: active ? "600" : "400", fontSize: 13 }}>{label}</ThemedText>
+        <ThemedText type="small" style={{ color: active ? "rgba(0,170,255,0.7)" : (isDark ? "rgba(255,255,255,0.35)" : theme.textSecondary), fontSize: 11, marginTop: 1 }}>{desc}</ThemedText>
+      </View>
+      <View style={[styles.evCheckbox, active ? { backgroundColor: "#0066FF", borderColor: "#0066FF" } : { borderColor: isDark ? "rgba(255,255,255,0.2)" : theme.border }]}>
+        {active ? <Feather name="check" size={12} color="#FFF" /> : null}
+      </View>
+    </Pressable>
+  );
+
+  return (
+    <View style={styles.inputContainer}>
+      <View style={styles.evSectionHeader}>
+        <View style={[styles.evSectionIconWrap, { backgroundColor: isDark ? "rgba(0,102,255,0.15)" : "rgba(0,102,255,0.1)" }]}>
+          <Feather name="sliders" size={16} color="#0066FF" />
+        </View>
+        <ThemedText type="small" style={{ fontWeight: "500", color: labelColor, fontSize: 13 }}>Service Capabilities</ThemedText>
+      </View>
+      <ThemedText type="small" style={{ color: subColor, fontSize: 12, marginBottom: 8 }}>Select the specific add-ons you can offer for each service</ThemedText>
+      {hasFlatTire ? (
+        <View style={[styles.evPromptCard, { backgroundColor: cardBg, borderColor: cardBorder, marginBottom: 10 }]}>
+          <View style={[styles.evPromptRow, { paddingBottom: 8 }]}>
+            <Feather name="disc" size={16} color={isDark ? "rgba(255,255,255,0.6)" : "#555"} />
+            <ThemedText type="body" style={{ fontSize: 13, fontWeight: "700", color: titleColor, marginLeft: 8, flex: 1 }}>Flat Tire Add-ons</ThemedText>
+          </View>
+          <View style={[styles.evDivider, { backgroundColor: divColor, marginBottom: 8 }]} />
+          {FLAT_TIRE_ADDONS.map((a) => renderAddonRow(a.label, a.desc, flatTireAddons[a.key], () => setFlatTireAddons((p) => ({ ...p, [a.key]: !p[a.key] }))))}
+        </View>
+      ) : null}
+      {hasJumpStart ? (
+        <View style={[styles.evPromptCard, { backgroundColor: cardBg, borderColor: cardBorder }]}>
+          <View style={[styles.evPromptRow, { paddingBottom: 8 }]}>
+            <Feather name="battery-charging" size={16} color={isDark ? "rgba(255,255,255,0.6)" : "#555"} />
+            <ThemedText type="body" style={{ fontSize: 13, fontWeight: "700", color: titleColor, marginLeft: 8, flex: 1 }}>Jump Start Add-ons</ThemedText>
+          </View>
+          <View style={[styles.evDivider, { backgroundColor: divColor, marginBottom: 8 }]} />
+          {JUMP_START_ADDONS.map((a) => renderAddonRow(a.label, a.desc, jumpStartAddons[a.key], () => setJumpStartAddons((p) => ({ ...p, [a.key]: !p[a.key] }))))}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+function PriorityToggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
+  const { theme, isDark } = useTheme();
+  const cardBg    = isDark ? "rgba(255,255,255,0.04)" : theme.backgroundDefault;
+  const cardBorder= isDark ? "rgba(255,255,255,0.08)" : theme.border;
+  const titleColor= isDark ? "#FFF" : theme.text;
+  const subColor  = isDark ? "rgba(255,255,255,0.45)" : theme.textSecondary;
+  const labelColor= isDark ? "rgba(255,255,255,0.6)" : theme.textSecondary;
+  return (
+    <View style={styles.inputContainer}>
+      <View style={styles.evSectionHeader}>
+        <View style={[styles.evSectionIconWrap, { backgroundColor: isDark ? "rgba(245,158,11,0.15)" : "rgba(245,158,11,0.1)" }]}>
+          <Feather name="star" size={16} color="#F59E0B" />
+        </View>
+        <ThemedText type="small" style={{ fontWeight: "500", color: labelColor, fontSize: 13 }}>Priority Requests</ThemedText>
+      </View>
+      <View style={[styles.evPromptCard, { backgroundColor: cardBg, borderColor: cardBorder }]}>
+        <View style={styles.evPromptRow}>
+          <View style={{ flex: 1 }}>
+            <ThemedText type="body" style={{ fontSize: 14, fontWeight: "600", color: titleColor }}>Accept priority job requests?</ThemedText>
+            <ThemedText type="small" style={{ fontSize: 12, color: subColor, marginTop: 2 }}>Priority jobs pay more but require faster response times</ThemedText>
+          </View>
+          <Pressable onPress={() => onChange(!value)} style={[styles.evToggle, value ? { backgroundColor: "#F59E0B" } : styles.evToggleOff]}>
+            <View style={[styles.evToggleThumb, value ? styles.evToggleThumbOn : styles.evToggleThumbOff]} />
+          </Pressable>
+        </View>
+      </View>
+    </View>
+  );
+}
+
 function EVCapabilitySection({ evCapable, setEvCapable, evServices, toggleEvService }: {
   evCapable: boolean;
   setEvCapable: (v: boolean) => void;
@@ -348,6 +458,9 @@ export default function ProviderSignUpScreen() {
   const [selectedServices, setSelectedServices] = useState<ServiceType[]>([]);
   const [evCapable, setEvCapable] = useState(false);
   const [evServices, setEvServices] = useState<EVService[]>([]);
+  const [acceptsPriority, setAcceptsPriority] = useState(false);
+  const [flatTireAddons, setFlatTireAddons] = useState({ replacement: false, inflation: false, tireCheck: false });
+  const [jumpStartAddons, setJumpStartAddons] = useState({ batteryCheck: false });
 
   const toggleEvService = useCallback((service: EVService) => {
     setEvServices((prev) => prev.includes(service) ? prev.filter((s) => s !== service) : [...prev, service]);
@@ -483,6 +596,11 @@ export default function ProviderSignUpScreen() {
         vehicleType, vehicleMake: vehicleMake.trim() || "TBD", vehicleModel: vehicleModel.trim() || "TBD",
         licensePlate: "NEW-001", servicesOffered: selectedServices, isAvailable: true,
         providerType, verificationStatus: "pending", evCapable, evServices: evCapable ? evServices : [],
+        acceptsPriority,
+        serviceCapabilities: {
+          flatTire: selectedServices.includes("flat_tire") ? flatTireAddons : null,
+          jumpStart: selectedServices.includes("jump_start") ? jumpStartAddons : null,
+        },
         location: { latitude: 0, longitude: 0 },
       };
       apiRequest("POST", "/api/providers/register", providerProfile).catch(() => {});
@@ -593,7 +711,7 @@ export default function ProviderSignUpScreen() {
         <View style={styles.inputContainer}>
           <ThemedText type="small" style={{ fontWeight: "500", color: isDark ? "rgba(255,255,255,0.6)" : theme.textSecondary, fontSize: 13, marginBottom: 6 }}>Vehicle Type</ThemedText>
           <View style={styles.vehicleTypeRow}>
-            {([["pickup", "Pickup Truck", "truck"], ["service_van", "Service Van", "package"], ["tow_truck", "Tow Truck", "truck"]] as const).map(([type, label, icon]) => (
+            {([["pickup", "Personal Car", "navigation"], ["service_van", "Service Van", "package"], ["tow_truck", "Tow Truck", "truck"]] as const).map(([type, label, icon]) => (
               <Pressable key={type} onPress={() => handleVehicleTypeChange(type)}
                 style={[styles.vehicleTypeOption,
                   { backgroundColor: vehicleType === type ? vehSelBg : vehOptBg, borderColor: vehicleType === type ? vehSelBorder : vehOptBorder }]}>
@@ -660,7 +778,9 @@ export default function ProviderSignUpScreen() {
           <ThemedText type="small" style={{ fontWeight: "500", color: isDark ? "rgba(255,255,255,0.6)" : theme.textSecondary, fontSize: 13, marginBottom: 6 }}>Services You Can Provide</ThemedText>
           <ServiceSelector selected={selectedServices} onToggle={toggleService} />
         </View>
+        <ServiceAddonsSection selectedServices={selectedServices} flatTireAddons={flatTireAddons} setFlatTireAddons={setFlatTireAddons} jumpStartAddons={jumpStartAddons} setJumpStartAddons={setJumpStartAddons} />
         <EVCapabilitySection evCapable={evCapable} setEvCapable={setEvCapable} evServices={evServices} toggleEvService={toggleEvService} />
+        <PriorityToggle value={acceptsPriority} onChange={setAcceptsPriority} />
         <InputField label="Brief Bio (optional)" value={bio} onChangeText={setBio} placeholder="Tell drivers about yourself..." icon="edit-3" multiline />
       </View>
     </Animated.View>
@@ -686,7 +806,9 @@ export default function ProviderSignUpScreen() {
           <ThemedText type="small" style={{ fontWeight: "500", color: isDark ? "rgba(255,255,255,0.6)" : theme.textSecondary, fontSize: 13, marginBottom: 6 }}>Services Offered</ThemedText>
           <ServiceSelector selected={selectedServices} onToggle={toggleService} />
         </View>
+        <ServiceAddonsSection selectedServices={selectedServices} flatTireAddons={flatTireAddons} setFlatTireAddons={setFlatTireAddons} jumpStartAddons={jumpStartAddons} setJumpStartAddons={setJumpStartAddons} />
         <EVCapabilitySection evCapable={evCapable} setEvCapable={setEvCapable} evServices={evServices} toggleEvService={toggleEvService} />
+        <PriorityToggle value={acceptsPriority} onChange={setAcceptsPriority} />
         <InputField label="Company Description (optional)" value={companyDescription} onChangeText={setCompanyDescription} placeholder="Describe your business..." icon="edit-3" multiline />
       </View>
     </Animated.View>
