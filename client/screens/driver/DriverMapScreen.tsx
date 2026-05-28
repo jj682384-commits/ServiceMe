@@ -525,7 +525,7 @@ export default function DriverMapScreen() {
     }
   }, [permission?.granted, setUserLocation]);
 
-  // Poll nearby providers every 10 seconds for live tracking
+  // Poll nearby providers every 3 seconds for near-real-time online/offline updates
   const { data: apiProviders } = useQuery<Provider[]>({
     queryKey: ["/api/providers/nearby", userLocation?.latitude, userLocation?.longitude],
     queryFn: async () => {
@@ -539,8 +539,8 @@ export default function DriverMapScreen() {
       if (!res.ok) throw new Error("Failed to fetch providers");
       return res.json();
     },
-    refetchInterval: 10000,
-    staleTime: 8000,
+    refetchInterval: 3000,
+    staleTime: 2000,
   });
 
   useEffect(() => {

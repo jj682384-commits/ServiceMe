@@ -1659,7 +1659,7 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
     }
     try {
       const { rowCount } = await pool.query(
-        "UPDATE providers SET is_available = $2, updated_at = NOW() WHERE id = $1",
+        `UPDATE providers SET is_available = $2, updated_at = NOW()${isAvailable ? ", last_seen_at = NOW()" : ""} WHERE id = $1`,
         [req.params.id, isAvailable]
       );
       if (!rowCount) return res.status(404).json({ error: "Provider not found" });
