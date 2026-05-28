@@ -57,7 +57,9 @@ export default function ProviderDashboardScreen() {
   const tabBarHeight = useBottomTabBarHeight();
   const { theme, isDark } = useTheme();
   const { currentProvider, setCurrentProvider, requestHistory, updateHistoryEntry } = useApp();
-  const [isAvailable, setIsAvailable] = useState(currentProvider?.isAvailable ?? false);
+  // Always start each session OFFLINE — provider must manually toggle on.
+  // This prevents stale AsyncStorage state from making them appear online.
+  const [isAvailable, setIsAvailable] = useState(false);
   const cardBg = theme.cardAnimatedBg;
 
   useProviderLocation(currentProvider?.id ?? null, isAvailable);
@@ -66,6 +68,9 @@ export default function ProviderDashboardScreen() {
   useEffect(() => {
     if (currentProvider) {
       registerProviderOnServer(currentProvider);
+      // Ensure server reflects offline state at session start regardless of
+      // what was persisted from the last session.
+      updateProviderAvailability(currentProvider.id, false);
     }
   }, [currentProvider?.id]);
 

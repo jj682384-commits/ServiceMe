@@ -325,6 +325,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await pool.query(`ALTER TABLE providers ADD COLUMN IF NOT EXISTS stripe_account_id TEXT DEFAULT NULL`).catch(() => {});
   await pool.query(`ALTER TABLE providers ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW()`).catch(() => {});
   await pool.query(`ALTER TABLE providers ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMPTZ DEFAULT NULL`).catch(() => {});
+  // ── clear stale online status on every server start ──────────────────────────
+  // Providers whose last_seen_at is older than 5 min (or NULL) are marked offline
+  // so they never appear in the nearby list after a server restart / cold start.
+  await pool.query(
+    `UPDATE providers SET is_available = false, last_seen_at = NULL
+     WHERE is_available = true
+       AND (last_seen_at IS NULL OR last_seen_at < NOW() - INTERVAL '5 minutes')`
+  ).catch(() => {});
   // ── jobs column migration ───────────────────────────────────────────────────
   await pool.query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW()`).catch(() => {});
 
@@ -1126,7 +1134,6 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
            vehicle_model = EXCLUDED.vehicle_model,
            license_plate = EXCLUDED.license_plate,
            services_offered = EXCLUDED.services_offered,
-           is_available = EXCLUDED.is_available,
            provider_type = EXCLUDED.provider_type,
            badges = EXCLUDED.badges,
            location = EXCLUDED.location,
@@ -1136,6 +1143,9 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
            ev_services = EXCLUDED.ev_services,
            accepts_priority_jobs = EXCLUDED.accepts_priority_jobs,
            updated_at = NOW()
+           -- NOTE: is_available and last_seen_at are intentionally NOT updated here.
+           -- is_available is controlled only by /api/providers/:id/availability.
+           -- last_seen_at is controlled only by /api/providers/:id/heartbeat and location patches.
          RETURNING *`,
         [
           data.id, data.name, data.phone || "", data.email || "",
