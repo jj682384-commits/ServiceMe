@@ -375,6 +375,10 @@ export default function DriverMapScreen() {
   // Shared value mirror of hubOpen for gesture worklets (can't read React state on UI thread)
   const hubIsOpen = useSharedValue(false);
   const dragY = useSharedValue(0);
+  // Tracks ScrollView scroll position on the UI thread to coordinate with swipe-down
+  const scrollOffset = useSharedValue(0);
+  // Native gesture for the ScrollView — lets pan + scroll coexist simultaneously
+  const nativeGesture = Gesture.Native();
 
   const collapseHub = () => {
     setHubOpen(false);
@@ -392,16 +396,25 @@ export default function DriverMapScreen() {
     }
   };
 
-  // Swipe-down gesture — only applied to the header zone, not the ScrollView
+  // Swipe-down gesture — covers the entire expanded panel (handle + list)
+  // Coordinates with the inner ScrollView: only drags when list is scrolled to top
   const swipeDownGesture = Gesture.Pan()
-    .activeOffsetY(6)          // respond after just 6px down-movement — minimal latency
-    .failOffsetY(-6)           // cancel if user swipes up
+    .activeOffsetY(2)          // activate after 2px — feels nearly instant
+    .failOffsetY(-20)          // generous tolerance so diagonal touches don't abort early
+    .simultaneousWithExternalGesture(nativeGesture)
     .onUpdate((e) => {
       if (!hubIsOpen.value) return;
+      // When list is scrolled down, let the ScrollView handle the gesture
+      if (scrollOffset.value > 1) return;
       dragY.value = Math.max(0, e.translationY);
     })
     .onEnd((e) => {
       if (!hubIsOpen.value) return;
+      if (scrollOffset.value > 1) {
+        // List not at top — snap back, don't dismiss
+        dragY.value = withSpring(0, { damping: 22, stiffness: 350 });
+        return;
+      }
       if (e.translationY > 40 || e.velocityY > 300) {
         // Snap shut — fast 140ms collapse so it feels instant
         hubAnim.value = withTiming(0, { duration: 140, easing: Easing.in(Easing.quad) });
@@ -805,10 +818,10 @@ export default function DriverMapScreen() {
             </Pressable>
           </Animated.View>
 
-          {/* Expanded content — fades in on open */}
-          <Animated.View style={[{ flex: 1 }, hubExpandedOpacity]} pointerEvents={hubOpen ? "auto" : "none"}>
-            {/* Drag handle — gesture lives here only, no ScrollView conflict */}
-            <GestureDetector gesture={swipeDownGesture}>
+          {/* Expanded content — gesture covers the entire panel (handle + list) */}
+          <GestureDetector gesture={swipeDownGesture}>
+            <Animated.View style={[{ flex: 1 }, hubExpandedOpacity]} pointerEvents={hubOpen ? "auto" : "none"}>
+              {/* Drag handle + header row */}
               <View style={styles.dragHandleZone}>
                 <View style={styles.dragHandleRow}>
                   <View style={[styles.dragHandleBar, { backgroundColor: theme.border }]} />
@@ -837,27 +850,37 @@ export default function DriverMapScreen() {
                   </View>
                 </View>
               </View>
-            </GestureDetector>
-            <ScrollView style={styles.listScroll} showsVerticalScrollIndicator={false}>
-              {filteredProviders.length === 0 ? (
-                <View style={styles.emptyState}>
-                  <Feather name="map-pin" size={24} color={theme.textSecondary} />
-                  <ThemedText type="small" style={{ color: theme.textSecondary, textAlign: "center", marginTop: Spacing.sm }}>
-                    No mechanics found nearby. Try expanding your area.
-                  </ThemedText>
-                </View>
-              ) : (
-                filteredProviders.map((provider) => (
-                  <MechanicCard
-                    key={provider.id}
-                    provider={provider}
-                    isPreferred={isPreferredProvider(provider.id)}
-                    onPress={() => showQuickCard(provider)}
-                  />
-                ))
-              )}
-            </ScrollView>
-          </Animated.View>
+              {/* List — native gesture lets it scroll freely; pan takes over when at top */}
+              <GestureDetector gesture={nativeGesture}>
+                <ScrollView
+                  style={styles.listScroll}
+                  showsVerticalScrollIndicator={false}
+                  bounces={false}
+                  overScrollMode="never"
+                  onScroll={(e) => { scrollOffset.value = e.nativeEvent.contentOffset.y; }}
+                  scrollEventThrottle={16}
+                >
+                  {filteredProviders.length === 0 ? (
+                    <View style={styles.emptyState}>
+                      <Feather name="map-pin" size={24} color={theme.textSecondary} />
+                      <ThemedText type="small" style={{ color: theme.textSecondary, textAlign: "center", marginTop: Spacing.sm }}>
+                        No mechanics found nearby. Try expanding your area.
+                      </ThemedText>
+                    </View>
+                  ) : (
+                    filteredProviders.map((provider) => (
+                      <MechanicCard
+                        key={provider.id}
+                        provider={provider}
+                        isPreferred={isPreferredProvider(provider.id)}
+                        onPress={() => showQuickCard(provider)}
+                      />
+                    ))
+                  )}
+                </ScrollView>
+              </GestureDetector>
+            </Animated.View>
+          </GestureDetector>
         </Animated.View>
       ) : null}
 
