@@ -653,6 +653,129 @@
     }
     .service-card.ev .service-addon { color: rgba(74,222,128,0.9); background: rgba(74,222,128,0.08); }
 
+    /* ── Standalone EV Section ── */
+    .ev-section {
+      background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(74,222,128,0.05) 0%, transparent 65%);
+      border-top: 1px solid rgba(74,222,128,0.12); border-bottom: 1px solid rgba(74,222,128,0.08);
+      position: relative; overflow: hidden;
+    }
+    .ev-section::before {
+      content: ""; position: absolute; top: -300px; right: -200px;
+      width: 700px; height: 700px;
+      background: radial-gradient(circle, rgba(74,222,128,0.04) 0%, transparent 65%);
+      pointer-events: none;
+    }
+    .ev-section-label {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.25);
+      border-radius: 100px; padding: 5px 14px; margin-bottom: 20px;
+    }
+    .ev-section-label span { font-size: 12px; font-weight: 700; color: #4ade80; letter-spacing: .08em; }
+    .ev-section-label-dot { width: 6px; height: 6px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 8px #4ade80; }
+    .ev-section h2 { font-size: clamp(28px,4vw,46px); font-weight: 900; margin-bottom: 14px; }
+    .ev-section h2 span { color: #4ade80; }
+    .ev-section .section-sub { max-width: 600px; }
+
+    /* Feature grid */
+    .ev-feature-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 16px; margin-top: 56px;
+    }
+    .ev-feature-card {
+      background: rgba(74,222,128,0.03); border: 1px solid rgba(74,222,128,0.14);
+      border-radius: 18px; padding: 24px 20px;
+      display: flex; flex-direction: column; gap: 10px;
+      transition: border-color .2s, background .2s, transform .2s;
+    }
+    .ev-feature-card:hover { border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.06); transform: translateY(-3px); }
+    .ev-feature-icon {
+      width: 44px; height: 44px; border-radius: 12px;
+      background: rgba(74,222,128,0.12); border: 1px solid rgba(74,222,128,0.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+    .ev-feature-title { font-size: 15px; font-weight: 700; color: var(--text); }
+    .ev-feature-desc { font-size: 13px; color: var(--muted); line-height: 1.6; flex: 1; }
+    .ev-feature-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+    .ev-feature-tag {
+      font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 6px;
+      background: rgba(74,222,128,0.08); color: rgba(74,222,128,0.85);
+      border: 1px solid rgba(74,222,128,0.15); letter-spacing: .3px;
+    }
+
+    /* EV service cards */
+    .ev-services-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 24px; margin-top: 40px;
+    }
+    .ev-svc-card {
+      background: var(--card); border: 1px solid rgba(74,222,128,0.2);
+      border-radius: 20px; padding: 32px;
+      display: flex; flex-direction: column; gap: 14px;
+      transition: border-color .2s, transform .2s;
+    }
+    .ev-svc-card:hover { border-color: rgba(74,222,128,0.4); transform: translateY(-2px); }
+    .ev-svc-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .ev-svc-icon { font-size: 36px; }
+    .ev-svc-badge {
+      font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
+      padding: 4px 12px; border-radius: 100px; white-space: nowrap;
+      background: rgba(74,222,128,0.1); color: #4ade80; border: 1px solid rgba(74,222,128,0.25);
+    }
+    .ev-svc-name { font-size: 20px; font-weight: 800; color: var(--text); }
+    .ev-svc-desc { font-size: 14px; color: var(--muted); line-height: 1.65; }
+    .ev-tier-list { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+    .ev-tier-item {
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(74,222,128,0.05); border: 1px solid rgba(74,222,128,0.12);
+      border-radius: 10px; padding: 10px 14px; gap: 12px;
+    }
+    .ev-tier-left { display: flex; flex-direction: column; gap: 2px; }
+    .ev-tier-name { font-size: 13px; font-weight: 700; color: var(--text); }
+    .ev-tier-meta { font-size: 11px; color: var(--muted); }
+    .ev-tier-price { font-size: 16px; font-weight: 800; color: #4ade80; white-space: nowrap; }
+    .ev-tow-options { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+    .ev-tow-opt {
+      flex: 1; min-width: 130px; background: rgba(74,222,128,0.05);
+      border: 1px solid rgba(74,222,128,0.15); border-radius: 10px; padding: 12px 14px;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .ev-tow-opt-name { font-size: 13px; font-weight: 700; color: var(--text); }
+    .ev-tow-opt-desc { font-size: 11px; color: var(--muted); }
+    .ev-tow-opt-price { font-size: 16px; font-weight: 800; color: #4ade80; margin-top: 4px; }
+    .ev-safe-note {
+      display: flex; align-items: flex-start; gap: 8px;
+      background: rgba(74,222,128,0.05); border: 1px solid rgba(74,222,128,0.12);
+      border-radius: 10px; padding: 10px 14px; margin-top: 4px;
+      font-size: 12px; color: rgba(74,222,128,0.85); line-height: 1.55;
+    }
+
+    html[data-theme="light"] .ev-section { background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(22,107,48,0.04) 0%, transparent 65%); }
+    html[data-theme="light"] .ev-feature-card { background: rgba(22,107,48,0.03); border-color: rgba(22,107,48,0.12); }
+    html[data-theme="light"] .ev-feature-card:hover { background: rgba(22,107,48,0.06); border-color: rgba(22,107,48,0.25); }
+    html[data-theme="light"] .ev-feature-icon { background: rgba(22,107,48,0.1); border-color: rgba(22,107,48,0.18); }
+    html[data-theme="light"] .ev-feature-tag { background: rgba(22,107,48,0.08); color: #1a6b30; border-color: rgba(22,107,48,0.15); }
+    html[data-theme="light"] .ev-svc-card { border-color: rgba(22,107,48,0.18); }
+    html[data-theme="light"] .ev-svc-card:hover { border-color: rgba(22,107,48,0.35); }
+    html[data-theme="light"] .ev-svc-badge { background: rgba(22,107,48,0.1); color: #166534; border-color: rgba(22,107,48,0.22); }
+    html[data-theme="light"] .ev-tier-item { background: rgba(22,107,48,0.04); border-color: rgba(22,107,48,0.1); }
+    html[data-theme="light"] .ev-tier-price { color: #166534; }
+    html[data-theme="light"] .ev-tow-opt { background: rgba(22,107,48,0.04); border-color: rgba(22,107,48,0.12); }
+    html[data-theme="light"] .ev-tow-opt-price { color: #166534; }
+    html[data-theme="light"] .ev-safe-note { background: rgba(22,107,48,0.04); border-color: rgba(22,107,48,0.1); color: #1a6b30; }
+    html[data-theme="light"] .ev-section-label { background: rgba(22,107,48,0.08); border-color: rgba(22,107,48,0.2); }
+    html[data-theme="light"] .ev-section-label span { color: #166534; }
+    html[data-theme="light"] .ev-section-label-dot { background: #166534; box-shadow: 0 0 6px rgba(22,107,48,0.5); }
+    html[data-theme="light"] .ev-section h2 span { color: #166534; }
+
+    @media (max-width: 900px) {
+      .ev-feature-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+      .ev-feature-grid { grid-template-columns: 1fr; }
+      .ev-services-grid { grid-template-columns: 1fr; }
+    }
+
     /* ── Dual Mode ── */
     .dual-grid {
       display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 56px;
@@ -1314,6 +1437,136 @@
         <div class="service-name">EV-Safe Tow</div>
         <div class="service-desc">Towing that protects your EV's battery and drivetrain. Providers are trained on EV-safe rigging — no dragging the driven axle.</div>
         <div class="service-addon">Flatbed / Rollback $127 · Wheel-Lift $84</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- EV Dedicated Section -->
+<section class="ev-section">
+  <div class="section-inner">
+    <div class="ev-section-label">
+      <div class="ev-section-label-dot"></div>
+      <span>EV MODE</span>
+    </div>
+    <h2>Built for every <span>electric vehicle</span></h2>
+    <p class="section-sub">ResqRide includes a dedicated EV tab — a fully separate experience designed around the unique needs of EV drivers. Range anxiety, dead batteries, and finding chargers are all handled in one place.</p>
+
+    <!-- Feature cards -->
+    <div class="ev-feature-grid">
+      <div class="ev-feature-card">
+        <div class="ev-feature-icon">&#9889;</div>
+        <div class="ev-feature-title">Range Alerts</div>
+        <div class="ev-feature-desc">Set custom battery thresholds and get notified before you're stranded. Alerts fire when your battery drops, when you pass a nearby charger, when range may not reach your destination, and when charging is complete.</div>
+        <div class="ev-feature-tags">
+          <span class="ev-feature-tag">Low Battery Alert</span>
+          <span class="ev-feature-tag">Charger Proximity</span>
+          <span class="ev-feature-tag">Destination Range Check</span>
+          <span class="ev-feature-tag">Charge Complete</span>
+        </div>
+      </div>
+
+      <div class="ev-feature-card">
+        <div class="ev-feature-icon">&#128205;</div>
+        <div class="ev-feature-title">Live Charger Map</div>
+        <div class="ev-feature-desc">Real-time map of nearby charging stations powered by OpenChargeMap. Shows DC Fast Charge and Level 2 stations with live availability status. Uses your GPS to surface the closest compatible options instantly.</div>
+        <div class="ev-feature-tags">
+          <span class="ev-feature-tag">DC Fast Charge</span>
+          <span class="ev-feature-tag">Level 2</span>
+          <span class="ev-feature-tag">Live GPS</span>
+          <span class="ev-feature-tag">Real-Time Data</span>
+        </div>
+      </div>
+
+      <div class="ev-feature-card">
+        <div class="ev-feature-icon">&#128300;</div>
+        <div class="ev-feature-title">EV Diagnostics</div>
+        <div class="ev-feature-desc">AI-powered symptom checker built specifically for EVs. Select what you're experiencing — battery drain, charging failure, regen braking issues, motor faults, thermal warnings, or HV system alerts — and get a plain-English diagnosis with cost estimates.</div>
+        <div class="ev-feature-tags">
+          <span class="ev-feature-tag">Battery Drain</span>
+          <span class="ev-feature-tag">Charging Issues</span>
+          <span class="ev-feature-tag">Motor &amp; Inverter</span>
+          <span class="ev-feature-tag">HV Warnings</span>
+          <span class="ev-feature-tag">Cost Estimate</span>
+        </div>
+      </div>
+
+      <div class="ev-feature-card">
+        <div class="ev-feature-icon">&#128663;</div>
+        <div class="ev-feature-title">EV Vehicle Profile</div>
+        <div class="ev-feature-desc">Register your electric vehicle separately from your other cars. Your EV profile is used to match you with EV-certified providers, pre-fill service requests, and ensure tow providers know your drivetrain type before they arrive.</div>
+        <div class="ev-feature-tags">
+          <span class="ev-feature-tag">EV-Certified Matching</span>
+          <span class="ev-feature-tag">Multi-Vehicle</span>
+          <span class="ev-feature-tag">Auto-Fill</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- EV Services -->
+    <div class="ev-label" style="margin-top: 64px;">
+      <div class="ev-label-line"></div>
+      <div class="ev-label-text">EV Services</div>
+      <div class="ev-label-line"></div>
+    </div>
+
+    <div class="ev-services-grid">
+      <!-- EV Mobile Charging -->
+      <div class="ev-svc-card">
+        <div class="ev-svc-header">
+          <div class="ev-svc-icon">&#128268;</div>
+          <div class="ev-svc-badge">Mobile DC Charging</div>
+        </div>
+        <div class="ev-svc-name">EV Mobile Charging</div>
+        <div class="ev-svc-desc">A provider drives to your exact GPS location with a portable DC charger. No need to find a station or get towed. Select how much charge you need before anyone is dispatched — price is locked in upfront.</div>
+        <div class="ev-tier-list">
+          <div class="ev-tier-item">
+            <div class="ev-tier-left">
+              <div class="ev-tier-name">Quick Boost — 10 kWh</div>
+              <div class="ev-tier-meta">~15 min · Enough to reach the nearest station</div>
+            </div>
+            <div class="ev-tier-price">$10</div>
+          </div>
+          <div class="ev-tier-item">
+            <div class="ev-tier-left">
+              <div class="ev-tier-name">Half Charge — 25 kWh</div>
+              <div class="ev-tier-meta">~35 min · About 80 miles of range</div>
+            </div>
+            <div class="ev-tier-price">$24</div>
+          </div>
+          <div class="ev-tier-item">
+            <div class="ev-tier-left">
+              <div class="ev-tier-name">Full Charge — 50 kWh</div>
+              <div class="ev-tier-meta">~60 min · Near full battery capacity</div>
+            </div>
+            <div class="ev-tier-price">$44</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- EV-Safe Tow -->
+      <div class="ev-svc-card">
+        <div class="ev-svc-header">
+          <div class="ev-svc-icon">&#128690;</div>
+          <div class="ev-svc-badge">EV-Safe Certified</div>
+        </div>
+        <div class="ev-svc-name">EV-Safe Tow</div>
+        <div class="ev-svc-desc">Standard tow trucks can permanently damage an EV's battery, drivetrain, or regen system. ResqRide EV-Safe providers are trained in proper EV rigging — never dragging the driven axle, always using the correct lift points.</div>
+        <div class="ev-tow-options">
+          <div class="ev-tow-opt">
+            <div class="ev-tow-opt-name">Flatbed / Rollback</div>
+            <div class="ev-tow-opt-desc">Full platform load — safest option for any EV</div>
+            <div class="ev-tow-opt-price">From $127</div>
+          </div>
+          <div class="ev-tow-opt">
+            <div class="ev-tow-opt-name">Wheel-Lift</div>
+            <div class="ev-tow-opt-desc">EV-safe rigging, driven axle never contacts ground</div>
+            <div class="ev-tow-opt-price">From $84</div>
+          </div>
+        </div>
+        <div class="ev-safe-note">
+          &#9888;&#65039; &nbsp;Providers confirm EV certification before accepting. If no EV-safe provider is nearby, ResqRide will not dispatch a standard tow to your vehicle.
+        </div>
       </div>
     </div>
   </div>
