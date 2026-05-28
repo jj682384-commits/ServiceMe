@@ -320,6 +320,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS push_token TEXT DEFAULT NULL`).catch(() => {});
   await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT DEFAULT NULL`).catch(() => {});
   await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW()`).catch(() => {});
+  await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS search_radius INT DEFAULT 10`).catch(() => {});
+  await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS notifications_enabled BOOLEAN DEFAULT TRUE`).catch(() => {});
+  await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS emergency_contacts JSONB DEFAULT '[]'`).catch(() => {});
   // ── providers column migrations ─────────────────────────────────────────────
   await pool.query(`ALTER TABLE providers ADD COLUMN IF NOT EXISTS push_token TEXT DEFAULT NULL`).catch(() => {});
   await pool.query(`ALTER TABLE providers ADD COLUMN IF NOT EXISTS stripe_account_id TEXT DEFAULT NULL`).catch(() => {});
@@ -419,7 +422,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = await getUserByToken(token);
       if (!user) return res.status(401).json({ error: "Invalid or expired session" });
-      res.json(user);
+      const { rows } = await pool.query(
+        "SELECT search_radius, notifications_enabled, emergency_contacts FROM auth_users WHERE id = $1",
+        [user.id]
+      );
+      const prefs = rows[0] || {};
+      res.json({
+        ...user,
+        searchRadius: prefs.search_radius ?? 10,
+        notificationsEnabled: prefs.notifications_enabled ?? true,
+        emergencyContacts: Array.isArray(prefs.emergency_contacts) ? prefs.emergency_contacts : [],
+      });
     } catch (err) {
       console.error("[auth/me]", err);
       res.status(500).json({ error: "Session check failed" });
@@ -471,6 +484,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err) {
       console.error("[auth/profile]", err);
       res.status(500).json({ error: "Database error" });
+    }
+  });
+
+  app.patch("/api/auth/preferences", async (req: Request, res: Response) => {
+    const token = extractToken(req.headers["authorization"]);
+    if (!token) return res.status(401).json({ error: "No token" });
+    try {
+      const user = await getUserByToken(token);
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
+      const { searchRadius, notificationsEnabled, emergencyContacts } = req.body as {
+        searchRadius?: number;
+        notificationsEnabled?: boolean;
+        emergencyContacts?: unknown[];
+      };
+      await pool.query(
+        `UPDATE auth_users SET
+           search_radius        = COALESCE($2, search_radius),
+           notifications_enabled = COALESCE($3, notifications_enabled),
+           emergency_contacts   = COALESCE($4::jsonb, emergency_contacts),
+           updated_at           = NOW()
+         WHERE id = $1`,
+        [
+          user.id,
+          searchRadius !== undefined ? searchRadius : null,
+          notificationsEnabled !== undefined ? notificationsEnabled : null,
+          emergencyContacts !== undefined ? JSON.stringify(emergencyContacts) : null,
+        ]
+      );
+      res.json({ success: true });
+    } catch (err) {
+      console.error("[auth/preferences]", err);
+      res.status(500).json({ error: "Failed to save preferences" });
     }
   });
 

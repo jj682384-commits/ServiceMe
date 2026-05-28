@@ -14,6 +14,7 @@ import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/context/AppContext";
+import { apiRequest } from "@/lib/query-client";
 import { Spacing, BorderRadius } from "@/constants/theme";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -85,6 +86,10 @@ export default function SearchRadiusScreen() {
 
   const handleSave = () => {
     setRadius(selectedRadius);
+    // Only driver search radius is server-persisted (serviceRadius is provider-local preference)
+    if (!isProvider) {
+      apiRequest("PATCH", "/api/auth/preferences", { searchRadius: selectedRadius }).catch(() => {});
+    }
     navigation.goBack();
   };
 

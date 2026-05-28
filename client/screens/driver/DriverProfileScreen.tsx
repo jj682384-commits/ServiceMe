@@ -11,6 +11,7 @@ import { ThemedText } from "@/components/ThemedText";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/context/AppContext";
+import { apiRequest } from "@/lib/query-client";
 import { Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
@@ -89,10 +90,9 @@ export default function DriverProfileScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { theme, isDark } = useTheme();
-  const { currentDriver, setUserRole, logout, searchRadius, getTrialDaysRemaining, preferredProviders, toggleTheme } = useApp();
+  const { currentDriver, setUserRole, logout, searchRadius, getTrialDaysRemaining, preferredProviders, toggleTheme, notificationsEnabled, setNotificationsEnabled } = useApp();
   const sectionBg = theme.cardAnimatedBg;
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
   const isPremium = currentDriver?.membership === "premium";
   const isOnTrial = currentDriver?.isOnTrial;
   const daysRemaining = getTrialDaysRemaining();
@@ -275,7 +275,10 @@ export default function DriverProfileScreen() {
             icon="bell"
             label="Push Notifications"
             value={notificationsEnabled}
-            onValueChange={setNotificationsEnabled}
+            onValueChange={(enabled) => {
+              setNotificationsEnabled(enabled);
+              apiRequest("PATCH", "/api/auth/preferences", { notificationsEnabled: enabled }).catch(() => {});
+            }}
           />
           <ToggleItem
             icon="moon"

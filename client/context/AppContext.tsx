@@ -217,6 +217,8 @@ interface AppContextType {
   setSearchRadius: (radius: number) => void;
   serviceRadius: number;
   setServiceRadius: (radius: number) => void;
+  notificationsEnabled: boolean;
+  setNotificationsEnabled: (enabled: boolean) => void;
   emergencyContacts: EmergencyContact[];
   setEmergencyContacts: (contacts: EmergencyContact[]) => void;
   addEmergencyContact: (contact: EmergencyContact) => void;
@@ -260,6 +262,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [searchRadius, setSearchRadius] = useState(10);
   const [serviceRadius, setServiceRadius] = useState(15);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContact[]>([]);
   const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -290,6 +293,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           savedToken,
           themeRaw,
           authUserRaw,
+          notifRaw,
+          radiusRaw,
         ] = await Promise.all([
           AsyncStorage.getItem("currentDriver"),
           AsyncStorage.getItem("currentProvider"),
@@ -302,6 +307,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           loadAuthToken(),
           AsyncStorage.getItem("themeOverride"),
           AsyncStorage.getItem("authUser"),
+          AsyncStorage.getItem("notificationsEnabled"),
+          AsyncStorage.getItem("searchRadius"),
         ]);
         if (savedToken) setAuthToken(savedToken);
         if (themeRaw === "dark" || themeRaw === "light") setThemeOverride(themeRaw);
@@ -319,6 +326,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           );
         }
         if (contactsRaw) setEmergencyContacts(JSON.parse(contactsRaw));
+        if (notifRaw !== null) setNotificationsEnabled(notifRaw === "true");
+        if (radiusRaw !== null) { const r = parseInt(radiusRaw, 10); if (!isNaN(r)) setSearchRadius(r); }
         if (activeRequestRaw) {
           const ar = JSON.parse(activeRequestRaw) as ServiceRequest;
           // Only restore if not in a terminal state
@@ -382,6 +391,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!_persisted) return;
     AsyncStorage.setItem("emergencyContacts", JSON.stringify(emergencyContacts)).catch(() => {});
   }, [emergencyContacts, _persisted]);
+
+  useEffect(() => {
+    if (!_persisted) return;
+    AsyncStorage.setItem("notificationsEnabled", String(notificationsEnabled)).catch(() => {});
+  }, [notificationsEnabled, _persisted]);
+
+  useEffect(() => {
+    if (!_persisted) return;
+    AsyncStorage.setItem("searchRadius", String(searchRadius)).catch(() => {});
+  }, [searchRadius, _persisted]);
+
+  // On first hydration, pull preferences from server to stay in sync across devices.
+  useEffect(() => {
+    if (!_persisted) return;
+    (async () => {
+      try {
+        const token = await loadAuthToken();
+        if (!token) return;
+        const res = await apiRequest("GET", "/api/auth/me");
+        const me = await res.json() as {
+          searchRadius?: number;
+          notificationsEnabled?: boolean;
+          emergencyContacts?: EmergencyContact[];
+        };
+        if (me.searchRadius !== undefined) setSearchRadius(me.searchRadius);
+        if (me.notificationsEnabled !== undefined) setNotificationsEnabled(me.notificationsEnabled);
+        if (Array.isArray(me.emergencyContacts) && me.emergencyContacts.length > 0) {
+          setEmergencyContacts(me.emergencyContacts);
+        }
+      } catch {}
+    })();
+  }, [_persisted]);
 
   useEffect(() => {
     if (!_persisted) return;
@@ -543,11 +584,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const addEmergencyContact = (contact: EmergencyContact) => {
-    setEmergencyContacts((prev) => [...prev, contact]);
+    setEmergencyContacts((prev) => {
+      const updated = [...prev, contact];
+      apiRequest("PATCH", "/api/auth/preferences", { emergencyContacts: updated }).catch(() => {});
+      return updated;
+    });
   };
 
   const removeEmergencyContact = (index: number) => {
-    setEmergencyContacts((prev) => prev.filter((_, i) => i !== index));
+    setEmergencyContacts((prev) => {
+      const updated = prev.filter((_, i) => i !== index);
+      apiRequest("PATCH", "/api/auth/preferences", { emergencyContacts: updated }).catch(() => {});
+      return updated;
+    });
   };
 
   const addVehicle = (vehicle: Omit<Vehicle, "id">) => {
@@ -696,6 +745,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setSearchRadius,
         serviceRadius,
         setServiceRadius,
+        notificationsEnabled,
+        setNotificationsEnabled,
         emergencyContacts,
         setEmergencyContacts,
         addEmergencyContact,
