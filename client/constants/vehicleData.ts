@@ -39,6 +39,66 @@ export const VEHICLE_MAKES_MODELS: Record<string, string[]> = {
 
 export const VEHICLE_MAKES = Object.keys(VEHICLE_MAKES_MODELS).sort();
 
+export const SERVICE_VAN_MAKES_MODELS: Record<string, string[]> = {
+  "Chevrolet": [
+    "Express 2500 Cargo",
+    "Express 3500 Cargo",
+    "Express 2500 Extended Cargo",
+    "Express 3500 Extended Cargo",
+  ],
+  "Ford": [
+    "Transit 150 Cargo",
+    "Transit 250 Cargo",
+    "Transit 350 Cargo",
+    "Transit 350 HD Cargo",
+    "Transit Connect Cargo",
+    "E-350 Cutaway",
+    "E-450 Cutaway",
+  ],
+  "GMC": [
+    "Savana 2500 Cargo",
+    "Savana 3500 Cargo",
+    "Savana 2500 Extended Cargo",
+    "Savana 3500 Extended Cargo",
+  ],
+  "Mercedes-Benz": [
+    "Sprinter 1500 Cargo",
+    "Sprinter 2500 Cargo",
+    "Sprinter 3500 Cargo",
+    "Sprinter 3500XD Cargo",
+    "Sprinter 4500 Cargo",
+    "Metris Cargo",
+  ],
+  "Nissan": [
+    "NV200 Compact Cargo",
+    "NV1500 Standard Roof",
+    "NV2500 Standard Roof",
+    "NV2500 High Roof",
+    "NV3500 Standard Roof",
+    "NV3500 High Roof",
+  ],
+  "Ram": [
+    "ProMaster City Cargo",
+    "ProMaster 1500 Low Roof",
+    "ProMaster 2500 Standard Roof",
+    "ProMaster 2500 High Roof",
+    "ProMaster 3500 Standard Roof",
+    "ProMaster 3500 High Roof",
+    "ProMaster 3500 Extended High Roof",
+  ],
+  "Toyota": [
+    "HiAce Standard",
+    "HiAce Long Wheelbase",
+  ],
+  "Volkswagen": [
+    "Transporter T6.1 Cargo",
+    "Crafter Cargo",
+    "ID. Buzz Cargo",
+  ],
+};
+
+export const SERVICE_VAN_MAKES = Object.keys(SERVICE_VAN_MAKES_MODELS).sort();
+
 export const TOW_TRUCK_MAKES_MODELS: Record<string, string[]> = {
   "Chevrolet": [
     "Silverado 4500HD",

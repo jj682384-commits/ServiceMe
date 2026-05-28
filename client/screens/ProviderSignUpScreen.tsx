@@ -27,6 +27,8 @@ import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import {
   VEHICLE_MAKES,
   VEHICLE_MAKES_MODELS,
+  SERVICE_VAN_MAKES,
+  SERVICE_VAN_MAKES_MODELS,
   TOW_TRUCK_MAKES,
   TOW_TRUCK_MAKES_MODELS,
   TOW_TRUCK_CLASSES,
@@ -483,8 +485,9 @@ export default function ProviderSignUpScreen() {
   const animatedButtonStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
   const isTowTruck = vehicleType === "tow_truck";
-  const activeMakes = isTowTruck ? TOW_TRUCK_MAKES : VEHICLE_MAKES;
-  const activeMakesModels = isTowTruck ? TOW_TRUCK_MAKES_MODELS : VEHICLE_MAKES_MODELS;
+  const isServiceVan = vehicleType === "service_van";
+  const activeMakes = isTowTruck ? TOW_TRUCK_MAKES : isServiceVan ? SERVICE_VAN_MAKES : VEHICLE_MAKES;
+  const activeMakesModels = isTowTruck ? TOW_TRUCK_MAKES_MODELS : isServiceVan ? SERVICE_VAN_MAKES_MODELS : VEHICLE_MAKES_MODELS;
   const availableSignupModels = useMemo(() => {
     if (!vehicleMake) return [];
     return activeMakesModels[vehicleMake] || [];
@@ -722,24 +725,26 @@ export default function ProviderSignUpScreen() {
           </View>
         </View>
 
-        {isTowTruck ? (
+        {(isTowTruck || isServiceVan) ? (
           <View style={[styles.signupTowBanner, { backgroundColor: bannerBg, borderColor: bannerBorder }]}>
             <Feather name="info" size={13} color={bannerText} />
             <ThemedText type="small" style={{ color: bannerText, flex: 1, marginLeft: 8, fontSize: 12 }}>
-              Commercial tow truck makes & models are loaded. Select your chassis below.
+              {isTowTruck
+                ? "Commercial tow truck makes & models are loaded. Select your chassis below."
+                : "Commercial service van makes & models are loaded. Select your van below."}
             </ThemedText>
           </View>
         ) : null}
 
         <View style={styles.inputContainer}>
           <ThemedText type="small" style={{ fontWeight: "500", color: isDark ? "rgba(255,255,255,0.6)" : theme.textSecondary, fontSize: 13, marginBottom: 6 }}>
-            {isTowTruck ? "Tow Truck Make" : "Vehicle Make"}
+            {isTowTruck ? "Tow Truck Make" : isServiceVan ? "Van Make" : "Vehicle Make"}
           </ThemedText>
           <Pressable onPress={() => setShowMakePicker(true)}
             style={[styles.signupPickerBtn, { backgroundColor: vehicleMake ? (isDark ? "rgba(192,192,192,0.08)" : theme.backgroundSecondary) : pickerBg, borderColor: vehicleMake ? pickerFilledBorder : pickerBorder }]}>
-            <Feather name="truck" size={16} color={vehicleMake ? (isDark ? "#C0C0C0" : "#333") : (isDark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.35)")} />
+            <Feather name={isTowTruck ? "truck" : isServiceVan ? "package" : "navigation"} size={16} color={vehicleMake ? (isDark ? "#C0C0C0" : "#333") : (isDark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.35)")} />
             <ThemedText type="small" style={{ color: vehicleMake ? pickerFilledText : pickerText, flex: 1, marginLeft: 10, fontSize: 14 }}>
-              {vehicleMake || (isTowTruck ? "Select tow truck make..." : "Select make...")}
+              {vehicleMake || (isTowTruck ? "Select tow truck make..." : isServiceVan ? "Select van make..." : "Select make...")}
             </ThemedText>
             <Feather name="chevron-down" size={16} color={chevronColor} />
           </Pressable>
@@ -747,11 +752,11 @@ export default function ProviderSignUpScreen() {
 
         <View style={styles.inputContainer}>
           <ThemedText type="small" style={{ fontWeight: "500", color: isDark ? "rgba(255,255,255,0.6)" : theme.textSecondary, fontSize: 13, marginBottom: 6 }}>
-            {isTowTruck ? "Tow Truck Model" : "Vehicle Model"}
+            {isTowTruck ? "Tow Truck Model" : isServiceVan ? "Van Model" : "Vehicle Model"}
           </ThemedText>
           <Pressable onPress={() => vehicleMake ? setShowModelPicker(true) : null}
             style={[styles.signupPickerBtn, { backgroundColor: vehicleModel ? (isDark ? "rgba(192,192,192,0.08)" : theme.backgroundSecondary) : pickerBg, borderColor: vehicleModel ? pickerFilledBorder : pickerBorder, opacity: !vehicleMake ? 0.5 : 1 }]}>
-            <Feather name="truck" size={16} color={vehicleModel ? (isDark ? "#C0C0C0" : "#333") : (isDark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.35)")} />
+            <Feather name={isTowTruck ? "truck" : isServiceVan ? "package" : "navigation"} size={16} color={vehicleModel ? (isDark ? "#C0C0C0" : "#333") : (isDark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.35)")} />
             <ThemedText type="small" style={{ color: vehicleModel ? pickerFilledText : pickerText, flex: 1, marginLeft: 10, fontSize: 14 }}>
               {vehicleModel || (vehicleMake ? "Select model..." : "Select a make first")}
             </ThemedText>
