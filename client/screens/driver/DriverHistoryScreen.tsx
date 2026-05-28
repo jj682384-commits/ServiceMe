@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { View, StyleSheet, FlatList, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -6,11 +6,12 @@ import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useQuery } from "@tanstack/react-query";
 
 import { ThemedText } from "@/components/ThemedText";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { useTheme } from "@/hooks/useTheme";
-import { useApp, ServiceRequest, ServiceType } from "@/context/AppContext";
+import { useApp, ServiceRequest, ServiceType, ServiceStatus } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
@@ -145,14 +146,47 @@ function HistoryItem({ item, onPress, cardBg }: { item: ServiceRequest; onPress:
   );
 }
 
+function mapServerJob(j: Record<string, unknown>): ServiceRequest {
+  return {
+    id: j.id as string,
+    serviceType: (j.serviceType as ServiceType) || "other",
+    location: (j.location as ServiceRequest["location"]) || { address: "Unknown", latitude: 0, longitude: 0 },
+    notes: (j.notes as string) || "",
+    status: (j.status as ServiceStatus) || "completed",
+    estimatedCost: Number(j.estimatedCost) || 0,
+    createdAt: new Date((j.createdAt as string) || Date.now()),
+    provider: (j.provider as ServiceRequest["provider"]) || undefined,
+    driver: (j.driver as ServiceRequest["driver"]) || undefined,
+    eta: (j.eta as number) || undefined,
+    isExpress: (j.isExpress as boolean) || false,
+    expressFee: j.expressFee != null ? Number(j.expressFee) : undefined,
+    serviceFee: j.serviceFee != null ? Number(j.serviceFee) : undefined,
+    totalCost: j.totalCost != null ? Number(j.totalCost) : undefined,
+    tip: j.tip != null ? Number(j.tip) : undefined,
+    receiptNumber: (j.receiptNumber as string) || undefined,
+    timeSaved: (j.timeSaved as number) || undefined,
+    scheduledDate: j.scheduledDate ? new Date(j.scheduledDate as string) : undefined,
+    isEV: (j.isEV as boolean) || false,
+    requestedProviderId: (j.requestedProviderId as string) || undefined,
+  };
+}
+
 export default function DriverHistoryScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { theme, isDark } = useTheme();
-  const { requestHistory } = useApp();
+  const { currentDriver, requestHistory } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
-  const displayHistory = requestHistory;
+  const { data: serverJobs } = useQuery<ServiceRequest[]>({
+    queryKey: [`/api/jobs/driver/${currentDriver?.id}`],
+    enabled: !!currentDriver?.id,
+    select: (data: unknown) => (data as Record<string, unknown>[]).map(mapServerJob),
+    staleTime: 30_000,
+  });
+
+  // Prefer live server data; fall back to local AsyncStorage history
+  const displayHistory = (serverJobs && serverJobs.length > 0) ? serverJobs : requestHistory;
 
   const totalServices = displayHistory.length;
   const totalSpent = displayHistory.reduce((sum, r) => sum + (r.estimatedCost || 0), 0);

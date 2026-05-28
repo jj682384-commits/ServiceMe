@@ -19,6 +19,7 @@ import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollV
 import { ScreenDecoration } from "@/components/ScreenDecoration";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/context/AppContext";
+import { apiRequest } from "@/lib/query-client";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import {
   VEHICLE_MAKES,
@@ -274,6 +275,7 @@ export default function ProviderVehicleScreen() {
   const [showMakePicker, setShowMakePicker] = useState(false);
   const [showModelPicker, setShowModelPicker] = useState(false);
   const [showTowClassPicker, setShowTowClassPicker] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const isTowTruck = vehicleType === "tow_truck";
 
@@ -303,7 +305,7 @@ export default function ProviderVehicleScreen() {
     setShowModelPicker(false);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!make.trim() || !model.trim()) {
       Alert.alert("Missing Info", "Please select a make and model for your vehicle.");
       return;
@@ -313,14 +315,26 @@ export default function ProviderVehicleScreen() {
       return;
     }
     if (!currentProvider) return;
-    setCurrentProvider({
+
+    const vehicleModel = towClass ? `${model.trim()} (${towClass})` : model.trim();
+    const updatedProvider = {
       ...currentProvider,
       vehicleMake: make.trim(),
-      vehicleModel: towClass ? `${model.trim()} (${towClass})` : model.trim(),
+      vehicleModel,
       vehicleType,
       licensePlate: licensePlate.trim().toUpperCase(),
-    });
-    Alert.alert("Saved", "Your vehicle information has been updated.");
+    };
+
+    setIsSaving(true);
+    try {
+      await apiRequest("POST", "/api/providers/register", updatedProvider);
+    } catch {
+      // Falls through — save locally regardless
+    } finally {
+      setCurrentProvider(updatedProvider);
+      setIsSaving(false);
+      Alert.alert("Saved", "Your vehicle information has been updated.");
+    }
   };
 
   return (
@@ -476,14 +490,15 @@ export default function ProviderVehicleScreen() {
 
         <Pressable
           onPress={handleSave}
+          disabled={isSaving}
           style={({ pressed }) => [
             styles.saveButton,
-            { backgroundColor: theme.primary, opacity: pressed ? 0.85 : 1 },
+            { backgroundColor: theme.primary, opacity: pressed || isSaving ? 0.7 : 1 },
           ]}
         >
-          <Feather name="check" size={20} color="#FFFFFF" />
+          <Feather name={isSaving ? "loader" : "check"} size={20} color="#FFFFFF" />
           <ThemedText type="body" style={{ color: "#FFFFFF", fontWeight: "600", marginLeft: Spacing.sm }}>
-            Save Vehicle
+            {isSaving ? "Saving..." : "Save Vehicle"}
           </ThemedText>
         </Pressable>
       </KeyboardAwareScrollViewCompat>

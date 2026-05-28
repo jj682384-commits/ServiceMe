@@ -1755,6 +1755,21 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
     }
   });
 
+  // ── Driver job history (must be before /:id to avoid wildcard capture) ────────
+  app.get("/api/jobs/driver/:driverId", async (req: Request, res: Response) => {
+    try {
+      const { rows } = await pool.query<JobRow>(
+        `SELECT * FROM jobs WHERE driver->>'id' = $1 ORDER BY created_at DESC LIMIT 200`,
+        [req.params.driverId]
+      );
+      res.set("Cache-Control", "no-store");
+      res.json(rows.map(rowToJob));
+    } catch (err) {
+      console.error("[jobs/driver]", err);
+      res.status(500).json({ error: "Database error" });
+    }
+  });
+
   app.get("/api/jobs/:id", async (req: Request, res: Response) => {
     try {
       const { rows } = await pool.query<JobRow>("SELECT * FROM jobs WHERE id = $1", [req.params.id]);
