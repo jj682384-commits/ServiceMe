@@ -245,7 +245,7 @@ export default function BrowseProvidersScreen() {
     <ProviderCard
       provider={item}
       isPreferred={isPreferredProvider(item.id)}
-      onPress={() => navigation.navigate("ProviderDetail", { providerId: item.id })}
+      onPress={() => navigation.navigate("ProviderDetail", { providerId: item.id, providerData: item })}
     />
   );
 

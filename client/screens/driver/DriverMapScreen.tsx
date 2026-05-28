@@ -985,7 +985,7 @@ export default function DriverMapScreen() {
             onRequestService={() => handleRequestService(selectedProvider.id)}
             onViewProfile={() => {
               hideQuickCard();
-              setTimeout(() => navigation.navigate("ProviderDetail", { providerId: selectedProvider.id }), 240);
+              setTimeout(() => navigation.navigate("ProviderDetail", { providerId: selectedProvider.id, providerData: selectedProvider }), 240);
             }}
             onDismiss={hideQuickCard}
           />

@@ -64,7 +64,7 @@ export type RootStackParamList = {
   TowRequest: undefined;
   PremiumUpgrade: undefined;
   BrowseProviders: undefined;
-  ProviderDetail: { providerId: string };
+  ProviderDetail: { providerId: string; providerData?: import("@/context/AppContext").Provider };
   EmergencyMode: undefined;
   VehicleManagement: undefined;
   EVMobileCharge: undefined;

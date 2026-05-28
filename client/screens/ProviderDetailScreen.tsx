@@ -58,7 +58,10 @@ export default function ProviderDetailScreen() {
   const route = useRoute<RouteProp<RootStackParamList, "ProviderDetail">>();
 
   const providers = getProvidersWithDistance();
-  const provider = providers.find((p) => p.id === route.params.providerId);
+  // Use providerData passed directly from the map/list (always fresh) before
+  // falling back to the AppContext nearbyProviders cache.
+  const provider = route.params.providerData
+    ?? providers.find((p) => p.id === route.params.providerId);
 
   if (!provider) {
     return (
