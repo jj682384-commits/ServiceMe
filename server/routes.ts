@@ -1663,6 +1663,9 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
         [req.params.id, isAvailable]
       );
       if (!rowCount) return res.status(404).json({ error: "Provider not found" });
+      // Push real-time update to all connected driver clients
+      const statusMsg = JSON.stringify({ type: "provider_status_update", providerId: req.params.id, isAvailable });
+      wss.clients.forEach((c) => { if (c.readyState === WebSocket.OPEN) c.send(statusMsg); });
       res.json({ success: true });
     } catch (err) {
       console.error("[providers/availability]", err);

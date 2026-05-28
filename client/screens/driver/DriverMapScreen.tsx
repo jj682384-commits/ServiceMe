@@ -21,6 +21,7 @@ import * as Location from "expo-location";
 import * as Haptics from "expo-haptics";
 import { useQuery } from "@tanstack/react-query";
 import { getApiUrl } from "@/lib/query-client";
+import { getWebSocketUrl } from "@/hooks/useChat";
 
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -535,7 +536,7 @@ export default function DriverMapScreen() {
   }, [permission?.granted, setUserLocation]);
 
   // Poll nearby providers every 3 seconds for near-real-time online/offline updates
-  const { data: apiProviders } = useQuery<Provider[]>({
+  const { data: apiProviders, refetch } = useQuery<Provider[]>({
     queryKey: ["/api/providers/nearby", userLocation?.latitude, userLocation?.longitude],
     queryFn: async () => {
       const base = new URL("/api/providers/nearby", getApiUrl());
@@ -548,9 +549,39 @@ export default function DriverMapScreen() {
       if (!res.ok) throw new Error("Failed to fetch providers");
       return res.json();
     },
-    refetchInterval: 3000,
-    staleTime: 2000,
+    refetchInterval: 5000,
+    staleTime: 4000,
   });
+
+  // WebSocket listener — refetch immediately when any provider flips online/offline
+  useEffect(() => {
+    let ws: WebSocket | null = null;
+    let dead = false;
+    let retryTimer: ReturnType<typeof setTimeout>;
+
+    const connect = () => {
+      if (dead) return;
+      try {
+        ws = new WebSocket(getWebSocketUrl());
+        ws.onmessage = (e) => {
+          try {
+            const msg = JSON.parse(e.data);
+            if (msg.type === "provider_status_update") refetch();
+          } catch {}
+        };
+        ws.onclose = () => {
+          if (!dead) retryTimer = setTimeout(connect, 3000);
+        };
+      } catch {}
+    };
+
+    connect();
+    return () => {
+      dead = true;
+      clearTimeout(retryTimer);
+      ws?.close();
+    };
+  }, []);
 
   useEffect(() => {
     if (apiProviders) {

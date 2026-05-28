@@ -19,7 +19,7 @@ export interface ChatMessage {
 
 type ConnectionStatus = "connecting" | "connected" | "disconnected" | "error";
 
-function getWebSocketUrl(): string {
+export function getWebSocketUrl(): string {
   const apiUrl = getApiUrl();
   const wsUrl = apiUrl.replace(/^https/, "wss").replace(/^http/, "ws");
   const base = wsUrl.endsWith("/") ? wsUrl.slice(0, -1) : wsUrl;
