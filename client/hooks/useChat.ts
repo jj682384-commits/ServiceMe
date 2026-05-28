@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { getApiUrl } from "@/lib/query-client";
+import { getApiUrl, getAuthToken } from "@/lib/query-client";
 
 /**
  * Conversations currently visible in ChatScreen.
@@ -64,7 +64,7 @@ export function useChat({ conversationId, senderId, senderRole, enabled = true }
       ws.onopen = () => {
         if (!mountedRef.current) return;
         setStatus("connected");
-        ws.send(JSON.stringify({ type: "join", conversationId, senderId, senderRole }));
+        ws.send(JSON.stringify({ type: "join", conversationId, senderId, senderRole, token: getAuthToken() }));
       };
 
       ws.onmessage = (event) => {

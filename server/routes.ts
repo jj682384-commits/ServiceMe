@@ -130,6 +130,61 @@ function makeRateLimiter(limit: number, windowMs: number) {
 const generalLimit = makeRateLimiter(100, 60_000);  // 100 req/min per IP
 const authLimit    = makeRateLimiter(10,  60_000);  // 10 req/min per IP (auth endpoints)
 
+// ── Account Lockout ────────────────────────────────────────────────────────────
+const _loginAttempts = new Map<string, { count: number; lockedUntil: number }>();
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, v] of _loginAttempts) { if (now > v.lockedUntil && v.count === 0) _loginAttempts.delete(k); }
+}, 15 * 60 * 1000);
+
+function isAccountLocked(email: string): { locked: boolean; retryAfterSec: number } {
+  const entry = _loginAttempts.get(email.toLowerCase());
+  if (!entry || !entry.lockedUntil) return { locked: false, retryAfterSec: 0 };
+  if (Date.now() < entry.lockedUntil) {
+    return { locked: true, retryAfterSec: Math.ceil((entry.lockedUntil - Date.now()) / 1000) };
+  }
+  return { locked: false, retryAfterSec: 0 };
+}
+
+function recordFailedLogin(email: string): void {
+  const key = email.toLowerCase();
+  const entry = _loginAttempts.get(key);
+  if (!entry) { _loginAttempts.set(key, { count: 1, lockedUntil: 0 }); return; }
+  entry.count = (entry.count || 0) + 1;
+  if (entry.count >= 5) entry.lockedUntil = Date.now() + 15 * 60 * 1000;
+}
+
+function clearLoginAttempts(email: string): void {
+  _loginAttempts.delete(email.toLowerCase());
+}
+
+// ── Per-user rate limiter (keyed by user email extracted from token) ───────────
+function makeUserRateLimiter(limit: number, windowMs: number) {
+  return async function userRlMiddleware(req: Request, res: Response, next: NextFunction) {
+    const authHeader = req.headers["authorization"] as string | undefined;
+    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : null;
+    if (!token) return next();
+    const { rows } = await pool.query<{ email: string }>(
+      `SELECT u.email FROM sessions s
+       JOIN auth_users u ON u.id = s.user_id
+       WHERE s.token = $1 AND s.expires_at > NOW()`, [token]
+    ).catch(() => ({ rows: [] }));
+    if (!rows.length) return next();
+    const key = `user::${rows[0].email}::${limit}::${windowMs}`;
+    const now = Date.now();
+    const entry = _rlStore.get(key);
+    if (!entry || now > entry.resetAt) { _rlStore.set(key, { count: 1, resetAt: now + windowMs }); return next(); }
+    entry.count++;
+    if (entry.count > limit) {
+      res.setHeader("Retry-After", String(Math.ceil((entry.resetAt - now) / 1000)));
+      return res.status(429).json({ error: "You're doing that too often. Please wait and try again." });
+    }
+    return next();
+  };
+}
+const jobCreationLimit    = makeUserRateLimiter(5,  60 * 60 * 1000);  // 5 jobs/hour per user
+const locationUpdateLimit = makeUserRateLimiter(30, 60_000);           // 30 location updates/min per provider
+
 // ── Chat (in-memory — ephemeral real-time only) ───────────────────────────────
 
 const messageHistory = new Map<string, ChatMessage[]>();
@@ -327,6 +382,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await pool.query(`
     CREATE INDEX IF NOT EXISTS chat_messages_conv_idx ON chat_messages(conversation_id)
   `).catch(() => {});
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS blocks (
+      id           TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+      blocker_email TEXT NOT NULL,
+      blocked_email TEXT NOT NULL,
+      created_at   TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(blocker_email, blocked_email)
+    )
+  `).catch(() => {});
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS blocks_blocker_idx ON blocks(blocker_email)
+  `).catch(() => {});
+
+  await pool.query(`
+    ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS failed_login_count INT DEFAULT 0
+  `).catch(() => {});
   await pool.query(`
     ALTER TABLE providers
       ADD COLUMN IF NOT EXISTS payout_bank_info JSONB DEFAULT NULL
@@ -438,19 +511,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!email || !password) {
       return res.status(400).json({ error: "email and password are required" });
     }
+    // Account lockout check
+    const lockStatus = isAccountLocked(email);
+    if (lockStatus.locked) {
+      res.setHeader("Retry-After", String(lockStatus.retryAfterSec));
+      return res.status(429).json({
+        error: `Too many failed attempts. Your account is locked for ${Math.ceil(lockStatus.retryAfterSec / 60)} more minute(s).`,
+      });
+    }
     try {
       const { rows } = await pool.query<{ id: string; email: string; name: string; phone: string; role: string; password_hash: string }>(
         "SELECT id, email, name, phone, role, password_hash FROM auth_users WHERE email = $1",
         [email.toLowerCase().trim()]
       );
       if (!rows.length) {
+        recordFailedLogin(email);
         return res.status(401).json({ error: "Email or password is incorrect" });
       }
       const user = rows[0];
       const { valid, needsRehash } = await verifyPassword(password, user.password_hash);
       if (!valid) {
-        return res.status(401).json({ error: "Email or password is incorrect" });
+        recordFailedLogin(email);
+        const attempts = (_loginAttempts.get(email.toLowerCase())?.count ?? 1);
+        const remaining = Math.max(0, 5 - attempts);
+        return res.status(401).json({
+          error: remaining > 0
+            ? `Email or password is incorrect. ${remaining} attempt(s) remaining before lockout.`
+            : "Too many failed attempts. Account locked for 15 minutes.",
+        });
       }
+      clearLoginAttempts(email);
       const token = await createSession(user.id);
       console.log(`[AUTH] signin userId=${user.id} email=${email}`);
       res.json({ userId: user.id, token, role: user.role, name: user.name, email: user.email, phone: user.phone });
@@ -498,6 +588,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try { await deleteSession(token); } catch {}
     }
     res.json({ success: true });
+  });
+
+  // ── Change Password + session token rotation ────────────────────────────────
+  app.patch("/api/auth/password", authLimit, async (req: Request, res: Response) => {
+    const token = extractToken(req.headers["authorization"]);
+    if (!token) return res.status(401).json({ error: "Authentication required" });
+    const user = await getUserByToken(token);
+    if (!user) return res.status(401).json({ error: "Unauthorized" });
+    const { currentPassword, newPassword } = req.body as { currentPassword?: string; newPassword?: string };
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: "currentPassword and newPassword are required" });
+    }
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: "New password must be at least 8 characters" });
+    }
+    try {
+      const { rows } = await pool.query<{ id: string; password_hash: string }>(
+        "SELECT id, password_hash FROM auth_users WHERE id = $1", [user.id]
+      );
+      if (!rows.length) return res.status(404).json({ error: "Account not found" });
+      const { valid } = await verifyPassword(currentPassword, rows[0].password_hash);
+      if (!valid) {
+        recordFailedLogin(user.email);
+        return res.status(401).json({ error: "Current password is incorrect" });
+      }
+      const newHash = await hashPassword(newPassword);
+      await pool.query(
+        "UPDATE auth_users SET password_hash = $1, updated_at = NOW() WHERE id = $2",
+        [newHash, user.id]
+      );
+      // Session token rotation: invalidate all OTHER sessions so stolen sessions are revoked
+      await pool.query(
+        "DELETE FROM sessions WHERE user_id = $1 AND token != $2",
+        [user.id, token]
+      );
+      clearLoginAttempts(user.email);
+      console.log(`[AUTH] password changed userId=${user.id}`);
+      res.json({ success: true, message: "Password updated. All other sessions have been signed out." });
+    } catch (err) {
+      console.error("[auth/password]", err);
+      res.status(500).json({ error: "Database error" });
+    }
   });
 
   app.patch("/api/auth/profile", async (req: Request, res: Response) => {
@@ -1142,6 +1274,57 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
     }
   });
 
+  // ── Blocks ────────────────────────────────────────────────────────────────────
+
+  app.post("/api/blocks", async (req: Request, res: Response) => {
+    const token = extractToken(req.headers["authorization"] as string | undefined);
+    if (!token) return res.status(401).json({ error: "Authentication required" });
+    const user = await getUserByToken(token);
+    if (!user) return res.status(401).json({ error: "Unauthorized" });
+    const { blockedEmail } = req.body as { blockedEmail?: string };
+    if (!blockedEmail) return res.status(400).json({ error: "blockedEmail is required" });
+    try {
+      await pool.query(
+        `INSERT INTO blocks (id, blocker_email, blocked_email)
+         VALUES (gen_random_uuid()::text, $1, $2) ON CONFLICT DO NOTHING`,
+        [user.email.toLowerCase(), blockedEmail.toLowerCase()]
+      );
+      res.json({ success: true });
+    } catch (err) {
+      console.error("[blocks/create]", err);
+      res.status(500).json({ error: "Database error" });
+    }
+  });
+
+  app.get("/api/blocks", async (req: Request, res: Response) => {
+    const token = extractToken(req.headers["authorization"] as string | undefined);
+    if (!token) return res.status(401).json({ error: "Authentication required" });
+    const user = await getUserByToken(token);
+    if (!user) return res.status(401).json({ error: "Unauthorized" });
+    try {
+      const { rows } = await pool.query<{ id: string; blocked_email: string; created_at: string }>(
+        "SELECT id, blocked_email, created_at FROM blocks WHERE blocker_email = $1 ORDER BY created_at DESC",
+        [user.email.toLowerCase()]
+      );
+      res.json({ blocks: rows.map((r) => ({ id: r.id, blockedEmail: r.blocked_email, createdAt: r.created_at })) });
+    } catch (err) {
+      res.status(500).json({ error: "Database error" });
+    }
+  });
+
+  app.delete("/api/blocks/:id", async (req: Request, res: Response) => {
+    const token = extractToken(req.headers["authorization"] as string | undefined);
+    if (!token) return res.status(401).json({ error: "Authentication required" });
+    const user = await getUserByToken(token);
+    if (!user) return res.status(401).json({ error: "Unauthorized" });
+    try {
+      await pool.query("DELETE FROM blocks WHERE id = $1 AND blocker_email = $2", [req.params.id, user.email.toLowerCase()]);
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ error: "Database error" });
+    }
+  });
+
   // ── Chat history ──────────────────────────────────────────────────────────────
 
   app.get("/api/chat/:conversationId/messages", async (req: Request, res: Response) => {
@@ -1180,6 +1363,27 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
     const { lat, lng, radius } = req.query as Record<string, string>;
     const maxRadius = parseFloat(radius || "25");
     try {
+      // Bidirectional block filtering: exclude providers blocked by or blocking this driver
+      const authHeader = req.headers["authorization"] as string | undefined;
+      const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : null;
+      let blockedEmails = new Set<string>();
+      if (token) {
+        const { rows: uRows } = await pool.query<{ email: string }>(
+          `SELECT u.email FROM sessions s JOIN auth_users u ON u.id = s.user_id
+           WHERE s.token = $1 AND s.expires_at > NOW()`, [token]
+        ).catch(() => ({ rows: [] }));
+        const driverEmail = uRows[0]?.email;
+        if (driverEmail) {
+          const { rows: bRows } = await pool.query<{ email: string }>(
+            `SELECT blocked_email AS email FROM blocks WHERE blocker_email = $1
+             UNION
+             SELECT blocker_email  AS email FROM blocks WHERE blocked_email = $1`,
+            [driverEmail.toLowerCase()]
+          ).catch(() => ({ rows: [] }));
+          blockedEmails = new Set(bRows.map((r) => r.email.toLowerCase()));
+        }
+      }
+
       const { rows } = await pool.query<ProviderRow>(
         `SELECT * FROM providers
          WHERE is_available = true
@@ -1192,10 +1396,12 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
       );
       const busyIds = new Set(activeJobs.map((j) => j.provider_id).filter(Boolean));
 
-      let result = rows.map((row) => ({
-        ...rowToProvider(row),
-        isBusy: busyIds.has(row.id),
-      }));
+      let result = rows
+        .filter((row) => blockedEmails.size === 0 || !blockedEmails.has((row.email || "").toLowerCase()))
+        .map((row) => ({
+          ...rowToProvider(row),
+          isBusy: busyIds.has(row.id),
+        }));
 
       if (lat && lng) {
         const userLat = parseFloat(lat);
@@ -1301,7 +1507,7 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
     }
   });
 
-  app.patch("/api/providers/:id/location", async (req: Request, res: Response) => {
+  app.patch("/api/providers/:id/location", locationUpdateLimit, async (req: Request, res: Response) => {
     const { latitude, longitude } = req.body;
     if (typeof latitude !== "number" || typeof longitude !== "number") {
       return res.status(400).json({ error: "latitude and longitude required" });
@@ -1705,7 +1911,7 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
 
   // ── Jobs ──────────────────────────────────────────────────────────────────────
 
-  app.post("/api/jobs", async (req: Request, res: Response) => {
+  app.post("/api/jobs", jobCreationLimit, async (req: Request, res: Response) => {
     const data = req.body as Partial<JobRecord>;
     if (!data.id || !data.serviceType) return res.status(400).json({ error: "id and serviceType required" });
     const requestedProviderId: string | null = (data as any).requestedProviderId ?? null;
@@ -1916,6 +2122,22 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
         }
       }
 
+      // Provider fraud / suspension check — block suspended accounts from accepting
+      const acceptingProviderId = req.body.provider?.id as string | undefined;
+      if (acceptingProviderId) {
+        const { rows: pCheck } = await pool.query<{ verification_status: string; email: string }>(
+          "SELECT verification_status, email FROM providers WHERE id = $1",
+          [acceptingProviderId]
+        );
+        if (pCheck.length && pCheck[0].verification_status === "suspended") {
+          console.warn(`[FRAUD] Suspended provider ${acceptingProviderId} attempted to accept job ${jobId}`);
+          return res.status(403).json({ error: "Your account has been suspended. Please contact support." });
+        }
+        if (pCheck.length && !["verified", "pending", "not_started"].includes(pCheck[0].verification_status ?? "")) {
+          console.warn(`[FRAUD] Provider ${acceptingProviderId} with status "${pCheck[0].verification_status}" accepting job`);
+        }
+      }
+
       const provLoc = req.body.providerLocation;
       const { rows } = await pool.query<JobRow>(
         `UPDATE jobs
@@ -1966,13 +2188,20 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
   });
 
   app.patch("/api/jobs/:id/cancel", async (req: Request, res: Response) => {
+    // Ownership check — only the driver who created the job may cancel it
+    const authToken = extractToken(req.headers["authorization"] as string | undefined);
+    const user = authToken ? await getUserByToken(authToken) : null;
+    if (!user) return res.status(401).json({ error: "Authentication required" });
     try {
-      const check = await pool.query<{ status: string; created_at: string }>(
-        "SELECT status, created_at FROM jobs WHERE id = $1",
+      const check = await pool.query<{ status: string; created_at: string; driver_email: string }>(
+        "SELECT status, created_at, driver->>'email' AS driver_email FROM jobs WHERE id = $1",
         [req.params.id]
       );
       if (!check.rows.length) return res.status(404).json({ error: "Job not found" });
-      const { status, created_at } = check.rows[0];
+      const { status, created_at, driver_email } = check.rows[0];
+      if (driver_email && driver_email.toLowerCase() !== user.email.toLowerCase()) {
+        return res.status(403).json({ error: "You do not have permission to cancel this job" });
+      }
       if (["completed", "cancelled", "expired"].includes(status)) {
         return res.status(409).json({ error: "Job already ended" });
       }
@@ -2417,38 +2646,60 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
         const data = JSON.parse(raw.toString());
 
         if (data.type === "join") {
-          const { conversationId, senderId, senderRole, isNotifier } = data;
-          clientRecord = { ws, conversationId, senderId, senderRole, isNotifier: !!isNotifier };
-          clients.add(clientRecord);
-          // Load persisted history from DB, merge with in-memory cache
-          pool.query<{
-            id: string; conversation_id: string; sender_id: string;
-            sender_role: string; content: string; created_at: string;
-          }>(
-            "SELECT * FROM chat_messages WHERE conversation_id = $1 ORDER BY created_at ASC LIMIT 200",
-            [conversationId]
-          ).then((result) => {
-            const dbMessages = result.rows.map((r) => ({
-              id: r.id,
-              conversationId: r.conversation_id,
-              senderId: r.sender_id,
-              senderRole: r.sender_role as "driver" | "provider" | null,
-              content: r.content,
-              timestamp: r.created_at,
-            }));
-            const memHistory = messageHistory.get(conversationId) || [];
-            const persisted = new Set(dbMessages.map((m) => m.id));
-            const merged = [...dbMessages, ...memHistory.filter((m) => !persisted.has(m.id))]
-              .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
-              .slice(-200);
-            messageHistory.set(conversationId, merged);
-            if (ws.readyState === WebSocket.OPEN) {
-              ws.send(JSON.stringify({ type: "history", messages: merged }));
+          const { conversationId, senderId, senderRole, isNotifier, token } = data;
+
+          // WebSocket authentication: validate token before allowing chat access
+          const validateAuth: Promise<boolean> = token
+            ? pool.query<{ user_id: string }>(
+                "SELECT user_id FROM sessions WHERE token = $1 AND expires_at > NOW()",
+                [token as string]
+              ).then((r) => r.rows.length > 0).catch(() => false)
+            : Promise.resolve(false);
+
+          validateAuth.then((isValid) => {
+            if (!isValid) {
+              if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: "error", code: "UNAUTHORIZED", message: "Authentication required for chat" }));
+                ws.close(1008, "Unauthorized");
+              }
+              return;
             }
+            clientRecord = { ws, conversationId, senderId, senderRole, isNotifier: !!isNotifier };
+            clients.add(clientRecord);
+            // Load persisted history from DB, merge with in-memory cache
+            pool.query<{
+              id: string; conversation_id: string; sender_id: string;
+              sender_role: string; content: string; created_at: string;
+            }>(
+              "SELECT * FROM chat_messages WHERE conversation_id = $1 ORDER BY created_at ASC LIMIT 200",
+              [conversationId]
+            ).then((result) => {
+              const dbMessages = result.rows.map((r) => ({
+                id: r.id,
+                conversationId: r.conversation_id,
+                senderId: r.sender_id,
+                senderRole: r.sender_role as "driver" | "provider" | null,
+                content: r.content,
+                timestamp: r.created_at,
+              }));
+              const memHistory = messageHistory.get(conversationId) || [];
+              const persisted = new Set(dbMessages.map((m) => m.id));
+              const merged = [...dbMessages, ...memHistory.filter((m) => !persisted.has(m.id))]
+                .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+                .slice(-200);
+              messageHistory.set(conversationId, merged);
+              if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: "history", messages: merged }));
+              }
+            }).catch(() => {
+              const history = messageHistory.get(conversationId) || [];
+              if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: "history", messages: history }));
+              }
+            });
           }).catch(() => {
-            const history = messageHistory.get(conversationId) || [];
             if (ws.readyState === WebSocket.OPEN) {
-              ws.send(JSON.stringify({ type: "history", messages: history }));
+              ws.send(JSON.stringify({ type: "error", code: "SERVER_ERROR" }));
             }
           });
           return;

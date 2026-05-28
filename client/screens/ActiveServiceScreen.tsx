@@ -264,6 +264,34 @@ export default function ActiveServiceScreen() {
   if (!activeRequest) return null;
 
   // ── Pending state ────────────────────────────────────────────────────────────
+  const handleBlockProvider = () => {
+    const providerEmail = (activeRequest.provider as any)?.email as string | undefined;
+    const providerName = activeRequest.provider?.name ?? "this provider";
+    if (!providerEmail) {
+      Alert.alert("Cannot Block", "Provider contact information is not available.");
+      return;
+    }
+    Alert.alert(
+      "Block Provider",
+      `Block ${providerName}? They will no longer appear in your provider list and cannot accept your requests.`,
+      [
+        { text: "Keep", style: "cancel" },
+        {
+          text: "Block",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await apiRequest("POST", "/api/blocks", { blockedEmail: providerEmail });
+              Alert.alert("Blocked", `${providerName} has been blocked.`);
+            } catch {
+              Alert.alert("Error", "Could not block provider. Please try again.");
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleCancel = () => {
     const createdAt = activeRequest?.createdAt ? new Date(activeRequest.createdAt).getTime() : Date.now();
     const ageMs = Date.now() - createdAt;
@@ -470,6 +498,24 @@ export default function ActiveServiceScreen() {
               <Feather name="x-circle" size={18} color={theme.error} />
               <ThemedText type="body" style={{ color: theme.error, fontWeight: "600", marginLeft: Spacing.sm }}>
                 Cancel Request
+              </ThemedText>
+            </Pressable>
+          </View>
+        ) : null}
+
+        {/* Block Provider — only when a provider has been assigned */}
+        {activeRequest.status !== "completed" && (activeRequest.provider as any)?.email ? (
+          <View style={[styles.cancelBtnWrap, { marginTop: 4 }]}>
+            <Pressable
+              onPress={handleBlockProvider}
+              style={({ pressed }) => [
+                styles.cancelBtn,
+                { borderColor: theme.textSecondary, opacity: pressed ? 0.8 : 1 },
+              ]}
+            >
+              <Feather name="slash" size={18} color={theme.textSecondary} />
+              <ThemedText type="body" style={{ color: theme.textSecondary, fontWeight: "600", marginLeft: Spacing.sm }}>
+                Block Provider
               </ThemedText>
             </Pressable>
           </View>

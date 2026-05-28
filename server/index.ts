@@ -1,5 +1,6 @@
 import express from "express";
 import type { Request, Response, NextFunction } from "express";
+import helmet from "helmet";
 import { registerRoutes } from "./routes";
 import * as fs from "fs";
 import * as path from "path";
@@ -37,6 +38,12 @@ const app = express();
 app.disable("etag");
 const log = console.log;
 
+// ── Security headers ──────────────────────────────────────────────────────────
+app.use(helmet({
+  crossOriginEmbedderPolicy: false,  // Expo web assets need cross-origin access
+  contentSecurityPolicy: false,       // Expo web manages its own CSP
+}));
+
 declare module "http" {
   interface IncomingMessage {
     rawBody: unknown;
@@ -55,6 +62,13 @@ function setupCors(app: express.Application) {
       process.env.REPLIT_DOMAINS.split(",").forEach((d) => {
         origins.add(`https://${d.trim()}`);
       });
+    }
+
+    // Always allow the production domain
+    origins.add("https://resqride.co");
+    origins.add("https://www.resqride.co");
+    if (process.env.EXPO_PUBLIC_DOMAIN) {
+      origins.add(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
     }
 
     const origin = req.header("origin");
@@ -80,13 +94,26 @@ function setupCors(app: express.Application) {
 function setupBodyParsing(app: express.Application) {
   app.use(
     express.json({
+      limit: "2mb",
       verify: (req, _res, buf) => {
         req.rawBody = buf;
       },
     }),
   );
 
-  app.use(express.urlencoded({ extended: false }));
+  app.use(express.urlencoded({ extended: false, limit: "2mb" }));
+}
+
+/** Remove sensitive values from any object before logging. */
+function scrubSensitive(obj: unknown): unknown {
+  if (!obj || typeof obj !== "object") return obj;
+  if (Array.isArray(obj)) return obj.map(scrubSensitive);
+  const SENSITIVE = new Set(["password", "token", "password_hash", "authorization", "secret", "cvv", "ssn", "accesstoken", "refreshtoken"]);
+  const result: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+    result[k] = SENSITIVE.has(k.toLowerCase()) ? "[REDACTED]" : scrubSensitive(v);
+  }
+  return result;
 }
 
 function setupRequestLogging(app: express.Application) {
@@ -108,7 +135,7 @@ function setupRequestLogging(app: express.Application) {
 
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+        logLine += ` :: ${JSON.stringify(scrubSensitive(capturedJsonResponse))}`;
       }
 
       if (logLine.length > 80) {

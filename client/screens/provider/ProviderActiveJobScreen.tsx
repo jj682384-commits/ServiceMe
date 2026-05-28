@@ -271,6 +271,34 @@ export default function ProviderActiveJobScreen() {
     });
   };
 
+  const handleBlockDriver = () => {
+    const driverEmail = (activeRequest.driver as any)?.email as string | undefined;
+    const driverName = activeRequest.driver?.name ?? "this customer";
+    if (!driverEmail) {
+      Alert.alert("Cannot Block", "Customer contact information is not available.");
+      return;
+    }
+    Alert.alert(
+      "Block Customer",
+      `Block ${driverName}? They will no longer be able to request your services.`,
+      [
+        { text: "Keep", style: "cancel" },
+        {
+          text: "Block",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await apiRequest("POST", "/api/blocks", { blockedEmail: driverEmail });
+              Alert.alert("Blocked", `${driverName} has been blocked.`);
+            } catch {
+              Alert.alert("Error", "Could not block customer. Please try again.");
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const timeAgo = () => {
     const d = activeRequest.createdAt;
     const diff = Math.floor((Date.now() - (d instanceof Date ? d.getTime() : new Date(d).getTime())) / 60000);
@@ -413,6 +441,12 @@ export default function ProviderActiveJobScreen() {
                   style={[styles.chatBtn, { backgroundColor: theme.primary + "15" }]}
                 >
                   <Feather name="message-circle" size={20} color={theme.primary} />
+                </Pressable>
+                <Pressable
+                  onPress={handleBlockDriver}
+                  style={[styles.chatBtn, { backgroundColor: theme.error + "15", marginLeft: 8 }]}
+                >
+                  <Feather name="slash" size={18} color={theme.error} />
                 </Pressable>
               </View>
             </View>
