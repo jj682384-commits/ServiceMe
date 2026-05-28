@@ -338,6 +338,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   ).catch(() => {});
   // ── jobs column migration ───────────────────────────────────────────────────
   await pool.query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW()`).catch(() => {});
+  await pool.query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS provider_rating SMALLINT DEFAULT NULL`).catch(() => {});
 
   function getSmartcarRedirectUri(): string {
     const prodDomain = process.env.REPLIT_INTERNAL_APP_DOMAIN;
@@ -1614,6 +1615,22 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
     // Detect EV job: explicit flag or notes convention ("EV " prefix)
     const isEV = data.isEV ?? (typeof data.notes === "string" && data.notes.startsWith("EV "));
     try {
+      // Embed driver's historical avg rating (from provider_rating on past jobs)
+      let driverData: Record<string, unknown> | null = data.driver ? { ...(data.driver as Record<string, unknown>) } : null;
+      if (driverData?.id) {
+        try {
+          const { rows: rr } = await pool.query(
+            `SELECT AVG(provider_rating)::numeric(3,2) AS avg, COUNT(*) AS cnt
+             FROM jobs WHERE driver->>'id' = $1 AND provider_rating IS NOT NULL`,
+            [driverData.id]
+          );
+          if (rr[0] && Number(rr[0].cnt) > 0) {
+            driverData.avgRating = Number(rr[0].avg);
+            driverData.ratingCount = Number(rr[0].cnt);
+          }
+        } catch { /* non-critical */ }
+      }
+
       const { rows } = await pool.query<JobRow>(
         `INSERT INTO jobs (
            id, service_type, location, notes, status, estimated_cost,
@@ -1627,7 +1644,7 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
           data.id, data.serviceType,
           JSON.stringify(data.location ?? { address: "Unknown", latitude: 0, longitude: 0 }),
           data.notes ?? "", data.estimatedCost ?? 0,
-          data.driver ? JSON.stringify(data.driver) : null,
+          driverData ? JSON.stringify(driverData) : null,
           data.eta ?? null, data.isExpress ?? null,
           data.expressFee ?? null, data.serviceFee ?? null,
           data.totalCost ?? null, data.receiptNumber ?? null,
@@ -1950,6 +1967,22 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
       res.json({ success: true });
     } catch (err) {
       console.error("[jobs/location]", err);
+      res.status(500).json({ error: "Database error" });
+    }
+  });
+
+  app.patch("/api/jobs/:id/provider-rating", async (req: Request, res: Response) => {
+    const { rating } = req.body as { rating?: number };
+    if (!rating || rating < 1 || rating > 5) return res.status(400).json({ error: "Rating must be 1-5" });
+    try {
+      const { rows } = await pool.query<JobRow>(
+        "UPDATE jobs SET provider_rating = $2, updated_at = NOW() WHERE id = $1 RETURNING *",
+        [req.params.id, rating]
+      );
+      if (!rows.length) return res.status(404).json({ error: "Job not found" });
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("[provider-rating]", err);
       res.status(500).json({ error: "Database error" });
     }
   });

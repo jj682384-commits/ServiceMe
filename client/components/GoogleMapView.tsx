@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import { Platform, StyleSheet } from "react-native";
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE, PROVIDER_DEFAULT, Region } from "react-native-maps";
 
@@ -25,6 +25,8 @@ interface GoogleMapViewProps {
   routeColor?: string;
   fallback?: React.ReactNode;
   mapStyle?: "standard" | "dark";
+  fitCoordinates?: { latitude: number; longitude: number }[];
+  fitPadding?: { top: number; right: number; bottom: number; left: number };
 }
 
 const DARK_MAP_STYLE = [
@@ -40,8 +42,6 @@ const DARK_MAP_STYLE = [
   { featureType: "transit", elementType: "geometry", stylers: [{ color: "#2a2a4e" }] },
 ];
 
-// Use Google Maps on Android; Apple Maps (default) on iOS so the map works
-// in Expo Go without requiring a native build or embedded API key.
 const MAP_PROVIDER = Platform.OS === "android" ? PROVIDER_GOOGLE : PROVIDER_DEFAULT;
 
 export function GoogleMapView({
@@ -57,9 +57,25 @@ export function GoogleMapView({
   routeColor = "#C0C0C0",
   fallback,
   mapStyle = "standard",
+  fitCoordinates,
+  fitPadding,
 }: GoogleMapViewProps) {
+  const mapRef = useRef<MapView>(null);
+
+  useEffect(() => {
+    if (!fitCoordinates || fitCoordinates.length < 2) return;
+    const timer = setTimeout(() => {
+      mapRef.current?.fitToCoordinates(fitCoordinates, {
+        edgePadding: fitPadding ?? { top: 100, right: 80, bottom: 340, left: 80 },
+        animated: true,
+      });
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [fitCoordinates]);
+
   return (
     <MapView
+      ref={mapRef}
       provider={MAP_PROVIDER}
       style={[styles.map, style]}
       initialRegion={{

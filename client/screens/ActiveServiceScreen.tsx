@@ -29,6 +29,15 @@ import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 const { height: SCREEN_H } = Dimensions.get("window");
 
+function haversineMi(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) ** 2;
+  return 3959 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 const PEEK_H     = 260;
 const EXPANDED_H = Math.round(SCREEN_H * 0.62);
 const CLOSED_Y   = EXPANDED_H - PEEK_H;
@@ -138,6 +147,8 @@ export default function ActiveServiceScreen() {
 
   const [eta, setEta]                   = useState(activeRequest?.eta || 8);
   const [providerLocation, setProviderLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [fitCoords, setFitCoords]       = useState<{ latitude: number; longitude: number }[] | undefined>(undefined);
+  const [distanceMi, setDistanceMi]     = useState<number | null>(null);
   const locPollRef           = useRef<ReturnType<typeof setInterval> | null>(null);
   const activeRequestRef     = useRef(activeRequest);
   const hasNavigatedDoneRef  = useRef(false);
@@ -230,7 +241,16 @@ export default function ActiveServiceScreen() {
           const loc = job.providerLocation as { lat?: number; lng?: number; latitude?: number; longitude?: number };
           const lat = loc.latitude ?? loc.lat;
           const lng = loc.longitude ?? loc.lng;
-          if (lat && lng && (lat !== 0 || lng !== 0)) setProviderLocation({ latitude: lat, longitude: lng });
+          if (lat && lng && (lat !== 0 || lng !== 0)) {
+            setProviderLocation({ latitude: lat, longitude: lng });
+            const uLat = activeRequestRef.current?.location.latitude ?? 0;
+            const uLng = activeRequestRef.current?.location.longitude ?? 0;
+            if (uLat && uLng) {
+              const dist = haversineMi(uLat, uLng, lat, lng);
+              setDistanceMi(dist);
+              setFitCoords([{ latitude: uLat, longitude: uLng }, { latitude: lat, longitude: lng }]);
+            }
+          }
         }
         // Keep ETA in sync with server
         if (job.eta != null) setEta(job.eta as number);
@@ -362,8 +382,25 @@ export default function ActiveServiceScreen() {
           routeCoordinates={routeCoords}
           routeColor={theme.primary}
           fallback={MapFallback}
+          fitCoordinates={fitCoords}
+          fitPadding={{ top: 100, right: 80, bottom: EXPANDED_H - PEEK_H + 80, left: 80 }}
         />
       </View>
+
+      {/* Distance badge — shows when we have live provider location */}
+      {distanceMi !== null ? (
+        <View
+          style={[
+            styles.distanceBadge,
+            { top: insets.top + Spacing.sm, backgroundColor: theme.backgroundDefault },
+          ]}
+        >
+          <Feather name="navigation" size={13} color={theme.primary} />
+          <ThemedText type="small" style={{ color: theme.text, fontWeight: "600", marginLeft: 5 }}>
+            {distanceMi < 0.1 ? "Arriving now" : `${distanceMi.toFixed(1)} mi away`}
+          </ThemedText>
+        </View>
+      ) : null}
 
       {/* Floating back button — rendered above the map */}
       <Pressable
@@ -551,6 +588,21 @@ export default function ActiveServiceScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
 
+  distanceBadge: {
+    position: "absolute",
+    right: Spacing.lg,
+    zIndex: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 7,
+    borderRadius: BorderRadius.full,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 6,
+  },
   floatingBack: {
     position: "absolute",
     left: Spacing.lg,

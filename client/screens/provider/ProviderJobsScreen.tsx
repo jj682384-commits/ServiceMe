@@ -359,6 +359,17 @@ function JobCard({ job, onPress, isDirectRequest }: { job: ServiceRequest; onPre
             <ThemedText type="small" style={{ marginLeft: Spacing.xs, color: theme.textSecondary }}>
               {job.driver.name as string}
             </ThemedText>
+            {(job.driver as any).avgRating ? (
+              <View style={{ flexDirection: "row", alignItems: "center", marginLeft: Spacing.sm, gap: 3 }}>
+                <Feather name="star" size={11} color={theme.warning} />
+                <ThemedText type="small" style={{ color: theme.warning, fontSize: 11, fontWeight: "600" }}>
+                  {Number((job.driver as any).avgRating).toFixed(1)}
+                </ThemedText>
+                <ThemedText type="small" style={{ color: theme.textSecondary, fontSize: 10 }}>
+                  ({(job.driver as any).ratingCount})
+                </ThemedText>
+              </View>
+            ) : null}
           </View>
         ) : null}
         <View style={styles.detailRow}>

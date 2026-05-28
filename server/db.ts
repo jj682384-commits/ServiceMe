@@ -72,6 +72,7 @@ export interface JobRow {
   total_cost: number | null;
   tip: number | null;
   driver_rating: number | null;
+  provider_rating: number | null;
   receipt_number: string | null;
   time_saved: number | null;
   scheduled_date: string | null;
@@ -128,6 +129,7 @@ export function rowToJob(r: JobRow) {
     totalCost: r.total_cost != null ? Number(r.total_cost) : undefined,
     tip: r.tip != null ? Number(r.tip) : undefined,
     driverRating: r.driver_rating ?? undefined,
+    providerRating: r.provider_rating ?? undefined,
     receiptNumber: r.receipt_number ?? undefined,
     timeSaved: r.time_saved ?? undefined,
     scheduledDate: r.scheduled_date ?? undefined,

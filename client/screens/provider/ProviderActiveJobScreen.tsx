@@ -93,6 +93,9 @@ export default function ProviderActiveJobScreen() {
   const gpsPermittedRef  = useRef<boolean | null>(null);
   const gpsInFlightRef   = useRef(false);
   const [advancing, setAdvancing] = useState(false);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [driverStars, setDriverStars] = useState(0);
+  const completedJobIdRef = useRef<string | null>(null);
 
   useEffect(() => { activeRequestRef.current = activeRequest; }, [activeRequest]);
 
@@ -247,7 +250,10 @@ export default function ProviderActiveJobScreen() {
 
     try {
       await apiRequest("PATCH", `/api/jobs/${activeRequest.id}/status`, { status: nextStatus });
-      if (nextStatus === "completed") safeGoBack();
+      if (nextStatus === "completed") {
+        completedJobIdRef.current = activeRequest.id;
+        setShowRatingModal(true);
+      }
     } catch {
       // Revert on failure so status stays in sync with server
       setActiveRequest({ ...activeRequest, status: prevStatus });
@@ -433,6 +439,67 @@ export default function ProviderActiveJobScreen() {
           ) : null}
         </ScrollView>
       </Animated.View>
+
+      {/* ── Provider rates driver modal ──────────────────────────────────── */}
+      {showRatingModal ? (
+        <View style={[styles.modalOverlay]}>
+          <View style={[styles.modalCard, { backgroundColor: theme.backgroundDefault }]}>
+            <Feather name="check-circle" size={36} color="#16A34A" style={{ alignSelf: "center", marginBottom: Spacing.md }} />
+            <ThemedText type="h3" style={{ textAlign: "center", marginBottom: Spacing.xs }}>
+              Job Complete
+            </ThemedText>
+            <ThemedText type="body" style={{ color: theme.textSecondary, textAlign: "center", marginBottom: Spacing.xl }}>
+              How was {activeRequest?.driver?.name ?? "this driver"}?
+            </ThemedText>
+            <View style={styles.starsRow}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Pressable key={star} onPress={() => setDriverStars(star)} style={styles.starBtn}>
+                  <Feather
+                    name="star"
+                    size={38}
+                    color={star <= driverStars ? "#F59E0B" : theme.border}
+                    style={{ opacity: star <= driverStars ? 1 : 0.35 }}
+                  />
+                </Pressable>
+              ))}
+            </View>
+            {driverStars > 0 ? (
+              <ThemedText type="small" style={{ color: theme.primary, textAlign: "center", marginTop: Spacing.sm }}>
+                {["", "Poor", "Fair", "Good", "Great", "Excellent"][driverStars]}
+              </ThemedText>
+            ) : null}
+            <Pressable
+              onPress={async () => {
+                const jobId = completedJobIdRef.current;
+                if (jobId && driverStars > 0) {
+                  apiRequest("PATCH", `/api/jobs/${jobId}/provider-rating`, { rating: driverStars }).catch(() => {});
+                }
+                setShowRatingModal(false);
+                safeGoBack();
+              }}
+              disabled={driverStars === 0}
+              style={({ pressed }) => [
+                styles.submitRatingBtn,
+                {
+                  backgroundColor: driverStars > 0 ? theme.primary : theme.border,
+                  opacity: pressed ? 0.85 : 1,
+                  marginTop: Spacing.xl,
+                },
+              ]}
+            >
+              <ThemedText type="body" style={{ color: "#FFFFFF", fontWeight: "700" }}>
+                {driverStars > 0 ? "Submit Rating" : "Select a rating"}
+              </ThemedText>
+            </Pressable>
+            <Pressable
+              onPress={() => { setShowRatingModal(false); safeGoBack(); }}
+              style={styles.skipRatingBtn}
+            >
+              <ThemedText type="small" style={{ color: theme.textSecondary }}>Skip</ThemedText>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
     </ThemedView>
   );
 }
@@ -566,6 +633,34 @@ const styles = StyleSheet.create({
   chatBtn:    { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
 
   completedBox: { borderRadius: BorderRadius.md, borderWidth: 1, padding: Spacing.xl, alignItems: "center" },
+
+  modalOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.65)",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 100,
+    padding: Spacing.xl,
+  },
+  modalCard: {
+    width: "100%",
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.xl,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 20,
+  },
+  starsRow: { flexDirection: "row", justifyContent: "center", gap: Spacing.sm, marginTop: Spacing.sm },
+  starBtn: { padding: Spacing.xs },
+  submitRatingBtn: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.full,
+  },
+  skipRatingBtn: { alignItems: "center", paddingTop: Spacing.md },
 
   timeline:     { gap: 0 },
   timelineRow:  { flexDirection: "row", alignItems: "flex-start", gap: Spacing.md },
