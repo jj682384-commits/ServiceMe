@@ -34,6 +34,7 @@ export function KeyboardAwareScrollViewCompat({
     <KeyboardAwareScrollView
       keyboardShouldPersistTaps={keyboardShouldPersistTaps}
       keyboardDismissMode={keyboardDismissMode}
+      bottomOffset={bottomOffset}
       {...props}
     >
       {children}
