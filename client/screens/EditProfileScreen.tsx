@@ -4,71 +4,59 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from "react-native-reanimated";
+import { LinearGradient } from "expo-linear-gradient";
+import Animated, { FadeInDown, FadeIn } from "react-native-reanimated";
 
-import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
+import AnimatedBackground from "@/components/AnimatedBackground";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceType, EVService } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
-import { getApiUrl, apiRequest } from "@/lib/query-client";
+import { apiRequest } from "@/lib/query-client";
 
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+// ─── Service definitions ──────────────────────────────────────────────────────
+const SERVICE_META: { value: ServiceType; label: string; icon: keyof typeof Feather.glyphMap; color: string }[] = [
+  { value: "flat_tire",      label: "Flat Tire",      icon: "disc",             color: "#F87171" },
+  { value: "jump_start",     label: "Jump Start",     icon: "zap",              color: "#FBBF24" },
+  { value: "tow",            label: "Tow Service",    icon: "truck",            color: "#60A5FA" },
+  { value: "fuel",           label: "Fuel Delivery",  icon: "droplet",          color: "#34D399" },
+  { value: "lockout",        label: "Lockout",        icon: "lock",             color: "#A78BFA" },
+  { value: "obd_diagnostic", label: "OBD Diagnostic", icon: "activity",         color: "#FB923C" },
+];
 
+const EV_SERVICE_META: { key: EVService; label: string; sub: string; icon: keyof typeof Feather.glyphMap }[] = [
+  { key: "ev_charging",  label: "Mobile EV Charging",       sub: "Portable DC fast charge or Level 2 unit",    icon: "battery-charging" },
+  { key: "ev_towing",    label: "EV-Safe Towing",           sub: "Flatbed only, no drivetrain contact",        icon: "truck" },
+  { key: "hv_certified", label: "High-Voltage Certified",   sub: "Trained to work around EV battery packs",   icon: "shield" },
+];
 
-const serviceTypeLabels: Record<ServiceType, string> = {
-  flat_tire: "Flat Tire",
-  jump_start: "Jump Start",
-  tow: "Tow Service",
-  fuel: "Fuel Delivery",
-  lockout: "Lockout",
-  obd_diagnostic: "OBD Diagnostic",
-};
-
-interface InputFieldProps {
-  label: string;
-  value: string;
-  onChangeText: (text: string) => void;
-  placeholder?: string;
+// ─── Input Field ──────────────────────────────────────────────────────────────
+function InputField({
+  label, value, onChangeText, placeholder, icon, keyboardType = "default", autoCapitalize = "sentences",
+}: {
+  label: string; value: string; onChangeText: (t: string) => void; placeholder?: string;
   icon: keyof typeof Feather.glyphMap;
   keyboardType?: "default" | "email-address" | "phone-pad";
   autoCapitalize?: "none" | "sentences" | "words";
-}
-
-function InputField({
-  label,
-  value,
-  onChangeText,
-  placeholder,
-  icon,
-  keyboardType = "default",
-  autoCapitalize = "sentences",
-}: InputFieldProps) {
+}) {
   const { theme } = useTheme();
-  const [isFocused, setIsFocused] = useState(false);
+  const [focused, setFocused] = useState(false);
 
   return (
-    <View style={styles.inputGroup}>
-      <ThemedText type="small" style={[styles.label, { color: theme.textSecondary }]}>
-        {label}
-      </ThemedText>
+    <View style={{ marginBottom: Spacing.md }}>
+      <ThemedText style={styles.fieldLabel}>{label.toUpperCase()}</ThemedText>
       <View
         style={[
-          styles.inputContainer,
-          {
-            backgroundColor: theme.backgroundDefault,
-            borderColor: isFocused ? theme.primary : theme.border,
-          },
+          styles.inputRow,
+          { backgroundColor: theme.backgroundDefault, borderColor: focused ? "#0066FF" : theme.border },
         ]}
       >
-        <Feather name={icon} size={20} color={isFocused ? theme.primary : theme.textSecondary} />
+        <View style={[styles.inputIconBox, { backgroundColor: focused ? "#0066FF18" : theme.cardAnimatedBg }]}>
+          <Feather name={icon} size={16} color={focused ? "#60A5FA" : theme.textSecondary} />
+        </View>
         <TextInput
-          style={[styles.input, { color: theme.text }]}
+          style={[styles.inputText, { color: theme.text }]}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
@@ -76,95 +64,33 @@ function InputField({
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
           returnKeyType="done"
-          onSubmitEditing={() => Keyboard.dismiss()}
+          onSubmitEditing={Keyboard.dismiss}
           blurOnSubmit
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
         />
       </View>
     </View>
   );
 }
 
-
-interface ServiceToggleProps {
-  services: ServiceType[];
-  selectedServices: ServiceType[];
-  onToggle: (service: ServiceType) => void;
-}
-
-function ServiceToggle({ services, selectedServices, onToggle }: ServiceToggleProps) {
-  const { theme } = useTheme();
-
-  return (
-    <View style={styles.servicesSection}>
-      <ThemedText type="small" style={[styles.label, { color: theme.textSecondary }]}>
-        Services You Offer
-      </ThemedText>
-      <View style={styles.servicesGrid}>
-        {services.map((service) => {
-          const isSelected = selectedServices.includes(service);
-          return (
-            <Pressable
-              key={service}
-              onPress={() => onToggle(service)}
-              style={[
-                styles.serviceChip,
-                {
-                  backgroundColor: isSelected ? theme.secondary + "20" : theme.backgroundDefault,
-                  borderColor: isSelected ? theme.secondary : theme.border,
-                },
-              ]}
-            >
-              {isSelected ? (
-                <Feather name="check" size={14} color={theme.secondary} />
-              ) : null}
-              <ThemedText
-                type="small"
-                style={{ color: isSelected ? theme.secondary : theme.textSecondary, fontWeight: isSelected ? "600" : "400" }}
-              >
-                {serviceTypeLabels[service]}
-              </ThemedText>
-            </Pressable>
-          );
-        })}
-      </View>
-    </View>
-  );
-}
-
+// ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function EditProfileScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
-  const { theme } = useTheme();
-  const {
-    userRole, currentDriver, currentProvider,
-    setCurrentDriver, setCurrentProvider, authUser, setAuthUser,
-  } = useApp();
+  const { theme, isDark } = useTheme();
+  const { userRole, currentDriver, currentProvider, setCurrentDriver, setCurrentProvider, authUser, setAuthUser } = useApp();
   const navigation = useNavigation();
 
   const isProvider = userRole === "provider";
 
-  const [name, setName] = useState(isProvider ? currentProvider?.name || "" : currentDriver?.name || "");
+  const [name, setName]   = useState(isProvider ? currentProvider?.name  || "" : currentDriver?.name  || "");
   const [phone, setPhone] = useState(isProvider ? currentProvider?.phone || "" : currentDriver?.phone || "");
   const [email, setEmail] = useState(isProvider ? currentProvider?.email || "" : currentDriver?.email || "");
-  const [vehicleMake, setVehicleMake] = useState(currentProvider?.vehicleMake || "");
-  const [vehicleModel, setVehicleModel] = useState(currentProvider?.vehicleModel || "");
-  const [licensePlate, setLicensePlate] = useState(currentProvider?.licensePlate || "");
   const [servicesOffered, setServicesOffered] = useState<ServiceType[]>(currentProvider?.servicesOffered || []);
   const [evCapable, setEvCapable] = useState<boolean>(currentProvider?.evCapable ?? false);
-  const [evServices, setEvServices] = useState<EVService[]>(currentProvider?.evServices || []);
-
+  const [evServices, setEvServices]     = useState<EVService[]>(currentProvider?.evServices || []);
   const [isSaving, setIsSaving] = useState(false);
-
-
-  const scale = useSharedValue(1);
-
-  const animatedButtonStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  const allServices: ServiceType[] = ["flat_tire", "jump_start", "tow", "fuel", "lockout", "obd_diagnostic"];
 
   const handleToggleService = (service: ServiceType) => {
     setServicesOffered((prev) =>
@@ -172,12 +98,15 @@ export default function EditProfileScreen() {
     );
   };
 
+  const handleToggleEVService = (key: EVService) => {
+    setEvServices((prev) => prev.includes(key) ? prev.filter((x) => x !== key) : [...prev, key]);
+  };
+
   const handleSave = async () => {
     if (!name.trim() || !phone.trim() || !email.trim()) {
       Alert.alert("Missing Information", "Please fill in all required fields.");
       return;
     }
-
     if (isProvider && servicesOffered.length === 0) {
       Alert.alert("Services Required", "Please select at least one service you offer.");
       return;
@@ -185,11 +114,7 @@ export default function EditProfileScreen() {
 
     setIsSaving(true);
     try {
-      await apiRequest("PATCH", "/api/auth/profile", {
-        name: name.trim(),
-        phone: phone.trim(),
-        email: email.trim(),
-      });
+      await apiRequest("PATCH", "/api/auth/profile", { name: name.trim(), phone: phone.trim(), email: email.trim() });
     } catch {}
 
     if (authUser) {
@@ -199,28 +124,14 @@ export default function EditProfileScreen() {
     if (isProvider && currentProvider) {
       const updatedProvider = {
         ...currentProvider,
-        name: name.trim(),
-        phone: phone.trim(),
-        email: email.trim(),
-        vehicleMake: vehicleMake.trim(),
-        vehicleModel: vehicleModel.trim(),
-        licensePlate: licensePlate.trim().toUpperCase(),
-        servicesOffered,
-        evCapable,
-        evServices: evCapable ? evServices : [],
+        name: name.trim(), phone: phone.trim(), email: email.trim(),
+        servicesOffered, evCapable, evServices: evCapable ? evServices : [],
       };
       setCurrentProvider(updatedProvider);
-      try {
-        await apiRequest("POST", "/api/providers/register", updatedProvider);
-      } catch {}
+      try { await apiRequest("POST", "/api/providers/register", updatedProvider); } catch {}
     } else {
       const base = currentDriver ?? { id: authUser?.id ?? "", avatarPreset: 1, membership: "free" as const };
-      setCurrentDriver({
-        ...base,
-        name: name.trim(),
-        phone: phone.trim(),
-        email: email.trim(),
-      });
+      setCurrentDriver({ ...base, name: name.trim(), phone: phone.trim(), email: email.trim() });
     }
 
     setIsSaving(false);
@@ -229,138 +140,160 @@ export default function EditProfileScreen() {
     ]);
   };
 
+  const sectionBg = theme.cardAnimatedBg;
+  const displayName = isProvider ? (currentProvider?.name || "Provider") : (currentDriver?.name || "Driver");
+
   return (
-    <ThemedView style={styles.container}>
+    <View style={[styles.container, { backgroundColor: isDark ? "#000000" : theme.backgroundRoot }]}>
+      <AnimatedBackground />
+
       <KeyboardAwareScrollViewCompat
-        contentContainerStyle={[
-          styles.scrollContent,
-          {
-            paddingTop: headerHeight + Spacing.lg,
-            paddingBottom: insets.bottom + Spacing.xl,
-          },
-        ]}
+        style={{ backgroundColor: "transparent" }}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: headerHeight + Spacing.md, paddingBottom: insets.bottom + Spacing["2xl"] }]}
+        keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.section}>
-          <ThemedText type="h4" style={styles.sectionTitle}>
-            Personal Information
-          </ThemedText>
+        {/* Hero */}
+        <LinearGradient
+          colors={isProvider ? ["#1A0A0E", "#2D0F16", "#1A0A0E"] : ["#0A1F3A", "#0F2855", "#14124A"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.heroCard}
+        >
+          <View style={styles.heroRow}>
+            <View style={[styles.heroAvatar, { backgroundColor: isProvider ? "rgba(248,113,113,0.15)" : "rgba(96,165,250,0.15)" }]}>
+              <Feather name="user" size={26} color={isProvider ? "#F87171" : "#60A5FA"} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <ThemedText style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: "600", letterSpacing: 0.8 }}>
+                EDITING PROFILE
+              </ThemedText>
+              <ThemedText style={{ color: "#FFFFFF", fontSize: 20, fontWeight: "800", marginTop: 2 }}>
+                {displayName}
+              </ThemedText>
+            </View>
+            <View style={[styles.rolePill, { backgroundColor: isProvider ? "#D9222218" : "#0066FF18", borderColor: isProvider ? "#D9222240" : "#0066FF40" }]}>
+              <ThemedText style={{ color: isProvider ? "#F87171" : "#60A5FA", fontSize: 11, fontWeight: "700" }}>
+                {isProvider ? "PROVIDER" : "DRIVER"}
+              </ThemedText>
+            </View>
+          </View>
+        </LinearGradient>
 
-          <InputField
-            label="Full Name"
-            value={name}
-            onChangeText={setName}
-            placeholder="Enter your name"
-            icon="user"
-            autoCapitalize="words"
-          />
+        {/* Personal Information */}
+        <Animated.View entering={FadeIn.delay(60).duration(280)}>
+          <ThemedText style={[styles.sectionLabel, { marginBottom: Spacing.sm }]}>PERSONAL INFORMATION</ThemedText>
+          <View style={[styles.sectionCard, { backgroundColor: sectionBg }]}>
+            <InputField label="Full Name"     value={name}  onChangeText={setName}  placeholder="Enter your name"  icon="user"  autoCapitalize="words" />
+            <InputField label="Phone Number"  value={phone} onChangeText={setPhone} placeholder="Enter your phone" icon="phone" keyboardType="phone-pad" />
+            <InputField label="Email Address" value={email} onChangeText={setEmail} placeholder="Enter your email" icon="mail"  keyboardType="email-address" autoCapitalize="none" />
+          </View>
+        </Animated.View>
 
-          <InputField
-            label="Phone Number"
-            value={phone}
-            onChangeText={setPhone}
-            placeholder="Enter your phone"
-            icon="phone"
-            keyboardType="phone-pad"
-          />
-
-          <InputField
-            label="Email Address"
-            value={email}
-            onChangeText={setEmail}
-            placeholder="Enter your email"
-            icon="mail"
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-        </View>
-
+        {/* Provider-only sections */}
         {isProvider ? (
           <>
-            <View style={styles.section}>
-              <ThemedText type="h4" style={styles.sectionTitle}>
-                Vehicle Information
-              </ThemedText>
+            {/* Services */}
+            <Animated.View entering={FadeInDown.delay(100).duration(280).springify().damping(20)}>
+              <ThemedText style={[styles.sectionLabel, { marginBottom: Spacing.sm }]}>SERVICES YOU OFFER</ThemedText>
+              <View style={[styles.sectionCard, { backgroundColor: sectionBg }]}>
+                <ThemedText type="small" style={{ color: theme.textSecondary, marginBottom: Spacing.md }}>
+                  Select all the services you can perform for drivers.
+                </ThemedText>
+                <View style={styles.servicesGrid}>
+                  {SERVICE_META.map(({ value, label, icon, color }) => {
+                    const active = servicesOffered.includes(value);
+                    return (
+                      <Pressable
+                        key={value}
+                        onPress={() => handleToggleService(value)}
+                        style={[
+                          styles.serviceCard,
+                          {
+                            backgroundColor: active ? color + "18" : theme.backgroundDefault,
+                            borderColor: active ? color + "60" : theme.border,
+                          },
+                        ]}
+                      >
+                        <View style={[styles.serviceIconBox, { backgroundColor: active ? color + "22" : theme.cardAnimatedBg }]}>
+                          <Feather name={icon} size={18} color={active ? color : theme.textSecondary} />
+                        </View>
+                        <ThemedText
+                          type="small"
+                          style={{ color: active ? color : theme.text, fontWeight: active ? "700" : "400", marginTop: 6, textAlign: "center", lineHeight: 16 }}
+                          numberOfLines={2}
+                        >
+                          {label}
+                        </ThemedText>
+                        {active ? (
+                          <View style={[styles.serviceCheck, { backgroundColor: color }]}>
+                            <Feather name="check" size={10} color="#FFFFFF" />
+                          </View>
+                        ) : null}
+                      </Pressable>
+                    );
+                  })}
+                </View>
+                {servicesOffered.length === 0 ? (
+                  <ThemedText type="small" style={{ color: "#F87171", marginTop: Spacing.sm, fontSize: 11 }}>
+                    Select at least one service to continue
+                  </ThemedText>
+                ) : (
+                  <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: Spacing.sm, fontSize: 11 }}>
+                    {servicesOffered.length} service{servicesOffered.length !== 1 ? "s" : ""} selected
+                  </ThemedText>
+                )}
+              </View>
+            </Animated.View>
 
-              <InputField
-                label="Vehicle Make"
-                value={vehicleMake}
-                onChangeText={setVehicleMake}
-                placeholder="e.g., Ford, Toyota"
-                icon="truck"
-                autoCapitalize="words"
-              />
-
-              <InputField
-                label="Vehicle Model"
-                value={vehicleModel}
-                onChangeText={setVehicleModel}
-                placeholder="e.g., Transit, Tacoma"
-                icon="truck"
-                autoCapitalize="words"
-              />
-
-              <InputField
-                label="License Plate"
-                value={licensePlate}
-                onChangeText={(text) => setLicensePlate(text.toUpperCase())}
-                placeholder="e.g., ABC-1234"
-                icon="hash"
-                autoCapitalize="none"
-              />
-            </View>
-
-            <View style={styles.section}>
-              <ThemedText type="h4" style={styles.sectionTitle}>
-                Services
-              </ThemedText>
-              <ServiceToggle
-                services={allServices}
-                selectedServices={servicesOffered}
-                onToggle={handleToggleService}
-              />
-            </View>
-
-            <View style={styles.section}>
-              <ThemedText type="h4" style={styles.sectionTitle}>EV Services</ThemedText>
-              <View style={[styles.evCard, { backgroundColor: theme.backgroundDefault, borderColor: evCapable ? "#00C853" : theme.border }]}>
-                <View style={styles.evCardRow}>
+            {/* EV Services */}
+            <Animated.View entering={FadeInDown.delay(160).duration(280).springify().damping(20)}>
+              <ThemedText style={[styles.sectionLabel, { marginBottom: Spacing.sm }]}>EV SERVICES</ThemedText>
+              <View style={[styles.sectionCard, { backgroundColor: sectionBg }]}>
+                {/* EV Capable toggle */}
+                <View style={styles.evToggleRow}>
+                  <View style={[styles.evIconBox, { backgroundColor: evCapable ? "#34D39922" : theme.backgroundDefault }]}>
+                    <Feather name="battery-charging" size={20} color={evCapable ? "#34D399" : theme.textSecondary} />
+                  </View>
                   <View style={{ flex: 1 }}>
-                    <ThemedText type="body" style={{ fontWeight: "600" }}>Electric Vehicle Capable</ThemedText>
-                    <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: 2 }}>
-                      Accept EV-specific service requests from EV Mode
+                    <ThemedText type="body" style={{ fontWeight: "700" }}>EV Capable</ThemedText>
+                    <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: 1 }}>
+                      Accept EV-specific service requests
                     </ThemedText>
                   </View>
                   <Switch
                     value={evCapable}
                     onValueChange={setEvCapable}
-                    trackColor={{ false: theme.border, true: "#00C853" }}
+                    trackColor={{ false: theme.border, true: "#34D399" }}
                     thumbColor="#FFFFFF"
                   />
                 </View>
+
                 {evCapable ? (
-                  <View style={styles.evServiceList}>
-                    <View style={[styles.evDividerEdit, { backgroundColor: theme.border }]} />
-                    <ThemedText type="small" style={[styles.evServicesLabelEdit, { color: theme.textSecondary }]}>
-                      Which EV services can you provide?
+                  <View style={{ marginTop: Spacing.md, gap: Spacing.xs }}>
+                    <View style={[styles.evDivider, { backgroundColor: theme.border }]} />
+                    <ThemedText style={[styles.fieldLabel, { marginTop: Spacing.sm, marginBottom: Spacing.sm }]}>
+                      WHICH EV SERVICES CAN YOU PROVIDE?
                     </ThemedText>
-                    {([
-                      { key: "ev_charging" as EVService, label: "Mobile EV Charging", sub: "Portable DC fast charge or Level 2 unit" },
-                      { key: "ev_towing" as EVService, label: "EV-Safe Towing", sub: "Flatbed only, no drivetrain contact" },
-                      { key: "hv_certified" as EVService, label: "High-Voltage Certified", sub: "Trained to work around EV battery packs" },
-                    ]).map((s) => {
-                      const active = evServices.includes(s.key);
+                    {EV_SERVICE_META.map(({ key, label, sub, icon }) => {
+                      const active = evServices.includes(key);
                       return (
                         <Pressable
-                          key={s.key}
-                          onPress={() => setEvServices((prev) => active ? prev.filter((x) => x !== s.key) : [...prev, s.key])}
-                          style={({ pressed }) => [styles.evServiceItem, { opacity: pressed ? 0.7 : 1, backgroundColor: active ? "#00C85310" : "transparent" }]}
+                          key={key}
+                          onPress={() => handleToggleEVService(key)}
+                          style={[
+                            styles.evServiceRow,
+                            { backgroundColor: active ? "#34D39912" : "transparent", borderColor: active ? "#34D39940" : "transparent" },
+                          ]}
                         >
-                          <View style={{ flex: 1 }}>
-                            <ThemedText type="body" style={{ fontWeight: active ? "600" : "400" }}>{s.label}</ThemedText>
-                            <ThemedText type="small" style={{ color: theme.textSecondary }}>{s.sub}</ThemedText>
+                          <View style={[styles.evServiceIcon, { backgroundColor: active ? "#34D39922" : theme.backgroundDefault }]}>
+                            <Feather name={icon} size={16} color={active ? "#34D399" : theme.textSecondary} />
                           </View>
-                          <View style={[styles.evCheckEdit, { borderColor: active ? "#00C853" : theme.border, backgroundColor: active ? "#00C853" : "transparent" }]}>
-                            {active ? <Feather name="check" size={12} color="#FFF" /> : null}
+                          <View style={{ flex: 1 }}>
+                            <ThemedText type="body" style={{ fontWeight: active ? "700" : "400" }}>{label}</ThemedText>
+                            <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: 1 }}>{sub}</ThemedText>
+                          </View>
+                          <View style={[styles.evCheck, { borderColor: active ? "#34D399" : theme.border, backgroundColor: active ? "#34D399" : "transparent" }]}>
+                            {active ? <Feather name="check" size={11} color="#FFF" /> : null}
                           </View>
                         </Pressable>
                       );
@@ -368,195 +301,69 @@ export default function EditProfileScreen() {
                   </View>
                 ) : null}
               </View>
-            </View>
+            </Animated.View>
           </>
         ) : null}
 
-        <AnimatedPressable
-          onPress={handleSave}
-          onPressIn={() => { scale.value = withSpring(0.97); }}
-          onPressOut={() => { scale.value = withSpring(1); }}
-          disabled={isSaving}
-          style={[
-            styles.saveButton,
-            {
-              backgroundColor: theme.primary,
-              opacity: isSaving ? 0.7 : 1,
-            },
-            animatedButtonStyle,
-          ]}
-        >
-          {isSaving ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <>
-              <Feather name="check" size={20} color="#FFFFFF" />
-              <ThemedText type="body" style={styles.saveButtonText}>
-                Save Changes
-              </ThemedText>
-            </>
-          )}
-        </AnimatedPressable>
+        {/* Save Button */}
+        <Animated.View entering={FadeIn.delay(200).duration(280)} style={{ marginTop: Spacing.sm }}>
+          <Pressable
+            onPress={handleSave}
+            disabled={isSaving}
+            style={{ borderRadius: BorderRadius.md, overflow: "hidden", opacity: isSaving ? 0.7 : 1 }}
+          >
+            <LinearGradient
+              colors={isProvider ? ["#AA1818", "#D92222"] : ["#0055CC", "#0066FF"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.saveButton}
+            >
+              {isSaving ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <>
+                  <Feather name="check" size={18} color="#FFFFFF" />
+                  <ThemedText type="body" style={{ color: "#FFFFFF", fontWeight: "700", marginLeft: Spacing.sm }}>
+                    Save Changes
+                  </ThemedText>
+                </>
+              )}
+            </LinearGradient>
+          </Pressable>
+        </Animated.View>
       </KeyboardAwareScrollViewCompat>
-    </ThemedView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: Spacing.lg,
-  },
-  section: {
-    marginBottom: Spacing.xl,
-  },
-  sectionTitle: {
-    marginBottom: Spacing.md,
-  },
-  inputGroup: {
-    marginBottom: Spacing.md,
-  },
-  label: {
-    marginBottom: Spacing.xs,
-    marginLeft: Spacing.xs,
-  },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1.5,
-    gap: Spacing.sm,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    paddingVertical: Spacing.xs,
-  },
-  servicesSection: {
-    marginTop: Spacing.sm,
-  },
-  servicesGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: Spacing.sm,
-    marginTop: Spacing.sm,
-  },
-  serviceChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1.5,
-    gap: Spacing.xs,
-  },
-  saveButton: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.lg,
-    gap: Spacing.sm,
-    marginTop: Spacing.lg,
-  },
-  saveButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "600",
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-    marginBottom: Spacing.xs,
-  },
-  sectionSubtitle: {
-    fontSize: 13,
-    marginBottom: Spacing.md,
-    lineHeight: 18,
-  },
-  contactCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: Spacing.md,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    marginBottom: Spacing.sm,
-    gap: Spacing.sm,
-  },
-  contactAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  contactInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  removeButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  emptyContacts: {
-    alignItems: "center",
-    justifyContent: "center",
-    padding: Spacing.xl,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderStyle: "dashed",
-    marginBottom: Spacing.md,
-  },
-  addContactForm: {
-    padding: Spacing.md,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    marginBottom: Spacing.sm,
-  },
-  addContactActions: {
-    flexDirection: "row",
-    gap: Spacing.sm,
-  },
-  cancelContactButton: {
-    flex: 1,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  saveContactButton: {
-    flex: 2,
-    flexDirection: "row",
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.md,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: Spacing.xs,
-  },
-  addContactButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1.5,
-    borderStyle: "dashed",
-    gap: Spacing.sm,
-    marginTop: Spacing.xs,
-  },
-  evCard: { borderWidth: 1.5, borderRadius: BorderRadius.lg, overflow: "hidden" },
-  evCardRow: { flexDirection: "row", alignItems: "center", padding: Spacing.md, gap: Spacing.md },
-  evServiceList: { paddingHorizontal: Spacing.md, paddingBottom: Spacing.sm },
-  evDividerEdit: { height: StyleSheet.hairlineWidth, marginBottom: Spacing.sm },
-  evServicesLabelEdit: { marginBottom: Spacing.sm, fontSize: 12 },
-  evServiceItem: { flexDirection: "row", alignItems: "center", paddingVertical: Spacing.sm, paddingHorizontal: Spacing.xs, borderRadius: BorderRadius.sm, gap: Spacing.md },
-  evCheckEdit: { width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, alignItems: "center", justifyContent: "center" },
+  container: { flex: 1, backgroundColor: "#000000" },
+  scrollContent: { paddingHorizontal: Spacing.lg },
+  // Hero
+  heroCard: { borderRadius: BorderRadius.lg, padding: Spacing.lg, marginBottom: Spacing.lg },
+  heroRow: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
+  heroAvatar: { width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center" },
+  rolePill: { paddingHorizontal: Spacing.sm, paddingVertical: 5, borderRadius: 20, borderWidth: 1 },
+  // Section
+  sectionLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 0.9, textTransform: "uppercase", color: "rgba(148,163,184,0.8)" },
+  sectionCard: { borderRadius: BorderRadius.lg, padding: Spacing.lg, marginBottom: Spacing.lg, overflow: "hidden" },
+  // Input
+  fieldLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 0.9, textTransform: "uppercase", color: "rgba(148,163,184,0.8)", marginBottom: Spacing.sm },
+  inputRow: { flexDirection: "row", alignItems: "center", borderRadius: BorderRadius.md, borderWidth: 1.5, overflow: "hidden" },
+  inputIconBox: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
+  inputText: { flex: 1, fontSize: 16, paddingVertical: Spacing.sm, paddingRight: Spacing.md },
+  // Services grid
+  servicesGrid: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.sm },
+  serviceCard: { width: "30.5%", alignItems: "center", padding: Spacing.md, borderRadius: BorderRadius.md, borderWidth: 1.5, position: "relative" },
+  serviceIconBox: { width: 40, height: 40, borderRadius: BorderRadius.xs, alignItems: "center", justifyContent: "center" },
+  serviceCheck: { position: "absolute", top: 6, right: 6, width: 18, height: 18, borderRadius: 9, alignItems: "center", justifyContent: "center" },
+  // EV
+  evToggleRow: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
+  evIconBox: { width: 44, height: 44, borderRadius: BorderRadius.xs, alignItems: "center", justifyContent: "center" },
+  evDivider: { height: 1 },
+  evServiceRow: { flexDirection: "row", alignItems: "center", padding: Spacing.sm, borderRadius: BorderRadius.md, borderWidth: 1, gap: Spacing.md },
+  evServiceIcon: { width: 36, height: 36, borderRadius: BorderRadius.xs, alignItems: "center", justifyContent: "center" },
+  evCheck: { width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, alignItems: "center", justifyContent: "center" },
+  // Save
+  saveButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: Spacing.lg },
 });
