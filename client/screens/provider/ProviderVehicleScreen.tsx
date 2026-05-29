@@ -27,6 +27,8 @@ import {
   TOW_TRUCK_MAKES,
   TOW_TRUCK_MAKES_MODELS,
   TOW_TRUCK_CLASSES,
+  SERVICE_VAN_MAKES,
+  SERVICE_VAN_MAKES_MODELS,
 } from "@/constants/vehicleData";
 
 type ProviderVehicleType = "tow_truck" | "service_van" | "pickup";
@@ -278,9 +280,10 @@ export default function ProviderVehicleScreen() {
   const [isSaving, setIsSaving] = useState(false);
 
   const isTowTruck = vehicleType === "tow_truck";
+  const isServiceVan = vehicleType === "service_van";
 
-  const activeMakes = isTowTruck ? TOW_TRUCK_MAKES : VEHICLE_MAKES;
-  const activeMakesModels = isTowTruck ? TOW_TRUCK_MAKES_MODELS : VEHICLE_MAKES_MODELS;
+  const activeMakes = isTowTruck ? TOW_TRUCK_MAKES : isServiceVan ? SERVICE_VAN_MAKES : VEHICLE_MAKES;
+  const activeMakesModels = isTowTruck ? TOW_TRUCK_MAKES_MODELS : isServiceVan ? SERVICE_VAN_MAKES_MODELS : VEHICLE_MAKES_MODELS;
 
   const availableModels = useMemo(() => {
     if (!make) return [];
@@ -389,15 +392,18 @@ export default function ProviderVehicleScreen() {
           </View>
 
           {isTowTruck ? (
-            <View
-              style={[
-                styles.towBanner,
-                { backgroundColor: theme.primary + "10", borderColor: theme.primary + "30" },
-              ]}
-            >
+            <View style={[styles.towBanner, { backgroundColor: theme.primary + "10", borderColor: theme.primary + "30" }]}>
               <Feather name="info" size={14} color={theme.primary} />
               <ThemedText type="small" style={{ color: theme.primary, flex: 1, marginLeft: Spacing.sm }}>
                 Showing commercial tow truck manufacturers. Select your chassis make and model.
+              </ThemedText>
+            </View>
+          ) : null}
+          {isServiceVan ? (
+            <View style={[styles.towBanner, { backgroundColor: theme.secondary + "10", borderColor: theme.secondary + "30" }]}>
+              <Feather name="info" size={14} color={theme.secondary} />
+              <ThemedText type="small" style={{ color: theme.secondary, flex: 1, marginLeft: Spacing.sm }}>
+                Showing commercial service van manufacturers. Select your van make and model.
               </ThemedText>
             </View>
           ) : null}

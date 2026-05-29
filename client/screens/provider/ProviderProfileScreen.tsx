@@ -411,6 +411,21 @@ function IndependentProfile({ currentProvider, theme, isDark, sectionBg, padding
         <View style={[styles.section, { backgroundColor: sectionBg }]}>
           <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>PREFERENCES</ThemedText>
           <View style={styles.menuItem}>
+            <Feather name="zap" size={20} color={priorityOptIn ? theme.text : theme.textSecondary} />
+            <View style={{ flex: 1 }}>
+              <ThemedText type="body" style={styles.menuLabel}>Priority Jobs</ThemedText>
+              <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: 2 }}>
+                {priorityOptIn ? "Reduced 10% platform fee" : "Opt in for a reduced 10% fee"}
+              </ThemedText>
+            </View>
+            <Switch
+              value={priorityOptIn}
+              onValueChange={handlePriorityToggle}
+              trackColor={{ false: theme.border, true: theme.secondary }}
+              thumbColor="#FFFFFF"
+            />
+          </View>
+          <View style={[styles.menuItem, { borderTopWidth: 1, borderTopColor: theme.border }]}>
             <Feather name="moon" size={20} color={theme.textSecondary} />
             <ThemedText type="body" style={styles.menuLabel}>Dark Mode</ThemedText>
             <Switch value={isDark} onValueChange={toggleTheme} trackColor={{ false: theme.border, true: theme.secondary }} thumbColor="#FFFFFF" />

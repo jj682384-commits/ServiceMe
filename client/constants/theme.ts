@@ -24,7 +24,7 @@ export const Colors = {
     secondaryDark:       "#003D82",
     accent:              "#1A7CC7",
     success:             "#059669",
-    warning:             "#B45309",
+    warning:             "#0D0D0D",
     error:               "#DC2626",
     backgroundRoot:      "#F0F4F8",
     backgroundDefault:   "#FFFFFF",
