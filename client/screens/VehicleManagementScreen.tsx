@@ -14,7 +14,7 @@ import Animated, {
 
 import { ThemedText } from "@/components/ThemedText";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
-import { AnimatedBackground } from "@/components/AnimatedBackground";
+import AnimatedBackground from "@/components/AnimatedBackground";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, Vehicle, TireType, FuelType, DrivetrainType } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
