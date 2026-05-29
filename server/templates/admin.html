@@ -214,6 +214,7 @@
     .badge.pending { background: rgba(245,158,11,.15); color: var(--warning); }
     .badge.verified { background: rgba(34,197,94,.15); color: var(--success); }
     .badge.not-started { background: rgba(255,255,255,.08); color: var(--muted); }
+    .badge.revoked { background: rgba(239,68,68,.15); color: #ef4444; }
     .badge.completed { background: rgba(34,197,94,.15); color: var(--success); }
     .badge.accepted { background: rgba(192,192,192,.1); color: #C0C0C0; }
     .badge.cancelled { background: rgba(239,68,68,.12); color: var(--danger); }
@@ -934,7 +935,7 @@
 
   function buildProviderCard(p) {
     const status = p.verificationStatus || "not_started";
-    const badgeLabel = status === "verified" ? "Verified" : status === "pending" ? "Pending Review" : "Not Started";
+    const badgeLabel = status === "verified" ? "Verified" : status === "pending" ? "Pending Review" : status === "revoked" ? "Revoked" : "Not Started";
     const docs = REQUIRED_DOCS[p.providerType] || REQUIRED_DOCS.independent;
     const docsHtml = docs.map(key => {
       const val = p.verificationDocuments && p.verificationDocuments[key];
@@ -945,6 +946,7 @@
     const actionsHtml = status === "pending"
       ? `<input class="reject-input" id="note-${p.id}" placeholder="Rejection reason (optional)" onclick="event.stopPropagation()" /><button class="btn btn-success btn-sm" onclick="event.stopPropagation();approveProvider('${p.id}')">Approve</button><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();rejectProvider('${p.id}')">Reject</button>`
       : status === "not_started" ? `<span style="font-size:12px;color:var(--muted)">Awaiting documents</span>`
+      : status === "revoked" ? `<button class="btn btn-sm" style="background:var(--warning,#f59e0b);color:#000" onclick="event.stopPropagation();reinstateProvider('${p.id}')">Reinstate</button>`
       : `<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();revokeProvider('${p.id}')">Revoke</button>`;
     return `<div class="provider-card ${status}" id="card-${p.id}" onclick="openProviderDetail('${p.id}')" style="position:relative">
       <div class="card-header">
@@ -982,11 +984,20 @@
     } catch { alert("Failed to reject. Try again."); }
   }
   async function revokeProvider(id) {
-    if (!confirm("Revoke this provider's verification?")) return;
+    if (!confirm("Revoke this provider's verification? They will no longer be able to accept jobs.")) return;
     try {
-      await fetch(`${getBase()}/api/admin/providers/${id}/reject`, { method:"POST", headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"}, body:JSON.stringify({notes:"Verification revoked by admin. Please resubmit."}) });
-      loadProviders();
-    } catch { alert("Failed to revoke. Try again."); }
+      const res = await fetch(`${getBase()}/api/admin/providers/${id}/revoke`, { method:"POST", headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"} });
+      if (!res.ok) throw new Error((await res.json().catch(()=>({}))).error || "Request failed");
+      await loadProviders();
+    } catch(e) { alert("Failed to revoke: " + e.message); }
+  }
+  async function reinstateProvider(id) {
+    if (!confirm("Reinstate this provider? They will need to go through verification again.")) return;
+    try {
+      const res = await fetch(`${getBase()}/api/admin/providers/${id}/reject`, { method:"POST", headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"}, body:JSON.stringify({notes:"Your account has been reinstated. Please resubmit your verification documents."}) });
+      if (!res.ok) throw new Error((await res.json().catch(()=>({}))).error || "Request failed");
+      await loadProviders();
+    } catch(e) { alert("Failed to reinstate: " + e.message); }
   }
 
   // ── Users ──

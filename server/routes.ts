@@ -1089,6 +1089,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/admin/providers/:id/revoke", adminAuth, async (req: Request, res: Response) => {
+    try {
+      const { rowCount } = await pool.query(
+        `UPDATE providers
+         SET verification_status = 'revoked',
+             verification_notes = 'Verification revoked by admin.',
+             updated_at = NOW()
+         WHERE id = $1`,
+        [req.params.id]
+      );
+      if (!rowCount) return res.status(404).json({ error: "Provider not found" });
+      res.json({ success: true, verificationStatus: "revoked" });
+    } catch (err) {
+      console.error("[admin/revoke]", err);
+      res.status(500).json({ error: "Database error" });
+    }
+  });
+
   // ── Admin: users ──────────────────────────────────────────────────────────────
 
   app.get("/api/admin/users", adminAuth, async (_req: Request, res: Response) => {

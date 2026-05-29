@@ -14,6 +14,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
+import * as ImageManipulator from "expo-image-manipulator";
 import { Feather } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
@@ -476,7 +477,7 @@ export default function ProviderSignUpScreen() {
   const [numEmployees, setNumEmployees] = useState("");
   const [companyDescription, setCompanyDescription] = useState("");
 
-  const [uploadedDocs, setUploadedDocs] = useState<Record<string, boolean>>({});
+  const [uploadedDocs, setUploadedDocs] = useState<Record<string, string>>({});
   const [acceptedDocs, setAcceptedDocs] = useState<Record<string, boolean>>({ privacy: false, terms: false, liability: false });
   const [expandedDoc, setExpandedDoc] = useState<string | null>(null);
 
@@ -517,7 +518,13 @@ export default function ProviderSignUpScreen() {
         quality: 0.8,
       });
       if (!result.canceled && result.assets.length > 0) {
-        setUploadedDocs((prev) => ({ ...prev, [docKey]: true }));
+        const compressed = await ImageManipulator.manipulateAsync(
+          result.assets[0].uri,
+          [{ resize: { width: 800 } }],
+          { compress: 0.5, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+        );
+        const dataUri = `data:image/jpeg;base64,${compressed.base64}`;
+        setUploadedDocs((prev) => ({ ...prev, [docKey]: dataUri }));
       }
     } catch {
       Alert.alert("Upload Failed", "Could not open photo library. Please try again.");
@@ -606,7 +613,11 @@ export default function ProviderSignUpScreen() {
         },
         location: { latitude: 0, longitude: 0 },
       };
-      apiRequest("POST", "/api/providers/register", providerProfile).catch(() => {});
+      await apiRequest("POST", "/api/providers/register", providerProfile).catch(() => {});
+      apiRequest("POST", `/api/providers/${userId}/verification`, {
+        verificationDocuments: uploadedDocs,
+        verificationSubmittedAt: new Date().toISOString(),
+      }).catch(() => {});
       setAuthUser({ id: userId, name: fullName.trim(), email: email.trim(), phone: phone.trim() });
       setIsAuthenticated(true);
       setUserRole("provider");
