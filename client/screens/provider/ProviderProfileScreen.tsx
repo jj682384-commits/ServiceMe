@@ -648,18 +648,39 @@ function BusinessProfile({ currentProvider, theme, isDark, sectionBg, paddingTop
               <MenuItem icon="bar-chart-2" label="Revenue Analytics"
                 value="Reports & trends"
                 iconBg="#10B98120" iconColor="#10B981"
-                onPress={() => navigation.navigate("ProviderEarningsHistory")} />
+                onPress={() => navigation.navigate("ProviderRevenueAnalytics")} />
               <MenuItem icon="credit-card" label="Payout Account"
                 iconBg="#3B82F620" iconColor="#3B82F6"
                 onPress={() => navigation.navigate("ProviderPaymentSettings")} />
               <MenuItem icon="file-text" label="Tax Documents"
                 iconBg={theme.text + "15"} iconColor={theme.text}
-                onPress={() => navigation.navigate("ProviderPaymentSettings")} />
-              <MenuItem icon="zap" label="Platform Fee"
-                value={priorityOptIn ? "Priority · 10%" : "Standard · 15%"}
-                iconBg={priorityOptIn ? theme.secondary + "20" : theme.border}
-                iconColor={priorityOptIn ? theme.secondary : theme.textSecondary}
-                onPress={() => handlePriorityToggle(!priorityOptIn)} />
+                onPress={() => navigation.navigate("ProviderTaxDocuments")} />
+              {/* Priority Jobs — inline toggle row */}
+              <View style={styles.menuItem}>
+                <View style={[styles.iconBox, {
+                  backgroundColor: priorityOptIn ? theme.secondary + "20" : theme.border,
+                }]}>
+                  <Feather
+                    name="zap"
+                    size={16}
+                    color={priorityOptIn ? theme.secondary : theme.textSecondary}
+                  />
+                </View>
+                <View style={{ flex: 1, marginLeft: Spacing.md }}>
+                  <ThemedText type="body" style={styles.menuLabel}>
+                    Priority Jobs
+                  </ThemedText>
+                  <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: 1 }}>
+                    {priorityOptIn ? "10% fee · Priority dispatch" : "15% fee · Standard dispatch"}
+                  </ThemedText>
+                </View>
+                <Switch
+                  value={priorityOptIn}
+                  onValueChange={handlePriorityToggle}
+                  trackColor={{ false: theme.border, true: theme.secondary + "80" }}
+                  thumbColor={priorityOptIn ? theme.secondary : theme.textSecondary}
+                />
+              </View>
             </View>
           </View>
 

@@ -47,6 +47,8 @@ import TeamMembersScreen from "@/screens/provider/TeamMembersScreen";
 import FleetManagementScreen from "@/screens/provider/FleetManagementScreen";
 import ServiceTerritoryScreen from "@/screens/provider/ServiceTerritoryScreen";
 import BusinessHoursScreen from "@/screens/provider/BusinessHoursScreen";
+import ProviderTaxDocumentsScreen from "@/screens/provider/ProviderTaxDocumentsScreen";
+import ProviderRevenueAnalyticsScreen from "@/screens/provider/ProviderRevenueAnalyticsScreen";
 import ForgotPasswordScreen from "@/screens/ForgotPasswordScreen";
 import OnboardingScreen from "@/screens/OnboardingScreen";
 
@@ -98,6 +100,8 @@ export type RootStackParamList = {
   FleetManagement: undefined;
   ServiceTerritory: undefined;
   BusinessHours: undefined;
+  ProviderTaxDocuments: undefined;
+  ProviderRevenueAnalytics: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -430,6 +434,16 @@ export default function RootStackNavigator() {
         name="BusinessHours"
         component={BusinessHoursScreen}
         options={{ headerTitle: "Business Hours" }}
+      />
+      <Stack.Screen
+        name="ProviderTaxDocuments"
+        component={ProviderTaxDocumentsScreen}
+        options={{ headerTitle: "Tax Documents" }}
+      />
+      <Stack.Screen
+        name="ProviderRevenueAnalytics"
+        component={ProviderRevenueAnalyticsScreen}
+        options={{ headerTitle: "Revenue Analytics" }}
       />
     </Stack.Navigator>
   );

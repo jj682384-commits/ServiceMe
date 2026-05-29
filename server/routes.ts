@@ -1906,6 +1906,24 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
     }
   });
 
+  // ── Completed jobs for provider analytics ─────────────────────────────────
+  app.get("/api/providers/:id/completed-jobs", async (req: Request, res: Response) => {
+    try {
+      const { rows } = await pool.query(
+        `SELECT id, service_type, status, total_cost, tip, estimated_cost, created_at, is_ev, is_emergency
+         FROM jobs
+         WHERE provider->>'id' = $1 AND status = 'completed'
+         ORDER BY created_at DESC
+         LIMIT 500`,
+        [req.params.id]
+      );
+      res.json(rows);
+    } catch (err) {
+      console.error("[completed-jobs GET]", err);
+      res.status(500).json({ error: "Database error" });
+    }
+  });
+
   app.post("/api/providers/:id/payout", async (req: Request, res: Response) => {
     const { amount, payoutType } = req.body as { amount?: number; payoutType?: string };
     if (!amount || typeof amount !== "number" || amount <= 0) {
