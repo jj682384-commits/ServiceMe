@@ -175,7 +175,7 @@ export default function SupportScreen() {
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
     chatHistoryRef.current = [...chatHistoryRef.current, { role: "user", content: text.trim() }];
     try {
-      const data = await apiRequest("POST", "/api/support/chat", {
+      const res = await apiRequest("POST", "/api/support/chat", {
         message: text.trim(),
         history: chatHistoryRef.current.slice(-6),
         conversationId: conversationIdRef.current ?? undefined,
@@ -183,6 +183,7 @@ export default function SupportScreen() {
         userRole,
         userName,
       });
+      const data = await res.json();
       if (data?.conversationId && !conversationIdRef.current) {
         conversationIdRef.current = data.conversationId;
       }
