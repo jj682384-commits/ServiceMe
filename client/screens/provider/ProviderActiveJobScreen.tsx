@@ -42,27 +42,35 @@ const STATUS_ORDER: ServiceStatus[] = [
 ];
 
 const serviceTypeLabels: Record<string, string> = {
-  flat_tire:      "Flat Tire",
-  jump_start:     "Jump Start",
-  tow:            "Tow Service",
-  fuel:           "Fuel Delivery",
-  lockout:        "Lockout",
-  obd_diagnostic: "OBD Diagnostic",
-  ev_charging:    "EV Mobile Charging",
-  ev_towing:      "EV-Safe Towing",
-  other:          "Other",
+  flat_tire:        "Flat Tire",
+  jump_start:       "Jump Start",
+  tow:              "Tow Service",
+  fuel:             "Fuel Delivery",
+  lockout:          "Lockout",
+  obd_diagnostic:   "OBD Diagnostic",
+  ev_charging:      "EV Mobile Charging",
+  ev_towing:        "EV-Safe Towing",
+  tire_replacement: "Tire Replacement",
+  mobile_inflation: "Mobile Tire Inflation",
+  tire_check:       "Tire Inspection",
+  battery_check:    "Battery Check",
+  other:            "Other",
 };
 
 const serviceTypeIcons: Record<string, keyof typeof Feather.glyphMap> = {
-  flat_tire:      "disc",
-  jump_start:     "battery-charging",
-  tow:            "truck",
-  fuel:           "droplet",
-  lockout:        "key",
-  obd_diagnostic: "cpu",
-  ev_charging:    "zap",
-  ev_towing:      "truck",
-  other:          "more-horizontal",
+  flat_tire:        "disc",
+  jump_start:       "battery-charging",
+  tow:              "truck",
+  fuel:             "droplet",
+  lockout:          "key",
+  obd_diagnostic:   "cpu",
+  ev_charging:      "zap",
+  ev_towing:        "truck",
+  tire_replacement: "disc",
+  mobile_inflation: "wind",
+  tire_check:       "search",
+  battery_check:    "battery-charging",
+  other:            "more-horizontal",
 };
 
 const statusConfig: Record<ServiceStatus, { label: string; color: string; nextLabel?: string }> = {

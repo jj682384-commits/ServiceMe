@@ -12,14 +12,16 @@ import { useApp, ServiceRequest, ServiceType } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 
 const serviceTypeLabels: Record<ServiceType, string> = {
-  flat_tire: "Flat Tire",
-  jump_start: "Jump Start",
-  tow: "Tow Service",
-  fuel: "Fuel Delivery",
-  lockout: "Lockout",
-  obd_diagnostic: "OBD Diagnostic",
+  flat_tire:        "Flat Tire",
+  jump_start:       "Jump Start",
+  tow:              "Tow Service",
+  fuel:             "Fuel Delivery",
+  lockout:          "Lockout",
+  obd_diagnostic:   "OBD Diagnostic",
   mobile_inflation: "Mobile Tire Inflation",
-  tire_check: "Tire Check / Inspection",
+  tire_check:       "Tire Inspection",
+  tire_replacement: "Tire Replacement",
+  battery_check:    "Battery Check",
 };
 
 interface BillingEntry {

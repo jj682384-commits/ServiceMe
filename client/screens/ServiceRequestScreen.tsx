@@ -236,6 +236,13 @@ export default function ServiceRequestScreen() {
   const isJumpStart = selectedService === "jump_start";
   const isFlatTire = selectedService === "flat_tire";
 
+  // Sub-type → actual serviceType for the job payload
+  const effectiveServiceType: ServiceType = isFlatTire && flatTireSubType === "change"
+    ? "tire_replacement"
+    : isFlatTire && flatTireSubType === "inflation"
+    ? "mobile_inflation"
+    : (selectedService as ServiceType);
+
   // Jump Start add-on
   const [addBatteryCheck, setAddBatteryCheck] = useState(false);
   const batteryCheckFee = isJumpStart && addBatteryCheck ? 8 : 0;
@@ -319,7 +326,7 @@ export default function ServiceRequestScreen() {
     const coords = userLocation;
     const newRequest: ServiceRequest = {
       id: requestId,
-      serviceType: selectedService,
+      serviceType: effectiveServiceType,
       location: {
         address: "Current Location",
         latitude: coords.latitude,

@@ -14,15 +14,16 @@ import { Spacing, BorderRadius } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 const SERVICE_LABELS: Record<string, string> = {
-  flat_tire: "Flat Tire",
-  jump_start: "Jump Start",
-  tow: "Tow Service",
-  fuel: "Fuel Delivery",
-  lockout: "Lockout",
-  obd_diagnostic: "OBD Diagnostic",
+  flat_tire:        "Flat Tire",
+  jump_start:       "Jump Start",
+  tow:              "Tow Service",
+  fuel:             "Fuel Delivery",
+  lockout:          "Lockout",
+  obd_diagnostic:   "OBD Diagnostic",
   mobile_inflation: "Mobile Tire Inflation",
-  tire_check: "Tire Check / Inspection",
-  other: "Other",
+  tire_check:       "Tire Inspection",
+  tire_replacement: "Tire Replacement",
+  battery_check:    "Battery Check",
 };
 
 

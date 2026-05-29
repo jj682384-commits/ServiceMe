@@ -396,6 +396,7 @@ export default function ServiceCompletionScreen() {
 
         {activeRequest?.serviceType ? (() => {
           const comp = COMPETITOR_PRICES[activeRequest.serviceType as ServiceType];
+          if (!comp) return null;
           const avgComp = Math.round((comp.low + comp.high) / 2);
           const saved = Math.max(0, avgComp - serviceCost);
           return saved > 0 ? (

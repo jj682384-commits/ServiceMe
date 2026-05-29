@@ -33,25 +33,29 @@ const EV_CYAN = "#00D4FF";
 const DIRECT_COLOR = "#E91E63";
 
 const serviceTypeLabels: Record<string, string> = {
-  flat_tire: "Flat Tire",
-  jump_start: "Jump Start",
-  tow: "Tow Service",
-  fuel: "Fuel Delivery",
-  lockout: "Lockout",
-  obd_diagnostic: "OBD Diagnostic",
+  flat_tire:        "Flat Tire",
+  jump_start:       "Jump Start",
+  tow:              "Tow Service",
+  fuel:             "Fuel Delivery",
+  lockout:          "Lockout",
+  obd_diagnostic:   "OBD Diagnostic",
   mobile_inflation: "Mobile Tire Inflation",
-  tire_check: "Tire Check / Inspection",
+  tire_check:       "Tire Inspection",
+  tire_replacement: "Tire Replacement",
+  battery_check:    "Battery Check",
 };
 
 const serviceTypeIcons: Record<string, keyof typeof Feather.glyphMap> = {
-  flat_tire: "disc",
-  jump_start: "battery-charging",
-  tow: "truck",
-  fuel: "droplet",
-  lockout: "key",
-  obd_diagnostic: "cpu",
+  flat_tire:        "disc",
+  jump_start:       "battery-charging",
+  tow:              "truck",
+  fuel:             "droplet",
+  lockout:          "key",
+  obd_diagnostic:   "cpu",
   mobile_inflation: "wind",
-  tire_check: "search",
+  tire_check:       "search",
+  tire_replacement: "disc",
+  battery_check:    "battery-charging",
 };
 
 function jobLabel(job: ServiceRequest): string {

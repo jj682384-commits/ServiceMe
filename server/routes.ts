@@ -2160,6 +2160,13 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
       const serviceLabels: Record<string, string> = {
         flat_tire: "Flat Tire", jump_start: "Jump Start", tow: "Tow Service",
         fuel: "Fuel Delivery", lockout: "Lockout", obd_diagnostic: "OBD Diagnostic",
+        tire_replacement: "Tire Replacement", mobile_inflation: "Mobile Tire Inflation",
+        tire_check: "Tire Inspection", battery_check: "Battery Check",
+      };
+      // Sub-service → parent mapping for provider capability matching
+      const subToParent: Record<string, string> = {
+        tire_replacement: "flat_tire", mobile_inflation: "flat_tire",
+        tire_check: "flat_tire", battery_check: "jump_start",
       };
       const baseLabel = serviceLabels[job.serviceType] || "Roadside Assistance";
       const serviceLabel = isEV
@@ -2190,10 +2197,11 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
           }).catch((err) => console.error("[PUSH] Failed:", err));
         }
       } else {
-        // General broadcast — all available/matching providers
+        // General broadcast — available providers who offer this service type (or its parent)
+        const parentService = subToParent[job.serviceType] ?? job.serviceType;
         const providerQuery = isEV
           ? "SELECT push_token FROM providers WHERE is_available = true AND ev_capable = true AND push_token IS NOT NULL"
-          : "SELECT push_token FROM providers WHERE is_available = true AND push_token IS NOT NULL";
+          : `SELECT push_token FROM providers WHERE is_available = true AND push_token IS NOT NULL AND (services_offered::text LIKE '%"${job.serviceType}"%' OR services_offered::text LIKE '%"${parentService}"%')`;
         const { rows: providers } = await pool.query<ProviderRow>(providerQuery);
         const tokens = providers.map((p) => p.push_token as string).filter(Boolean);
         if (tokens.length > 0) {

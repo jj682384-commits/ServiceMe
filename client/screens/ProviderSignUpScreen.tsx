@@ -42,14 +42,16 @@ type ProviderSignUpRouteProp = RouteProp<RootStackParamList, "ProviderSignUp">;
 const TOTAL_STEPS = 4;
 
 const SERVICE_OPTIONS: { key: ServiceType; label: string; icon: keyof typeof Feather.glyphMap }[] = [
-  { key: "flat_tire", label: "Flat Tire", icon: "disc" },
-  { key: "jump_start", label: "Jump Start", icon: "battery-charging" },
-  { key: "tow", label: "Towing", icon: "truck" },
-  { key: "fuel", label: "Fuel Delivery", icon: "droplet" },
-  { key: "lockout", label: "Lockout", icon: "key" },
-  { key: "obd_diagnostic", label: "OBD Diagnostic", icon: "cpu" },
+  { key: "flat_tire",        label: "Flat Tire",             icon: "disc" },
+  { key: "tire_replacement", label: "Tire Replacement",      icon: "disc" },
   { key: "mobile_inflation", label: "Mobile Tire Inflation", icon: "wind" },
-  { key: "tire_check", label: "Tire Check / Inspection", icon: "search" },
+  { key: "tire_check",       label: "Tire Inspection",       icon: "search" },
+  { key: "jump_start",       label: "Jump Start",            icon: "battery-charging" },
+  { key: "battery_check",    label: "Battery Check",         icon: "battery-charging" },
+  { key: "tow",              label: "Towing",                icon: "truck" },
+  { key: "fuel",             label: "Fuel Delivery",         icon: "droplet" },
+  { key: "lockout",          label: "Lockout",               icon: "key" },
+  { key: "obd_diagnostic",   label: "OBD Diagnostic",        icon: "cpu" },
 ];
 
 const LEGAL_DOCUMENTS = [

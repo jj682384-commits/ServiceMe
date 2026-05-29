@@ -14,12 +14,16 @@ const STATUS_ORDER: ServiceStatus[] = [
 ];
 
 const SERVICE_LABELS: Record<string, string> = {
-  flat_tire:      "Flat Tire",
-  jump_start:     "Jump Start",
-  tow:            "Tow Service",
-  fuel:           "Fuel Delivery",
-  lockout:        "Lockout",
-  obd_diagnostic: "OBD Diagnostic",
+  flat_tire:        "Flat Tire",
+  jump_start:       "Jump Start",
+  tow:              "Tow Service",
+  fuel:             "Fuel Delivery",
+  lockout:          "Lockout",
+  obd_diagnostic:   "OBD Diagnostic",
+  tire_replacement: "Tire Replacement",
+  mobile_inflation: "Mobile Tire Inflation",
+  tire_check:       "Tire Inspection",
+  battery_check:    "Battery Check",
 };
 
 /**
