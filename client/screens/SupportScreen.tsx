@@ -62,18 +62,34 @@ const initialMessages: ChatMessage[] = [
   },
 ];
 
-const quickReplies = [
+const DRIVER_QUICK_REPLIES = [
   "I need help with my service request",
   "Payment or billing question",
   "Report a safety concern",
   "Technical issue with the app",
 ];
 
-const FAQ_ITEMS = [
+const PROVIDER_QUICK_REPLIES = [
+  "I have a question about my earnings",
+  "Help with job acceptance or dispatch",
+  "Payout or bank account issue",
+  "Report a problem with a driver",
+];
+
+const DRIVER_FAQ_ITEMS = [
   { q: "How do I cancel a service request?", icon: "x-circle" as const, color: "#EF4444" },
   { q: "How do refunds work?", icon: "dollar-sign" as const, color: "#10B981" },
   { q: "How do I update payment method?", icon: "credit-card" as const, color: "#3B82F6" },
   { q: "Report a safety concern", icon: "shield" as const, color: "#8B5CF6" },
+];
+
+const PROVIDER_FAQ_ITEMS = [
+  { q: "When do I get paid for completed jobs?", icon: "dollar-sign" as const, color: "#10B981" },
+  { q: "How do I set up or update my payout account?", icon: "credit-card" as const, color: "#3B82F6" },
+  { q: "Why was a job removed from my queue?", icon: "x-circle" as const, color: "#EF4444" },
+  { q: "How does priority job dispatch work?", icon: "zap" as const, color: "#F59E0B" },
+  { q: "How do I get my account verified?", icon: "shield" as const, color: "#8B5CF6" },
+  { q: "What is the platform fee and how is it calculated?", icon: "percent" as const, color: "#06B6D4" },
 ];
 
 function formatRelativeTime(dateStr: string): string {
@@ -481,7 +497,7 @@ export default function SupportScreen() {
         COMMON QUESTIONS
       </ThemedText>
       <View style={[styles.section, { backgroundColor: sectionBg }]}>
-        {FAQ_ITEMS.map((item, index) => (
+        {(userRole === "provider" ? PROVIDER_FAQ_ITEMS : DRIVER_FAQ_ITEMS).map((item, index) => (
           <View key={item.q}>
             {index > 0 && <View style={[styles.divider, { backgroundColor: theme.border }]} />}
             <Pressable
@@ -721,7 +737,7 @@ export default function SupportScreen() {
           {!isReadOnly && displayMessages.length <= 2 ? (
             <View style={{ marginTop: Spacing.lg }}>
               <ThemedText type="small" style={{ color: theme.textSecondary, marginBottom: Spacing.sm }}>Quick actions:</ThemedText>
-              {quickReplies.map((reply, index) => (
+              {(userRole === "provider" ? PROVIDER_QUICK_REPLIES : DRIVER_QUICK_REPLIES).map((reply, index) => (
                 <Pressable
                   key={index}
                   onPress={() => handleSendMessage(reply)}
