@@ -842,26 +842,82 @@
 
     /* ── Dual Mode ── */
     .dual-grid {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 56px;
+      display: grid; grid-template-columns: 1fr 2fr; gap: 28px; margin-top: 56px; align-items: start;
     }
     .dual-card {
-      border-radius: 24px; padding: 40px; position: relative; overflow: hidden;
+      border-radius: 24px; padding: 36px; position: relative; overflow: hidden;
     }
-    .dual-card.driver { background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%); border: 1px solid rgba(255,255,255,0.1); }
-    .dual-card.provider { background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%); border: 1px solid rgba(255,255,255,0.1); }
+    .dual-card.driver {
+      background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    /* Old .provider class kept for backward compat */
+    .dual-card.provider {
+      background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .dual-card.provider-individual {
+      background: linear-gradient(135deg, rgba(0,102,255,0.10) 0%, rgba(0,102,255,0.03) 100%);
+      border: 1px solid rgba(0,102,255,0.25);
+    }
+    .dual-card.provider-business {
+      background: linear-gradient(135deg, rgba(245,158,11,0.12) 0%, rgba(245,158,11,0.03) 100%);
+      border: 1px solid rgba(245,158,11,0.28);
+    }
+    /* Provider split panel */
+    .provider-panel {
+      display: flex; flex-direction: column; gap: 16px;
+    }
+    .provider-panel-header {
+      display: flex; align-items: center; gap: 12px;
+    }
+    .provider-panel-header-line {
+      flex: 1; height: 1px; background: linear-gradient(90deg, rgba(255,255,255,0.15), transparent);
+    }
+    .provider-panel-label {
+      font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase;
+      color: rgba(255,255,255,0.35); white-space: nowrap;
+    }
+    .provider-cards-row {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+    }
     .dual-tag {
       display: inline-block; padding: 4px 14px; border-radius: 100px;
-      font-size: 12px; font-weight: 700; margin-bottom: 20px;
+      font-size: 12px; font-weight: 700; margin-bottom: 18px;
     }
     .dual-card.driver .dual-tag { background: rgba(255,255,255,0.08); color: #C0C0C0; border: 1px solid rgba(255,255,255,0.12); }
     .dual-card.provider .dual-tag { background: rgba(255,255,255,0.06); color: #A0A0A0; border: 1px solid rgba(255,255,255,0.1); }
-    .dual-card h3 { font-size: 26px; font-weight: 900; margin-bottom: 12px; }
-    .dual-card p { color: var(--muted); font-size: 15px; line-height: 1.6; margin-bottom: 24px; }
-    .dual-features { list-style: none; display: flex; flex-direction: column; gap: 10px; }
-    .dual-features li { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+    .dual-card.provider-individual .dual-tag { background: rgba(0,102,255,0.18); color: #7DB8FF; border: 1px solid rgba(0,102,255,0.35); }
+    .dual-card.provider-business .dual-tag { background: rgba(245,158,11,0.18); color: #FCD34D; border: 1px solid rgba(245,158,11,0.35); }
+    .dual-card h3 { font-size: 22px; font-weight: 900; margin-bottom: 10px; }
+    .dual-card.driver h3 { font-size: 26px; }
+    .dual-card p { color: var(--muted); font-size: 14px; line-height: 1.6; margin-bottom: 20px; }
+    .dual-card.driver p { font-size: 15px; margin-bottom: 24px; }
+    .dual-features { list-style: none; display: flex; flex-direction: column; gap: 9px; }
+    .dual-features li { display: flex; align-items: center; gap: 10px; font-size: 13.5px; }
+    .dual-card.driver .dual-features li { font-size: 14px; gap: 10px; }
     .dual-features li::before { content: ""; width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
     .dual-card.driver .dual-features li::before { background: linear-gradient(135deg, #fff, #888); }
     .dual-card.provider .dual-features li::before { background: linear-gradient(135deg, #C0C0C0, #606060); }
+    .dual-card.provider-individual .dual-features li::before { background: linear-gradient(135deg, #60A5FA, #2563EB); }
+    .dual-card.provider-business .dual-features li::before { background: linear-gradient(135deg, #FBBF24, #D97706); }
+    /* Business-only badge on features */
+    .feature-badge {
+      display: inline-block; font-size: 10px; font-weight: 700; padding: 1px 7px;
+      border-radius: 100px; margin-left: 4px; vertical-align: middle;
+    }
+    .feature-badge.pro { background: rgba(245,158,11,0.2); color: #FBBF24; border: 1px solid rgba(245,158,11,0.3); }
+    /* Compare row at bottom */
+    .dual-compare-row {
+      display: grid; grid-template-columns: 1fr 2fr; gap: 28px; margin-top: 20px;
+    }
+    .dual-compare-note {
+      grid-column: 2; display: flex; align-items: center; gap: 12px;
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 14px; padding: 14px 18px;
+    }
+    .dual-compare-note-icon { font-size: 18px; flex-shrink: 0; }
+    .dual-compare-note-text { font-size: 13px; color: var(--muted); line-height: 1.5; }
 
     /* ── Waitlist ── */
     .waitlist-section {
@@ -1096,6 +1152,9 @@
       .stats-inner { grid-template-columns: 1fr 1fr; }
       .steps-grid { grid-template-columns: 1fr; }
       .dual-grid { grid-template-columns: 1fr; }
+      .provider-cards-row { grid-template-columns: 1fr; }
+      .dual-compare-row { grid-template-columns: 1fr; }
+      .dual-compare-note { grid-column: 1; }
       .direct-grid { grid-template-columns: 1fr; gap: 32px; }
       .tow-grid { grid-template-columns: 1fr 1fr; }
       .hero-visual { display: none; }
@@ -1638,9 +1697,10 @@
   <div class="section-inner">
     <div class="section-label">Built for Everyone</div>
     <h2>Driver or provider — <span>we've got you</span></h2>
-    <p class="section-sub">One app, two powerful modes. Switch roles anytime.</p>
+    <p class="section-sub">One app. Get help when you need it, earn as an independent helper, or scale your roadside business.</p>
 
     <div class="dual-grid">
+      <!-- Drivers -->
       <div class="dual-card driver">
         <div class="dual-tag">For Drivers</div>
         <h3>Get Help Fast</h3>
@@ -1651,21 +1711,60 @@
           <li>Emergency SOS with contact alerts</li>
           <li>Transparent pricing upfront</li>
           <li>Secure in-app payment</li>
-          <li>Full service history & receipts</li>
+          <li>Full service history &amp; receipts</li>
+          <li>Premium membership with free services</li>
         </ul>
       </div>
-      <div class="dual-card provider">
-        <div class="dual-tag">For Providers</div>
-        <h3>Earn on Your Terms</h3>
-        <p>Whether you're a roadside pro or just getting started — accept jobs near you, set your own hours, and get paid quickly.</p>
-        <ul class="dual-features">
-          <li>No experience required to start</li>
-          <li>Set your own availability</li>
-          <li>Keep 85% of every job</li>
-          <li>Stripe Connect instant payouts</li>
-          <li>Priority jobs for verified providers</li>
-          <li>EV-certified service opportunities</li>
-        </ul>
+
+      <!-- Provider split panel -->
+      <div class="provider-panel">
+        <div class="provider-panel-header">
+          <div class="provider-panel-header-line"></div>
+          <div class="provider-panel-label">Two ways to earn as a provider</div>
+          <div class="provider-panel-header-line" style="background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15));"></div>
+        </div>
+
+        <div class="provider-cards-row">
+          <!-- Independent Helper -->
+          <div class="dual-card provider-individual">
+            <div class="dual-tag">Independent Helper</div>
+            <h3>Earn on Your Schedule</h3>
+            <p>No experience needed, no commitments. Pick up jobs whenever you want and get paid fast — all from your phone.</p>
+            <ul class="dual-features">
+              <li>No experience required to start</li>
+              <li>Set your own availability anytime</li>
+              <li>Keep 85% of every job</li>
+              <li>10% fee on priority jobs (verified)</li>
+              <li>Instant payouts via Stripe Connect</li>
+              <li>Standard &amp; instant cash-out options</li>
+              <li>EV-certified service opportunities</li>
+              <li>Direct job requests from returning drivers</li>
+            </ul>
+          </div>
+
+          <!-- Roadside Business -->
+          <div class="dual-card provider-business">
+            <div class="dual-tag">Roadside Business</div>
+            <h3>Scale Your Shop</h3>
+            <p>List your team on the platform, manage multiple providers, and grow your roadside service business with the tools you need.</p>
+            <ul class="dual-features">
+              <li>Multiple provider profiles under one account</li>
+              <li>Team dispatch &amp; fleet management</li>
+              <li>Revenue analytics &amp; earnings dashboard</li>
+              <li>Quarterly tax estimates &amp; documents</li>
+              <li>Priority placement in nearby searches</li>
+              <li>Commercial tow truck &amp; wrecker support</li>
+              <li>Custom business profile &amp; branding</li>
+              <li>Dedicated account support</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Bottom callout -->
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 14px; padding: 14px 18px; display: flex; align-items: center; gap: 14px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span style="font-size: 13px; color: var(--muted); line-height: 1.5;">Both provider types share the same app, same job queue, and same real-time dispatch — you choose which profile fits how you work.</span>
+        </div>
       </div>
     </div>
   </div>
