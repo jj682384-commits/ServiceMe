@@ -471,8 +471,7 @@ export default function ServiceRequestScreen() {
         )}
 
         {/* Hero card */}
-        <Animated.View entering={FadeInDown.duration(380).springify().damping(18)}>
-          <LinearGradient
+        <LinearGradient
             colors={["#0A1F3A", "#0F2855", "#14124A"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
@@ -493,7 +492,6 @@ export default function ServiceRequestScreen() {
                 : "Pick a service to get started"}
             </ThemedText>
           </LinearGradient>
-        </Animated.View>
 
         <Animated.View entering={FadeIn.delay(180).duration(300)}>
           <ThemedText
