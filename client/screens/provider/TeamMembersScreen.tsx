@@ -7,6 +7,8 @@ import {
   TextInput,
   Alert,
   Modal,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -14,7 +16,6 @@ import { Feather } from "@expo/vector-icons";
 
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
-import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/context/AppContext";
 import { apiRequest } from "@/lib/query-client";
@@ -184,71 +185,78 @@ export default function TeamMembersScreen() {
 
       {/* Add member modal */}
       <Modal visible={showModal} transparent animationType="slide" onRequestClose={() => setShowModal(false)}>
-        <View style={styles.modalOverlay}>
-          <KeyboardAwareScrollViewCompat>
-            <View style={[styles.modalCard, { backgroundColor: theme.backgroundSecondary }]}>
-              <View style={styles.modalHeader}>
-                <ThemedText type="h3">New Team Member</ThemedText>
-                <Pressable onPress={() => setShowModal(false)}>
-                  <Feather name="x" size={22} color={theme.textSecondary} />
+        <Pressable style={styles.modalOverlay} onPress={() => setShowModal(false)}>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
+            <Pressable onPress={(e) => e.stopPropagation()}>
+              <View style={[styles.modalCard, { backgroundColor: theme.backgroundSecondary }]}>
+                <View style={styles.modalHandle} />
+                <View style={styles.modalHeader}>
+                  <ThemedText type="h3">New Team Member</ThemedText>
+                  <Pressable
+                    onPress={() => setShowModal(false)}
+                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                    style={styles.closeBtn}
+                  >
+                    <Feather name="x" size={20} color={theme.text} />
+                  </Pressable>
+                </View>
+
+                <ThemedText type="small" style={[styles.fieldLabel, { color: theme.textSecondary }]}>NAME *</ThemedText>
+                <TextInput
+                  value={newName}
+                  onChangeText={setNewName}
+                  placeholder="Full name"
+                  placeholderTextColor={theme.textSecondary}
+                  style={[styles.input, { backgroundColor: theme.backgroundDefault, color: theme.text, borderColor: theme.border }]}
+                />
+
+                <ThemedText type="small" style={[styles.fieldLabel, { color: theme.textSecondary }]}>ROLE *</ThemedText>
+                <View style={styles.roleGrid}>
+                  {ROLES.map((r) => (
+                    <Pressable
+                      key={r}
+                      onPress={() => setNewRole(r)}
+                      style={[
+                        styles.roleChip,
+                        {
+                          backgroundColor: newRole === r ? (ROLE_COLORS[r] ?? theme.primary) : theme.backgroundDefault,
+                          borderColor: newRole === r ? (ROLE_COLORS[r] ?? theme.primary) : theme.border,
+                        },
+                      ]}
+                    >
+                      <ThemedText
+                        type="small"
+                        style={{ color: newRole === r ? "#FFF" : theme.text, fontWeight: "600" }}
+                      >
+                        {r}
+                      </ThemedText>
+                    </Pressable>
+                  ))}
+                </View>
+
+                <ThemedText type="small" style={[styles.fieldLabel, { color: theme.textSecondary }]}>PHONE (optional)</ThemedText>
+                <TextInput
+                  value={newPhone}
+                  onChangeText={setNewPhone}
+                  placeholder="Phone number"
+                  placeholderTextColor={theme.textSecondary}
+                  keyboardType="phone-pad"
+                  style={[styles.input, { backgroundColor: theme.backgroundDefault, color: theme.text, borderColor: theme.border }]}
+                />
+
+                <Pressable
+                  onPress={handleAdd}
+                  disabled={saving}
+                  style={({ pressed }) => [styles.addBtn, { backgroundColor: theme.primary, opacity: pressed || saving ? 0.7 : 1, marginTop: Spacing.lg }]}
+                >
+                  <ThemedText style={{ color: "#FFF", fontWeight: "700", fontSize: 16 }}>
+                    {saving ? "Adding..." : "Add Member"}
+                  </ThemedText>
                 </Pressable>
               </View>
-
-              <ThemedText type="small" style={[styles.fieldLabel, { color: theme.textSecondary }]}>NAME *</ThemedText>
-              <TextInput
-                value={newName}
-                onChangeText={setNewName}
-                placeholder="Full name"
-                placeholderTextColor={theme.textSecondary}
-                style={[styles.input, { backgroundColor: theme.backgroundDefault, color: theme.text, borderColor: theme.border }]}
-              />
-
-              <ThemedText type="small" style={[styles.fieldLabel, { color: theme.textSecondary }]}>ROLE *</ThemedText>
-              <View style={styles.roleGrid}>
-                {ROLES.map((r) => (
-                  <Pressable
-                    key={r}
-                    onPress={() => setNewRole(r)}
-                    style={[
-                      styles.roleChip,
-                      {
-                        backgroundColor: newRole === r ? (ROLE_COLORS[r] ?? theme.primary) : theme.backgroundDefault,
-                        borderColor: newRole === r ? (ROLE_COLORS[r] ?? theme.primary) : theme.border,
-                      },
-                    ]}
-                  >
-                    <ThemedText
-                      type="small"
-                      style={{ color: newRole === r ? "#FFF" : theme.text, fontWeight: "600" }}
-                    >
-                      {r}
-                    </ThemedText>
-                  </Pressable>
-                ))}
-              </View>
-
-              <ThemedText type="small" style={[styles.fieldLabel, { color: theme.textSecondary }]}>PHONE (optional)</ThemedText>
-              <TextInput
-                value={newPhone}
-                onChangeText={setNewPhone}
-                placeholder="Phone number"
-                placeholderTextColor={theme.textSecondary}
-                keyboardType="phone-pad"
-                style={[styles.input, { backgroundColor: theme.backgroundDefault, color: theme.text, borderColor: theme.border }]}
-              />
-
-              <Pressable
-                onPress={handleAdd}
-                disabled={saving}
-                style={({ pressed }) => [styles.addBtn, { backgroundColor: theme.primary, opacity: pressed || saving ? 0.7 : 1, marginTop: Spacing.lg }]}
-              >
-                <ThemedText style={{ color: "#FFF", fontWeight: "700", fontSize: 16 }}>
-                  {saving ? "Adding..." : "Add Member"}
-                </ThemedText>
-              </Pressable>
-            </View>
-          </KeyboardAwareScrollViewCompat>
-        </View>
+            </Pressable>
+          </KeyboardAvoidingView>
+        </Pressable>
       </Modal>
     </ThemedView>
   );
@@ -266,8 +274,10 @@ const styles = StyleSheet.create({
   removeBtn: { padding: Spacing.sm },
   addBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: Spacing.md, borderRadius: BorderRadius.md },
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
-  modalCard: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: Spacing.xl, paddingBottom: Spacing["2xl"] },
+  modalCard: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: Spacing.xl, paddingBottom: Spacing["3xl"] },
+  modalHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.2)", alignSelf: "center", marginBottom: Spacing.lg },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Spacing.xl },
+  closeBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.12)", alignItems: "center", justifyContent: "center" },
   fieldLabel: { fontWeight: "700", letterSpacing: 0.8, marginBottom: Spacing.sm, marginTop: Spacing.md },
   input: { borderWidth: 1, borderRadius: BorderRadius.sm, padding: Spacing.md, fontSize: 16, marginBottom: Spacing.xs },
   roleGrid: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.sm },
