@@ -438,6 +438,7 @@ export default function ServiceRequestScreen() {
     <View style={[styles.container, { backgroundColor: isDark ? "#04060E" : theme.backgroundRoot }]}>
       <AnimatedBackground />
       <KeyboardAwareScrollViewCompat
+        style={{ backgroundColor: "transparent" }}
         contentContainerStyle={[
           styles.scrollContent,
           { paddingTop: headerHeight + Spacing.lg, paddingBottom: insets.bottom + Spacing.xl + 80 },

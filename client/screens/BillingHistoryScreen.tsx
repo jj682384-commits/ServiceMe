@@ -194,6 +194,7 @@ export default function BillingHistoryScreen() {
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         ListHeaderComponent={renderHeader}
+        style={{ backgroundColor: "transparent" }}
         contentContainerStyle={{
           paddingTop: headerHeight + Spacing.lg,
           paddingBottom: insets.bottom + Spacing.xl,
