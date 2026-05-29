@@ -21,6 +21,8 @@ import Animated, {
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 
+import { useNavigation } from "@react-navigation/native";
+
 import { ThemedText } from "@/components/ThemedText";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
@@ -66,6 +68,7 @@ const FAQ_ITEMS = [
 export default function SupportScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
+  const navigation = useNavigation();
   const { theme, isDark } = useTheme();
   const { authUser, currentDriver, currentProvider, userRole } = useApp();
   const [activeTab, setActiveTab] = useState<"options" | "chat">("options");
@@ -85,6 +88,11 @@ export default function SupportScreen() {
   const userName = currentDriver?.name || currentProvider?.name || "User";
   const userId = authUser?.id || currentDriver?.id || currentProvider?.id;
   const sectionBg = theme.cardAnimatedBg;
+
+  // Hide the navigation header when chat is open so there's only one header
+  useEffect(() => {
+    navigation.setOptions({ headerShown: activeTab === "options" });
+  }, [activeTab, navigation]);
 
   useEffect(() => {
     const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
@@ -314,7 +322,7 @@ export default function SupportScreen() {
   const renderLiveChat = () => (
     <View style={{ flex: 1, paddingBottom: keyboardHeight }}>
       {/* Chat header */}
-      <View style={[styles.chatHeader, { borderBottomColor: theme.border, paddingTop: headerHeight, backgroundColor: isDark ? "#04060E" : theme.backgroundRoot }]}>
+      <View style={[styles.chatHeader, { borderBottomColor: theme.border, paddingTop: insets.top, backgroundColor: isDark ? "#04060E" : theme.backgroundRoot }]}>
         <Pressable
           onPress={() => setActiveTab("options")}
           style={({ pressed }) => [styles.backButton, { opacity: pressed ? 0.7 : 1 }]}
