@@ -42,6 +42,9 @@ export interface ProviderRow {
   earnings_balance: number | null;
   stripe_account_id?: string | null;
   service_radius_miles: number | null;
+  team_members: unknown[] | null;
+  fleet_vehicles: unknown[] | null;
+  business_hours: Record<string, unknown> | null;
 }
 
 export interface PayoutRow {
@@ -110,6 +113,10 @@ export function rowToProvider(r: ProviderRow) {
     evServices: r.ev_services ?? [],
     acceptsPriorityJobs: r.accepts_priority_jobs ?? false,
     serviceRadiusMiles: r.service_radius_miles ?? 25,
+    earningsBalance: Number(r.earnings_balance ?? 0),
+    teamMembers: (r.team_members ?? []) as Array<{ id: string; name: string; role: string; phone: string }>,
+    fleetVehicles: (r.fleet_vehicles ?? []) as Array<{ id: string; year: string; make: string; model: string; plate: string; type: string }>,
+    businessHours: r.business_hours as Record<string, { open: boolean; from: string; to: string }> | undefined,
   };
 }
 

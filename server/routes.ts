@@ -468,6 +468,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await pool.query(`ALTER TABLE providers ADD COLUMN IF NOT EXISTS stripe_account_id TEXT DEFAULT NULL`).catch(() => {});
   await pool.query(`ALTER TABLE providers ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW()`).catch(() => {});
   await pool.query(`ALTER TABLE providers ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMPTZ DEFAULT NULL`).catch(() => {});
+  await pool.query(`ALTER TABLE providers ADD COLUMN IF NOT EXISTS team_members JSONB DEFAULT '[]'`).catch(() => {});
+  await pool.query(`ALTER TABLE providers ADD COLUMN IF NOT EXISTS fleet_vehicles JSONB DEFAULT '[]'`).catch(() => {});
+  await pool.query(`ALTER TABLE providers ADD COLUMN IF NOT EXISTS business_hours JSONB DEFAULT NULL`).catch(() => {});
   // ── clear stale online status on every server start ──────────────────────────
   // Providers whose last_seen_at is older than 5 min (or NULL) are marked offline
   // so they never appear in the nearby list after a server restart / cold start.
@@ -1730,6 +1733,30 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
       res.json({ success: true });
     } catch (err) {
       console.error("[providers/settings]", err);
+      res.status(500).json({ error: "Database error" });
+    }
+  });
+
+  app.patch("/api/providers/:id/business-data", async (req: Request, res: Response) => {
+    const { teamMembers, fleetVehicles, businessHours } = req.body as {
+      teamMembers?: unknown;
+      fleetVehicles?: unknown;
+      businessHours?: unknown;
+    };
+    try {
+      const updates: string[] = [];
+      const values: unknown[] = [req.params.id];
+      if (teamMembers !== undefined) { values.push(JSON.stringify(teamMembers)); updates.push(`team_members = $${values.length}`); }
+      if (fleetVehicles !== undefined) { values.push(JSON.stringify(fleetVehicles)); updates.push(`fleet_vehicles = $${values.length}`); }
+      if (businessHours !== undefined) { values.push(JSON.stringify(businessHours)); updates.push(`business_hours = $${values.length}`); }
+      if (updates.length === 0) return res.status(400).json({ error: "Nothing to update" });
+      await pool.query(
+        `UPDATE providers SET ${updates.join(", ")}, updated_at = NOW() WHERE id = $1`,
+        values
+      );
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error("[providers/business-data]", err);
       res.status(500).json({ error: "Database error" });
     }
   });

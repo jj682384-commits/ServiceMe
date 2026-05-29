@@ -124,6 +124,10 @@ export interface Provider {
   serviceRadiusMiles?: number;
   pushToken?: string;
   verificationNotes?: string;
+  earningsBalance?: number;
+  teamMembers?: Array<{ id: string; name: string; role: string; phone: string }>;
+  fleetVehicles?: Array<{ id: string; year: string; make: string; model: string; plate: string; type: string }>;
+  businessHours?: Record<string, { open: boolean; from: string; to: string }>;
 }
 
 export interface UserLocation {

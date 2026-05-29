@@ -526,21 +526,22 @@ function BusinessProfile({ currentProvider, theme, isDark, sectionBg, paddingTop
               BUSINESS MANAGEMENT
             </ThemedText>
             <View style={[styles.section, { backgroundColor: sectionBg, marginTop: Spacing.sm }]}>
-              <MenuItem icon="users" label="Team Members" value="Staff accounts"
+              <MenuItem icon="users" label="Team Members"
+                value={(currentProvider?.teamMembers?.length ?? 0) > 0 ? `${currentProvider!.teamMembers!.length} staff` : "Staff accounts"}
                 iconBg="#A855F720" iconColor="#A855F7"
-                onPress={() => Alert.alert("Coming Soon", "Team management will be available in a future update.")} />
+                onPress={() => navigation.navigate("TeamMembers")} />
               <MenuItem icon="truck" label="Fleet Management"
-                value={currentProvider?.vehicleMake ? `${currentProvider.vehicleMake} ${currentProvider.vehicleModel || ""}`.trim() : "Add vehicle"}
+                value={(currentProvider?.fleetVehicles?.length ?? 0) > 0 ? `${currentProvider!.fleetVehicles!.length} vehicles` : "Add vehicles"}
                 iconBg="#3B82F620" iconColor="#3B82F6"
-                onPress={() => navigation.navigate("ProviderVehicle")} />
+                onPress={() => navigation.navigate("FleetManagement")} />
               <MenuItem icon="map-pin" label="Service Territory"
                 value={currentProvider?.serviceRadiusMiles ? `${currentProvider.serviceRadiusMiles} mi radius` : "Set radius"}
-                iconBg={theme.text + "12"} iconColor={theme.text}
-                onPress={() => {}} />
+                iconBg="#6366F120" iconColor="#6366F1"
+                onPress={() => navigation.navigate("ServiceTerritory")} />
               <MenuItem icon="clock" label="Business Hours"
-                value="Set schedule"
+                value={currentProvider?.businessHours ? `${Object.values(currentProvider.businessHours).filter((d: any) => d.open).length} days/week` : "Set schedule"}
                 iconBg="#10B98120" iconColor="#10B981"
-                onPress={() => Alert.alert("Coming Soon", "Business hours scheduling will be available in a future update.")} />
+                onPress={() => navigation.navigate("BusinessHours")} />
             </View>
           </View>
 

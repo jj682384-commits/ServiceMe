@@ -43,6 +43,10 @@ import ProviderPaymentSettingsScreen from "@/screens/provider/ProviderPaymentSet
 import ProviderEarningsHistoryScreen from "@/screens/provider/ProviderEarningsHistoryScreen";
 import ProviderVehicleScreen from "@/screens/provider/ProviderVehicleScreen";
 import ProviderVerificationScreen from "@/screens/provider/ProviderVerificationScreen";
+import TeamMembersScreen from "@/screens/provider/TeamMembersScreen";
+import FleetManagementScreen from "@/screens/provider/FleetManagementScreen";
+import ServiceTerritoryScreen from "@/screens/provider/ServiceTerritoryScreen";
+import BusinessHoursScreen from "@/screens/provider/BusinessHoursScreen";
 import ForgotPasswordScreen from "@/screens/ForgotPasswordScreen";
 import OnboardingScreen from "@/screens/OnboardingScreen";
 
@@ -90,6 +94,10 @@ export type RootStackParamList = {
   ProviderEarningsHistory: undefined;
   ProviderVehicle: undefined;
   ProviderVerification: undefined;
+  TeamMembers: undefined;
+  FleetManagement: undefined;
+  ServiceTerritory: undefined;
+  BusinessHours: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -401,9 +409,27 @@ export default function RootStackNavigator() {
       <Stack.Screen
         name="ProviderVerification"
         component={ProviderVerificationScreen}
-        options={{
-          headerTitle: "ID Verification",
-        }}
+        options={{ headerTitle: "ID Verification" }}
+      />
+      <Stack.Screen
+        name="TeamMembers"
+        component={TeamMembersScreen}
+        options={{ headerTitle: "Team Members" }}
+      />
+      <Stack.Screen
+        name="FleetManagement"
+        component={FleetManagementScreen}
+        options={{ headerTitle: "Fleet Management" }}
+      />
+      <Stack.Screen
+        name="ServiceTerritory"
+        component={ServiceTerritoryScreen}
+        options={{ headerTitle: "Service Territory" }}
+      />
+      <Stack.Screen
+        name="BusinessHours"
+        component={BusinessHoursScreen}
+        options={{ headerTitle: "Business Hours" }}
       />
     </Stack.Navigator>
   );
