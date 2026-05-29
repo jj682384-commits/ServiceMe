@@ -3,24 +3,20 @@ import {
   View,
   StyleSheet,
   ScrollView,
+  FlatList,
   Pressable,
   TextInput,
   Linking,
   Platform,
   Keyboard,
+  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Feather } from "@expo/vector-icons";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  FadeIn,
-  FadeInDown,
-} from "react-native-reanimated";
+import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
-
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 
 import { ThemedText } from "@/components/ThemedText";
@@ -33,6 +29,11 @@ import { Spacing, BorderRadius } from "@/constants/theme";
 
 const SUPPORT_PHONE = "1-800-SERVICE";
 const POLL_INTERVAL_MS = 3000;
+const AS_CONV_ID = "support_active_conv_id";
+const AS_MESSAGES = "support_active_messages";
+const AS_CHAT_HISTORY = "support_chat_history";
+
+type View = "options" | "chat" | "history" | "historyDetail";
 
 interface ChatMessage {
   id: string;
@@ -40,6 +41,16 @@ interface ChatMessage {
   isUser: boolean;
   fromAdmin?: boolean;
   timestamp: Date;
+}
+
+interface ConvSummary {
+  id: string;
+  status: string;
+  admin_taken_over: boolean;
+  created_at: string;
+  updated_at: string;
+  last_message: { role: string; content: string; ts: string } | null;
+  message_count: number;
 }
 
 const initialMessages: ChatMessage[] = [
@@ -65,19 +76,41 @@ const FAQ_ITEMS = [
   { q: "Report a safety concern", icon: "shield" as const, color: "#8B5CF6" },
 ];
 
+function formatRelativeTime(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffMins < 1) return "just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
 export default function SupportScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const navigation = useNavigation();
   const { theme, isDark } = useTheme();
   const { authUser, currentDriver, currentProvider, userRole } = useApp();
-  const [activeTab, setActiveTab] = useState<"options" | "chat">("options");
+
+  const [view, setView] = useState<View>("options");
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [inputText, setInputText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [adminActive, setAdminActive] = useState(false);
   const [waitingForAgent, setWaitingForAgent] = useState(false);
+  const [hasActiveConv, setHasActiveConv] = useState(false);
+  const [activeConvPreview, setActiveConvPreview] = useState<string>("");
+
+  // History state
+  const [history, setHistory] = useState<ConvSummary[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [detailConv, setDetailConv] = useState<{ id: string; messages: ChatMessage[] } | null>(null);
 
   const chatHistoryRef = useRef<Array<{ role: "user" | "assistant"; content: string }>>([]);
   const conversationIdRef = useRef<string | null>(null);
@@ -89,11 +122,60 @@ export default function SupportScreen() {
   const userId = authUser?.id || currentDriver?.id || currentProvider?.id;
   const sectionBg = theme.cardAnimatedBg;
 
-  // Hide the navigation header when chat is open so there's only one header
+  // ── Load history + restore persisted conversation on mount ───────────────────
   useEffect(() => {
-    navigation.setOptions({ headerShown: activeTab === "options" });
-  }, [activeTab, navigation]);
+    loadHistory();
+  }, []);
 
+  useEffect(() => {
+    (async () => {
+      try {
+        const savedId = await AsyncStorage.getItem(AS_CONV_ID);
+        const savedMsgs = await AsyncStorage.getItem(AS_MESSAGES);
+        const savedHistory = await AsyncStorage.getItem(AS_CHAT_HISTORY);
+        if (savedId) {
+          conversationIdRef.current = savedId;
+          setHasActiveConv(true);
+        }
+        if (savedMsgs) {
+          const parsed: ChatMessage[] = JSON.parse(savedMsgs).map((m: any) => ({
+            ...m,
+            timestamp: new Date(m.timestamp),
+          }));
+          if (parsed.length > 0) {
+            setMessages(parsed);
+            const lastUserMsg = [...parsed].reverse().find((m) => m.isUser);
+            setActiveConvPreview(lastUserMsg?.text.slice(0, 60) || "Active conversation");
+          }
+        }
+        if (savedHistory) {
+          chatHistoryRef.current = JSON.parse(savedHistory);
+        }
+      } catch {
+        // ignore storage errors
+      }
+    })();
+  }, []);
+
+  // ── Persist conversation whenever messages change ────────────────────────────
+  const persistConversation = useCallback(async (msgs: ChatMessage[]) => {
+    try {
+      if (conversationIdRef.current) {
+        await AsyncStorage.setItem(AS_CONV_ID, conversationIdRef.current);
+      }
+      await AsyncStorage.setItem(AS_MESSAGES, JSON.stringify(msgs));
+      await AsyncStorage.setItem(AS_CHAT_HISTORY, JSON.stringify(chatHistoryRef.current));
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  // ── Hide nav header in chat/history views ────────────────────────────────────
+  useEffect(() => {
+    navigation.setOptions({ headerShown: view === "options" });
+  }, [view, navigation]);
+
+  // ── Keyboard listeners ───────────────────────────────────────────────────────
   useEffect(() => {
     const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
     const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
@@ -102,8 +184,9 @@ export default function SupportScreen() {
     return () => { show.remove(); hide.remove(); };
   }, []);
 
+  // ── Polling for admin messages ───────────────────────────────────────────────
   useEffect(() => {
-    if (activeTab !== "chat") {
+    if (view !== "chat") {
       if (pollTimerRef.current) clearInterval(pollTimerRef.current);
       return;
     }
@@ -111,7 +194,7 @@ export default function SupportScreen() {
     return () => {
       if (pollTimerRef.current) clearInterval(pollTimerRef.current);
     };
-  }, [activeTab]);
+  }, [view]);
 
   const pollConversation = useCallback(async () => {
     const convId = conversationIdRef.current;
@@ -121,8 +204,7 @@ export default function SupportScreen() {
       const res = await fetch(url);
       if (!res.ok) return;
       const data = await res.json();
-      const serverMsgs: Array<{ role: string; content: string; ts: string; fromAdmin: boolean }> =
-        data.messages || [];
+      const serverMsgs: Array<{ role: string; content: string; ts: string; fromAdmin: boolean }> = data.messages || [];
       setAdminActive(!!data.admin_taken_over);
       if (serverMsgs.length > lastMessageCountRef.current) {
         const newMsgs = serverMsgs.slice(lastMessageCountRef.current);
@@ -139,14 +221,66 @@ export default function SupportScreen() {
         if (chatMsgs.length > 0) {
           setIsTyping(false);
           setWaitingForAgent(false);
-          setMessages((prev) => [...prev, ...chatMsgs]);
+          setMessages((prev) => {
+            const updated = [...prev, ...chatMsgs];
+            persistConversation(updated);
+            return updated;
+          });
           setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
         }
       }
-    } catch {
-      // silently ignore poll errors
+    } catch { /* ignore */ }
+  }, [persistConversation]);
+
+  // ── Load history ─────────────────────────────────────────────────────────────
+  const loadHistory = useCallback(async () => {
+    setHistoryLoading(true);
+    try {
+      const res = await apiRequest("GET", "/api/support/conversations");
+      const data = await res.json();
+      if (Array.isArray(data)) setHistory(data);
+    } catch { /* ignore */ } finally {
+      setHistoryLoading(false);
     }
   }, []);
+
+  // ── Open a past conversation (read-only) ─────────────────────────────────────
+  const openHistoryDetail = async (conv: ConvSummary) => {
+    try {
+      const url = new URL(`/api/support/conversation/${conv.id}`, getApiUrl()).toString();
+      const res = await fetch(url);
+      const data = await res.json();
+      const msgs: ChatMessage[] = (data.messages || []).map((m: any) => ({
+        id: `${m.ts}-${Math.random()}`,
+        text: m.content,
+        isUser: m.role === "user",
+        fromAdmin: m.fromAdmin,
+        timestamp: new Date(m.ts),
+      }));
+      setDetailConv({ id: conv.id, messages: msgs });
+      setView("historyDetail");
+    } catch { /* ignore */ }
+  };
+
+  // ── Start a new chat (clears saved state) ────────────────────────────────────
+  const startNewChat = async () => {
+    await AsyncStorage.multiRemove([AS_CONV_ID, AS_MESSAGES, AS_CHAT_HISTORY]);
+    conversationIdRef.current = null;
+    chatHistoryRef.current = [];
+    lastMessageCountRef.current = 1;
+    setMessages(initialMessages);
+    setHasActiveConv(false);
+    setActiveConvPreview("");
+    setAdminActive(false);
+    setWaitingForAgent(false);
+    setView("chat");
+  };
+
+  // ── Resume saved chat ────────────────────────────────────────────────────────
+  const resumeChat = () => {
+    lastMessageCountRef.current = messages.length;
+    setView("chat");
+  };
 
   const handleCallSupport = () => {
     const phoneUrl = Platform.select({
@@ -154,9 +288,7 @@ export default function SupportScreen() {
       android: `tel:${SUPPORT_PHONE}`,
       default: `tel:${SUPPORT_PHONE}`,
     });
-    Linking.openURL(phoneUrl!).catch(() => {
-      alert("Unable to open phone app. Please call " + SUPPORT_PHONE);
-    });
+    Linking.openURL(phoneUrl!).catch(() => alert("Unable to open phone app. Please call " + SUPPORT_PHONE));
   };
 
   const handleSendMessage = async (text: string) => {
@@ -167,13 +299,18 @@ export default function SupportScreen() {
       isUser: true,
       timestamp: new Date(),
     };
-    setMessages((prev) => [...prev, userMessage]);
+    const updatedWithUser = [...messages, userMessage];
+    setMessages(updatedWithUser);
     lastMessageCountRef.current += 1;
     setInputText("");
     setIsTyping(true);
+    setHasActiveConv(true);
+    setActiveConvPreview(text.trim().slice(0, 60));
     Keyboard.dismiss();
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
     chatHistoryRef.current = [...chatHistoryRef.current, { role: "user", content: text.trim() }];
+    await persistConversation(updatedWithUser);
+
     try {
       const res = await apiRequest("POST", "/api/support/chat", {
         message: text.trim(),
@@ -186,6 +323,7 @@ export default function SupportScreen() {
       const data = await res.json();
       if (data?.conversationId && !conversationIdRef.current) {
         conversationIdRef.current = data.conversationId;
+        await AsyncStorage.setItem(AS_CONV_ID, data.conversationId);
       }
       if (data?.waitingForAgent) {
         setIsTyping(false);
@@ -201,23 +339,28 @@ export default function SupportScreen() {
         isUser: false,
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, agentResponse]);
+      const updatedWithReply = [...updatedWithUser, agentResponse];
+      setMessages(updatedWithReply);
       lastMessageCountRef.current += 1;
+      await persistConversation(updatedWithReply);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
     } catch {
-      const agentResponse: ChatMessage = {
+      const errorMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
         text: "I'm unable to connect right now. Please call 1-800-SERVICE for immediate assistance.",
         isUser: false,
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, agentResponse]);
+      const updatedWithError = [...updatedWithUser, errorMsg];
+      setMessages(updatedWithError);
+      await persistConversation(updatedWithError);
     } finally {
       setIsTyping(false);
     }
   };
 
-  const renderSupportOptions = () => (
+  // ── Options view ─────────────────────────────────────────────────────────────
+  const renderOptions = () => (
     <KeyboardAwareScrollViewCompat
       contentContainerStyle={{
         paddingTop: headerHeight + Spacing.lg,
@@ -226,7 +369,6 @@ export default function SupportScreen() {
       }}
       scrollIndicatorInsets={{ bottom: insets.bottom }}
     >
-      {/* Hero gradient card */}
       <LinearGradient
         colors={["#0A1F3A", "#0F2855", "#14124A"]}
         start={{ x: 0, y: 0 }}
@@ -243,12 +385,53 @@ export default function SupportScreen() {
           Our team is available around the clock to help with any questions or issues.
         </ThemedText>
         <View style={[styles.availabilityBadge, { backgroundColor: "rgba(16,185,129,0.2)" }]}>
-          <View style={[styles.availabilityDot, { backgroundColor: "#10B981" }]} />
+          <View style={[styles.dot, { backgroundColor: "#10B981" }]} />
           <ThemedText type="small" style={{ color: "#10B981", fontWeight: "700" }}>
             Support agents available now
           </ThemedText>
         </View>
       </LinearGradient>
+
+      {/* Active / resume conversation */}
+      {hasActiveConv && (
+        <>
+          <ThemedText type="small" style={[styles.sectionLabel, { color: theme.textSecondary }]}>
+            ACTIVE CONVERSATION
+          </ThemedText>
+          <View style={[styles.section, { backgroundColor: sectionBg }]}>
+            <View style={styles.menuRow}>
+              <View style={[styles.iconBox, { backgroundColor: "#10B98120" }]}>
+                <View style={[styles.dot, { backgroundColor: "#10B981" }]} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <ThemedText type="body" style={{ fontWeight: "600" }}>Ongoing Chat</ThemedText>
+                {activeConvPreview ? (
+                  <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: 2 }} numberOfLines={1}>
+                    {activeConvPreview}
+                  </ThemedText>
+                ) : null}
+              </View>
+            </View>
+            <View style={[styles.divider, { backgroundColor: theme.border }]} />
+            <View style={{ flexDirection: "row" }}>
+              <Pressable
+                onPress={resumeChat}
+                style={({ pressed }) => [styles.splitBtn, { borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: theme.border, opacity: pressed ? 0.7 : 1 }]}
+              >
+                <Feather name="message-circle" size={16} color={theme.primary} />
+                <ThemedText type="small" style={{ color: theme.primary, fontWeight: "700", marginLeft: 6 }}>Resume</ThemedText>
+              </Pressable>
+              <Pressable
+                onPress={startNewChat}
+                style={({ pressed }) => [styles.splitBtn, { opacity: pressed ? 0.7 : 1 }]}
+              >
+                <Feather name="plus" size={16} color={theme.textSecondary} />
+                <ThemedText type="small" style={{ color: theme.textSecondary, fontWeight: "600", marginLeft: 6 }}>New Chat</ThemedText>
+              </Pressable>
+            </View>
+          </View>
+        </>
+      )}
 
       {/* Contact options */}
       <ThemedText type="small" style={[styles.sectionLabel, { color: theme.textSecondary }]}>
@@ -270,21 +453,21 @@ export default function SupportScreen() {
           </View>
           <Feather name="chevron-right" size={20} color={theme.textSecondary} />
         </Pressable>
-
         <View style={[styles.divider, { backgroundColor: theme.border }]} />
-
         <Pressable
-          onPress={() => setActiveTab("chat")}
+          onPress={hasActiveConv ? resumeChat : startNewChat}
           style={({ pressed }) => [styles.menuRow, { opacity: pressed ? 0.7 : 1 }]}
         >
           <View style={[styles.iconBox, { backgroundColor: "#8B5CF620" }]}>
             <Feather name="message-circle" size={16} color="#8B5CF6" />
           </View>
           <View style={{ flex: 1 }}>
-            <ThemedText type="body" style={{ fontWeight: "600" }}>Live Chat</ThemedText>
+            <ThemedText type="body" style={{ fontWeight: "600" }}>
+              {hasActiveConv ? "Resume Live Chat" : "Live Chat"}
+            </ThemedText>
             <View style={{ flexDirection: "row", alignItems: "center", gap: Spacing.sm, marginTop: 2 }}>
               <ThemedText type="small" style={{ color: theme.textSecondary }}>Chat in real-time</ThemedText>
-              <View style={[styles.responseBadge, { backgroundColor: "#10B98120" }]}>
+              <View style={[styles.badge, { backgroundColor: "#10B98120" }]}>
                 <ThemedText style={{ color: "#10B981", fontSize: 10, fontWeight: "700" }}>~1 min</ThemedText>
               </View>
             </View>
@@ -293,7 +476,7 @@ export default function SupportScreen() {
         </Pressable>
       </View>
 
-      {/* FAQ */}
+      {/* Common questions */}
       <ThemedText type="small" style={[styles.sectionLabel, { color: theme.textSecondary }]}>
         COMMON QUESTIONS
       </ThemedText>
@@ -302,10 +485,7 @@ export default function SupportScreen() {
           <View key={item.q}>
             {index > 0 && <View style={[styles.divider, { backgroundColor: theme.border }]} />}
             <Pressable
-              onPress={() => {
-                setActiveTab("chat");
-                setTimeout(() => handleSendMessage(item.q), 300);
-              }}
+              onPress={() => { startNewChat().then(() => setTimeout(() => handleSendMessage(item.q), 300)); }}
               style={({ pressed }) => [styles.menuRow, { opacity: pressed ? 0.7 : 1 }]}
             >
               <View style={[styles.iconBox, { backgroundColor: item.color + "20" }]}>
@@ -317,163 +497,295 @@ export default function SupportScreen() {
           </View>
         ))}
       </View>
+
+      {/* History */}
+      <View style={styles.historyHeader}>
+        <ThemedText type="small" style={[styles.sectionLabel, { color: theme.textSecondary, marginBottom: 0 }]}>
+          PAST CONVERSATIONS
+        </ThemedText>
+        <Pressable
+          onPress={() => { loadHistory(); setView("history"); }}
+          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+        >
+          <ThemedText type="small" style={{ color: theme.primary, fontWeight: "700" }}>View all</ThemedText>
+        </Pressable>
+      </View>
+      <View style={[styles.section, { backgroundColor: sectionBg }]}>
+        {history.length === 0 ? (
+          <View style={styles.emptyRow}>
+            <Feather name="clock" size={16} color={theme.textSecondary} />
+            <ThemedText type="small" style={{ color: theme.textSecondary, marginLeft: Spacing.sm }}>
+              No past conversations yet
+            </ThemedText>
+          </View>
+        ) : (
+          history.slice(0, 3).map((conv, i) => (
+            <View key={conv.id}>
+              {i > 0 && <View style={[styles.divider, { backgroundColor: theme.border }]} />}
+              <Pressable
+                onPress={() => openHistoryDetail(conv)}
+                style={({ pressed }) => [styles.menuRow, { opacity: pressed ? 0.7 : 1 }]}
+              >
+                <View style={[styles.iconBox, { backgroundColor: conv.admin_taken_over ? "#3B82F620" : theme.textSecondary + "20" }]}>
+                  <Feather name={conv.admin_taken_over ? "user" : "cpu"} size={16} color={conv.admin_taken_over ? "#3B82F6" : theme.textSecondary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <ThemedText type="body" style={{ fontWeight: "600" }} numberOfLines={1}>
+                    {conv.last_message?.content?.slice(0, 50) || "Support conversation"}
+                  </ThemedText>
+                  <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: 2 }}>
+                    {formatRelativeTime(conv.updated_at)} · {conv.message_count} messages
+                  </ThemedText>
+                </View>
+                <Feather name="chevron-right" size={18} color={theme.textSecondary} />
+              </Pressable>
+            </View>
+          ))
+        )}
+      </View>
     </KeyboardAwareScrollViewCompat>
   );
 
-  const renderLiveChat = () => (
-    <View style={{ flex: 1, paddingBottom: keyboardHeight }}>
-      {/* Chat header */}
-      <View style={[styles.chatHeader, { borderBottomColor: theme.border, paddingTop: insets.top, backgroundColor: isDark ? "#04060E" : theme.backgroundRoot }]}>
+  // ── History list view ─────────────────────────────────────────────────────────
+  const renderHistory = () => (
+    <View style={{ flex: 1 }}>
+      <View style={[styles.subHeader, { paddingTop: insets.top, borderBottomColor: theme.border, backgroundColor: isDark ? "#04060E" : theme.backgroundRoot }]}>
         <Pressable
-          onPress={() => setActiveTab("options")}
+          onPress={() => setView("options")}
           style={({ pressed }) => [styles.backButton, { opacity: pressed ? 0.7 : 1 }]}
         >
           <Feather name="arrow-left" size={20} color={theme.text} />
         </Pressable>
-        <View style={styles.chatHeaderInfo}>
+        <ThemedText type="h4" style={{ flex: 1 }}>Past Conversations</ThemedText>
+        <Pressable onPress={loadHistory} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+          <Feather name="refresh-cw" size={18} color={theme.textSecondary} />
+        </Pressable>
+      </View>
+
+      {historyLoading ? (
+        <View style={styles.centered}>
+          <ActivityIndicator color={theme.primary} />
+        </View>
+      ) : history.length === 0 ? (
+        <View style={styles.centered}>
+          <Feather name="message-square" size={40} color={theme.textSecondary} style={{ marginBottom: Spacing.md }} />
+          <ThemedText type="body" style={{ color: theme.textSecondary, textAlign: "center" }}>
+            No past conversations yet.{"\n"}Start a chat to get help.
+          </ThemedText>
+        </View>
+      ) : (
+        <FlatList
+          data={history}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ padding: Spacing.lg, paddingBottom: insets.bottom + Spacing.xl }}
+          ItemSeparatorComponent={() => <View style={{ height: Spacing.sm }} />}
+          renderItem={({ item }) => (
+            <Pressable
+              onPress={() => openHistoryDetail(item)}
+              style={({ pressed }) => [styles.historyCard, { backgroundColor: sectionBg, opacity: pressed ? 0.8 : 1 }]}
+            >
+              <View style={{ flexDirection: "row", alignItems: "flex-start", gap: Spacing.md }}>
+                <View style={[styles.iconBox, { backgroundColor: item.admin_taken_over ? "#3B82F620" : "#8B5CF620", marginTop: 2 }]}>
+                  <Feather name={item.admin_taken_over ? "user" : "cpu"} size={16} color={item.admin_taken_over ? "#3B82F6" : "#8B5CF6"} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: Spacing.sm, marginBottom: 4 }}>
+                    <View style={[styles.badge, {
+                      backgroundColor: item.status === "open" ? "#10B98120" : theme.textSecondary + "20",
+                    }]}>
+                      <ThemedText style={{
+                        fontSize: 10, fontWeight: "700",
+                        color: item.status === "open" ? "#10B981" : theme.textSecondary,
+                      }}>
+                        {item.status === "open" ? "OPEN" : "CLOSED"}
+                      </ThemedText>
+                    </View>
+                    {item.admin_taken_over ? (
+                      <View style={[styles.badge, { backgroundColor: "#3B82F620" }]}>
+                        <ThemedText style={{ fontSize: 10, fontWeight: "700", color: "#3B82F6" }}>LIVE AGENT</ThemedText>
+                      </View>
+                    ) : null}
+                    <ThemedText type="small" style={{ color: theme.textSecondary, marginLeft: "auto" }}>
+                      {formatRelativeTime(item.updated_at)}
+                    </ThemedText>
+                  </View>
+                  <ThemedText type="body" numberOfLines={2} style={{ color: theme.text }}>
+                    {item.last_message?.content || "Support conversation"}
+                  </ThemedText>
+                  <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: 4 }}>
+                    {item.message_count} messages
+                  </ThemedText>
+                </View>
+                <Feather name="chevron-right" size={18} color={theme.textSecondary} style={{ marginTop: 4 }} />
+              </View>
+            </Pressable>
+          )}
+        />
+      )}
+    </View>
+  );
+
+  // ── Chat view (live or read-only history detail) ──────────────────────────────
+  const renderChat = (isReadOnly = false, readOnlyMessages?: ChatMessage[]) => {
+    const displayMessages = isReadOnly ? (readOnlyMessages || []) : messages;
+    return (
+      <View style={{ flex: 1, paddingBottom: isReadOnly ? 0 : keyboardHeight }}>
+        <View style={[styles.subHeader, { paddingTop: insets.top, borderBottomColor: theme.border, backgroundColor: isDark ? "#04060E" : theme.backgroundRoot }]}>
+          <Pressable
+            onPress={() => setView(isReadOnly ? "history" : "options")}
+            style={({ pressed }) => [styles.backButton, { opacity: pressed ? 0.7 : 1 }]}
+          >
+            <Feather name="arrow-left" size={20} color={theme.text} />
+          </Pressable>
           <View style={[styles.agentAvatar, { backgroundColor: adminActive ? theme.secondary : theme.primary }]}>
             <Feather name={adminActive ? "user" : "headphones"} size={18} color="#FFFFFF" />
           </View>
-          <View>
-            <ThemedText type="h4">{adminActive ? "Live Agent" : "ResqRide Support"}</ThemedText>
-            <View style={styles.onlineStatus}>
-              <View style={[styles.onlineDot, { backgroundColor: theme.success }]} />
-              <ThemedText type="small" style={{ color: theme.success }}>
-                {adminActive ? "Agent active" : "Online"}
-              </ThemedText>
+          <View style={{ flex: 1, marginLeft: Spacing.sm }}>
+            <ThemedText type="h4">{adminActive ? "Live Agent" : isReadOnly ? "Past Conversation" : "ResqRide Support"}</ThemedText>
+            {!isReadOnly && (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <View style={[styles.dot, { backgroundColor: theme.success }]} />
+                <ThemedText type="small" style={{ color: theme.success }}>{adminActive ? "Agent active" : "Online"}</ThemedText>
+              </View>
+            )}
+          </View>
+          {isReadOnly && (
+            <View style={[styles.badge, { backgroundColor: theme.textSecondary + "20" }]}>
+              <ThemedText type="small" style={{ color: theme.textSecondary, fontWeight: "700" }}>READ ONLY</ThemedText>
             </View>
-          </View>
+          )}
+          {!isReadOnly && adminActive ? (
+            <View style={[styles.badge, { backgroundColor: theme.secondary + "20" }]}>
+              <ThemedText type="small" style={{ color: theme.secondary, fontWeight: "700" }}>LIVE</ThemedText>
+            </View>
+          ) : null}
         </View>
-        {adminActive ? (
-          <View style={[styles.agentBadge, { backgroundColor: theme.secondary + "20" }]}>
-            <ThemedText type="small" style={{ color: theme.secondary, fontWeight: "700" }}>
-              Live
+
+        {!isReadOnly && adminActive ? (
+          <View style={[styles.agentBanner, { backgroundColor: theme.secondary + "15", borderBottomColor: theme.secondary + "30" }]}>
+            <Feather name="user-check" size={14} color={theme.secondary} />
+            <ThemedText type="small" style={{ color: theme.secondary, marginLeft: 6, fontWeight: "600" }}>
+              A live agent has joined this conversation
             </ThemedText>
           </View>
         ) : null}
-      </View>
 
-      {adminActive ? (
-        <View style={[styles.agentBanner, { backgroundColor: theme.secondary + "15", borderBottomColor: theme.secondary + "30" }]}>
-          <Feather name="user-check" size={14} color={theme.secondary} />
-          <ThemedText type="small" style={{ color: theme.secondary, marginLeft: 6, fontWeight: "600" }}>
-            A live agent has joined this conversation
-          </ThemedText>
-        </View>
-      ) : null}
-
-      <ScrollView
-        ref={scrollRef}
-        style={{ flex: 1 }}
-        contentContainerStyle={{ padding: Spacing.lg, paddingBottom: Spacing.xl, flexGrow: 1, justifyContent: "flex-end" }}
-        keyboardDismissMode="on-drag"
-        keyboardShouldPersistTaps="handled"
-      >
-        {messages.map((message, index) => (
-          <Animated.View
-            key={message.id}
-            entering={FadeInDown.delay(index < 5 ? 0 : 50).springify()}
-            style={[
-              styles.messageBubble,
-              message.isUser
-                ? [styles.userMessage, { backgroundColor: theme.primary }]
-                : message.fromAdmin
-                  ? [styles.agentMessage, { backgroundColor: theme.secondary + "20", borderWidth: 1, borderColor: theme.secondary + "40" }]
-                  : [styles.agentMessage, { backgroundColor: sectionBg }],
-            ]}
-          >
-            {!message.isUser && message.fromAdmin ? (
-              <ThemedText type="small" style={{ color: theme.secondary, fontWeight: "700", marginBottom: 3 }}>
-                Live Agent
-              </ThemedText>
-            ) : null}
-            <ThemedText
-              type="body"
-              style={message.isUser ? { color: "#FFFFFF" } : undefined}
+        <ScrollView
+          ref={scrollRef}
+          style={{ flex: 1 }}
+          contentContainerStyle={{ padding: Spacing.lg, paddingBottom: Spacing.xl, flexGrow: 1, justifyContent: "flex-end" }}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+        >
+          {displayMessages.map((message, index) => (
+            <Animated.View
+              key={message.id}
+              entering={FadeInDown.delay(index < 5 ? 0 : 50).springify()}
+              style={[
+                styles.messageBubble,
+                message.isUser
+                  ? [styles.userMessage, { backgroundColor: theme.primary }]
+                  : message.fromAdmin
+                    ? [styles.agentMessage, { backgroundColor: theme.secondary + "20", borderWidth: 1, borderColor: theme.secondary + "40" }]
+                    : [styles.agentMessage, { backgroundColor: sectionBg }],
+              ]}
             >
-              {message.text}
-            </ThemedText>
-          </Animated.View>
-        ))}
+              {!message.isUser && message.fromAdmin ? (
+                <ThemedText type="small" style={{ color: theme.secondary, fontWeight: "700", marginBottom: 3 }}>
+                  Live Agent
+                </ThemedText>
+              ) : null}
+              <ThemedText type="body" style={message.isUser ? { color: "#FFFFFF" } : undefined}>
+                {message.text}
+              </ThemedText>
+            </Animated.View>
+          ))}
 
-        {isTyping ? (
-          <Animated.View
-            entering={FadeIn}
-            style={[styles.typingIndicator, { backgroundColor: sectionBg }]}
-          >
-            <View style={[styles.typingDot, { backgroundColor: theme.textSecondary }]} />
-            <View style={[styles.typingDot, { backgroundColor: theme.textSecondary }]} />
-            <View style={[styles.typingDot, { backgroundColor: theme.textSecondary }]} />
-          </Animated.View>
-        ) : null}
+          {!isReadOnly && isTyping ? (
+            <Animated.View entering={FadeIn} style={[styles.typingIndicator, { backgroundColor: sectionBg }]}>
+              <View style={[styles.typingDot, { backgroundColor: theme.textSecondary }]} />
+              <View style={[styles.typingDot, { backgroundColor: theme.textSecondary }]} />
+              <View style={[styles.typingDot, { backgroundColor: theme.textSecondary }]} />
+            </Animated.View>
+          ) : null}
 
-        {waitingForAgent ? (
-          <Animated.View entering={FadeIn} style={[styles.waitingBadge, { backgroundColor: theme.warning + "15" }]}>
-            <Feather name="clock" size={13} color={theme.warning} />
-            <ThemedText type="small" style={{ color: theme.warning, marginLeft: 6 }}>
-              Waiting for a live agent to respond...
-            </ThemedText>
-          </Animated.View>
-        ) : null}
+          {!isReadOnly && waitingForAgent ? (
+            <Animated.View entering={FadeIn} style={[styles.waitingBadge, { backgroundColor: theme.warning + "15" }]}>
+              <Feather name="clock" size={13} color={theme.warning} />
+              <ThemedText type="small" style={{ color: theme.warning, marginLeft: 6 }}>
+                Waiting for a live agent to respond...
+              </ThemedText>
+            </Animated.View>
+          ) : null}
 
-        {messages.length <= 2 ? (
-          <View style={styles.quickReplies}>
-            <ThemedText type="small" style={{ color: theme.textSecondary, marginBottom: Spacing.sm }}>
-              Quick actions:
-            </ThemedText>
-            {quickReplies.map((reply, index) => (
-              <Pressable
-                key={index}
-                onPress={() => handleSendMessage(reply)}
-                style={({ pressed }) => [styles.quickReplyButton, { borderColor: theme.primary, opacity: pressed ? 0.7 : 1 }]}
-              >
-                <ThemedText type="small" style={{ color: theme.primary }}>{reply}</ThemedText>
-              </Pressable>
-            ))}
-          </View>
-        ) : null}
-      </ScrollView>
+          {!isReadOnly && displayMessages.length <= 2 ? (
+            <View style={{ marginTop: Spacing.lg }}>
+              <ThemedText type="small" style={{ color: theme.textSecondary, marginBottom: Spacing.sm }}>Quick actions:</ThemedText>
+              {quickReplies.map((reply, index) => (
+                <Pressable
+                  key={index}
+                  onPress={() => handleSendMessage(reply)}
+                  style={({ pressed }) => [styles.quickReplyButton, { borderColor: theme.primary, opacity: pressed ? 0.7 : 1 }]}
+                >
+                  <ThemedText type="small" style={{ color: theme.primary }}>{reply}</ThemedText>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
+        </ScrollView>
 
-      <View
-        style={[
-          styles.inputContainer,
-          {
+        {!isReadOnly ? (
+          <View style={[styles.inputContainer, {
             backgroundColor: isDark ? "#04060E" : theme.backgroundRoot,
             borderTopColor: theme.border,
             paddingBottom: keyboardHeight > 0 ? Spacing.sm : insets.bottom + Spacing.sm,
-          },
-        ]}
-      >
-        <TextInput
-          value={inputText}
-          onChangeText={setInputText}
-          placeholder="Type your message..."
-          placeholderTextColor={theme.textSecondary}
-          style={[styles.chatInput, { backgroundColor: sectionBg, color: theme.text }]}
-          multiline
-          maxLength={500}
-          returnKeyType="send"
-          blurOnSubmit
-          onSubmitEditing={() => handleSendMessage(inputText)}
-        />
-        <Pressable
-          onPress={() => handleSendMessage(inputText)}
-          disabled={!inputText.trim()}
-          style={({ pressed }) => [
-            styles.sendButton,
-            { backgroundColor: inputText.trim() ? theme.primary : theme.border, opacity: pressed && inputText.trim() ? 0.9 : 1 },
-          ]}
-        >
-          <Feather name="send" size={20} color="#FFFFFF" />
-        </Pressable>
+          }]}>
+            <TextInput
+              value={inputText}
+              onChangeText={setInputText}
+              placeholder="Type your message..."
+              placeholderTextColor={theme.textSecondary}
+              style={[styles.chatInput, { backgroundColor: sectionBg, color: theme.text }]}
+              multiline
+              maxLength={500}
+              returnKeyType="send"
+              blurOnSubmit
+              onSubmitEditing={() => handleSendMessage(inputText)}
+            />
+            <Pressable
+              onPress={() => handleSendMessage(inputText)}
+              disabled={!inputText.trim()}
+              style={({ pressed }) => [
+                styles.sendButton,
+                { backgroundColor: inputText.trim() ? theme.primary : theme.border, opacity: pressed && inputText.trim() ? 0.9 : 1 },
+              ]}
+            >
+              <Feather name="send" size={20} color="#FFFFFF" />
+            </Pressable>
+          </View>
+        ) : (
+          <View style={[styles.readOnlyBar, {
+            backgroundColor: isDark ? "#04060E" : theme.backgroundRoot,
+            borderTopColor: theme.border,
+            paddingBottom: insets.bottom + Spacing.sm,
+          }]}>
+            <Feather name="lock" size={14} color={theme.textSecondary} />
+            <ThemedText type="small" style={{ color: theme.textSecondary, marginLeft: 6 }}>
+              This conversation is read-only
+            </ThemedText>
+          </View>
+        )}
       </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: isDark ? "#04060E" : theme.backgroundRoot }]}>
       <AnimatedBackground />
-      {activeTab === "options" ? renderSupportOptions() : renderLiveChat()}
+      {view === "options" && renderOptions()}
+      {view === "chat" && renderChat(false)}
+      {view === "history" && renderHistory()}
+      {view === "historyDetail" && detailConv && renderChat(true, detailConv.messages)}
     </View>
   );
 }
@@ -502,11 +814,17 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.full,
     gap: Spacing.sm,
   },
-  availabilityDot: { width: 8, height: 8, borderRadius: 4 },
+  dot: { width: 8, height: 8, borderRadius: 4 },
   sectionLabel: {
     paddingBottom: Spacing.sm,
     fontWeight: "600",
     letterSpacing: 0.5,
+  },
+  historyHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: Spacing.sm,
   },
   section: {
     borderRadius: BorderRadius.md,
@@ -520,6 +838,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     gap: Spacing.md,
   },
+  splitBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: Spacing.md,
+  },
   divider: { height: StyleSheet.hairlineWidth, marginHorizontal: Spacing.lg },
   iconBox: {
     width: 32,
@@ -528,34 +853,44 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  responseBadge: {
+  badge: {
     paddingHorizontal: Spacing.sm,
     paddingVertical: 2,
     borderRadius: BorderRadius.full,
   },
-  chatHeader: {
+  emptyRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+    justifyContent: "center",
+  },
+  historyCard: {
+    borderRadius: BorderRadius.md,
+    padding: Spacing.lg,
+    overflow: "hidden",
+  },
+  subHeader: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.md,
     borderBottomWidth: 1,
+    gap: Spacing.sm,
   },
-  backButton: { marginRight: Spacing.md, padding: Spacing.xs },
-  chatHeaderInfo: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, flex: 1 },
-  agentAvatar: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
-  agentBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+  backButton: { padding: Spacing.xs },
+  agentAvatar: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
   agentBanner: { flexDirection: "row", alignItems: "center", paddingHorizontal: Spacing.lg, paddingVertical: 10, borderBottomWidth: 1 },
-  onlineStatus: { flexDirection: "row", alignItems: "center", gap: 4 },
-  onlineDot: { width: 6, height: 6, borderRadius: 3 },
   messageBubble: { maxWidth: "80%", padding: Spacing.md, borderRadius: BorderRadius.md, marginBottom: Spacing.sm },
   userMessage: { alignSelf: "flex-end", borderBottomRightRadius: 4 },
   agentMessage: { alignSelf: "flex-start", borderBottomLeftRadius: 4 },
   typingIndicator: { flexDirection: "row", alignSelf: "flex-start", padding: Spacing.md, borderRadius: BorderRadius.md, gap: 4 },
   typingDot: { width: 8, height: 8, borderRadius: 4, opacity: 0.6 },
   waitingBadge: { flexDirection: "row", alignItems: "center", alignSelf: "flex-start", padding: Spacing.sm, paddingHorizontal: Spacing.md, borderRadius: BorderRadius.md, marginBottom: Spacing.sm },
-  quickReplies: { marginTop: Spacing.lg },
   quickReplyButton: { borderWidth: 1, borderRadius: BorderRadius.md, paddingVertical: Spacing.sm, paddingHorizontal: Spacing.md, marginBottom: Spacing.sm, alignSelf: "flex-start" },
   inputContainer: { flexDirection: "row", alignItems: "flex-end", paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm, borderTopWidth: 1, gap: Spacing.sm },
   chatInput: { flex: 1, borderRadius: BorderRadius.md, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, maxHeight: 100, fontSize: 16 },
   sendButton: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
+  readOnlyBar: { flexDirection: "row", alignItems: "center", justifyContent: "center", paddingTop: Spacing.md, borderTopWidth: 1 },
+  centered: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
 });

@@ -2874,6 +2874,29 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
     }
   });
 
+  // ── User: list own conversation history ──────────────────────────────────────
+  app.get("/api/support/conversations", async (req: Request, res: Response) => {
+    try {
+      const token = extractToken(req);
+      if (!token) return res.status(401).json({ error: "Unauthorized" });
+      const user = await getUserByToken(token);
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
+      const { rows } = await pool.query(
+        `SELECT id, status, admin_taken_over, created_at, updated_at,
+                messages->-1 AS last_message,
+                jsonb_array_length(messages) AS message_count
+         FROM support_conversations
+         WHERE user_id = $1
+         ORDER BY updated_at DESC
+         LIMIT 30`,
+        [String(user.id)]
+      );
+      res.json(rows);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // ── Admin: list support chats ─────────────────────────────────────────────────
   app.get("/api/admin/support-chats", adminAuth, async (_req: Request, res: Response) => {
     try {
