@@ -16,7 +16,6 @@ import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
-import { getApiUrl } from "@/lib/query-client";
 
 type Period = "7D" | "30D" | "ALL";
 
@@ -115,13 +114,6 @@ export default function ProviderRevenueAnalyticsScreen() {
   const { data: allJobs = [], isLoading } = useQuery<CompletedJob[]>({
     queryKey: [`/api/providers/${currentProvider?.id}/completed-jobs`],
     enabled: !!currentProvider?.id,
-    queryFn: async () => {
-      const res = await fetch(
-        new URL(`/api/providers/${currentProvider!.id}/completed-jobs`, getApiUrl()).toString()
-      );
-      if (!res.ok) return [];
-      return res.json();
-    },
   });
 
   const jobs = useMemo(() => filterByPeriod(allJobs, period), [allJobs, period]);

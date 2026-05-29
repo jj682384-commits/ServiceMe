@@ -1909,6 +1909,24 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
   // ── Completed jobs for provider analytics ─────────────────────────────────
   app.get("/api/providers/:id/completed-jobs", async (req: Request, res: Response) => {
     try {
+      // Auth: verify the Bearer token belongs to the provider being queried
+      const token = extractToken(req.headers["authorization"] as string | undefined);
+      if (!token) return res.status(401).json({ error: "Unauthorized" });
+      const user = await getUserByToken(token);
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+      // Look up the provider account linked to this auth user by email
+      const { rows: provRows } = await pool.query<{ id: string }>(
+        "SELECT id FROM providers WHERE email = $1",
+        [user.email]
+      );
+      const ownedProviderId = provRows[0]?.id;
+
+      // Reject if the token's provider doesn't match the requested :id
+      if (!ownedProviderId || ownedProviderId !== req.params.id) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+
       const { rows } = await pool.query(
         `SELECT id, service_type, status, total_cost, tip, estimated_cost, created_at, is_ev, is_emergency
          FROM jobs
