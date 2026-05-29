@@ -43,22 +43,37 @@ const DRIVETRAIN_TYPES: { value: DrivetrainType; label: string }[] = [
 ];
 
 const currentYear = new Date().getFullYear();
-const YEARS = Array.from({ length: 30 }, (_, i) => currentYear - i);
+// 1970 through current year
+const YEARS = Array.from({ length: currentYear - 1969 }, (_, i) => currentYear - i);
+const YEAR_STRINGS = YEARS.map(String);
 
+const COLOR_GROUPS: { label: string; colors: typeof VEHICLE_COLORS }[] = [
+  {
+    label: "NEUTRAL",
+    colors: VEHICLE_COLORS.filter((c) =>
+      ["White", "Pearl White", "Champagne", "Silver", "Gray", "Dark Gray", "Black"].includes(c.label)
+    ),
+  },
+  {
+    label: "WARM",
+    colors: VEHICLE_COLORS.filter((c) =>
+      ["Red", "Dark Red", "Maroon", "Orange", "Yellow", "Gold", "Brown", "Tan / Beige"].includes(c.label)
+    ),
+  },
+  {
+    label: "COOL",
+    colors: VEHICLE_COLORS.filter((c) =>
+      ["Blue", "Dark Blue", "Navy", "Green", "Dark Green", "Teal", "Purple"].includes(c.label)
+    ),
+  },
+];
+
+// ─── Searchable Picker ────────────────────────────────────────────────────────
 function SearchablePicker({
-  visible,
-  onClose,
-  onSelect,
-  items,
-  title,
-  searchPlaceholder,
+  visible, onClose, onSelect, items, title, searchPlaceholder,
 }: {
-  visible: boolean;
-  onClose: () => void;
-  onSelect: (item: string) => void;
-  items: string[];
-  title: string;
-  searchPlaceholder: string;
+  visible: boolean; onClose: () => void; onSelect: (item: string) => void;
+  items: string[]; title: string; searchPlaceholder: string;
 }) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -76,11 +91,7 @@ function SearchablePicker({
         <View
           style={[
             styles.modalContent,
-            {
-              backgroundColor: theme.backgroundDefault,
-              paddingTop: insets.top + Spacing.md,
-              paddingBottom: insets.bottom + Spacing.md,
-            },
+            { backgroundColor: theme.backgroundDefault, paddingTop: insets.top + Spacing.md, paddingBottom: insets.bottom + Spacing.md },
           ]}
         >
           <View style={styles.modalHeader}>
@@ -89,12 +100,7 @@ function SearchablePicker({
               <Feather name="x" size={24} color={theme.text} />
             </Pressable>
           </View>
-          <View
-            style={[
-              styles.searchBar,
-              { backgroundColor: theme.cardAnimatedBg, borderColor: theme.border },
-            ]}
-          >
+          <View style={[styles.searchBar, { backgroundColor: theme.cardAnimatedBg, borderColor: theme.border }]}>
             <Feather name="search" size={18} color={theme.textSecondary} />
             <TextInput
               style={[styles.searchInput, { color: theme.text }]}
@@ -117,14 +123,8 @@ function SearchablePicker({
             keyboardShouldPersistTaps="handled"
             renderItem={({ item }) => (
               <Pressable
-                onPress={() => {
-                  setSearch("");
-                  onSelect(item);
-                }}
-                style={({ pressed }) => [
-                  styles.pickerItem,
-                  { backgroundColor: pressed ? theme.cardAnimatedBg : "transparent" },
-                ]}
+                onPress={() => { setSearch(""); onSelect(item); }}
+                style={({ pressed }) => [styles.pickerItem, { backgroundColor: pressed ? theme.cardAnimatedBg : "transparent" }]}
               >
                 <ThemedText type="body">{item}</ThemedText>
                 <Feather name="chevron-right" size={16} color={theme.textSecondary} />
@@ -132,14 +132,10 @@ function SearchablePicker({
             )}
             ListEmptyComponent={
               <View style={styles.emptySearch}>
-                <ThemedText type="body" style={{ color: theme.textSecondary }}>
-                  No results for "{search}"
-                </ThemedText>
+                <ThemedText type="body" style={{ color: theme.textSecondary }}>No results for "{search}"</ThemedText>
               </View>
             }
-            ItemSeparatorComponent={() => (
-              <View style={[styles.separator, { backgroundColor: theme.border }]} />
-            )}
+            ItemSeparatorComponent={() => <View style={[styles.separator, { backgroundColor: theme.border }]} />}
           />
         </View>
       </View>
@@ -147,61 +143,15 @@ function SearchablePicker({
   );
 }
 
-function PickerButton({
-  label,
-  value,
-  placeholder,
-  onPress,
-  disabled,
-  sectionBg,
+// ─── Color Picker Modal ───────────────────────────────────────────────────────
+function ColorPickerModal({
+  visible, onClose, selected, onSelect,
 }: {
-  label: string;
-  value: string;
-  placeholder: string;
-  onPress: () => void;
-  disabled?: boolean;
-  sectionBg?: string;
+  visible: boolean; onClose: () => void; selected: string; onSelect: (hex: string) => void;
 }) {
   const { theme } = useTheme();
-  const bg = sectionBg ?? theme.backgroundDefault;
+  const insets = useSafeAreaInsets();
 
-  return (
-    <>
-      <ThemedText style={styles.sectionLabel}>
-        {label.toUpperCase()}
-      </ThemedText>
-      <Pressable
-        onPress={onPress}
-        disabled={disabled}
-        style={[
-          styles.pickerButton,
-          {
-            backgroundColor: bg,
-            borderColor: value ? theme.primary : theme.border,
-            opacity: disabled ? 0.5 : 1,
-          },
-        ]}
-      >
-        <ThemedText
-          type="body"
-          style={{ color: value ? theme.text : theme.textSecondary, flex: 1 }}
-        >
-          {value || placeholder}
-        </ThemedText>
-        <Feather name="chevron-down" size={18} color={theme.textSecondary} />
-      </Pressable>
-    </>
-  );
-}
-
-function ColorPicker({
-  selected,
-  onSelect,
-}: {
-  selected: string;
-  onSelect: (hex: string) => void;
-}) {
-  const { theme } = useTheme();
   const isLight = (hex: string) => {
     const r = parseInt(hex.slice(1, 3), 16);
     const g = parseInt(hex.slice(3, 5), 16);
@@ -210,77 +160,164 @@ function ColorPicker({
   };
 
   return (
-    <>
-      <View style={styles.colorHeaderRow}>
-        <ThemedText style={[styles.sectionLabel, { marginTop: 0, marginBottom: 0 }]}>
-          COLOR
-        </ThemedText>
-        {selected ? (
-          <View style={styles.colorSelectedTag}>
-            <View
-              style={[
-                styles.colorSelectedDot,
-                {
-                  backgroundColor: selected,
-                  borderWidth: isLight(selected) ? 1 : 0,
-                  borderColor: theme.border,
-                },
-              ]}
-            />
-            <ThemedText type="small" style={{ color: theme.textSecondary, fontSize: 12 }}>
-              {VEHICLE_COLORS.find((c) => c.hex === selected)?.label ?? "Custom"}
-            </ThemedText>
-          </View>
-        ) : null}
-      </View>
-      <View style={styles.colorGrid}>
-        {VEHICLE_COLORS.map((c) => {
-          const active = selected === c.hex;
-          const light = isLight(c.hex);
-          return (
-            <Pressable
-              key={c.hex}
-              onPress={() => onSelect(c.hex)}
-              style={[
-                styles.colorSwatch,
-                { backgroundColor: c.hex },
-                light ? { borderWidth: 1, borderColor: theme.border } : null,
-                active ? styles.colorSwatchActive : null,
-              ]}
-            >
-              {active ? (
-                <Feather name="check" size={14} color={light ? "#000" : "#FFF"} />
-              ) : null}
+    <Modal visible={visible} animationType="slide" transparent>
+      <View style={styles.modalOverlay}>
+        <View
+          style={[
+            styles.colorModalContent,
+            { backgroundColor: theme.backgroundDefault, paddingBottom: insets.bottom + Spacing.lg },
+          ]}
+        >
+          <View style={styles.modalHandle} />
+          <View style={styles.modalHeader}>
+            <ThemedText type="h3">Vehicle Color</ThemedText>
+            <Pressable onPress={onClose} hitSlop={12}>
+              <Feather name="x" size={24} color={theme.text} />
             </Pressable>
-          );
-        })}
+          </View>
+
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg }}>
+            {selected ? (
+              <View style={[styles.colorSelectedBanner, { backgroundColor: theme.cardAnimatedBg }]}>
+                <View style={[styles.colorBannerSwatch, { backgroundColor: selected, borderWidth: isLight(selected) ? 1 : 0, borderColor: "rgba(255,255,255,0.2)" }]} />
+                <ThemedText type="body" style={{ fontWeight: "600" }}>
+                  {VEHICLE_COLORS.find((c) => c.hex === selected)?.label ?? "Custom"}
+                </ThemedText>
+                <View style={{ flex: 1 }} />
+                <Pressable onPress={() => { onSelect(""); onClose(); }} hitSlop={8}>
+                  <ThemedText type="small" style={{ color: theme.textSecondary }}>Clear</ThemedText>
+                </Pressable>
+              </View>
+            ) : null}
+
+            {COLOR_GROUPS.map((group) => (
+              <View key={group.label} style={{ marginBottom: Spacing.lg }}>
+                <ThemedText style={[styles.sectionLabel, { marginBottom: Spacing.md }]}>
+                  {group.label}
+                </ThemedText>
+                <View style={styles.colorSwatchGrid}>
+                  {group.colors.map((c) => {
+                    const active = selected === c.hex;
+                    const light = isLight(c.hex);
+                    return (
+                      <Pressable
+                        key={c.hex}
+                        onPress={() => { onSelect(c.hex); onClose(); }}
+                        style={styles.colorSwatchItem}
+                      >
+                        <View
+                          style={[
+                            styles.colorSwatchBox,
+                            { backgroundColor: c.hex },
+                            light ? { borderWidth: 1, borderColor: "rgba(0,0,0,0.12)" } : null,
+                            active ? { borderWidth: 3, borderColor: "#60A5FA" } : null,
+                          ]}
+                        >
+                          {active ? (
+                            <Feather name="check" size={16} color={light ? "#000" : "#FFF"} />
+                          ) : null}
+                        </View>
+                        <ThemedText
+                          style={[
+                            styles.colorSwatchLabel,
+                            { color: active ? "#60A5FA" : theme.textSecondary, fontWeight: active ? "700" : "400" },
+                          ]}
+                          numberOfLines={2}
+                        >
+                          {c.label}
+                        </ThemedText>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
       </View>
+    </Modal>
+  );
+}
+
+// ─── Picker Button ────────────────────────────────────────────────────────────
+function PickerButton({
+  label, value, placeholder, onPress, disabled, sectionBg,
+}: {
+  label: string; value: string; placeholder: string; onPress: () => void; disabled?: boolean; sectionBg?: string;
+}) {
+  const { theme } = useTheme();
+  const bg = sectionBg ?? theme.backgroundDefault;
+
+  return (
+    <>
+      <ThemedText style={styles.sectionLabel}>{label.toUpperCase()}</ThemedText>
+      <Pressable
+        onPress={onPress}
+        disabled={disabled}
+        style={[styles.pickerButton, { backgroundColor: bg, borderColor: value ? theme.primary : theme.border, opacity: disabled ? 0.5 : 1 }]}
+      >
+        <ThemedText type="body" style={{ color: value ? theme.text : theme.textSecondary, flex: 1 }}>
+          {value || placeholder}
+        </ThemedText>
+        <Feather name="chevron-down" size={18} color={theme.textSecondary} />
+      </Pressable>
     </>
   );
 }
 
-function VehicleCard({
-  vehicle,
-  onSetDefault,
-  onEdit,
-  onRemove,
+// ─── Color Picker Button ──────────────────────────────────────────────────────
+function ColorPickerButton({
+  selected, onPress, sectionBg,
 }: {
-  vehicle: Vehicle;
-  onSetDefault: () => void;
-  onEdit: () => void;
-  onRemove: () => void;
+  selected: string; onPress: () => void; sectionBg?: string;
+}) {
+  const { theme } = useTheme();
+  const bg = sectionBg ?? theme.backgroundDefault;
+  const colorEntry = selected ? VEHICLE_COLORS.find((c) => c.hex === selected) : null;
+  const isLight = selected
+    ? (parseInt(selected.slice(1, 3), 16) * 299 + parseInt(selected.slice(3, 5), 16) * 587 + parseInt(selected.slice(5, 7), 16) * 114) / 1000 > 180
+    : false;
+
+  return (
+    <>
+      <ThemedText style={styles.sectionLabel}>COLOR</ThemedText>
+      <Pressable
+        onPress={onPress}
+        style={[styles.pickerButton, { backgroundColor: bg, borderColor: selected ? theme.primary : theme.border }]}
+      >
+        {selected ? (
+          <View style={styles.colorButtonPreview}>
+            <View
+              style={[
+                styles.colorButtonSwatch,
+                { backgroundColor: selected, borderWidth: isLight ? 1 : 0, borderColor: "rgba(0,0,0,0.1)" },
+              ]}
+            />
+            <ThemedText type="body" style={{ color: theme.text, flex: 1 }}>
+              {colorEntry?.label ?? "Custom"}
+            </ThemedText>
+          </View>
+        ) : (
+          <ThemedText type="body" style={{ color: theme.textSecondary, flex: 1 }}>
+            Select color...
+          </ThemedText>
+        )}
+        <Feather name="chevron-down" size={18} color={theme.textSecondary} />
+      </Pressable>
+    </>
+  );
+}
+
+// ─── Vehicle Card ─────────────────────────────────────────────────────────────
+function VehicleCard({
+  vehicle, onSetDefault, onEdit, onRemove,
+}: {
+  vehicle: Vehicle; onSetDefault: () => void; onEdit: () => void; onRemove: () => void;
 }) {
   const { theme } = useTheme();
   const scale = useSharedValue(1);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  const colorEntry = vehicle.color
-    ? VEHICLE_COLORS.find((c) => c.hex === vehicle.color)
-    : null;
-
+  const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const colorEntry = vehicle.color ? VEHICLE_COLORS.find((c) => c.hex === vehicle.color) : null;
   const isEV = vehicle.fuelType === "electric";
   const iconBg = vehicle.isDefault ? "#0066FF22" : isEV ? "#00AA5522" : "#60A5FA18";
   const iconColor = vehicle.isDefault ? "#60A5FA" : isEV ? "#34D399" : "#94A3B8";
@@ -289,32 +326,15 @@ function VehicleCard({
     <AnimatedPressable
       onPressIn={() => { scale.value = withSpring(0.98, { damping: 15, stiffness: 150 }); }}
       onPressOut={() => { scale.value = withSpring(1, { damping: 15, stiffness: 150 }); }}
-      style={[
-        styles.vehicleCard,
-        {
-          backgroundColor: theme.cardAnimatedBg,
-          borderColor: vehicle.isDefault ? "#0066FF55" : "transparent",
-          borderWidth: 1.5,
-        },
-        animatedStyle,
-      ]}
+      style={[styles.vehicleCard, { backgroundColor: theme.cardAnimatedBg, borderColor: vehicle.isDefault ? "#0066FF55" : "transparent", borderWidth: 1.5 }, animatedStyle]}
     >
       <View style={styles.vehicleCardHeader}>
         <View style={styles.vehicleIconWrap}>
           <View style={[styles.vehicleIconBox, { backgroundColor: iconBg }]}>
-            <Feather
-              name={isEV ? "battery-charging" : "truck"}
-              size={20}
-              color={iconColor}
-            />
+            <Feather name={isEV ? "battery-charging" : "truck"} size={20} color={iconColor} />
           </View>
           {vehicle.color ? (
-            <View
-              style={[
-                styles.colorDot,
-                { backgroundColor: vehicle.color, borderColor: theme.backgroundDefault },
-              ]}
-            />
+            <View style={[styles.colorDot, { backgroundColor: vehicle.color, borderColor: theme.backgroundDefault }]} />
           ) : null}
         </View>
         <View style={styles.vehicleCardInfo}>
@@ -324,9 +344,7 @@ function VehicleCard({
           <View style={styles.vehicleMetaRow}>
             {colorEntry ? (
               <>
-                <ThemedText type="small" style={{ color: theme.textSecondary }}>
-                  {colorEntry.label}
-                </ThemedText>
+                <ThemedText type="small" style={{ color: theme.textSecondary }}>{colorEntry.label}</ThemedText>
                 <View style={[styles.metaDot, { backgroundColor: theme.textSecondary }]} />
               </>
             ) : null}
@@ -340,18 +358,14 @@ function VehicleCard({
             {vehicle.drivetrain ? (
               <>
                 <View style={[styles.metaDot, { backgroundColor: theme.textSecondary }]} />
-                <ThemedText type="small" style={{ color: theme.textSecondary }}>
-                  {vehicle.drivetrain.toUpperCase()}
-                </ThemedText>
+                <ThemedText type="small" style={{ color: theme.textSecondary }}>{vehicle.drivetrain.toUpperCase()}</ThemedText>
               </>
             ) : null}
           </View>
         </View>
         {vehicle.isDefault ? (
           <View style={[styles.defaultBadge, { backgroundColor: "#0066FF" }]}>
-            <ThemedText type="small" style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 10 }}>
-              DEFAULT
-            </ThemedText>
+            <ThemedText type="small" style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 10 }}>DEFAULT</ThemedText>
           </View>
         ) : null}
       </View>
@@ -360,16 +374,12 @@ function VehicleCard({
         {!vehicle.isDefault ? (
           <Pressable onPress={onSetDefault} style={[styles.actionButton, { borderColor: "#0066FF55" }]}>
             <Feather name="check-circle" size={13} color="#60A5FA" />
-            <ThemedText type="small" style={{ color: "#60A5FA", marginLeft: 4, fontSize: 12 }}>
-              Set Default
-            </ThemedText>
+            <ThemedText type="small" style={{ color: "#60A5FA", marginLeft: 4, fontSize: 12 }}>Set Default</ThemedText>
           </Pressable>
         ) : null}
         <Pressable onPress={onEdit} style={[styles.actionButton, { borderColor: theme.border }]}>
           <Feather name="edit-2" size={13} color={theme.textSecondary} />
-          <ThemedText type="small" style={{ color: theme.textSecondary, marginLeft: 4, fontSize: 12 }}>
-            Edit
-          </ThemedText>
+          <ThemedText type="small" style={{ color: theme.textSecondary, marginLeft: 4, fontSize: 12 }}>Edit</ThemedText>
         </Pressable>
         <Pressable
           onPress={() => {
@@ -381,30 +391,25 @@ function VehicleCard({
           style={[styles.actionButton, { borderColor: "#D9222255" }]}
         >
           <Feather name="trash-2" size={13} color="#EF4444" />
-          <ThemedText type="small" style={{ color: "#EF4444", marginLeft: 4, fontSize: 12 }}>
-            Remove
-          </ThemedText>
+          <ThemedText type="small" style={{ color: "#EF4444", marginLeft: 4, fontSize: 12 }}>Remove</ThemedText>
         </Pressable>
       </View>
     </AnimatedPressable>
   );
 }
 
+// ─── Vehicle Form ─────────────────────────────────────────────────────────────
 function VehicleForm({
   make, model, year, color, tireType, fuelType, drivetrain,
-  onMakePress, onModelPress,
-  setYear, setColor, setTireType, setFuelType, setDrivetrain,
-  onCancel, onSave,
-  saveLabel,
+  onMakePress, onModelPress, onYearPress, onColorPress,
+  setTireType, setFuelType, setDrivetrain,
+  onCancel, onSave, saveLabel,
 }: {
   make: string; model: string; year: number; color: string;
   tireType: TireType; fuelType: FuelType; drivetrain: DrivetrainType;
-  onMakePress: () => void; onModelPress: () => void;
-  setYear: (y: number) => void; setColor: (c: string) => void;
-  setTireType: (t: TireType) => void; setFuelType: (f: FuelType) => void;
-  setDrivetrain: (d: DrivetrainType) => void;
-  onCancel: () => void; onSave: () => void;
-  saveLabel: string;
+  onMakePress: () => void; onModelPress: () => void; onYearPress: () => void; onColorPress: () => void;
+  setTireType: (t: TireType) => void; setFuelType: (f: FuelType) => void; setDrivetrain: (d: DrivetrainType) => void;
+  onCancel: () => void; onSave: () => void; saveLabel: string;
 }) {
   const { theme } = useTheme();
   const sectionBg = theme.cardAnimatedBg;
@@ -420,38 +425,14 @@ function VehicleForm({
         disabled={!make}
         sectionBg={sectionBg}
       />
-
-      <ThemedText style={[styles.sectionLabel, { marginTop: Spacing.lg }]}>YEAR</ThemedText>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: Spacing.sm, paddingBottom: Spacing.sm }}
-      >
-        {YEARS.slice(0, 15).map((y) => (
-          <Pressable
-            key={y}
-            onPress={() => setYear(y)}
-            style={[
-              styles.yearChip,
-              {
-                backgroundColor: year === y ? "#0066FF" : sectionBg,
-                borderColor: year === y ? "#0066FF" : theme.border,
-              },
-            ]}
-          >
-            <ThemedText
-              type="small"
-              style={{ color: year === y ? "#FFFFFF" : theme.text, fontWeight: year === y ? "700" : "400" }}
-            >
-              {y}
-            </ThemedText>
-          </Pressable>
-        ))}
-      </ScrollView>
-
-      <View style={{ marginTop: Spacing.md }}>
-        <ColorPicker selected={color} onSelect={setColor} />
-      </View>
+      <PickerButton
+        label="Year"
+        value={year ? String(year) : ""}
+        placeholder="Select year..."
+        onPress={onYearPress}
+        sectionBg={sectionBg}
+      />
+      <ColorPickerButton selected={color} onPress={onColorPress} sectionBg={sectionBg} />
 
       <ThemedText style={[styles.sectionLabel, { marginTop: Spacing.lg }]}>TIRE TYPE</ThemedText>
       <View style={styles.optionRow}>
@@ -459,23 +440,9 @@ function VehicleForm({
           <Pressable
             key={t.value}
             onPress={() => setTireType(t.value)}
-            style={[
-              styles.optionChip,
-              {
-                backgroundColor: tireType === t.value ? "#0066FF22" : sectionBg,
-                borderColor: tireType === t.value ? "#0066FF" : theme.border,
-                flex: 1,
-              },
-            ]}
+            style={[styles.optionChip, { backgroundColor: tireType === t.value ? "#0066FF22" : sectionBg, borderColor: tireType === t.value ? "#0066FF" : theme.border, flex: 1 }]}
           >
-            <ThemedText
-              type="small"
-              style={{
-                color: tireType === t.value ? "#60A5FA" : theme.text,
-                fontWeight: tireType === t.value ? "700" : "400",
-                textAlign: "center",
-              }}
-            >
+            <ThemedText type="small" style={{ color: tireType === t.value ? "#60A5FA" : theme.text, fontWeight: tireType === t.value ? "700" : "400", textAlign: "center" }}>
               {t.label}
             </ThemedText>
           </Pressable>
@@ -488,28 +455,10 @@ function VehicleForm({
           <Pressable
             key={f.value}
             onPress={() => setFuelType(f.value)}
-            style={[
-              styles.optionChip,
-              {
-                backgroundColor: fuelType === f.value ? "#0066FF22" : sectionBg,
-                borderColor: fuelType === f.value ? "#0066FF" : theme.border,
-                flex: 1,
-              },
-            ]}
+            style={[styles.optionChip, { backgroundColor: fuelType === f.value ? "#0066FF22" : sectionBg, borderColor: fuelType === f.value ? "#0066FF" : theme.border, flex: 1 }]}
           >
-            <Feather
-              name={f.icon}
-              size={13}
-              color={fuelType === f.value ? "#60A5FA" : theme.textSecondary}
-            />
-            <ThemedText
-              type="small"
-              style={{
-                color: fuelType === f.value ? "#60A5FA" : theme.text,
-                fontWeight: fuelType === f.value ? "700" : "400",
-                marginLeft: 4,
-              }}
-            >
+            <Feather name={f.icon} size={13} color={fuelType === f.value ? "#60A5FA" : theme.textSecondary} />
+            <ThemedText type="small" style={{ color: fuelType === f.value ? "#60A5FA" : theme.text, fontWeight: fuelType === f.value ? "700" : "400", marginLeft: 4 }}>
               {f.label}
             </ThemedText>
           </Pressable>
@@ -522,23 +471,9 @@ function VehicleForm({
           <Pressable
             key={d.value}
             onPress={() => setDrivetrain(d.value)}
-            style={[
-              styles.optionChip,
-              {
-                backgroundColor: drivetrain === d.value ? "#0066FF22" : sectionBg,
-                borderColor: drivetrain === d.value ? "#0066FF" : theme.border,
-                flex: 1,
-              },
-            ]}
+            style={[styles.optionChip, { backgroundColor: drivetrain === d.value ? "#0066FF22" : sectionBg, borderColor: drivetrain === d.value ? "#0066FF" : theme.border, flex: 1 }]}
           >
-            <ThemedText
-              type="small"
-              style={{
-                color: drivetrain === d.value ? "#60A5FA" : theme.text,
-                fontWeight: drivetrain === d.value ? "700" : "400",
-                textAlign: "center",
-              }}
-            >
+            <ThemedText type="small" style={{ color: drivetrain === d.value ? "#60A5FA" : theme.text, fontWeight: drivetrain === d.value ? "700" : "400", textAlign: "center" }}>
               {d.label}
             </ThemedText>
           </Pressable>
@@ -557,9 +492,7 @@ function VehicleForm({
             style={styles.saveButtonGradient}
           >
             <Feather name="check" size={16} color="#FFFFFF" />
-            <ThemedText type="body" style={{ color: "#FFFFFF", fontWeight: "700", marginLeft: Spacing.xs }}>
-              {saveLabel}
-            </ThemedText>
+            <ThemedText type="body" style={{ color: "#FFFFFF", fontWeight: "700", marginLeft: Spacing.xs }}>{saveLabel}</ThemedText>
           </LinearGradient>
         </Pressable>
       </View>
@@ -567,6 +500,7 @@ function VehicleForm({
   );
 }
 
+// ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function VehicleManagementScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
@@ -584,6 +518,8 @@ export default function VehicleManagementScreen() {
 
   const [showMakePicker, setShowMakePicker] = useState(false);
   const [showModelPicker, setShowModelPicker] = useState(false);
+  const [showYearPicker, setShowYearPicker] = useState(false);
+  const [showColorPicker, setShowColorPicker] = useState(false);
 
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
   const [editMake, setEditMake] = useState("");
@@ -595,16 +531,11 @@ export default function VehicleManagementScreen() {
   const [editDrivetrain, setEditDrivetrain] = useState<DrivetrainType>("fwd");
   const [showEditMakePicker, setShowEditMakePicker] = useState(false);
   const [showEditModelPicker, setShowEditModelPicker] = useState(false);
+  const [showEditYearPicker, setShowEditYearPicker] = useState(false);
+  const [showEditColorPicker, setShowEditColorPicker] = useState(false);
 
-  const availableModels = useMemo(() => {
-    if (!make) return [];
-    return VEHICLE_MAKES_MODELS[make] || [];
-  }, [make]);
-
-  const editAvailableModels = useMemo(() => {
-    if (!editMake) return [];
-    return VEHICLE_MAKES_MODELS[editMake] || [];
-  }, [editMake]);
+  const availableModels = useMemo(() => (!make ? [] : VEHICLE_MAKES_MODELS[make] || []), [make]);
+  const editAvailableModels = useMemo(() => (!editMake ? [] : VEHICLE_MAKES_MODELS[editMake] || []), [editMake]);
 
   const openEdit = (vehicle: Vehicle) => {
     setEditingVehicle(vehicle);
@@ -621,6 +552,8 @@ export default function VehicleManagementScreen() {
     setEditingVehicle(null);
     setShowEditMakePicker(false);
     setShowEditModelPicker(false);
+    setShowEditYearPicker(false);
+    setShowEditColorPicker(false);
   };
 
   const handleSaveEdit = () => {
@@ -630,13 +563,8 @@ export default function VehicleManagementScreen() {
       return;
     }
     updateVehicle(editingVehicle.id, {
-      make: editMake.trim(),
-      model: editModel.trim(),
-      year: editYear,
-      color: editColor || undefined,
-      tireType: editTireType,
-      fuelType: editFuelType,
-      drivetrain: editDrivetrain,
+      make: editMake.trim(), model: editModel.trim(), year: editYear,
+      color: editColor || undefined, tireType: editTireType, fuelType: editFuelType, drivetrain: editDrivetrain,
     });
     closeEdit();
   };
@@ -674,7 +602,7 @@ export default function VehicleManagementScreen() {
         ]}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Hero card */}
+        {/* Hero */}
         <LinearGradient
           colors={["#0A1F3A", "#0F2855", "#14124A"]}
           start={{ x: 0, y: 0 }}
@@ -690,9 +618,7 @@ export default function VehicleManagementScreen() {
                 My Vehicles
               </ThemedText>
               <ThemedText type="small" style={{ color: "rgba(255,255,255,0.55)" }}>
-                {vehicles.length === 0
-                  ? "No vehicles saved yet"
-                  : `${vehicles.length} vehicle${vehicles.length > 1 ? "s" : ""} saved`}
+                {vehicles.length === 0 ? "No vehicles saved yet" : `${vehicles.length} vehicle${vehicles.length > 1 ? "s" : ""} saved`}
               </ThemedText>
             </View>
           </View>
@@ -706,12 +632,10 @@ export default function VehicleManagementScreen() {
           ) : null}
         </LinearGradient>
 
-        {/* Vehicle list */}
+        {/* Saved vehicles */}
         {vehicles.length > 0 ? (
           <Animated.View entering={FadeIn.delay(80).duration(300)}>
-            <ThemedText style={[styles.sectionLabel, { marginBottom: Spacing.sm }]}>
-              SAVED VEHICLES
-            </ThemedText>
+            <ThemedText style={[styles.sectionLabel, { marginBottom: Spacing.sm }]}>SAVED VEHICLES</ThemedText>
             {vehicles.map((vehicle) => (
               <VehicleCard
                 key={vehicle.id}
@@ -728,9 +652,7 @@ export default function VehicleManagementScreen() {
               <View style={[styles.emptyIconBox, { backgroundColor: "#0066FF18" }]}>
                 <Feather name="truck" size={28} color="#60A5FA" />
               </View>
-              <ThemedText type="h4" style={{ marginTop: Spacing.md, color: "#FFFFFF" }}>
-                No Vehicles Saved
-              </ThemedText>
+              <ThemedText type="h4" style={{ marginTop: Spacing.md, color: "#FFFFFF" }}>No Vehicles Saved</ThemedText>
               <ThemedText type="body" style={{ color: theme.textSecondary, textAlign: "center", marginTop: Spacing.sm }}>
                 Add a vehicle so providers know what you drive
               </ThemedText>
@@ -741,16 +663,15 @@ export default function VehicleManagementScreen() {
         {/* Add form */}
         {showAddForm ? (
           <Animated.View entering={FadeInDown.duration(280).springify().damping(20)}>
-            <ThemedText style={[styles.sectionLabel, { marginBottom: Spacing.sm }]}>
-              ADD VEHICLE
-            </ThemedText>
+            <ThemedText style={[styles.sectionLabel, { marginBottom: Spacing.sm }]}>ADD VEHICLE</ThemedText>
             <View style={[styles.addForm, { backgroundColor: theme.cardAnimatedBg }]}>
               <VehicleForm
                 make={make} model={model} year={year} color={color}
                 tireType={tireType} fuelType={fuelType} drivetrain={drivetrain}
                 onMakePress={() => setShowMakePicker(true)}
                 onModelPress={() => setShowModelPicker(true)}
-                setYear={setYear} setColor={setColor}
+                onYearPress={() => setShowYearPicker(true)}
+                onColorPress={() => setShowColorPicker(true)}
                 setTireType={setTireType} setFuelType={setFuelType} setDrivetrain={setDrivetrain}
                 onCancel={resetForm} onSave={handleAdd} saveLabel="Save Vehicle"
               />
@@ -773,35 +694,17 @@ export default function VehicleManagementScreen() {
         )}
       </KeyboardAwareScrollViewCompat>
 
-      {/* Modals */}
-      <SearchablePicker
-        visible={showMakePicker}
-        onClose={() => setShowMakePicker(false)}
-        onSelect={(m) => { setMake(m); setModel(""); setShowMakePicker(false); }}
-        items={VEHICLE_MAKES}
-        title="Select Make"
-        searchPlaceholder="Search makes..."
-      />
-      <SearchablePicker
-        visible={showModelPicker}
-        onClose={() => setShowModelPicker(false)}
-        onSelect={(m) => { setModel(m); setShowModelPicker(false); }}
-        items={availableModels}
-        title={`${make} Models`}
-        searchPlaceholder="Search models..."
-      />
+      {/* Add form pickers */}
+      <SearchablePicker visible={showMakePicker} onClose={() => setShowMakePicker(false)} onSelect={(m) => { setMake(m); setModel(""); setShowMakePicker(false); }} items={VEHICLE_MAKES} title="Select Make" searchPlaceholder="Search makes..." />
+      <SearchablePicker visible={showModelPicker} onClose={() => setShowModelPicker(false)} onSelect={(m) => { setModel(m); setShowModelPicker(false); }} items={availableModels} title={`${make} Models`} searchPlaceholder="Search models..." />
+      <SearchablePicker visible={showYearPicker} onClose={() => setShowYearPicker(false)} onSelect={(y) => { setYear(parseInt(y)); setShowYearPicker(false); }} items={YEAR_STRINGS} title="Select Year" searchPlaceholder="Search years..." />
+      <ColorPickerModal visible={showColorPicker} onClose={() => setShowColorPicker(false)} selected={color} onSelect={setColor} />
 
+      {/* Edit modal */}
       <Modal visible={!!editingVehicle} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View
-            style={[
-              styles.modalContent,
-              {
-                backgroundColor: theme.backgroundDefault,
-                paddingTop: insets.top + Spacing.md,
-                paddingBottom: insets.bottom + Spacing.md,
-              },
-            ]}
+            style={[styles.modalContent, { backgroundColor: theme.backgroundDefault, paddingTop: insets.top + Spacing.md, paddingBottom: insets.bottom + Spacing.md }]}
           >
             <View style={styles.modalHeader}>
               <ThemedText type="h3">Edit Vehicle</ThemedText>
@@ -818,7 +721,8 @@ export default function VehicleManagementScreen() {
                 tireType={editTireType} fuelType={editFuelType} drivetrain={editDrivetrain}
                 onMakePress={() => setShowEditMakePicker(true)}
                 onModelPress={() => setShowEditModelPicker(true)}
-                setYear={setEditYear} setColor={setEditColor}
+                onYearPress={() => setShowEditYearPicker(true)}
+                onColorPress={() => setShowEditColorPicker(true)}
                 setTireType={setEditTireType} setFuelType={setEditFuelType} setDrivetrain={setEditDrivetrain}
                 onCancel={closeEdit} onSave={handleSaveEdit} saveLabel="Save Changes"
               />
@@ -827,320 +731,74 @@ export default function VehicleManagementScreen() {
         </View>
       </Modal>
 
-      <SearchablePicker
-        visible={showEditMakePicker}
-        onClose={() => setShowEditMakePicker(false)}
-        onSelect={(m) => { setEditMake(m); setEditModel(""); setShowEditMakePicker(false); }}
-        items={VEHICLE_MAKES}
-        title="Select Make"
-        searchPlaceholder="Search makes..."
-      />
-      <SearchablePicker
-        visible={showEditModelPicker}
-        onClose={() => setShowEditModelPicker(false)}
-        onSelect={(m) => { setEditModel(m); setShowEditModelPicker(false); }}
-        items={editAvailableModels}
-        title={`${editMake} Models`}
-        searchPlaceholder="Search models..."
-      />
+      {/* Edit form pickers */}
+      <SearchablePicker visible={showEditMakePicker} onClose={() => setShowEditMakePicker(false)} onSelect={(m) => { setEditMake(m); setEditModel(""); setShowEditMakePicker(false); }} items={VEHICLE_MAKES} title="Select Make" searchPlaceholder="Search makes..." />
+      <SearchablePicker visible={showEditModelPicker} onClose={() => setShowEditModelPicker(false)} onSelect={(m) => { setEditModel(m); setShowEditModelPicker(false); }} items={editAvailableModels} title={`${editMake} Models`} searchPlaceholder="Search models..." />
+      <SearchablePicker visible={showEditYearPicker} onClose={() => setShowEditYearPicker(false)} onSelect={(y) => { setEditYear(parseInt(y)); setShowEditYearPicker(false); }} items={YEAR_STRINGS} title="Select Year" searchPlaceholder="Search years..." />
+      <ColorPickerModal visible={showEditColorPicker} onClose={() => setShowEditColorPicker(false)} selected={editColor} onSelect={setEditColor} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#000000",
-  },
-  scrollContent: {
-    paddingHorizontal: Spacing.lg,
-  },
+  container: { flex: 1, backgroundColor: "#000000" },
+  scrollContent: { paddingHorizontal: Spacing.lg },
   // Hero
-  heroCard: {
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    marginBottom: Spacing.lg,
-    gap: Spacing.md,
-  },
-  heroLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.md,
-  },
-  heroIconCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: "rgba(96,165,250,0.15)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  heroDefaultTag: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(96,165,250,0.1)",
-    borderRadius: BorderRadius.xs,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 5,
-    alignSelf: "flex-start",
-  },
+  heroCard: { borderRadius: BorderRadius.lg, padding: Spacing.lg, marginBottom: Spacing.lg, gap: Spacing.md },
+  heroLeft: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
+  heroIconCircle: { width: 52, height: 52, borderRadius: 26, backgroundColor: "rgba(96,165,250,0.15)", alignItems: "center", justifyContent: "center" },
+  heroDefaultTag: { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(96,165,250,0.1)", borderRadius: BorderRadius.xs, paddingHorizontal: Spacing.sm, paddingVertical: 5, alignSelf: "flex-start" },
   // Section label
-  sectionLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 0.9,
-    textTransform: "uppercase",
-    color: "rgba(148,163,184,0.8)",
-    marginBottom: Spacing.sm,
-  },
+  sectionLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 0.9, textTransform: "uppercase", color: "rgba(148,163,184,0.8)", marginBottom: Spacing.sm },
   // Vehicle card
-  vehicleCard: {
-    borderRadius: BorderRadius.md,
-    padding: Spacing.lg,
-    marginBottom: Spacing.md,
-    overflow: "hidden",
-  },
-  vehicleCardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.md,
-  },
-  vehicleIconWrap: {
-    position: "relative",
-  },
-  vehicleIconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: BorderRadius.xs,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  colorDot: {
-    position: "absolute",
-    bottom: -2,
-    right: -2,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    borderWidth: 2,
-  },
-  vehicleCardInfo: {
-    flex: 1,
-    gap: 3,
-  },
-  vehicleMetaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: Spacing.xs,
-  },
-  metaDot: {
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
-  },
-  defaultBadge: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 3,
-    borderRadius: BorderRadius.xs,
-  },
-  vehicleCardDivider: {
-    height: 1,
-    marginVertical: Spacing.md,
-    opacity: 0.4,
-  },
-  vehicleActions: {
-    flexDirection: "row",
-    gap: Spacing.sm,
-    flexWrap: "wrap",
-  },
-  actionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 6,
-    borderRadius: BorderRadius.xs,
-    borderWidth: 1,
-  },
-  // Empty state
-  emptyState: {
-    alignItems: "center",
-    padding: Spacing["2xl"],
-    borderRadius: BorderRadius.lg,
-    marginBottom: Spacing.lg,
-    overflow: "hidden",
-  },
-  emptyIconBox: {
-    width: 64,
-    height: 64,
-    borderRadius: BorderRadius.sm,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  // Add form
-  addForm: {
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    marginBottom: Spacing.lg,
-    overflow: "hidden",
-  },
-  // Field elements
-  sectionLabelInForm: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 0.9,
-    textTransform: "uppercase",
-    color: "rgba(148,163,184,0.8)",
-    marginBottom: Spacing.sm,
-    marginTop: Spacing.md,
-  },
-  pickerButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: Spacing.md,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    marginBottom: Spacing.xs,
-  },
-  yearChip: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.sm,
-    borderWidth: 1,
-  },
-  colorHeaderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: Spacing.sm,
-  },
-  colorSelectedTag: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  colorSelectedDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-  },
-  colorGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  colorSwatch: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  colorSwatchActive: {
-    borderWidth: 3,
-    borderColor: "rgba(192,192,192,0.5)",
-  },
-  optionRow: {
-    flexDirection: "row",
-    gap: Spacing.sm,
-    flexWrap: "wrap",
-  },
-  optionChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.xs,
-    borderRadius: BorderRadius.sm,
-    borderWidth: 1,
-  },
-  formActions: {
-    flexDirection: "row",
-    gap: Spacing.md,
-    marginTop: Spacing.lg,
-  },
-  cancelButton: {
-    flex: 1,
-    paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    alignItems: "center",
-  },
-  saveButtonWrap: {
-    flex: 2,
-    borderRadius: BorderRadius.md,
-    overflow: "hidden",
-  },
-  saveButtonGradient: {
-    flexDirection: "row",
-    paddingVertical: Spacing.md,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  vehicleCard: { borderRadius: BorderRadius.md, padding: Spacing.lg, marginBottom: Spacing.md, overflow: "hidden" },
+  vehicleCardHeader: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
+  vehicleIconWrap: { position: "relative" },
+  vehicleIconBox: { width: 44, height: 44, borderRadius: BorderRadius.xs, alignItems: "center", justifyContent: "center" },
+  colorDot: { position: "absolute", bottom: -2, right: -2, width: 14, height: 14, borderRadius: 7, borderWidth: 2 },
+  vehicleCardInfo: { flex: 1, gap: 3 },
+  vehicleMetaRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: Spacing.xs },
+  metaDot: { width: 3, height: 3, borderRadius: 1.5 },
+  defaultBadge: { paddingHorizontal: Spacing.sm, paddingVertical: 3, borderRadius: BorderRadius.xs },
+  vehicleCardDivider: { height: 1, marginVertical: Spacing.md, opacity: 0.4 },
+  vehicleActions: { flexDirection: "row", gap: Spacing.sm, flexWrap: "wrap" },
+  actionButton: { flexDirection: "row", alignItems: "center", paddingHorizontal: Spacing.sm, paddingVertical: 6, borderRadius: BorderRadius.xs, borderWidth: 1 },
+  // Empty
+  emptyState: { alignItems: "center", padding: Spacing["2xl"], borderRadius: BorderRadius.lg, marginBottom: Spacing.lg, overflow: "hidden" },
+  emptyIconBox: { width: 64, height: 64, borderRadius: BorderRadius.sm, alignItems: "center", justifyContent: "center" },
+  // Form
+  addForm: { borderRadius: BorderRadius.lg, padding: Spacing.lg, marginBottom: Spacing.lg, overflow: "hidden" },
+  pickerButton: { flexDirection: "row", alignItems: "center", padding: Spacing.md, borderRadius: BorderRadius.md, borderWidth: 1, marginBottom: Spacing.xs },
+  // Color button
+  colorButtonPreview: { flexDirection: "row", alignItems: "center", flex: 1, gap: Spacing.sm },
+  colorButtonSwatch: { width: 24, height: 24, borderRadius: BorderRadius.xs },
+  // Color picker modal
+  colorModalContent: { borderTopLeftRadius: BorderRadius.xl, borderTopRightRadius: BorderRadius.xl, maxHeight: "85%" },
+  modalHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: "rgba(148,163,184,0.3)", alignSelf: "center", marginTop: Spacing.sm, marginBottom: Spacing.md },
+  colorSelectedBanner: { flexDirection: "row", alignItems: "center", borderRadius: BorderRadius.md, padding: Spacing.md, marginBottom: Spacing.lg, gap: Spacing.sm },
+  colorBannerSwatch: { width: 28, height: 28, borderRadius: BorderRadius.xs },
+  colorSwatchGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  colorSwatchItem: { alignItems: "center", width: 56 },
+  colorSwatchBox: { width: 48, height: 48, borderRadius: BorderRadius.sm, alignItems: "center", justifyContent: "center", marginBottom: 4 },
+  colorSwatchLabel: { fontSize: 10, textAlign: "center", lineHeight: 13 },
+  // Options
+  optionRow: { flexDirection: "row", gap: Spacing.sm, flexWrap: "wrap" },
+  optionChip: { flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: Spacing.sm, paddingHorizontal: Spacing.xs, borderRadius: BorderRadius.sm, borderWidth: 1 },
+  // Actions
+  formActions: { flexDirection: "row", gap: Spacing.md, marginTop: Spacing.lg },
+  cancelButton: { flex: 1, paddingVertical: Spacing.md, borderRadius: BorderRadius.md, borderWidth: 1, alignItems: "center" },
+  saveButtonWrap: { flex: 2, borderRadius: BorderRadius.md, overflow: "hidden" },
+  saveButtonGradient: { flexDirection: "row", paddingVertical: Spacing.md, alignItems: "center", justifyContent: "center" },
   // Add button
-  addButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: Spacing.lg,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1.5,
-    borderStyle: "dashed",
-    marginTop: Spacing.xs,
-  },
-  addIconBox: {
-    width: 32,
-    height: 32,
-    borderRadius: BorderRadius.xs,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  addButton: { flexDirection: "row", alignItems: "center", padding: Spacing.lg, borderRadius: BorderRadius.md, borderWidth: 1.5, borderStyle: "dashed", marginTop: Spacing.xs },
+  addIconBox: { width: 32, height: 32, borderRadius: BorderRadius.xs, alignItems: "center", justifyContent: "center" },
   // Modals
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    justifyContent: "flex-end",
-  },
-  modalContent: {
-    borderTopLeftRadius: BorderRadius.xl,
-    borderTopRightRadius: BorderRadius.xl,
-    height: "82%",
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.md,
-  },
-  searchBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    gap: Spacing.sm,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    padding: 0,
-  },
-  pickerItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-  },
-  separator: {
-    height: 1,
-    marginHorizontal: Spacing.lg,
-  },
-  emptySearch: {
-    padding: Spacing.xl,
-    alignItems: "center",
-  },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
+  modalContent: { borderTopLeftRadius: BorderRadius.xl, borderTopRightRadius: BorderRadius.xl, height: "82%" },
+  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: Spacing.lg, paddingBottom: Spacing.md },
+  searchBar: { flexDirection: "row", alignItems: "center", marginHorizontal: Spacing.lg, marginBottom: Spacing.sm, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: BorderRadius.md, borderWidth: 1, gap: Spacing.sm },
+  searchInput: { flex: 1, fontSize: 16, padding: 0 },
+  pickerItem: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: Spacing.md, paddingHorizontal: Spacing.lg },
+  separator: { height: 1, marginHorizontal: Spacing.lg },
+  emptySearch: { padding: Spacing.xl, alignItems: "center" },
 });
