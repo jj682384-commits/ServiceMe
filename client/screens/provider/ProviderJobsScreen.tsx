@@ -420,13 +420,20 @@ export default function ProviderJobsScreen() {
   const { data: serverJobs } = useQuery<ServiceRequest[]>({
     queryKey: ["/api/jobs/pending", providerId],
     queryFn: async () => {
-      const url = new URL("/api/jobs/pending", getApiUrl());
-      if (providerId) url.searchParams.set("providerId", providerId);
-      const res = await fetch(url.toString(), {
-        headers: { "Cache-Control": "no-cache", "Pragma": "no-cache" },
-      });
-      if (!res.ok) throw new Error("Failed to fetch pending jobs");
-      return res.json();
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 6000);
+      try {
+        const url = new URL("/api/jobs/pending", getApiUrl());
+        if (providerId) url.searchParams.set("providerId", providerId);
+        const res = await fetch(url.toString(), {
+          headers: { "Cache-Control": "no-cache", "Pragma": "no-cache" },
+          signal: controller.signal,
+        });
+        if (!res.ok) throw new Error("Failed to fetch pending jobs");
+        return res.json();
+      } finally {
+        clearTimeout(timer);
+      }
     },
     select: (data: unknown) =>
       Array.isArray(data)
@@ -615,7 +622,11 @@ export default function ProviderJobsScreen() {
   const onRefresh = useCallback(async () => {
     setIsRefreshing(true);
     try {
-      await queryClient.refetchQueries({ queryKey: ["/api/jobs/pending", providerId] });
+      // Hard 6-second cap — spinner always stops even if the network hangs
+      await Promise.race([
+        queryClient.refetchQueries({ queryKey: ["/api/jobs/pending", providerId] }),
+        new Promise<void>((resolve) => setTimeout(resolve, 6000)),
+      ]);
     } finally {
       setIsRefreshing(false);
     }

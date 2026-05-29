@@ -130,18 +130,24 @@ export default function ProviderDashboardScreen() {
 
   const syncFromServer = useCallback(async () => {
     let newTipTotal = 0, newTipJobs = 0, newReviewRating = 0, newReviews = 0;
-    const recentJobs = [...myJobs]
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(0, 10);
 
-    if (recentJobs.length > 0) {
+    // Single AbortController shared by all fetches — hard cap of 5 seconds total
+    const controller = new AbortController();
+    const hardCapTimer = setTimeout(() => controller.abort(), 5000);
+
+    try {
+      const recentJobs = [...myJobs]
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 10);
+
+      // All job fetches + provider fetch run concurrently under the same abort signal
       const fetchJob = async (r: typeof recentJobs[0]) => {
         try {
-          const controller = new AbortController();
-          const timer = setTimeout(() => controller.abort(), 4000);
           const url = new URL(`/api/jobs/${r.id}`, getApiUrl());
-          const res = await fetch(url.toString(), { headers: { "Cache-Control": "no-cache", Pragma: "no-cache" }, signal: controller.signal });
-          clearTimeout(timer);
+          const res = await fetch(url.toString(), {
+            headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
+            signal: controller.signal,
+          });
           if (!res.ok) return;
           const job = await res.json() as { tip?: number; totalCost?: number; driverRating?: number };
           const updates: Record<string, unknown> = {};
@@ -156,27 +162,38 @@ export default function ProviderDashboardScreen() {
             updates.driverRating = job.driverRating;
           }
           if (Object.keys(updates).length > 0) updateHistoryEntry(r.id, updates as Partial<import("@/context/AppContext").ServiceRequest>);
-        } catch { /* silent */ }
+        } catch { /* aborted or network error — silent */ }
       };
-      const globalTimeout = new Promise<void>((resolve) => setTimeout(resolve, 5000));
-      await Promise.race([Promise.all(recentJobs.map(fetchJob)), globalTimeout]);
-    }
 
-    if (currentProvider?.id) {
-      try {
-        const controller = new AbortController();
-        setTimeout(() => controller.abort(), 4000);
-        const provUrl = new URL(`/api/providers/${currentProvider.id}`, getApiUrl());
-        const provRes = await fetch(provUrl.toString(), { headers: { "Cache-Control": "no-cache", Pragma: "no-cache" }, signal: controller.signal });
-        if (provRes.ok) {
+      const fetchProvider = async () => {
+        if (!currentProvider?.id) return;
+        try {
+          const provUrl = new URL(`/api/providers/${currentProvider.id}`, getApiUrl());
+          const provRes = await fetch(provUrl.toString(), {
+            headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
+            signal: controller.signal,
+          });
+          if (!provRes.ok) return;
           const provData = await provRes.json() as { rating: number; reviewCount: number };
-          if (typeof provData.rating === "number" && typeof provData.reviewCount === "number" &&
-            (provData.rating !== currentProvider.rating || provData.reviewCount !== currentProvider.reviewCount)) {
+          if (
+            typeof provData.rating === "number" &&
+            typeof provData.reviewCount === "number" &&
+            (provData.rating !== currentProvider.rating || provData.reviewCount !== currentProvider.reviewCount)
+          ) {
             setCurrentProvider({ ...currentProvider, rating: provData.rating, reviewCount: provData.reviewCount });
           }
-        }
-      } catch { /* silent */ }
+        } catch { /* aborted or network error — silent */ }
+      };
+
+      // All network calls race together — the AbortController kills them all at 5s
+      await Promise.allSettled([
+        ...recentJobs.map(fetchJob),
+        fetchProvider(),
+      ]);
+    } finally {
+      clearTimeout(hardCapTimer);
     }
+
     return { newTipTotal, newTipJobs, newReviewRating, newReviews };
   }, [myJobs, updateHistoryEntry, currentProvider, setCurrentProvider]);
 
@@ -257,10 +274,12 @@ export default function ProviderDashboardScreen() {
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={onRefresh}
-            tintColor={theme.primary}
-            colors={[theme.primary]}
-            title="Syncing earnings..."
-            titleColor={theme.textSecondary}
+            tintColor="#22C55E"
+            colors={["#22C55E", "#0066FF"]}
+            progressBackgroundColor="#0F2855"
+            title={isRefreshing ? "Syncing earnings..." : "Pull to sync"}
+            titleColor="#22C55E"
+            progressViewOffset={8}
           />
         }
       >
