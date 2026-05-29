@@ -1,8 +1,7 @@
-import React, { useRef, useState, useEffect } from "react";
-import { StyleSheet, View, Dimensions } from "react-native";
+import React, { useRef, useState, useEffect, useCallback } from "react";
+import { StyleSheet, View, useWindowDimensions } from "react-native";
 import Svg, { Circle, Line } from "react-native-svg";
 
-const { width: SW, height: SH } = Dimensions.get("window");
 const N = 30;
 const LINK_DIST = 180;
 const TICK_MS = 66;
@@ -14,10 +13,10 @@ interface Particle {
   s: boolean;
 }
 
-function makePts(): Particle[] {
+function makePts(sw: number, sh: number): Particle[] {
   return Array.from({ length: N }, (_, i) => ({
-    x: Math.random() * SW,
-    y: Math.random() * SH,
+    x: Math.random() * sw,
+    y: Math.random() * sh,
     vx: (Math.random() - 0.5) * 0.4,
     vy: (Math.random() - 0.5) * 0.4,
     r: Math.random() * 2.0 + 0.7,
@@ -27,8 +26,13 @@ function makePts(): Particle[] {
 }
 
 export default function WelcomeConstellationBg({ isDark }: { isDark: boolean }) {
-  const ptsRef = useRef<Particle[]>(makePts());
+  const { width: SW, height: SH } = useWindowDimensions();
+  const ptsRef = useRef<Particle[]>(makePts(SW, SH));
   const [, setTick] = useState(0);
+
+  useEffect(() => {
+    ptsRef.current = makePts(SW, SH);
+  }, [SW, SH]);
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -44,12 +48,10 @@ export default function WelcomeConstellationBg({ isDark }: { isDark: boolean }) 
       setTick((t) => t + 1);
     }, TICK_MS);
     return () => clearInterval(id);
-  }, []);
+  }, [SW, SH]);
 
   const pts = ptsRef.current;
 
-  // Dark: white & silver — identical to website dark mode
-  // Light: charcoal & mid-grey — cool watermark look
   const mainRgb = isDark ? "255,255,255" : "30,30,30";
   const secRgb  = isDark ? "200,200,200" : "85,85,85";
   const lineRgb = isDark ? "192,192,192" : "45,45,45";
