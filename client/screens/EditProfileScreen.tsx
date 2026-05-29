@@ -20,7 +20,6 @@ import { getApiUrl, apiRequest } from "@/lib/query-client";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-const avatarColors = ["#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#14B8A6", "#EC4899", "#EF4444", "#6366F1"];
 
 const serviceTypeLabels: Record<ServiceType, string> = {
   flat_tire: "Flat Tire",
@@ -87,45 +86,6 @@ function InputField({
   );
 }
 
-interface AvatarSelectorProps {
-  selectedIndex: number;
-  onSelect: (index: number) => void;
-}
-
-function AvatarSelector({ selectedIndex, onSelect }: AvatarSelectorProps) {
-  const { theme } = useTheme();
-
-  return (
-    <View style={styles.avatarSection}>
-      <ThemedText type="small" style={[styles.label, { color: theme.textSecondary }]}>
-        Avatar Color
-      </ThemedText>
-      <View style={styles.avatarGrid}>
-        {avatarColors.map((color, index) => (
-          <Pressable
-            key={index}
-            onPress={() => onSelect(index)}
-            style={[
-              styles.avatarOption,
-              {
-                backgroundColor: color,
-                borderColor: selectedIndex === index ? theme.primary : "transparent",
-                borderWidth: selectedIndex === index ? 3 : 0,
-              },
-            ]}
-          >
-            <Feather name="user" size={24} color="#FFFFFF" />
-            {selectedIndex === index ? (
-              <View style={[styles.avatarCheck, { backgroundColor: theme.primary }]}>
-                <Feather name="check" size={12} color="#FFFFFF" />
-              </View>
-            ) : null}
-          </Pressable>
-        ))}
-      </View>
-    </View>
-  );
-}
 
 interface ServiceToggleProps {
   services: ServiceType[];
@@ -188,8 +148,6 @@ export default function EditProfileScreen() {
   const [name, setName] = useState(isProvider ? currentProvider?.name || "" : currentDriver?.name || "");
   const [phone, setPhone] = useState(isProvider ? currentProvider?.phone || "" : currentDriver?.phone || "");
   const [email, setEmail] = useState(isProvider ? currentProvider?.email || "" : currentDriver?.email || "");
-  const [avatarPreset, setAvatarPreset] = useState(currentDriver?.avatarPreset || 0);
-
   const [vehicleMake, setVehicleMake] = useState(currentProvider?.vehicleMake || "");
   const [vehicleModel, setVehicleModel] = useState(currentProvider?.vehicleModel || "");
   const [licensePlate, setLicensePlate] = useState(currentProvider?.licensePlate || "");
@@ -262,7 +220,6 @@ export default function EditProfileScreen() {
         name: name.trim(),
         phone: phone.trim(),
         email: email.trim(),
-        avatarPreset,
       });
     }
 
@@ -316,15 +273,6 @@ export default function EditProfileScreen() {
             autoCapitalize="none"
           />
         </View>
-
-        {!isProvider ? (
-          <View style={styles.section}>
-            <ThemedText type="h4" style={styles.sectionTitle}>
-              Appearance
-            </ThemedText>
-            <AvatarSelector selectedIndex={avatarPreset} onSelect={setAvatarPreset} />
-          </View>
-        ) : null}
 
         {isProvider ? (
           <>
@@ -487,32 +435,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     paddingVertical: Spacing.xs,
-  },
-  avatarSection: {
-    marginTop: Spacing.sm,
-  },
-  avatarGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: Spacing.md,
-    marginTop: Spacing.sm,
-  },
-  avatarOption: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  avatarCheck: {
-    position: "absolute",
-    bottom: -2,
-    right: -2,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
   },
   servicesSection: {
     marginTop: Spacing.sm,
