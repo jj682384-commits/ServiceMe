@@ -15,6 +15,7 @@ export function KeyboardAwareScrollViewCompat({
   children,
   keyboardShouldPersistTaps = "handled",
   keyboardDismissMode = "on-drag",
+  bottomOffset = 80,
   ...props
 }: Props) {
   if (Platform.OS === "web") {

@@ -931,6 +931,7 @@ export default function ProviderSignUpScreen() {
       <AnimatedBackground />
       <KeyboardAwareScrollViewCompat
         contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + Spacing.md, paddingBottom: insets.bottom + Spacing.xl }]}
+        bottomOffset={80}
       >
         <View style={styles.topBar}>
           <Pressable onPress={handleBack} style={styles.backButton}>
