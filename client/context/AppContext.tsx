@@ -251,6 +251,7 @@ interface AppContextType {
   logout: () => void;
   themeOverride: "dark" | "light" | null;
   toggleTheme: () => void;
+  setThemePreference: (pref: "dark" | "light" | null) => void;
 }
 
 export const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -705,6 +706,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const setThemePreference = (pref: "dark" | "light" | null) => {
+    setThemeOverride(pref);
+    if (pref === null) {
+      AsyncStorage.removeItem("themeOverride").catch(() => {});
+    } else {
+      AsyncStorage.setItem("themeOverride", pref).catch(() => {});
+    }
+  };
+
   const switchUserRole = async (role: "driver" | "provider"): Promise<void> => {
     setUserRole(role);
     try {
@@ -779,6 +789,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         logout,
         themeOverride,
         toggleTheme,
+        setThemePreference,
       }}
     >
       {children}

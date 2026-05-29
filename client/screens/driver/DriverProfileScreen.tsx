@@ -74,6 +74,8 @@ export default function DriverProfileScreen() {
     getTrialDaysRemaining,
     preferredProviders,
     toggleTheme,
+    setThemePreference,
+    themeOverride,
     notificationsEnabled,
     setNotificationsEnabled,
     requestHistory,
@@ -346,20 +348,33 @@ export default function DriverProfileScreen() {
               thumbColor="#FFFFFF"
             />
           </View>
-          <View style={[styles.menuItem, { borderTopWidth: 1, borderTopColor: theme.border }]}>
-            <Feather name="moon" size={20} color={isDark ? theme.text : theme.textSecondary} />
-            <View style={{ flex: 1 }}>
-              <ThemedText type="body" style={styles.menuLabel}>Dark Mode</ThemedText>
-              <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: 2 }}>
-                {isDark ? "Dark theme active" : "Switch to dark theme"}
-              </ThemedText>
+          <View style={[styles.menuItem, { borderTopWidth: 1, borderTopColor: theme.border, flexDirection: "column", alignItems: "stretch", gap: Spacing.sm }]}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: Spacing.md }}>
+              <Feather name="sun" size={20} color={theme.textSecondary} />
+              <View style={{ flex: 1 }}>
+                <ThemedText type="body" style={styles.menuLabel}>Appearance</ThemedText>
+                <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: 2 }}>
+                  {themeOverride === null ? "Following iOS setting" : themeOverride === "dark" ? "Dark theme" : "Light theme"}
+                </ThemedText>
+              </View>
             </View>
-            <Switch
-              value={isDark}
-              onValueChange={toggleTheme}
-              trackColor={{ false: theme.border, true: theme.secondary }}
-              thumbColor="#FFFFFF"
-            />
+            <View style={{ flexDirection: "row", gap: 6 }}>
+              {([["System", null], ["Light", "light"], ["Dark", "dark"]] as [string, "dark" | "light" | null][]).map(([label, val]) => {
+                const active = themeOverride === val;
+                return (
+                  <Pressable
+                    key={label}
+                    onPress={() => setThemePreference(val)}
+                    style={{ flex: 1, paddingVertical: 7, borderRadius: BorderRadius.sm, borderWidth: 1.5, alignItems: "center",
+                      backgroundColor: active ? theme.primary : "transparent",
+                      borderColor: active ? theme.primary : theme.border,
+                    }}
+                  >
+                    <ThemedText type="small" style={{ fontWeight: "700", color: active ? "#fff" : theme.textSecondary }}>{label}</ThemedText>
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
         </View>
 

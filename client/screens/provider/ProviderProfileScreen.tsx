@@ -84,7 +84,7 @@ export default function ProviderProfileScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { theme, isDark } = useTheme();
-  const { currentProvider, setCurrentProvider, setUserRole, logout, serviceRadius, toggleTheme, notificationsEnabled, setNotificationsEnabled } = useApp();
+  const { currentProvider, setCurrentProvider, setUserRole, logout, serviceRadius, toggleTheme, setThemePreference, themeOverride, notificationsEnabled, setNotificationsEnabled } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [priorityOptIn, setPriorityOptIn] = React.useState(currentProvider?.acceptsPriorityJobs ?? false);
   const [radiusInput, setRadiusInput] = useState(String(currentProvider?.serviceRadiusMiles ?? 25));
@@ -205,7 +205,8 @@ export default function ProviderProfileScreen() {
       setRadiusInput={setRadiusInput}
       savingRadius={savingRadius}
       handleSaveRadius={handleSaveRadius}
-      toggleTheme={toggleTheme}
+      setThemePreference={setThemePreference}
+      themeOverride={themeOverride}
       handleSignOut={handleSignOut}
       handleDeleteAccount={handleDeleteAccount}
     />;
@@ -228,7 +229,8 @@ export default function ProviderProfileScreen() {
     setRadiusInput={setRadiusInput}
     savingRadius={savingRadius}
     handleSaveRadius={handleSaveRadius}
-    toggleTheme={toggleTheme}
+    setThemePreference={setThemePreference}
+    themeOverride={themeOverride}
     handleSwitchRole={handleSwitchRole}
     handleSignOut={handleSignOut}
     handleDeleteAccount={handleDeleteAccount}
@@ -238,7 +240,7 @@ export default function ProviderProfileScreen() {
 // ─────────────────────────────────────────────
 // INDEPENDENT PROVIDER — relaxed, personal
 // ─────────────────────────────────────────────
-function IndependentProfile({ currentProvider, theme, isDark, sectionBg, paddingTop, paddingBottom, insets, navigation, notificationsEnabled, handleNotificationsToggle, priorityOptIn, handlePriorityToggle, radiusInput, setRadiusInput, savingRadius, handleSaveRadius, toggleTheme, handleSwitchRole, handleSignOut, handleDeleteAccount }: any) {
+function IndependentProfile({ currentProvider, theme, isDark, sectionBg, paddingTop, paddingBottom, insets, navigation, notificationsEnabled, handleNotificationsToggle, priorityOptIn, handlePriorityToggle, radiusInput, setRadiusInput, savingRadius, handleSaveRadius, setThemePreference, themeOverride, handleSwitchRole, handleSignOut, handleDeleteAccount }: any) {
   const firstName = currentProvider?.name?.split(" ")[0] || "there";
 
   return (
@@ -435,10 +437,28 @@ function IndependentProfile({ currentProvider, theme, isDark, sectionBg, padding
               thumbColor="#FFFFFF"
             />
           </View>
-          <View style={[styles.menuItem, { borderTopWidth: 1, borderTopColor: theme.border }]}>
-            <Feather name="moon" size={20} color={theme.textSecondary} />
-            <ThemedText type="body" style={styles.menuLabel}>Dark Mode</ThemedText>
-            <Switch value={isDark} onValueChange={toggleTheme} trackColor={{ false: theme.border, true: theme.secondary }} thumbColor="#FFFFFF" />
+          <View style={[styles.menuItem, { borderTopWidth: 1, borderTopColor: theme.border, flexDirection: "column", alignItems: "stretch", gap: Spacing.sm }]}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: Spacing.md }}>
+              <Feather name="sun" size={20} color={theme.textSecondary} />
+              <View style={{ flex: 1 }}>
+                <ThemedText type="body" style={styles.menuLabel}>Appearance</ThemedText>
+                <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: 2 }}>
+                  {themeOverride === null ? "Following iOS setting" : themeOverride === "dark" ? "Dark theme" : "Light theme"}
+                </ThemedText>
+              </View>
+            </View>
+            <View style={{ flexDirection: "row", gap: 6 }}>
+              {([["System", null], ["Light", "light"], ["Dark", "dark"]] as [string, "dark" | "light" | null][]).map(([label, val]) => {
+                const active = themeOverride === val;
+                return (
+                  <Pressable key={label} onPress={() => setThemePreference(val)}
+                    style={{ flex: 1, paddingVertical: 7, borderRadius: BorderRadius.sm, borderWidth: 1.5, alignItems: "center",
+                      backgroundColor: active ? theme.primary : "transparent", borderColor: active ? theme.primary : theme.border }}>
+                    <ThemedText type="small" style={{ fontWeight: "700", color: active ? "#fff" : theme.textSecondary }}>{label}</ThemedText>
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
         </View>
 
@@ -466,7 +486,7 @@ function IndependentProfile({ currentProvider, theme, isDark, sectionBg, padding
 // ─────────────────────────────────────────────
 // BUSINESS PROVIDER — professional, management
 // ─────────────────────────────────────────────
-function BusinessProfile({ currentProvider, theme, isDark, sectionBg, paddingTop, paddingBottom, insets, navigation, notificationsEnabled, handleNotificationsToggle, priorityOptIn, handlePriorityToggle, radiusInput, setRadiusInput, savingRadius, handleSaveRadius, toggleTheme, handleSignOut, handleDeleteAccount }: any) {
+function BusinessProfile({ currentProvider, theme, isDark, sectionBg, paddingTop, paddingBottom, insets, navigation, notificationsEnabled, handleNotificationsToggle, priorityOptIn, handlePriorityToggle, radiusInput, setRadiusInput, savingRadius, handleSaveRadius, setThemePreference, themeOverride, handleSignOut, handleDeleteAccount }: any) {
   const companyName = currentProvider?.name || "My Business";
   const initials = companyName.split(" ").map((w: string) => w[0]).slice(0, 2).join("").toUpperCase();
 
@@ -672,11 +692,28 @@ function BusinessProfile({ currentProvider, theme, isDark, sectionBg, paddingTop
                 <Switch value={notificationsEnabled} onValueChange={handleNotificationsToggle}
                   trackColor={{ false: theme.border, true: theme.secondary }} thumbColor="#FFFFFF" />
               </View>
-              <View style={[styles.menuItem, { borderTopWidth: 1, borderTopColor: theme.border }]}>
-                <Feather name="moon" size={20} color={theme.textSecondary} />
-                <ThemedText type="body" style={styles.menuLabel}>Dark Mode</ThemedText>
-                <Switch value={isDark} onValueChange={toggleTheme}
-                  trackColor={{ false: theme.border, true: theme.secondary }} thumbColor="#FFFFFF" />
+              <View style={[styles.menuItem, { borderTopWidth: 1, borderTopColor: theme.border, flexDirection: "column", alignItems: "stretch", gap: Spacing.sm }]}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: Spacing.md }}>
+                  <Feather name="sun" size={20} color={theme.textSecondary} />
+                  <View style={{ flex: 1 }}>
+                    <ThemedText type="body" style={styles.menuLabel}>Appearance</ThemedText>
+                    <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: 2 }}>
+                      {themeOverride === null ? "Following iOS setting" : themeOverride === "dark" ? "Dark theme" : "Light theme"}
+                    </ThemedText>
+                  </View>
+                </View>
+                <View style={{ flexDirection: "row", gap: 6 }}>
+                  {([["System", null], ["Light", "light"], ["Dark", "dark"]] as [string, "dark" | "light" | null][]).map(([label, val]) => {
+                    const active = themeOverride === val;
+                    return (
+                      <Pressable key={label} onPress={() => setThemePreference(val)}
+                        style={{ flex: 1, paddingVertical: 7, borderRadius: BorderRadius.sm, borderWidth: 1.5, alignItems: "center",
+                          backgroundColor: active ? theme.primary : "transparent", borderColor: active ? theme.primary : theme.border }}>
+                        <ThemedText type="small" style={{ fontWeight: "700", color: active ? "#fff" : theme.textSecondary }}>{label}</ThemedText>
+                      </Pressable>
+                    );
+                  })}
+                </View>
               </View>
             </View>
           </View>
