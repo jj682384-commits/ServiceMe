@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   View,
   StyleSheet,
@@ -18,9 +18,16 @@ import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
-import { getApiUrl } from "@/lib/query-client";
 
-const TAX_YEARS = [new Date().getFullYear(), new Date().getFullYear() - 1];
+const CURRENT_YEAR = new Date().getFullYear();
+const TAX_YEARS = [CURRENT_YEAR, CURRENT_YEAR - 1];
+
+const IRS_MILEAGE_RATE: Record<number, string> = {
+  2026: "$0.70",
+  2025: "$0.70",
+  2024: "$0.67",
+  2023: "$0.655",
+};
 
 interface CompletedJob {
   id: string;
@@ -31,6 +38,25 @@ interface CompletedJob {
   created_at: string;
 }
 
+function jobValue(j: CompletedJob) {
+  return Number(j.total_cost ?? j.estimated_cost ?? 0) + Number(j.tip ?? 0);
+}
+
+function quarterRange(year: number, q: 1 | 2 | 3 | 4): [Date, Date] {
+  const starts = [0, 3, 6, 9];
+  const start = new Date(year, starts[q - 1], 1);
+  const end = q < 4 ? new Date(year, starts[q], 1) : new Date(year + 1, 0, 1);
+  return [start, end];
+}
+
+function jobsInQuarter(jobs: CompletedJob[], year: number, q: 1 | 2 | 3 | 4) {
+  const [start, end] = quarterRange(year, q);
+  return jobs.filter((j) => {
+    const t = new Date(j.created_at).getTime();
+    return t >= start.getTime() && t < end.getTime();
+  });
+}
+
 export default function ProviderTaxDocumentsScreen() {
   const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
@@ -38,36 +64,50 @@ export default function ProviderTaxDocumentsScreen() {
   const { currentProvider } = useApp();
   const [selectedYear, setSelectedYear] = useState(TAX_YEARS[0]);
 
-  const { data: jobs = [] } = useQuery<CompletedJob[]>({
+  // Uses default fetcher — auth token is injected automatically
+  const { data: allJobs = [], isLoading } = useQuery<CompletedJob[]>({
     queryKey: [`/api/providers/${currentProvider?.id}/completed-jobs`],
     enabled: !!currentProvider?.id,
-    queryFn: async () => {
-      const res = await fetch(new URL(`/api/providers/${currentProvider!.id}/completed-jobs`, getApiUrl()).toString());
-      if (!res.ok) return [];
-      return res.json();
-    },
   });
 
-  const jobsForYear = (year: number) =>
-    jobs.filter((j) => new Date(j.created_at).getFullYear() === year);
+  const yearJobs = useMemo(
+    () => allJobs.filter((j) => new Date(j.created_at).getFullYear() === selectedYear),
+    [allJobs, selectedYear]
+  );
 
-  const grossForYear = (year: number) =>
-    jobsForYear(year).reduce((sum, j) => {
-      const cost = Number(j.total_cost ?? j.estimated_cost ?? 0);
-      const tip = Number(j.tip ?? 0);
-      return sum + cost + tip;
-    }, 0);
-
-  const yearJobs = jobsForYear(selectedYear);
-  const yearGross = grossForYear(selectedYear);
+  const yearGross = useMemo(() => yearJobs.reduce((s, j) => s + jobValue(j), 0), [yearJobs]);
   const yearNet = yearGross * 0.85;
   const platformFeesPaid = yearGross * 0.15;
+
   const threshold1099 = 600;
   const qualifies1099 = yearGross >= threshold1099;
-  const currentYear = new Date().getFullYear();
-  const is1099Available = selectedYear < currentYear;
+  const is1099Available = selectedYear < CURRENT_YEAR;
+
+  const quarters = useMemo(
+    () =>
+      ([1, 2, 3, 4] as const).map((q) => {
+        const qJobs = jobsInQuarter(yearJobs, selectedYear, q);
+        const qGross = qJobs.reduce((s, j) => s + jobValue(j), 0);
+        const estimated = qGross * 0.25;
+        const dueDates: Record<number, string> = {
+          1: `Apr 15, ${selectedYear}`,
+          2: `Jun 16, ${selectedYear}`,
+          3: `Sep 15, ${selectedYear}`,
+          4: `Jan 15, ${selectedYear + 1}`,
+        };
+        const labels: Record<number, string> = {
+          1: "Q1 (Jan–Mar)",
+          2: "Q2 (Apr–Jun)",
+          3: "Q3 (Jul–Sep)",
+          4: "Q4 (Oct–Dec)",
+        };
+        return { q, label: labels[q], due: dueDates[q], gross: qGross, estimated, count: qJobs.length };
+      }),
+    [yearJobs, selectedYear]
+  );
 
   const sectionBg = isDark ? theme.backgroundDefault : "#FFFFFF";
+  const mileageRate = IRS_MILEAGE_RATE[selectedYear] ?? IRS_MILEAGE_RATE[CURRENT_YEAR] ?? "$0.70";
 
   const handleDownload = () => {
     if (!is1099Available) {
@@ -80,13 +120,13 @@ export default function ProviderTaxDocumentsScreen() {
     if (!qualifies1099) {
       Alert.alert(
         "Below Threshold",
-        `You earned $${yearGross.toFixed(2)} in ${selectedYear}. The 1099-K threshold is $600. No form is required.`
+        `You earned $${yearGross.toFixed(2)} in ${selectedYear}. The 1099-K threshold is $600. No form is required for this year.`
       );
       return;
     }
     Alert.alert(
-      "Download 1099-K",
-      `Your ${selectedYear} 1099-K form shows $${yearGross.toFixed(2)} gross income. In a production build this would download the PDF.`,
+      `${selectedYear} 1099-K`,
+      `Gross income reported: $${yearGross.toFixed(2)}\nPlatform fees: -$${platformFeesPaid.toFixed(2)}\nJobs completed: ${yearJobs.length}\n\nContact support@resqride.co to request your official 1099-K PDF.`,
       [{ text: "OK" }]
     );
   };
@@ -128,24 +168,28 @@ export default function ProviderTaxDocumentsScreen() {
           {TAX_YEARS.map((year) => (
             <Pressable
               key={year}
-              style={[
-                styles.yearTab,
-                selectedYear === year && { backgroundColor: theme.primary },
-              ]}
+              style={[styles.yearTab, selectedYear === year && { backgroundColor: theme.primary }]}
               onPress={() => setSelectedYear(year)}
             >
               <ThemedText
                 type="body"
-                style={{
-                  fontWeight: "600",
-                  color: selectedYear === year ? "#FFFFFF" : theme.textSecondary,
-                }}
+                style={{ fontWeight: "600", color: selectedYear === year ? "#FFFFFF" : theme.textSecondary }}
               >
                 {year}
               </ThemedText>
             </Pressable>
           ))}
         </View>
+
+        {/* Empty state */}
+        {!isLoading && yearJobs.length === 0 && (
+          <View style={[styles.emptyBox, { backgroundColor: sectionBg, borderColor: theme.border }]}>
+            <Feather name="inbox" size={28} color={theme.textSecondary} />
+            <ThemedText type="body" style={{ color: theme.textSecondary, marginTop: Spacing.sm, textAlign: "center" }}>
+              No completed jobs recorded for {selectedYear}.
+            </ThemedText>
+          </View>
+        )}
 
         {/* Earnings Summary */}
         <ThemedText type="small" style={[styles.sectionLabel, { color: theme.textSecondary }]}>
@@ -154,40 +198,28 @@ export default function ProviderTaxDocumentsScreen() {
         <View style={[styles.section, { backgroundColor: sectionBg }]}>
           <View style={styles.summaryRow}>
             <View style={styles.summaryItem}>
-              <ThemedText type="small" style={{ color: theme.textSecondary }}>
-                Gross Income
-              </ThemedText>
+              <ThemedText type="small" style={{ color: theme.textSecondary }}>Gross Income</ThemedText>
               <ThemedText type="h3" style={{ color: theme.success, marginTop: 4 }}>
                 ${yearGross.toFixed(2)}
               </ThemedText>
             </View>
             <View style={[styles.summaryDivider, { backgroundColor: theme.border }]} />
             <View style={styles.summaryItem}>
-              <ThemedText type="small" style={{ color: theme.textSecondary }}>
-                Platform Fees
-              </ThemedText>
+              <ThemedText type="small" style={{ color: theme.textSecondary }}>Platform Fees</ThemedText>
               <ThemedText type="h3" style={{ color: theme.error, marginTop: 4 }}>
                 -${platformFeesPaid.toFixed(2)}
               </ThemedText>
             </View>
             <View style={[styles.summaryDivider, { backgroundColor: theme.border }]} />
             <View style={styles.summaryItem}>
-              <ThemedText type="small" style={{ color: theme.textSecondary }}>
-                Net Paid Out
-              </ThemedText>
-              <ThemedText type="h3" style={{ marginTop: 4 }}>
-                ${yearNet.toFixed(2)}
-              </ThemedText>
+              <ThemedText type="small" style={{ color: theme.textSecondary }}>Net Paid Out</ThemedText>
+              <ThemedText type="h3" style={{ marginTop: 4 }}>${yearNet.toFixed(2)}</ThemedText>
             </View>
           </View>
           <View style={[styles.divider, { backgroundColor: theme.border }]} />
           <View style={styles.row}>
-            <ThemedText type="body" style={{ color: theme.textSecondary }}>
-              Jobs Completed
-            </ThemedText>
-            <ThemedText type="body" style={{ fontWeight: "600" }}>
-              {yearJobs.length}
-            </ThemedText>
+            <ThemedText type="body" style={{ color: theme.textSecondary }}>Jobs Completed</ThemedText>
+            <ThemedText type="body" style={{ fontWeight: "600" }}>{yearJobs.length}</ThemedText>
           </View>
         </View>
 
@@ -262,47 +294,36 @@ export default function ProviderTaxDocumentsScreen() {
                 color: qualifies1099 && is1099Available ? "#FFFFFF" : theme.textSecondary,
               }}
             >
-              {is1099Available ? "Download PDF" : `Available Jan 31, ${selectedYear + 1}`}
+              {is1099Available ? "Request PDF" : `Available Jan 31, ${selectedYear + 1}`}
             </ThemedText>
           </Pressable>
         </View>
 
-        {/* Quarterly Estimated Taxes */}
+        {/* Quarterly Estimated Taxes — computed from actual per-quarter job data */}
         <ThemedText type="small" style={[styles.sectionLabel, { color: theme.textSecondary }]}>
           QUARTERLY ESTIMATED TAXES
         </ThemedText>
         <View style={[styles.section, { backgroundColor: sectionBg }]}>
-          {[
-            { label: "Q1 (Jan–Mar)", due: `Apr 15, ${currentYear}`, pct: 0.25 },
-            { label: "Q2 (Apr–Jun)", due: `Jun 15, ${currentYear}`, pct: 0.25 },
-            { label: "Q3 (Jul–Sep)", due: `Sep 15, ${currentYear}`, pct: 0.25 },
-            { label: "Q4 (Oct–Dec)", due: `Jan 15, ${currentYear + 1}`, pct: 0.25 },
-          ].map((q, i) => {
-            const qGross = yearGross * q.pct;
-            const estimated = qGross * 0.25;
-            return (
-              <View key={q.label}>
-                {i > 0 && <View style={[styles.divider, { backgroundColor: theme.border }]} />}
-                <View style={styles.row}>
-                  <View>
-                    <ThemedText type="body" style={{ fontWeight: "600" }}>
-                      {q.label}
-                    </ThemedText>
-                    <ThemedText type="small" style={{ color: theme.textSecondary }}>
-                      Due {q.due}
-                    </ThemedText>
-                  </View>
-                  <ThemedText type="body" style={{ color: theme.primary, fontWeight: "700" }}>
-                    ~${estimated.toFixed(0)}
+          {quarters.map((q, i) => (
+            <View key={q.label}>
+              {i > 0 && <View style={[styles.divider, { backgroundColor: theme.border }]} />}
+              <View style={styles.row}>
+                <View style={{ flex: 1 }}>
+                  <ThemedText type="body" style={{ fontWeight: "600" }}>{q.label}</ThemedText>
+                  <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                    Due {q.due} · {q.count} job{q.count !== 1 ? "s" : ""} · ${q.gross.toFixed(0)} gross
                   </ThemedText>
                 </View>
+                <ThemedText type="body" style={{ color: theme.primary, fontWeight: "700" }}>
+                  ~${q.estimated.toFixed(0)}
+                </ThemedText>
               </View>
-            );
-          })}
+            </View>
+          ))}
           <View style={[styles.disclaimer, { backgroundColor: theme.primary + "10", borderColor: theme.primary + "30" }]}>
             <Feather name="info" size={14} color={theme.primary} />
             <ThemedText type="small" style={{ color: theme.textSecondary, flex: 1, marginLeft: 8 }}>
-              Estimated at ~25% of quarterly gross. Consult a tax professional for your actual liability.
+              Estimates are ~25% of quarterly gross from your actual completed jobs. Consult a tax professional for your real liability.
             </ThemedText>
           </View>
         </View>
@@ -313,10 +334,26 @@ export default function ProviderTaxDocumentsScreen() {
         </ThemedText>
         <View style={[styles.section, { backgroundColor: sectionBg }]}>
           {[
-            { icon: "navigation" as const, title: "Mileage Log", desc: "Track business miles — $0.67/mile deductible in 2024" },
-            { icon: "tool" as const, title: "Equipment & Supplies", desc: "Tools, safety gear, and supplies used for jobs" },
-            { icon: "smartphone" as const, title: "Phone & Data", desc: "Business portion of your phone bill is deductible" },
-            { icon: "shield" as const, title: "Insurance Premiums", desc: "Commercial auto or liability insurance costs" },
+            {
+              icon: "navigation" as const,
+              title: "Mileage Log",
+              desc: `Track business miles — ${mileageRate}/mile deductible for ${selectedYear}`,
+            },
+            {
+              icon: "tool" as const,
+              title: "Equipment & Supplies",
+              desc: "Tools, safety gear, and supplies used for jobs",
+            },
+            {
+              icon: "smartphone" as const,
+              title: "Phone & Data",
+              desc: "Business portion of your phone bill is deductible",
+            },
+            {
+              icon: "shield" as const,
+              title: "Insurance Premiums",
+              desc: "Commercial auto or liability insurance costs",
+            },
           ].map((item, i) => (
             <View key={item.title}>
               {i > 0 && <View style={[styles.divider, { backgroundColor: theme.border }]} />}
@@ -325,12 +362,8 @@ export default function ProviderTaxDocumentsScreen() {
                   <Feather name={item.icon} size={15} color="#F59E0B" />
                 </View>
                 <View style={{ flex: 1, marginLeft: Spacing.md }}>
-                  <ThemedText type="body" style={{ fontWeight: "600" }}>
-                    {item.title}
-                  </ThemedText>
-                  <ThemedText type="small" style={{ color: theme.textSecondary }}>
-                    {item.desc}
-                  </ThemedText>
+                  <ThemedText type="body" style={{ fontWeight: "600" }}>{item.title}</ThemedText>
+                  <ThemedText type="small" style={{ color: theme.textSecondary }}>{item.desc}</ThemedText>
                 </View>
               </View>
             </View>
@@ -350,9 +383,7 @@ export default function ProviderTaxDocumentsScreen() {
               <Feather name="external-link" size={15} color="#3B82F6" />
             </View>
             <View style={{ flex: 1, marginLeft: Spacing.md }}>
-              <ThemedText type="body" style={{ fontWeight: "600" }}>
-                IRS Gig Economy Tax Center
-              </ThemedText>
+              <ThemedText type="body" style={{ fontWeight: "600" }}>IRS Gig Economy Tax Center</ThemedText>
               <ThemedText type="small" style={{ color: theme.textSecondary }}>
                 irs.gov — official guidance for gig workers
               </ThemedText>
@@ -391,6 +422,13 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     alignItems: "center",
     borderRadius: BorderRadius.md,
+  },
+  emptyBox: {
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    padding: Spacing["2xl"],
+    alignItems: "center",
+    marginBottom: Spacing.lg,
   },
   sectionLabel: {
     fontSize: 11,
