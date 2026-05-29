@@ -85,6 +85,7 @@ export default function ChatScreen() {
   const { userRole, currentDriver, currentProvider, updateHistoryEntry } = useApp();
   const flatListRef = useRef<FlatList>(null);
   const [inputText, setInputText] = useState("");
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   const senderId = userRole === "driver"
     ? (currentDriver?.id || `d-${Date.now()}`)
@@ -98,10 +99,13 @@ export default function ChatScreen() {
 
   useEffect(() => {
     const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
-    const sub = Keyboard.addListener(showEvent, () => {
+    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const showSub = Keyboard.addListener(showEvent, () => {
+      setKeyboardVisible(true);
       setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 50);
     });
-    return () => sub.remove();
+    const hideSub = Keyboard.addListener(hideEvent, () => setKeyboardVisible(false));
+    return () => { showSub.remove(); hideSub.remove(); };
   }, []);
 
   useEffect(() => {
@@ -169,7 +173,7 @@ export default function ChatScreen() {
             styles.inputContainer,
             {
               backgroundColor: theme.backgroundDefault,
-              paddingBottom: insets.bottom + Spacing.sm,
+              paddingBottom: keyboardVisible ? Spacing.sm : insets.bottom + Spacing.sm,
             },
           ]}
         >
