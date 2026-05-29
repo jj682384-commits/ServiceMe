@@ -109,6 +109,20 @@ export default function ProviderProfileScreen() {
     }
   };
 
+  const handleRadiusSelect = async (miles: number) => {
+    if (!currentProvider) return;
+    setRadiusInput(String(miles));
+    setSavingRadius(true);
+    try {
+      await apiRequest("PATCH", `/api/providers/${currentProvider.id}/service-radius`, { serviceRadiusMiles: miles });
+      setCurrentProvider({ ...currentProvider, serviceRadiusMiles: miles });
+    } catch {
+      Alert.alert("Error", "Could not save service radius.");
+    } finally {
+      setSavingRadius(false);
+    }
+  };
+
   const handleNotificationsToggle = (enabled: boolean) => {
     setNotificationsEnabled(enabled);
     apiRequest("PATCH", "/api/auth/preferences", { notificationsEnabled: enabled }).catch(() => {});
@@ -205,6 +219,7 @@ export default function ProviderProfileScreen() {
       setRadiusInput={setRadiusInput}
       savingRadius={savingRadius}
       handleSaveRadius={handleSaveRadius}
+      handleRadiusSelect={handleRadiusSelect}
       setThemePreference={setThemePreference}
       themeOverride={themeOverride}
       handleSignOut={handleSignOut}
@@ -229,6 +244,7 @@ export default function ProviderProfileScreen() {
     setRadiusInput={setRadiusInput}
     savingRadius={savingRadius}
     handleSaveRadius={handleSaveRadius}
+    handleRadiusSelect={handleRadiusSelect}
     setThemePreference={setThemePreference}
     themeOverride={themeOverride}
     handleSwitchRole={handleSwitchRole}
@@ -240,7 +256,62 @@ export default function ProviderProfileScreen() {
 // ─────────────────────────────────────────────
 // INDEPENDENT PROVIDER — relaxed, personal
 // ─────────────────────────────────────────────
-function IndependentProfile({ currentProvider, theme, isDark, sectionBg, paddingTop, paddingBottom, insets, navigation, notificationsEnabled, handleNotificationsToggle, priorityOptIn, handlePriorityToggle, radiusInput, setRadiusInput, savingRadius, handleSaveRadius, setThemePreference, themeOverride, handleSwitchRole, handleSignOut, handleDeleteAccount }: any) {
+const RADIUS_OPTIONS = [5, 10, 15, 25, 50, 75, 100];
+
+function RadiusChipPicker({
+  selected, onSelect, saving, theme,
+}: {
+  selected: number; onSelect: (miles: number) => void; saving: boolean; theme: any;
+}) {
+  return (
+    <View style={{ paddingVertical: Spacing.sm, gap: Spacing.sm }}>
+      <ThemedText type="small" style={{ color: theme.textSecondary, paddingHorizontal: 4 }}>
+        You will only receive requests within this distance.
+      </ThemedText>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: Spacing.sm, paddingHorizontal: 4, paddingTop: 4 }}>
+        {RADIUS_OPTIONS.map((miles) => {
+          const active = selected === miles;
+          return (
+            <Pressable
+              key={miles}
+              onPress={() => !saving && onSelect(miles)}
+              style={[
+                styles.radiusChip,
+                {
+                  backgroundColor: active ? "#0066FF22" : theme.cardAnimatedBg,
+                  borderColor: active ? "#0066FF" : theme.border,
+                  opacity: saving ? 0.6 : 1,
+                },
+              ]}
+            >
+              <ThemedText
+                type="small"
+                style={{
+                  color: active ? "#60A5FA" : theme.text,
+                  fontWeight: active ? "700" : "400",
+                  fontSize: 13,
+                }}
+              >
+                {miles} mi
+              </ThemedText>
+            </Pressable>
+          );
+        })}
+      </View>
+      {saving ? (
+        <ThemedText type="small" style={{ color: theme.textSecondary, paddingHorizontal: 4, fontSize: 11 }}>
+          Saving...
+        </ThemedText>
+      ) : (
+        <ThemedText type="small" style={{ color: theme.textSecondary, paddingHorizontal: 4, fontSize: 11 }}>
+          Currently set to {selected} mi — tap a distance to update
+        </ThemedText>
+      )}
+    </View>
+  );
+}
+
+function IndependentProfile({ currentProvider, theme, isDark, sectionBg, paddingTop, paddingBottom, insets, navigation, notificationsEnabled, handleNotificationsToggle, priorityOptIn, handlePriorityToggle, radiusInput, setRadiusInput, savingRadius, handleSaveRadius, handleRadiusSelect, setThemePreference, themeOverride, handleSwitchRole, handleSignOut, handleDeleteAccount }: any) {
   const firstName = currentProvider?.name?.split(" ")[0] || "there";
 
   return (
@@ -385,38 +456,12 @@ function IndependentProfile({ currentProvider, theme, isDark, sectionBg, padding
         {/* Service radius */}
         <View style={[styles.section, { backgroundColor: sectionBg }]}>
           <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>HOW FAR WILL YOU TRAVEL?</ThemedText>
-          <View style={[styles.menuItem, { flexDirection: "column", alignItems: "flex-start", gap: Spacing.sm }]}>
-            <ThemedText type="small" style={{ color: theme.textSecondary, paddingLeft: 4 }}>
-              You will only receive requests within this distance.
-            </ThemedText>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: Spacing.sm, marginTop: 4 }}>
-              <TextInput
-                value={radiusInput}
-                onChangeText={setRadiusInput}
-                keyboardType="number-pad"
-                maxLength={3}
-                style={{
-                  width: 72, height: 40, borderWidth: 1.5, borderColor: theme.secondary,
-                  borderRadius: BorderRadius.md, textAlign: "center", fontSize: 18,
-                  fontWeight: "700", color: theme.text, backgroundColor: theme.cardAnimatedBg,
-                }}
-              />
-              <ThemedText type="body" style={{ color: theme.textSecondary }}>miles</ThemedText>
-              <Pressable
-                onPress={handleSaveRadius}
-                disabled={savingRadius}
-                style={({ pressed }) => ({
-                  backgroundColor: pressed ? theme.secondary + "CC" : theme.secondary,
-                  borderRadius: BorderRadius.md, paddingHorizontal: Spacing.lg,
-                  paddingVertical: 10, opacity: savingRadius ? 0.6 : 1,
-                })}
-              >
-                <ThemedText type="small" style={{ color: "#fff", fontWeight: "700" }}>
-                  {savingRadius ? "Saving..." : "Save"}
-                </ThemedText>
-              </Pressable>
-            </View>
-          </View>
+          <RadiusChipPicker
+            selected={currentProvider?.serviceRadiusMiles ?? 25}
+            onSelect={handleRadiusSelect}
+            saving={savingRadius}
+            theme={theme}
+          />
         </View>
 
         {/* Preferences */}
@@ -486,7 +531,7 @@ function IndependentProfile({ currentProvider, theme, isDark, sectionBg, padding
 // ─────────────────────────────────────────────
 // BUSINESS PROVIDER — professional, management
 // ─────────────────────────────────────────────
-function BusinessProfile({ currentProvider, theme, isDark, sectionBg, paddingTop, paddingBottom, insets, navigation, notificationsEnabled, handleNotificationsToggle, priorityOptIn, handlePriorityToggle, radiusInput, setRadiusInput, savingRadius, handleSaveRadius, setThemePreference, themeOverride, handleSignOut, handleDeleteAccount }: any) {
+function BusinessProfile({ currentProvider, theme, isDark, sectionBg, paddingTop, paddingBottom, insets, navigation, notificationsEnabled, handleNotificationsToggle, priorityOptIn, handlePriorityToggle, radiusInput, setRadiusInput, savingRadius, handleSaveRadius, handleRadiusSelect, setThemePreference, themeOverride, handleSignOut, handleDeleteAccount }: any) {
   const companyName = currentProvider?.name || "My Business";
   const initials = companyName.split(" ").map((w: string) => w[0]).slice(0, 2).join("").toUpperCase();
 
@@ -645,38 +690,12 @@ function BusinessProfile({ currentProvider, theme, isDark, sectionBg, paddingTop
               SERVICE TERRITORY RADIUS
             </ThemedText>
             <View style={[styles.section, { backgroundColor: sectionBg, marginTop: Spacing.sm }]}>
-              <View style={[styles.menuItem, { flexDirection: "column", alignItems: "flex-start", gap: Spacing.sm }]}>
-                <ThemedText type="small" style={{ color: theme.textSecondary }}>
-                  Set how far your team will travel for jobs.
-                </ThemedText>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: Spacing.sm, marginTop: 4 }}>
-                  <TextInput
-                    value={radiusInput}
-                    onChangeText={setRadiusInput}
-                    keyboardType="number-pad"
-                    maxLength={3}
-                    style={{
-                      width: 72, height: 40, borderWidth: 1.5, borderColor: theme.secondary,
-                      borderRadius: BorderRadius.md, textAlign: "center", fontSize: 18,
-                      fontWeight: "700", color: theme.text, backgroundColor: theme.cardAnimatedBg,
-                    }}
-                  />
-                  <ThemedText type="body" style={{ color: theme.textSecondary }}>miles</ThemedText>
-                  <Pressable
-                    onPress={handleSaveRadius}
-                    disabled={savingRadius}
-                    style={({ pressed }) => ({
-                      backgroundColor: pressed ? theme.secondary + "CC" : theme.secondary,
-                      borderRadius: BorderRadius.md, paddingHorizontal: Spacing.lg,
-                      paddingVertical: 10, opacity: savingRadius ? 0.6 : 1,
-                    })}
-                  >
-                    <ThemedText type="small" style={{ color: "#fff", fontWeight: "700" }}>
-                      {savingRadius ? "Saving..." : "Save"}
-                    </ThemedText>
-                  </Pressable>
-                </View>
-              </View>
+              <RadiusChipPicker
+                selected={currentProvider?.serviceRadiusMiles ?? 25}
+                onSelect={handleRadiusSelect}
+                saving={savingRadius}
+                theme={theme}
+              />
             </View>
           </View>
 
@@ -778,5 +797,6 @@ const styles = StyleSheet.create({
   servicePill: { flexDirection: "row", alignItems: "center", paddingHorizontal: Spacing.md, paddingVertical: 6, borderRadius: BorderRadius.xl, borderWidth: 1 },
   evActiveBadge: { flexDirection: "row", alignItems: "center", paddingHorizontal: Spacing.md, paddingVertical: 6, borderRadius: BorderRadius.xl, alignSelf: "flex-start" },
   evServiceItem: { flexDirection: "row", alignItems: "center", paddingVertical: Spacing.sm, paddingHorizontal: Spacing.lg, gap: Spacing.md },
+  radiusChip: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: BorderRadius.sm, borderWidth: 1.5, minWidth: 56, alignItems: "center" },
   evServiceIcon: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
 });
