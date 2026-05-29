@@ -1,7 +1,13 @@
 import * as Notifications from "expo-notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
+import Constants from "expo-constants";
 import { getApiUrl } from "./query-client";
+
+// expo-task-manager / expo-background-fetch crash in Expo Go because
+// requireNativeModule('ExpoTaskManager') is unavailable there.
+// Detect Expo Go and skip background registration — foreground polling still works.
+const IS_EXPO_GO = Constants.appOwnership === "expo";
 
 export const PROVIDER_JOB_TASK = "resqride-provider-job-poll";
 const SEEN_JOBS_KEY = "provider_seen_job_ids";
@@ -99,7 +105,7 @@ export async function checkAndNotifyNewJobs(): Promise<void> {
 }
 
 export async function registerProviderJobAlerts(): Promise<void> {
-  if (Platform.OS === "web") return;
+  if (Platform.OS === "web" || IS_EXPO_GO) return;
   try {
     // Dynamically import native-only modules so the web bundler never loads them
     const [BackgroundFetch, TaskManager] = await Promise.all([
@@ -139,7 +145,7 @@ export async function registerProviderJobAlerts(): Promise<void> {
 }
 
 export async function unregisterProviderJobAlerts(): Promise<void> {
-  if (Platform.OS === "web") return;
+  if (Platform.OS === "web" || IS_EXPO_GO) return;
   try {
     const [BackgroundFetch, TaskManager] = await Promise.all([
       import("expo-background-fetch"),
