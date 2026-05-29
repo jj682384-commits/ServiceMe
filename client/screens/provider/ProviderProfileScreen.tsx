@@ -527,7 +527,7 @@ function BusinessProfile({ currentProvider, theme, isDark, sectionBg, paddingTop
                 onPress={() => navigation.navigate("ProviderVehicle")} />
               <MenuItem icon="map-pin" label="Service Territory"
                 value={currentProvider?.serviceRadiusMiles ? `${currentProvider.serviceRadiusMiles} mi radius` : "Set radius"}
-                iconBg="#F9731620" iconColor="#F97316"
+                iconBg={theme.text + "12"} iconColor={theme.text}
                 onPress={() => {}} />
               <MenuItem icon="clock" label="Business Hours"
                 value="Set schedule"
@@ -575,12 +575,12 @@ function BusinessProfile({ currentProvider, theme, isDark, sectionBg, paddingTop
                 iconBg="#3B82F620" iconColor="#3B82F6"
                 onPress={() => navigation.navigate("ProviderPaymentSettings")} />
               <MenuItem icon="file-text" label="Tax Documents"
-                iconBg="#F59E0B20" iconColor="#F59E0B"
+                iconBg={theme.text + "15"} iconColor={theme.text}
                 onPress={() => navigation.navigate("ProviderPaymentSettings")} />
               <MenuItem icon="zap" label="Platform Fee"
                 value={priorityOptIn ? "Priority · 10%" : "Standard · 15%"}
-                iconBg={priorityOptIn ? "#F59E0B20" : theme.border}
-                iconColor={priorityOptIn ? "#F59E0B" : theme.textSecondary}
+                iconBg={priorityOptIn ? theme.secondary + "20" : theme.border}
+                iconColor={priorityOptIn ? theme.secondary : theme.textSecondary}
                 onPress={() => handlePriorityToggle(!priorityOptIn)} />
             </View>
           </View>
@@ -603,7 +603,7 @@ function BusinessProfile({ currentProvider, theme, isDark, sectionBg, paddingTop
                 onPress={() => Alert.alert("Coming Soon", "Insurance management will be available in a future update.")} />
               <MenuItem icon="award" label="Certifications"
                 value={currentProvider?.evCapable ? "EV Certified" : "Add certs"}
-                iconBg="#F59E0B20" iconColor="#F59E0B"
+                iconBg={theme.text + "15"} iconColor={theme.text}
                 onPress={() => navigation.navigate("EditProfile")} />
             </View>
           </View>

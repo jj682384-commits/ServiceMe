@@ -34,9 +34,9 @@ import {
 type ProviderVehicleType = "tow_truck" | "service_van" | "pickup";
 
 const VEHICLE_TYPES: { value: ProviderVehicleType; label: string; icon: keyof typeof Feather.glyphMap }[] = [
-  { value: "tow_truck", label: "Tow Truck", icon: "truck" },
+  { value: "pickup", label: "Personal Car", icon: "navigation" },
   { value: "service_van", label: "Service Van", icon: "package" },
-  { value: "pickup", label: "Pickup Truck", icon: "navigation" },
+  { value: "tow_truck", label: "Tow Truck", icon: "truck" },
 ];
 
 const currentYear = new Date().getFullYear();
