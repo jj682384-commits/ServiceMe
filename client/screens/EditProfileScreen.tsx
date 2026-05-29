@@ -25,6 +25,19 @@ const SERVICE_META: { value: ServiceType; label: string; icon: keyof typeof Feat
   { value: "obd_diagnostic", label: "OBD Diagnostic", icon: "activity",         color: "#FB923C" },
 ];
 
+// Sub-services that appear under a parent when that parent is selected
+type SubServiceEntry = { value: ServiceType; label: string; icon: keyof typeof Feather.glyphMap };
+const SUB_SERVICES: Partial<Record<ServiceType, SubServiceEntry[]>> = {
+  flat_tire: [
+    { value: "tire_replacement",  label: "Tire Replacement",     icon: "disc" },
+    { value: "mobile_inflation",  label: "Mobile Tire Inflation", icon: "wind" },
+    { value: "tire_check",        label: "Tire Inspection",       icon: "search" },
+  ],
+  jump_start: [
+    { value: "battery_check",     label: "Battery Check",         icon: "battery-charging" },
+  ],
+};
+
 const EV_SERVICE_META: { key: EVService; label: string; sub: string; icon: keyof typeof Feather.glyphMap }[] = [
   { key: "ev_charging",  label: "Mobile EV Charging",       sub: "Portable DC fast charge or Level 2 unit",    icon: "battery-charging" },
   { key: "ev_towing",    label: "EV-Safe Towing",           sub: "Flatbed only, no drivetrain contact",        icon: "truck" },
@@ -242,6 +255,55 @@ export default function EditProfileScreen() {
                     {servicesOffered.length} service{servicesOffered.length !== 1 ? "s" : ""} selected
                   </ThemedText>
                 )}
+
+                {/* Sub-services — shown when parent is selected */}
+                {(Object.entries(SUB_SERVICES) as [ServiceType, SubServiceEntry[]][])
+                  .filter(([parent]) => servicesOffered.includes(parent))
+                  .map(([parent, subs]) => {
+                    const parentMeta = SERVICE_META.find(s => s.value === parent)!;
+                    return (
+                      <View key={parent} style={{ marginTop: Spacing.md }}>
+                        <View style={[styles.subDivider, { backgroundColor: theme.border }]} />
+                        <ThemedText style={[styles.fieldLabel, { marginTop: Spacing.sm, marginBottom: Spacing.xs }]}>
+                          {parentMeta.label.toUpperCase()} SPECIALTIES
+                        </ThemedText>
+                        <ThemedText type="small" style={{ color: theme.textSecondary, marginBottom: Spacing.sm, fontSize: 11 }}>
+                          Select the specific {parentMeta.label.toLowerCase()} services you offer.
+                        </ThemedText>
+                        <View style={styles.subServiceList}>
+                          {subs.map(({ value, label, icon }) => {
+                            const active = servicesOffered.includes(value);
+                            return (
+                              <Pressable
+                                key={value}
+                                onPress={() => handleToggleService(value)}
+                                style={[
+                                  styles.subChip,
+                                  {
+                                    backgroundColor: active ? parentMeta.color + "20" : theme.backgroundDefault,
+                                    borderColor: active ? parentMeta.color + "70" : theme.border,
+                                  },
+                                ]}
+                              >
+                                <View style={[styles.subChipIcon, { backgroundColor: active ? parentMeta.color + "25" : theme.cardAnimatedBg }]}>
+                                  <Feather name={icon} size={14} color={active ? parentMeta.color : theme.textSecondary} />
+                                </View>
+                                <ThemedText type="small" style={{ color: active ? parentMeta.color : theme.text, fontWeight: active ? "700" : "400", flex: 1 }}>
+                                  {label}
+                                </ThemedText>
+                                {active ? (
+                                  <View style={[styles.subChipCheck, { backgroundColor: parentMeta.color }]}>
+                                    <Feather name="check" size={9} color="#FFFFFF" />
+                                  </View>
+                                ) : null}
+                              </Pressable>
+                            );
+                          })}
+                        </View>
+                      </View>
+                    );
+                  })
+                }
               </View>
             </Animated.View>
 
@@ -357,6 +419,11 @@ const styles = StyleSheet.create({
   serviceCard: { width: "30.5%", alignItems: "center", padding: Spacing.md, borderRadius: BorderRadius.md, borderWidth: 1.5, position: "relative" },
   serviceIconBox: { width: 40, height: 40, borderRadius: BorderRadius.xs, alignItems: "center", justifyContent: "center" },
   serviceCheck: { position: "absolute", top: 6, right: 6, width: 18, height: 18, borderRadius: 9, alignItems: "center", justifyContent: "center" },
+  subDivider: { height: 1, marginBottom: Spacing.xs },
+  subServiceList: { gap: Spacing.xs },
+  subChip: { flexDirection: "row", alignItems: "center", borderRadius: BorderRadius.md, borderWidth: 1.5, paddingVertical: Spacing.sm, paddingHorizontal: Spacing.md, gap: Spacing.sm },
+  subChipIcon: { width: 30, height: 30, borderRadius: BorderRadius.xs, alignItems: "center", justifyContent: "center" },
+  subChipCheck: { width: 18, height: 18, borderRadius: 9, alignItems: "center", justifyContent: "center" },
   // EV
   evToggleRow: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
   evIconBox: { width: 44, height: 44, borderRadius: BorderRadius.xs, alignItems: "center", justifyContent: "center" },
