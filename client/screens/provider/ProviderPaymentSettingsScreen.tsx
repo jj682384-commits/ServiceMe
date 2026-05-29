@@ -27,6 +27,17 @@ import { Spacing, BorderRadius } from "@/constants/theme";
 import { apiRequest } from "@/lib/query-client";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 
+function parseApiError(e: Error): string {
+  try {
+    const colonIdx = e.message.indexOf(": ");
+    if (colonIdx === -1) return e.message;
+    const parsed = JSON.parse(e.message.slice(colonIdx + 2));
+    return parsed.error || e.message;
+  } catch {
+    return e.message;
+  }
+}
+
 interface SavedBankAccount {
   bankName: string;
   accountType: "checking" | "savings";
@@ -85,25 +96,19 @@ export default function ProviderPaymentSettingsScreen() {
       const res = await apiRequest("POST", "/api/stripe/connect/onboard", {
         providerId: currentProvider!.id,
       });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Failed to start Stripe onboarding");
-      }
       return res.json() as Promise<{ url: string; accountId: string }>;
     },
     onSuccess: async ({ url }) => {
       if (Platform.OS === "web") {
-        // Web: open in new tab
         (global as any).open?.(url, "_blank");
       } else {
         await WebBrowser.openBrowserAsync(url, {
           presentationStyle: WebBrowser.WebBrowserPresentationStyle.FORM_SHEET,
         });
-        // Refetch after browser closes
         refetchConnect();
       }
     },
-    onError: (e: Error) => Alert.alert("Error", e.message),
+    onError: (e: Error) => Alert.alert("Error", parseApiError(e)),
   });
 
   // ── Manual bank account (fallback when Connect not set up) ──────────────────
@@ -119,7 +124,6 @@ export default function ProviderPaymentSettingsScreen() {
       routingNumber: string; accountNumber: string;
     }) => {
       const res = await apiRequest("POST", `/api/providers/${currentProvider!.id}/payout-bank`, payload);
-      if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Failed to save bank account"); }
       return res.json() as Promise<{ bankAccount: SavedBankAccount }>;
     },
     onSuccess: () => {
@@ -128,16 +132,15 @@ export default function ProviderPaymentSettingsScreen() {
       setBankName(""); setAccountHolderName(""); setRoutingNumber(""); setAccountNumber("");
       Alert.alert("Saved", "Your bank account has been saved for payouts.");
     },
-    onError: (e: Error) => Alert.alert("Error", e.message),
+    onError: (e: Error) => Alert.alert("Error", parseApiError(e)),
   });
 
   const removeBankMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("DELETE", `/api/providers/${currentProvider!.id}/payout-bank`, {});
-      if (!res.ok) throw new Error("Failed to remove bank account");
+      await apiRequest("DELETE", `/api/providers/${currentProvider!.id}/payout-bank`, {});
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: [bankQueryKey] }),
-    onError: () => Alert.alert("Error", "Could not remove bank account. Please try again."),
+    onError: (e: Error) => Alert.alert("Error", parseApiError(e)),
   });
 
   const acceptsPriority = currentProvider?.acceptsPriorityJobs;

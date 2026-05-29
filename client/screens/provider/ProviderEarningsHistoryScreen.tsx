@@ -27,6 +27,17 @@ import { RootStackParamList } from "@/navigation/RootStackNavigator";
 const PLATFORM_FEE_STANDARD = 0.15;
 const PLATFORM_FEE_PRIORITY = 0.10;
 
+function parseApiError(e: Error): string {
+  try {
+    const colonIdx = e.message.indexOf(": ");
+    if (colonIdx === -1) return e.message;
+    const parsed = JSON.parse(e.message.slice(colonIdx + 2));
+    return parsed.error || e.message;
+  } catch {
+    return e.message;
+  }
+}
+
 function getPlatformFee(isExpress: boolean | undefined, acceptsPriorityJobs: boolean | undefined): number {
   return (isExpress && acceptsPriorityJobs) ? PLATFORM_FEE_PRIORITY : PLATFORM_FEE_STANDARD;
 }
@@ -237,13 +248,9 @@ export default function ProviderEarningsHistoryScreen() {
         amount: payoutAmount,
         payoutType,
       });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error ?? "Payout failed");
-      }
       return res.json();
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [earningsKey] });
       setShowCashOut(false);
       const arrivalMsg = payoutType === "instant"
@@ -254,7 +261,7 @@ export default function ProviderEarningsHistoryScreen() {
         `$${netAmount.toFixed(2)} is on its way to your bank. ${arrivalMsg}`
       );
     },
-    onError: (e: Error) => Alert.alert("Transfer Failed", e.message),
+    onError: (e: Error) => Alert.alert("Transfer Failed", parseApiError(e)),
   });
 
   const handleCashOut = () => {
@@ -484,16 +491,21 @@ export default function ProviderEarningsHistoryScreen() {
         animationType="slide"
         onRequestClose={() => setShowCashOut(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalSheet, { backgroundColor: theme.backgroundDefault }]}>
-            <View style={styles.modalHandle} />
+        <Pressable style={styles.modalOverlay} onPress={() => setShowCashOut(false)}>
+          <Pressable onPress={(e) => e.stopPropagation()}>
+            <View style={[styles.modalSheet, { backgroundColor: theme.backgroundDefault }]}>
+              <View style={styles.modalHandle} />
 
-            <View style={styles.modalHeader}>
-              <ThemedText type="h3" style={{ fontWeight: "700" }}>Cash Out</ThemedText>
-              <Pressable onPress={() => setShowCashOut(false)}>
-                <Feather name="x" size={22} color={theme.textSecondary} />
-              </Pressable>
-            </View>
+              <View style={styles.modalHeader}>
+                <ThemedText type="h3" style={{ fontWeight: "700" }}>Cash Out</ThemedText>
+                <Pressable
+                  onPress={() => setShowCashOut(false)}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  style={styles.closeBtn}
+                >
+                  <Feather name="x" size={20} color={theme.text} />
+                </Pressable>
+              </View>
 
             {/* Amount */}
             <ThemedText type="small" style={[styles.inputLabel, { color: theme.textSecondary }]}>
@@ -617,8 +629,9 @@ export default function ProviderEarningsHistoryScreen() {
                 )}
               </Pressable>
             </View>
-          </View>
-        </View>
+            </View>
+          </Pressable>
+        </Pressable>
       </Modal>
     </ThemedView>
   );
@@ -801,6 +814,14 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.lg,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  closeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(255,255,255,0.1)",
     alignItems: "center",
     justifyContent: "center",
   },
