@@ -19,10 +19,10 @@ import Animated, {
 import * as Location from "expo-location";
 import { useStripe } from "@/lib/stripe";
 
-import { ThemedView } from "@/components/ThemedView";
+import { LinearGradient } from "expo-linear-gradient";
 import { ThemedText } from "@/components/ThemedText";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
-import { ScreenDecoration } from "@/components/ScreenDecoration";
+import AnimatedBackground from "@/components/AnimatedBackground";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceType, ServiceRequest } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
@@ -94,7 +94,8 @@ interface ServiceTypeCardProps {
 }
 
 function ServiceTypeCard({ type, label, icon, price, discountedPrice, isPremium, isSelected, onPress }: ServiceTypeCardProps) {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
+  const sectionBg = theme.cardAnimatedBg;
   const scale = useSharedValue(1);
   const isFuel = type === "fuel";
   const isFlatTireCard = type === "flat_tire";
@@ -119,7 +120,7 @@ function ServiceTypeCard({ type, label, icon, price, discountedPrice, isPremium,
       style={[
         styles.serviceCard,
         {
-          backgroundColor: isSelected ? theme.primary + "15" : theme.backgroundSecondary,
+          backgroundColor: isSelected ? theme.primary + "22" : sectionBg,
           borderColor: isSelected ? theme.primary : "transparent",
           borderWidth: 2,
         },
@@ -158,7 +159,8 @@ function ServiceTypeCard({ type, label, icon, price, discountedPrice, isPremium,
 export default function ServiceRequestScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
+  const sectionBg = theme.cardAnimatedBg;
   const { nearbyProviders, getProvidersWithDistance, setActiveRequest, addToHistory, addPendingJob, currentDriver, getDefaultVehicle, useFreeService } = useApp();
   const defaultVehicle = getDefaultVehicle();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -433,8 +435,8 @@ export default function ServiceRequestScreen() {
   };
 
   return (
-    <ThemedView style={styles.container}>
-      <ScreenDecoration />
+    <View style={[styles.container, { backgroundColor: isDark ? "#04060E" : theme.backgroundRoot }]}>
+      <AnimatedBackground />
       <KeyboardAwareScrollViewCompat
         contentContainerStyle={[
           styles.scrollContent,
@@ -467,37 +469,29 @@ export default function ServiceRequestScreen() {
           </View>
         )}
 
-        {/* Hero section — zap icon pops in on mount with a glowing pulse */}
-        <Animated.View
-          entering={FadeInDown.duration(380).springify().damping(18)}
-          style={styles.heroSection}
-        >
-          <View style={styles.heroIconWrap}>
-            <Animated.View
-              style={[
-                styles.heroGlowRing,
-                { backgroundColor: theme.primary + "30" },
-                zapGlowStyle,
-              ]}
-            />
-            <Animated.View
-              style={[
-                styles.heroIconCircle,
-                { backgroundColor: theme.primary + "18" },
-                zapIconStyle,
-              ]}
-            >
-              <Feather name="zap" size={32} color={theme.primary} />
-            </Animated.View>
-          </View>
-          <ThemedText type="h2" style={[styles.heroTitle, { color: theme.text }]}>
-            Get help fast
-          </ThemedText>
-          <ThemedText type="body" style={[styles.heroSubtitle, { color: theme.textSecondary }]}>
-            {nearbyProviders.length > 0
-              ? `${nearbyProviders.length}+ providers ready nearby`
-              : "Pick a service to get started"}
-          </ThemedText>
+        {/* Hero card */}
+        <Animated.View entering={FadeInDown.duration(380).springify().damping(18)}>
+          <LinearGradient
+            colors={["#0A1F3A", "#0F2855", "#14124A"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.heroCard}
+          >
+            <View style={styles.heroIconWrap}>
+              <Animated.View style={[styles.heroGlowRing, { backgroundColor: "#3B82F630" }, zapGlowStyle]} />
+              <Animated.View style={[styles.heroIconCircle, zapIconStyle]}>
+                <Feather name="zap" size={30} color="#60A5FA" />
+              </Animated.View>
+            </View>
+            <ThemedText style={{ color: "#FFFFFF", fontSize: 24, fontWeight: "800", marginBottom: Spacing.xs, marginTop: Spacing.sm }}>
+              Get help fast
+            </ThemedText>
+            <ThemedText type="small" style={{ color: "rgba(255,255,255,0.55)", textAlign: "center" }}>
+              {nearbyProviders.length > 0
+                ? `${nearbyProviders.length}+ providers ready nearby`
+                : "Pick a service to get started"}
+            </ThemedText>
+          </LinearGradient>
         </Animated.View>
 
         <Animated.View entering={FadeIn.delay(180).duration(300)}>
@@ -533,7 +527,7 @@ export default function ServiceRequestScreen() {
         </View>
 
         {isJumpStart ? (
-          <ThemedText type="h4" style={styles.sectionTitle}>
+          <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
             Optional Add-On
           </ThemedText>
         ) : null}
@@ -543,7 +537,7 @@ export default function ServiceRequestScreen() {
             style={[
               styles.addOnCard,
               {
-                backgroundColor: addBatteryCheck ? theme.secondary + "15" : theme.backgroundSecondary,
+                backgroundColor: addBatteryCheck ? theme.secondary + "15" : sectionBg,
                 borderColor: addBatteryCheck ? theme.secondary : "transparent",
                 borderWidth: 2,
               },
@@ -580,7 +574,7 @@ export default function ServiceRequestScreen() {
         ) : null}
 
         {isFlatTire ? (
-          <ThemedText type="h4" style={styles.sectionTitle}>
+          <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
             What do you need?
           </ThemedText>
         ) : null}
@@ -598,7 +592,7 @@ export default function ServiceRequestScreen() {
                   style={[
                     styles.flatTireOption,
                     {
-                      backgroundColor: selected ? theme.primary + "15" : theme.backgroundSecondary,
+                      backgroundColor: selected ? theme.primary + "15" : sectionBg,
                       borderColor: selected ? theme.primary : "transparent",
                       borderWidth: 2,
                     },
@@ -622,7 +616,7 @@ export default function ServiceRequestScreen() {
           </View>
         ) : null}
         {isFlatTire ? (
-          <ThemedText type="h4" style={styles.sectionTitle}>
+          <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
             Optional Add-On
           </ThemedText>
         ) : null}
@@ -632,7 +626,7 @@ export default function ServiceRequestScreen() {
             style={[
               styles.addOnCard,
               {
-                backgroundColor: addTireCheck ? theme.secondary + "15" : theme.backgroundSecondary,
+                backgroundColor: addTireCheck ? theme.secondary + "15" : sectionBg,
                 borderColor: addTireCheck ? theme.secondary : "transparent",
                 borderWidth: 2,
               },
@@ -670,7 +664,7 @@ export default function ServiceRequestScreen() {
 
         {isFuelSelected ? (
           <>
-            <ThemedText type="h4" style={styles.sectionTitle}>
+            <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
               How much fuel do you need?
             </ThemedText>
             <View style={styles.fuelToggleRow}>
@@ -679,7 +673,7 @@ export default function ServiceRequestScreen() {
                 style={[
                   styles.fuelToggleTab,
                   {
-                    backgroundColor: !useCustomFuel ? theme.primary + "15" : theme.backgroundSecondary,
+                    backgroundColor: !useCustomFuel ? theme.primary + "15" : sectionBg,
                     borderColor: !useCustomFuel ? theme.primary : "transparent",
                   },
                 ]}
@@ -694,7 +688,7 @@ export default function ServiceRequestScreen() {
                 style={[
                   styles.fuelToggleTab,
                   {
-                    backgroundColor: useCustomFuel ? theme.primary + "15" : theme.backgroundSecondary,
+                    backgroundColor: useCustomFuel ? theme.primary + "15" : sectionBg,
                     borderColor: useCustomFuel ? theme.primary : "transparent",
                   },
                 ]}
@@ -706,7 +700,7 @@ export default function ServiceRequestScreen() {
               </Pressable>
             </View>
             {useCustomFuel ? (
-              <View style={[styles.customFuelCard, { backgroundColor: theme.backgroundSecondary }]}>
+              <View style={[styles.customFuelCard, { backgroundColor: sectionBg }]}>
                 <View style={[styles.fuelIconWrap, { backgroundColor: theme.primary + "20" }]}>
                   <Feather name="dollar-sign" size={20} color={theme.primary} />
                 </View>
@@ -765,7 +759,7 @@ export default function ServiceRequestScreen() {
                       style={[
                         styles.fuelCard,
                         {
-                          backgroundColor: isActive ? theme.primary + "15" : theme.backgroundSecondary,
+                          backgroundColor: isActive ? theme.primary + "15" : sectionBg,
                           borderColor: isActive ? theme.primary : "transparent",
                         },
                       ]}
@@ -800,10 +794,10 @@ export default function ServiceRequestScreen() {
 
         {defaultVehicle ? (
           <>
-            <ThemedText type="h4" style={styles.sectionTitle}>
+            <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
               Your Vehicle
             </ThemedText>
-            <View style={[styles.vehicleInfoCard, { backgroundColor: theme.backgroundSecondary }]}>
+            <View style={[styles.vehicleInfoCard, { backgroundColor: sectionBg }]}>
               <Feather
                 name={defaultVehicle.fuelType === "electric" ? "battery-charging" : "truck"}
                 size={20}
@@ -827,10 +821,10 @@ export default function ServiceRequestScreen() {
           </>
         ) : null}
 
-        <ThemedText type="h4" style={styles.sectionTitle}>
+        <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
           Your Exact Location
         </ThemedText>
-        <View style={[styles.locationCard, { backgroundColor: theme.backgroundSecondary }]}>
+        <View style={[styles.locationCard, { backgroundColor: sectionBg }]}>
           <Feather name="map-pin" size={20} color={theme.primary} />
           <View style={styles.locationInfo}>
             <ThemedText type="body" style={{ fontWeight: "500" }}>
@@ -843,7 +837,7 @@ export default function ServiceRequestScreen() {
           <Feather name="edit-2" size={18} color={theme.textSecondary} />
         </View>
 
-        <ThemedText type="h4" style={styles.sectionTitle}>
+        <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
           When do you need service?
         </ThemedText>
         <View style={styles.scheduleToggleRow}>
@@ -852,7 +846,7 @@ export default function ServiceRequestScreen() {
             style={[
               styles.scheduleToggleTab,
               {
-                backgroundColor: scheduleMode === "now" ? theme.primary + "15" : theme.backgroundSecondary,
+                backgroundColor: scheduleMode === "now" ? theme.primary + "15" : sectionBg,
                 borderColor: scheduleMode === "now" ? theme.primary : "transparent",
               },
             ]}
@@ -870,7 +864,7 @@ export default function ServiceRequestScreen() {
             style={[
               styles.scheduleToggleTab,
               {
-                backgroundColor: scheduleMode === "later" ? theme.primary + "15" : theme.backgroundSecondary,
+                backgroundColor: scheduleMode === "later" ? theme.primary + "15" : sectionBg,
                 borderColor: scheduleMode === "later" ? theme.primary : "transparent",
               },
             ]}
@@ -887,7 +881,7 @@ export default function ServiceRequestScreen() {
 
         {isScheduled ? (
           <>
-            <ThemedText type="h4" style={styles.sectionTitle}>
+            <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
               Pick a Date
             </ThemedText>
             <ScrollView
@@ -904,7 +898,7 @@ export default function ServiceRequestScreen() {
                     style={[
                       styles.dateCard,
                       {
-                        backgroundColor: isActive ? theme.primary + "15" : theme.backgroundSecondary,
+                        backgroundColor: isActive ? theme.primary + "15" : sectionBg,
                         borderColor: isActive ? theme.primary : "transparent",
                       },
                     ]}
@@ -920,7 +914,7 @@ export default function ServiceRequestScreen() {
               })}
             </ScrollView>
 
-            <ThemedText type="h4" style={styles.sectionTitle}>
+            <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
               Pick a Time
             </ThemedText>
             <View style={styles.timeGrid}>
@@ -933,7 +927,7 @@ export default function ServiceRequestScreen() {
                     style={[
                       styles.timeChip,
                       {
-                        backgroundColor: isActive ? theme.primary + "15" : theme.backgroundSecondary,
+                        backgroundColor: isActive ? theme.primary + "15" : sectionBg,
                         borderColor: isActive ? theme.primary : "transparent",
                       },
                     ]}
@@ -959,7 +953,7 @@ export default function ServiceRequestScreen() {
 
         {!isScheduled ? (
           <>
-            <ThemedText type="h4" style={styles.sectionTitle}>
+            <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
               Priority Service
             </ThemedText>
         <Pressable
@@ -967,7 +961,7 @@ export default function ServiceRequestScreen() {
           style={[
             styles.expressCard,
             {
-              backgroundColor: isExpress ? theme.warning + "15" : theme.backgroundSecondary,
+              backgroundColor: isExpress ? theme.warning + "15" : sectionBg,
               borderColor: isExpress ? theme.warning : "transparent",
               borderWidth: 2,
             },
@@ -1004,14 +998,14 @@ export default function ServiceRequestScreen() {
           </>
         ) : null}
 
-        <ThemedText type="h4" style={styles.sectionTitle}>
+        <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
           Additional Notes
         </ThemedText>
         <TextInput
           style={[
             styles.notesInput,
             {
-              backgroundColor: theme.backgroundSecondary,
+              backgroundColor: sectionBg,
               color: theme.text,
               borderColor: theme.border,
             },
@@ -1031,7 +1025,7 @@ export default function ServiceRequestScreen() {
             style={[
               styles.addOnCard,
               {
-                backgroundColor: useFreeSvc ? theme.success + "15" : theme.backgroundSecondary,
+                backgroundColor: useFreeSvc ? theme.success + "15" : sectionBg,
                 borderColor: useFreeSvc ? theme.success : "transparent",
                 borderWidth: 2,
               },
@@ -1070,7 +1064,7 @@ export default function ServiceRequestScreen() {
         ) : null}
 
         {selectedService ? (
-          <View style={[styles.costCard, { backgroundColor: theme.backgroundSecondary }]}>
+          <View style={[styles.costCard, { backgroundColor: sectionBg }]}>
             <View style={styles.costBreakdown}>
               <View style={styles.costRow}>
                 <ThemedText type="body" style={{ color: theme.text }}>
@@ -1200,7 +1194,7 @@ export default function ServiceRequestScreen() {
           styles.bottomBar,
           {
             paddingBottom: insets.bottom + Spacing.lg,
-            backgroundColor: theme.backgroundRoot,
+            backgroundColor: isDark ? "#04060E" : theme.backgroundRoot,
             borderTopColor: theme.border,
           },
         ]}
@@ -1249,7 +1243,7 @@ export default function ServiceRequestScreen() {
           )}
         </Pressable>
       </View>
-    </ThemedView>
+    </View>
   );
 }
 
@@ -1261,18 +1255,22 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
   },
   sectionTitle: {
-    marginBottom: Spacing.md,
-    marginTop: Spacing.lg,
-  },
-  heroSection: {
-    alignItems: "center",
-    paddingVertical: Spacing.lg,
     marginBottom: Spacing.sm,
+    marginTop: Spacing.lg,
+    fontSize: 11,
+    fontWeight: "600",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+  },
+  heroCard: {
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.xl,
+    alignItems: "center",
+    marginBottom: Spacing.lg,
   },
   heroIconWrap: {
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: Spacing.md,
     width: 80,
     height: 80,
   },
@@ -1288,16 +1286,7 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     alignItems: "center",
     justifyContent: "center",
-  },
-  heroTitle: {
-    fontWeight: "800",
-    fontSize: 26,
-    textAlign: "center",
-    marginBottom: Spacing.xs,
-  },
-  heroSubtitle: {
-    textAlign: "center",
-    fontSize: 14,
+    backgroundColor: "rgba(96,165,250,0.18)",
   },
   serviceGrid: {
     flexDirection: "row",

@@ -3,9 +3,10 @@ import { View, StyleSheet, FlatList } from "react-native";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
-import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
+import AnimatedBackground from "@/components/AnimatedBackground";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceRequest, ServiceType } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
@@ -28,15 +29,29 @@ interface BillingEntry {
   amount: number;
   last4: string;
   type: "service" | "membership";
+  serviceType?: ServiceType;
   status: "completed" | "pending" | "refunded";
 }
+
+const SERVICE_ICON_COLORS: Record<string, { bg: string; color: string }> = {
+  flat_tire:     { bg: "#EF444420", color: "#EF4444" },
+  jump_start:    { bg: "#F59E0B20", color: "#F59E0B" },
+  tow:           { bg: "#3B82F620", color: "#3B82F6" },
+  fuel:          { bg: "#10B98120", color: "#10B981" },
+  lockout:       { bg: "#8B5CF620", color: "#8B5CF6" },
+  obd_diagnostic:{ bg: "#06B6D420", color: "#06B6D4" },
+  mobile_inflation:{ bg: "#F97316" + "20", color: "#F97316" },
+  tire_check:    { bg: "#84CC1620", color: "#84CC16" },
+  membership:    { bg: "#F59E0B20", color: "#F59E0B" },
+};
 
 export default function BillingHistoryScreen() {
   const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const { requestHistory, currentDriver, paymentMethods } = useApp();
 
+  const sectionBg = theme.cardAnimatedBg;
   const defaultCard = paymentMethods.find((m) => m.isDefault) || paymentMethods[0];
   const defaultLast4 = defaultCard?.last4 || "----";
   const isPremium = currentDriver?.membership === "premium";
@@ -47,10 +62,11 @@ export default function BillingHistoryScreen() {
       .map((r) => ({
         id: r.id,
         date: r.createdAt,
-        description: `${serviceTypeLabels[r.serviceType] || "Service"} - ${r.provider?.name || "Provider"}`,
+        description: `${serviceTypeLabels[r.serviceType] || "Service"} — ${r.provider?.name || "Provider"}`,
         amount: r.totalCost || r.estimatedCost || 0,
         last4: defaultLast4,
         type: "service" as const,
+        serviceType: r.serviceType,
         status: "completed" as const,
       }));
 
@@ -78,68 +94,101 @@ export default function BillingHistoryScreen() {
   const formatDate = (date: Date) =>
     date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
-  const renderItem = ({ item }: { item: BillingEntry }) => {
+  const renderItem = ({ item, index }: { item: BillingEntry; index: number }) => {
+    const iconStyle = item.type === "membership"
+      ? SERVICE_ICON_COLORS.membership
+      : SERVICE_ICON_COLORS[item.serviceType as ServiceType] || { bg: theme.textSecondary + "20", color: theme.textSecondary };
     const statusColor = item.status === "completed" ? theme.success :
       item.status === "refunded" ? theme.warning : theme.textSecondary;
 
     return (
-      <View style={[styles.entryItem, { backgroundColor: theme.backgroundDefault }]}>
-        <View style={[styles.entryIcon, { backgroundColor: (item.type === "membership" ? theme.primary : theme.secondary) + "15" }]}>
+      <View style={[styles.entryRow, { backgroundColor: sectionBg }]}>
+        <View style={[styles.iconBox, { backgroundColor: iconStyle.bg }]}>
           <Feather
             name={item.type === "membership" ? "star" : "file-text"}
-            size={20}
-            color={item.type === "membership" ? theme.primary : theme.secondary}
+            size={16}
+            color={iconStyle.color}
           />
         </View>
         <View style={styles.entryContent}>
           <ThemedText type="body" style={{ fontWeight: "600" }} numberOfLines={1}>
             {item.description}
           </ThemedText>
-          <ThemedText type="small" style={{ color: theme.textSecondary }}>
-            {formatDate(item.date)}
-          </ThemedText>
           <View style={styles.entryMeta}>
-            <Feather name="credit-card" size={10} color={theme.textSecondary} />
+            <Feather name="calendar" size={11} color={theme.textSecondary} />
             <ThemedText type="small" style={{ color: theme.textSecondary, marginLeft: 4 }}>
-              Ending in {item.last4}
+              {formatDate(item.date)}
             </ThemedText>
+            {item.last4 !== "----" ? (
+              <>
+                <ThemedText type="small" style={{ color: theme.textSecondary }}> · </ThemedText>
+                <Feather name="credit-card" size={11} color={theme.textSecondary} />
+                <ThemedText type="small" style={{ color: theme.textSecondary, marginLeft: 3 }}>
+                  ···{item.last4}
+                </ThemedText>
+              </>
+            ) : null}
           </View>
         </View>
         <View style={styles.entryRight}>
-          <ThemedText type="body" style={{ fontWeight: "600" }}>
+          <ThemedText type="body" style={{ fontWeight: "700", color: theme.text }}>
             ${item.amount.toFixed(2)}
           </ThemedText>
-          <Feather name="check-circle" size={14} color={statusColor} />
+          <View style={[styles.statusBadge, { backgroundColor: statusColor + "20" }]}>
+            <ThemedText style={{ fontSize: 10, fontWeight: "700", color: statusColor }}>
+              {item.status.toUpperCase()}
+            </ThemedText>
+          </View>
         </View>
       </View>
     );
   };
 
   const renderHeader = () => (
-    <View style={styles.summarySection}>
-      <View style={styles.summaryRow}>
-        <View style={[styles.summaryCard, { backgroundColor: theme.backgroundDefault }]}>
-          <ThemedText type="small" style={{ color: theme.textSecondary }}>
-            This Month
-          </ThemedText>
-          <ThemedText type="h3" style={{ marginTop: Spacing.xs }}>
-            ${thisMonthTotal.toFixed(2)}
-          </ThemedText>
+    <>
+      <LinearGradient
+        colors={["#0A1F3A", "#0F2855", "#14124A"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.heroCard}
+      >
+        <View style={styles.heroBadge}>
+          <Feather name="credit-card" size={26} color="#93C5FD" />
         </View>
-        <View style={[styles.summaryCard, { backgroundColor: theme.backgroundDefault }]}>
-          <ThemedText type="small" style={{ color: theme.textSecondary }}>
-            All Time
-          </ThemedText>
-          <ThemedText type="h3" style={{ marginTop: Spacing.xs }}>
-            ${allTimeTotal.toFixed(2)}
-          </ThemedText>
+        <ThemedText style={{ color: "#FFFFFF", fontSize: 22, fontWeight: "800", marginTop: Spacing.md, marginBottom: Spacing.xs }}>
+          Billing History
+        </ThemedText>
+        <ThemedText type="small" style={{ color: "rgba(255,255,255,0.55)", textAlign: "center", marginBottom: Spacing.lg }}>
+          All your service charges and membership fees
+        </ThemedText>
+        <View style={styles.statsRow}>
+          <View style={styles.statBox}>
+            <ThemedText type="small" style={{ color: "rgba(255,255,255,0.5)", marginBottom: 4 }}>This Month</ThemedText>
+            <ThemedText style={{ color: "#FFFFFF", fontSize: 22, fontWeight: "800" }}>
+              ${thisMonthTotal.toFixed(2)}
+            </ThemedText>
+          </View>
+          <View style={[styles.statDivider, { backgroundColor: "rgba(255,255,255,0.15)" }]} />
+          <View style={styles.statBox}>
+            <ThemedText type="small" style={{ color: "rgba(255,255,255,0.5)", marginBottom: 4 }}>All Time</ThemedText>
+            <ThemedText style={{ color: "#FFFFFF", fontSize: 22, fontWeight: "800" }}>
+              ${allTimeTotal.toFixed(2)}
+            </ThemedText>
+          </View>
         </View>
-      </View>
-    </View>
+      </LinearGradient>
+
+      {entries.length > 0 ? (
+        <ThemedText type="small" style={[styles.sectionLabel, { color: theme.textSecondary }]}>
+          RECENT TRANSACTIONS
+        </ThemedText>
+      ) : null}
+    </>
   );
 
   return (
-    <ThemedView style={styles.container}>
+    <View style={[styles.container, { backgroundColor: isDark ? "#04060E" : theme.backgroundRoot }]}>
+      <AnimatedBackground />
       <FlatList
         data={entries}
         keyExtractor={(item) => item.id}
@@ -149,75 +198,94 @@ export default function BillingHistoryScreen() {
           paddingTop: headerHeight + Spacing.lg,
           paddingBottom: insets.bottom + Spacing.xl,
           paddingHorizontal: Spacing.lg,
-          gap: Spacing.md,
+          gap: Spacing.sm,
         }}
         scrollIndicatorInsets={{ bottom: insets.bottom }}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Feather name="file-text" size={48} color={theme.textSecondary} />
-            <ThemedText type="h4" style={{ marginTop: Spacing.lg }}>
+            <View style={[styles.emptyIconBox, { backgroundColor: theme.textSecondary + "15" }]}>
+              <Feather name="file-text" size={32} color={theme.textSecondary} />
+            </View>
+            <ThemedText type="h4" style={{ marginTop: Spacing.lg, textAlign: "center" }}>
               No Billing History
             </ThemedText>
-            <ThemedText
-              type="body"
-              style={{ color: theme.textSecondary, textAlign: "center", marginTop: Spacing.sm }}
-            >
+            <ThemedText type="body" style={{ color: theme.textSecondary, textAlign: "center", marginTop: Spacing.sm }}>
               Your billing transactions will appear here
             </ThemedText>
           </View>
         }
       />
-    </ThemedView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  container: { flex: 1 },
+  heroCard: {
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.xl,
+    alignItems: "center",
+    marginBottom: Spacing.lg,
   },
-  summarySection: {
+  heroBadge: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(147,197,253,0.15)",
+  },
+  statsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderRadius: BorderRadius.md,
+    overflow: "hidden",
+  },
+  statBox: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: Spacing.md,
+  },
+  statDivider: { width: 1, height: 40 },
+  sectionLabel: {
+    fontWeight: "600",
+    letterSpacing: 0.5,
     marginBottom: Spacing.sm,
   },
-  summaryRow: {
-    flexDirection: "row",
-    gap: Spacing.md,
-  },
-  summaryCard: {
-    flex: 1,
-    padding: Spacing.lg,
-    borderRadius: BorderRadius.md,
-    alignItems: "center",
-  },
-  entryItem: {
+  entryRow: {
     flexDirection: "row",
     alignItems: "center",
-    padding: Spacing.lg,
+    padding: Spacing.md,
     borderRadius: BorderRadius.md,
     gap: Spacing.md,
   },
-  entryIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: BorderRadius.sm,
+  iconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: BorderRadius.xs,
     alignItems: "center",
     justifyContent: "center",
   },
-  entryContent: {
-    flex: 1,
-    gap: 2,
-  },
-  entryMeta: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 2,
-  },
-  entryRight: {
-    alignItems: "flex-end",
-    gap: Spacing.xs,
+  entryContent: { flex: 1, gap: 3 },
+  entryMeta: { flexDirection: "row", alignItems: "center" },
+  entryRight: { alignItems: "flex-end", gap: Spacing.xs },
+  statusBadge: {
+    paddingHorizontal: Spacing.xs,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.xs,
   },
   emptyState: {
     alignItems: "center",
     justifyContent: "center",
-    paddingTop: 100,
+    paddingTop: 60,
+  },
+  emptyIconBox: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
