@@ -1,19 +1,20 @@
 import React, { useState, useMemo } from "react";
-import { View, StyleSheet, Pressable, ScrollView, TextInput, Alert, FlatList, Modal, Platform } from "react-native";
+import { View, StyleSheet, Pressable, ScrollView, TextInput, Alert, FlatList, Modal } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Feather } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { LinearGradient } from "expo-linear-gradient";
 import Animated, {
+  FadeInDown,
+  FadeIn,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
 } from "react-native-reanimated";
 
-import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
-import { ScreenDecoration } from "@/components/ScreenDecoration";
+import { AnimatedBackground } from "@/components/AnimatedBackground";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, Vehicle, TireType, FuelType, DrivetrainType } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
@@ -71,7 +72,7 @@ function SearchablePicker({
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
-      <View style={[styles.modalOverlay]}>
+      <View style={styles.modalOverlay}>
         <View
           style={[
             styles.modalContent,
@@ -91,7 +92,7 @@ function SearchablePicker({
           <View
             style={[
               styles.searchBar,
-              { backgroundColor: theme.backgroundSecondary, borderColor: theme.border },
+              { backgroundColor: theme.cardAnimatedBg, borderColor: theme.border },
             ]}
           >
             <Feather name="search" size={18} color={theme.textSecondary} />
@@ -122,9 +123,7 @@ function SearchablePicker({
                 }}
                 style={({ pressed }) => [
                   styles.pickerItem,
-                  {
-                    backgroundColor: pressed ? theme.backgroundSecondary : "transparent",
-                  },
+                  { backgroundColor: pressed ? theme.cardAnimatedBg : "transparent" },
                 ]}
               >
                 <ThemedText type="body">{item}</ThemedText>
@@ -154,19 +153,22 @@ function PickerButton({
   placeholder,
   onPress,
   disabled,
+  sectionBg,
 }: {
   label: string;
   value: string;
   placeholder: string;
   onPress: () => void;
   disabled?: boolean;
+  sectionBg?: string;
 }) {
   const { theme } = useTheme();
+  const bg = sectionBg ?? theme.backgroundDefault;
 
   return (
     <>
-      <ThemedText type="small" style={[styles.fieldLabel, { color: theme.textSecondary }]}>
-        {label}
+      <ThemedText style={styles.sectionLabel}>
+        {label.toUpperCase()}
       </ThemedText>
       <Pressable
         onPress={onPress}
@@ -174,7 +176,7 @@ function PickerButton({
         style={[
           styles.pickerButton,
           {
-            backgroundColor: theme.backgroundDefault,
+            backgroundColor: bg,
             borderColor: value ? theme.primary : theme.border,
             opacity: disabled ? 0.5 : 1,
           },
@@ -210,12 +212,21 @@ function ColorPicker({
   return (
     <>
       <View style={styles.colorHeaderRow}>
-        <ThemedText type="small" style={[styles.fieldLabel, { color: theme.textSecondary, marginTop: 0, marginBottom: 0 }]}>
-          Color
+        <ThemedText style={[styles.sectionLabel, { marginTop: 0, marginBottom: 0 }]}>
+          COLOR
         </ThemedText>
         {selected ? (
           <View style={styles.colorSelectedTag}>
-            <View style={[styles.colorSelectedDot, { backgroundColor: selected, borderWidth: isLight(selected) ? 1 : 0, borderColor: theme.border }]} />
+            <View
+              style={[
+                styles.colorSelectedDot,
+                {
+                  backgroundColor: selected,
+                  borderWidth: isLight(selected) ? 1 : 0,
+                  borderColor: theme.border,
+                },
+              ]}
+            />
             <ThemedText type="small" style={{ color: theme.textSecondary, fontSize: 12 }}>
               {VEHICLE_COLORS.find((c) => c.hex === selected)?.label ?? "Custom"}
             </ThemedText>
@@ -270,6 +281,10 @@ function VehicleCard({
     ? VEHICLE_COLORS.find((c) => c.hex === vehicle.color)
     : null;
 
+  const isEV = vehicle.fuelType === "electric";
+  const iconBg = vehicle.isDefault ? "#0066FF22" : isEV ? "#00AA5522" : "#60A5FA18";
+  const iconColor = vehicle.isDefault ? "#60A5FA" : isEV ? "#34D399" : "#94A3B8";
+
   return (
     <AnimatedPressable
       onPressIn={() => { scale.value = withSpring(0.98, { damping: 15, stiffness: 150 }); }}
@@ -277,36 +292,33 @@ function VehicleCard({
       style={[
         styles.vehicleCard,
         {
-          backgroundColor: theme.backgroundSecondary,
-          borderColor: vehicle.isDefault ? theme.primary : "transparent",
-          borderWidth: 2,
+          backgroundColor: theme.cardAnimatedBg,
+          borderColor: vehicle.isDefault ? "#0066FF55" : "transparent",
+          borderWidth: 1.5,
         },
         animatedStyle,
       ]}
     >
       <View style={styles.vehicleCardHeader}>
         <View style={styles.vehicleIconWrap}>
-          <View style={[styles.vehicleIcon, { backgroundColor: vehicle.isDefault ? theme.primary + "20" : theme.backgroundTertiary }]}>
+          <View style={[styles.vehicleIconBox, { backgroundColor: iconBg }]}>
             <Feather
-              name={vehicle.fuelType === "electric" ? "battery-charging" : "truck"}
-              size={24}
-              color={vehicle.isDefault ? theme.primary : theme.textSecondary}
+              name={isEV ? "battery-charging" : "truck"}
+              size={20}
+              color={iconColor}
             />
           </View>
           {vehicle.color ? (
             <View
               style={[
                 styles.colorDot,
-                {
-                  backgroundColor: vehicle.color,
-                  borderColor: theme.backgroundDefault,
-                },
+                { backgroundColor: vehicle.color, borderColor: theme.backgroundDefault },
               ]}
             />
           ) : null}
         </View>
         <View style={styles.vehicleCardInfo}>
-          <ThemedText type="body" style={{ fontWeight: "700" }}>
+          <ThemedText type="body" style={{ fontWeight: "700", color: "#FFFFFF" }}>
             {vehicle.year} {vehicle.make} {vehicle.model}
           </ThemedText>
           <View style={styles.vehicleMetaRow}>
@@ -336,25 +348,26 @@ function VehicleCard({
           </View>
         </View>
         {vehicle.isDefault ? (
-          <View style={[styles.defaultBadge, { backgroundColor: theme.primary }]}>
-            <ThemedText type="small" style={{ color: "#FFFFFF", fontWeight: "600", fontSize: 10 }}>
+          <View style={[styles.defaultBadge, { backgroundColor: "#0066FF" }]}>
+            <ThemedText type="small" style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 10 }}>
               DEFAULT
             </ThemedText>
           </View>
         ) : null}
       </View>
+      <View style={[styles.vehicleCardDivider, { backgroundColor: theme.border }]} />
       <View style={styles.vehicleActions}>
         {!vehicle.isDefault ? (
-          <Pressable onPress={onSetDefault} style={[styles.actionButton, { borderColor: theme.primary }]}>
-            <Feather name="check-circle" size={14} color={theme.primary} />
-            <ThemedText type="small" style={{ color: theme.primary, marginLeft: 4 }}>
+          <Pressable onPress={onSetDefault} style={[styles.actionButton, { borderColor: "#0066FF55" }]}>
+            <Feather name="check-circle" size={13} color="#60A5FA" />
+            <ThemedText type="small" style={{ color: "#60A5FA", marginLeft: 4, fontSize: 12 }}>
               Set Default
             </ThemedText>
           </Pressable>
         ) : null}
-        <Pressable onPress={onEdit} style={[styles.actionButton, { borderColor: theme.textSecondary }]}>
-          <Feather name="edit-2" size={14} color={theme.textSecondary} />
-          <ThemedText type="small" style={{ color: theme.textSecondary, marginLeft: 4 }}>
+        <Pressable onPress={onEdit} style={[styles.actionButton, { borderColor: theme.border }]}>
+          <Feather name="edit-2" size={13} color={theme.textSecondary} />
+          <ThemedText type="small" style={{ color: theme.textSecondary, marginLeft: 4, fontSize: 12 }}>
             Edit
           </ThemedText>
         </Pressable>
@@ -365,10 +378,10 @@ function VehicleCard({
               { text: "Remove", style: "destructive", onPress: onRemove },
             ]);
           }}
-          style={[styles.actionButton, { borderColor: theme.error }]}
+          style={[styles.actionButton, { borderColor: "#D9222255" }]}
         >
-          <Feather name="trash-2" size={14} color={theme.error} />
-          <ThemedText type="small" style={{ color: theme.error, marginLeft: 4 }}>
+          <Feather name="trash-2" size={13} color="#EF4444" />
+          <ThemedText type="small" style={{ color: "#EF4444", marginLeft: 4, fontSize: 12 }}>
             Remove
           </ThemedText>
         </Pressable>
@@ -377,12 +390,188 @@ function VehicleCard({
   );
 }
 
+function VehicleForm({
+  make, model, year, color, tireType, fuelType, drivetrain,
+  onMakePress, onModelPress,
+  setYear, setColor, setTireType, setFuelType, setDrivetrain,
+  onCancel, onSave,
+  saveLabel,
+}: {
+  make: string; model: string; year: number; color: string;
+  tireType: TireType; fuelType: FuelType; drivetrain: DrivetrainType;
+  onMakePress: () => void; onModelPress: () => void;
+  setYear: (y: number) => void; setColor: (c: string) => void;
+  setTireType: (t: TireType) => void; setFuelType: (f: FuelType) => void;
+  setDrivetrain: (d: DrivetrainType) => void;
+  onCancel: () => void; onSave: () => void;
+  saveLabel: string;
+}) {
+  const { theme } = useTheme();
+  const sectionBg = theme.cardAnimatedBg;
+
+  return (
+    <>
+      <PickerButton label="Make" value={make} placeholder="Select make..." onPress={onMakePress} sectionBg={sectionBg} />
+      <PickerButton
+        label="Model"
+        value={model}
+        placeholder={make ? "Select model..." : "Select a make first"}
+        onPress={onModelPress}
+        disabled={!make}
+        sectionBg={sectionBg}
+      />
+
+      <ThemedText style={[styles.sectionLabel, { marginTop: Spacing.lg }]}>YEAR</ThemedText>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ gap: Spacing.sm, paddingBottom: Spacing.sm }}
+      >
+        {YEARS.slice(0, 15).map((y) => (
+          <Pressable
+            key={y}
+            onPress={() => setYear(y)}
+            style={[
+              styles.yearChip,
+              {
+                backgroundColor: year === y ? "#0066FF" : sectionBg,
+                borderColor: year === y ? "#0066FF" : theme.border,
+              },
+            ]}
+          >
+            <ThemedText
+              type="small"
+              style={{ color: year === y ? "#FFFFFF" : theme.text, fontWeight: year === y ? "700" : "400" }}
+            >
+              {y}
+            </ThemedText>
+          </Pressable>
+        ))}
+      </ScrollView>
+
+      <View style={{ marginTop: Spacing.md }}>
+        <ColorPicker selected={color} onSelect={setColor} />
+      </View>
+
+      <ThemedText style={[styles.sectionLabel, { marginTop: Spacing.lg }]}>TIRE TYPE</ThemedText>
+      <View style={styles.optionRow}>
+        {TIRE_TYPES.map((t) => (
+          <Pressable
+            key={t.value}
+            onPress={() => setTireType(t.value)}
+            style={[
+              styles.optionChip,
+              {
+                backgroundColor: tireType === t.value ? "#0066FF22" : sectionBg,
+                borderColor: tireType === t.value ? "#0066FF" : theme.border,
+                flex: 1,
+              },
+            ]}
+          >
+            <ThemedText
+              type="small"
+              style={{
+                color: tireType === t.value ? "#60A5FA" : theme.text,
+                fontWeight: tireType === t.value ? "700" : "400",
+                textAlign: "center",
+              }}
+            >
+              {t.label}
+            </ThemedText>
+          </Pressable>
+        ))}
+      </View>
+
+      <ThemedText style={[styles.sectionLabel, { marginTop: Spacing.lg }]}>FUEL TYPE</ThemedText>
+      <View style={styles.optionRow}>
+        {FUEL_TYPES.map((f) => (
+          <Pressable
+            key={f.value}
+            onPress={() => setFuelType(f.value)}
+            style={[
+              styles.optionChip,
+              {
+                backgroundColor: fuelType === f.value ? "#0066FF22" : sectionBg,
+                borderColor: fuelType === f.value ? "#0066FF" : theme.border,
+                flex: 1,
+              },
+            ]}
+          >
+            <Feather
+              name={f.icon}
+              size={13}
+              color={fuelType === f.value ? "#60A5FA" : theme.textSecondary}
+            />
+            <ThemedText
+              type="small"
+              style={{
+                color: fuelType === f.value ? "#60A5FA" : theme.text,
+                fontWeight: fuelType === f.value ? "700" : "400",
+                marginLeft: 4,
+              }}
+            >
+              {f.label}
+            </ThemedText>
+          </Pressable>
+        ))}
+      </View>
+
+      <ThemedText style={[styles.sectionLabel, { marginTop: Spacing.lg }]}>DRIVETRAIN</ThemedText>
+      <View style={styles.optionRow}>
+        {DRIVETRAIN_TYPES.map((d) => (
+          <Pressable
+            key={d.value}
+            onPress={() => setDrivetrain(d.value)}
+            style={[
+              styles.optionChip,
+              {
+                backgroundColor: drivetrain === d.value ? "#0066FF22" : sectionBg,
+                borderColor: drivetrain === d.value ? "#0066FF" : theme.border,
+                flex: 1,
+              },
+            ]}
+          >
+            <ThemedText
+              type="small"
+              style={{
+                color: drivetrain === d.value ? "#60A5FA" : theme.text,
+                fontWeight: drivetrain === d.value ? "700" : "400",
+                textAlign: "center",
+              }}
+            >
+              {d.label}
+            </ThemedText>
+          </Pressable>
+        ))}
+      </View>
+
+      <View style={styles.formActions}>
+        <Pressable onPress={onCancel} style={[styles.cancelButton, { borderColor: theme.border }]}>
+          <ThemedText type="body" style={{ color: theme.textSecondary }}>Cancel</ThemedText>
+        </Pressable>
+        <Pressable onPress={onSave} style={styles.saveButtonWrap}>
+          <LinearGradient
+            colors={["#0055CC", "#0066FF"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.saveButtonGradient}
+          >
+            <Feather name="check" size={16} color="#FFFFFF" />
+            <ThemedText type="body" style={{ color: "#FFFFFF", fontWeight: "700", marginLeft: Spacing.xs }}>
+              {saveLabel}
+            </ThemedText>
+          </LinearGradient>
+        </Pressable>
+      </View>
+    </>
+  );
+}
+
 export default function VehicleManagementScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const { theme } = useTheme();
   const { vehicles, addVehicle, updateVehicle, removeVehicle, setDefaultVehicle } = useApp();
-  const navigation = useNavigation();
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [make, setMake] = useState("");
@@ -453,25 +642,9 @@ export default function VehicleManagementScreen() {
   };
 
   const resetForm = () => {
-    setMake("");
-    setModel("");
-    setYear(currentYear);
-    setColor("");
-    setTireType("spare");
-    setFuelType("regular");
-    setDrivetrain("fwd");
+    setMake(""); setModel(""); setYear(currentYear); setColor("");
+    setTireType("spare"); setFuelType("regular"); setDrivetrain("fwd");
     setShowAddForm(false);
-  };
-
-  const handleSelectMake = (selectedMake: string) => {
-    setMake(selectedMake);
-    setModel("");
-    setShowMakePicker(false);
-  };
-
-  const handleSelectModel = (selectedModel: string) => {
-    setModel(selectedModel);
-    setShowModelPicker(false);
   };
 
   const handleAdd = () => {
@@ -480,259 +653,146 @@ export default function VehicleManagementScreen() {
       return;
     }
     addVehicle({
-      make: make.trim(),
-      model: model.trim(),
-      year,
-      color: color || undefined,
-      tireType,
-      fuelType,
-      drivetrain,
+      make: make.trim(), model: model.trim(), year,
+      color: color || undefined, tireType, fuelType, drivetrain,
       isDefault: vehicles.length === 0,
     });
     resetForm();
   };
 
+  const defaultVehicle = vehicles.find((v) => v.isDefault);
+
   return (
-    <ThemedView style={styles.container}>
-      <ScreenDecoration />
+    <View style={styles.container}>
+      <AnimatedBackground />
+
       <KeyboardAwareScrollViewCompat
+        style={{ backgroundColor: "transparent" }}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: headerHeight + Spacing.lg, paddingBottom: insets.bottom + Spacing.xl },
+          { paddingTop: headerHeight + Spacing.md, paddingBottom: insets.bottom + Spacing["2xl"] },
         ]}
+        keyboardShouldPersistTaps="handled"
       >
-        <ThemedText type="body" style={{ color: theme.textSecondary, marginBottom: Spacing.lg }}>
-          Save your vehicles for faster service when you need help.
-        </ThemedText>
-
-        {vehicles.map((vehicle) => (
-          <VehicleCard
-            key={vehicle.id}
-            vehicle={vehicle}
-            onSetDefault={() => setDefaultVehicle(vehicle.id)}
-            onEdit={() => openEdit(vehicle)}
-            onRemove={() => removeVehicle(vehicle.id)}
-          />
-        ))}
-
-        {vehicles.length === 0 && !showAddForm ? (
-          <View style={[styles.emptyState, { backgroundColor: theme.backgroundSecondary }]}>
-            <Feather name="truck" size={48} color={theme.textSecondary} />
-            <ThemedText type="h4" style={{ marginTop: Spacing.md }}>
-              No Vehicles Saved
-            </ThemedText>
-            <ThemedText type="body" style={{ color: theme.textSecondary, textAlign: "center", marginTop: Spacing.sm }}>
-              Add a vehicle so providers know what you drive
-            </ThemedText>
+        {/* Hero card */}
+        <LinearGradient
+          colors={["#0A1F3A", "#0F2855", "#14124A"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.heroCard}
+        >
+          <View style={styles.heroLeft}>
+            <View style={styles.heroIconCircle}>
+              <Feather name="truck" size={28} color="#60A5FA" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <ThemedText style={{ color: "#FFFFFF", fontSize: 22, fontWeight: "800", marginBottom: 2 }}>
+                My Vehicles
+              </ThemedText>
+              <ThemedText type="small" style={{ color: "rgba(255,255,255,0.55)" }}>
+                {vehicles.length === 0
+                  ? "No vehicles saved yet"
+                  : `${vehicles.length} vehicle${vehicles.length > 1 ? "s" : ""} saved`}
+              </ThemedText>
+            </View>
           </View>
+          {defaultVehicle ? (
+            <View style={styles.heroDefaultTag}>
+              <Feather name="star" size={11} color="#60A5FA" />
+              <ThemedText style={{ color: "#60A5FA", fontSize: 11, fontWeight: "700", marginLeft: 4 }}>
+                {defaultVehicle.make} {defaultVehicle.model}
+              </ThemedText>
+            </View>
+          ) : null}
+        </LinearGradient>
+
+        {/* Vehicle list */}
+        {vehicles.length > 0 ? (
+          <Animated.View entering={FadeIn.delay(80).duration(300)}>
+            <ThemedText style={[styles.sectionLabel, { marginBottom: Spacing.sm }]}>
+              SAVED VEHICLES
+            </ThemedText>
+            {vehicles.map((vehicle) => (
+              <VehicleCard
+                key={vehicle.id}
+                vehicle={vehicle}
+                onSetDefault={() => setDefaultVehicle(vehicle.id)}
+                onEdit={() => openEdit(vehicle)}
+                onRemove={() => removeVehicle(vehicle.id)}
+              />
+            ))}
+          </Animated.View>
+        ) : !showAddForm ? (
+          <Animated.View entering={FadeIn.delay(80).duration(300)}>
+            <View style={[styles.emptyState, { backgroundColor: theme.cardAnimatedBg }]}>
+              <View style={[styles.emptyIconBox, { backgroundColor: "#0066FF18" }]}>
+                <Feather name="truck" size={28} color="#60A5FA" />
+              </View>
+              <ThemedText type="h4" style={{ marginTop: Spacing.md, color: "#FFFFFF" }}>
+                No Vehicles Saved
+              </ThemedText>
+              <ThemedText type="body" style={{ color: theme.textSecondary, textAlign: "center", marginTop: Spacing.sm }}>
+                Add a vehicle so providers know what you drive
+              </ThemedText>
+            </View>
+          </Animated.View>
         ) : null}
 
+        {/* Add form */}
         {showAddForm ? (
-          <View style={[styles.addForm, { backgroundColor: theme.backgroundSecondary }]}>
-            <ThemedText type="h4" style={{ marginBottom: Spacing.lg }}>
-              Add Vehicle
+          <Animated.View entering={FadeInDown.duration(280).springify().damping(20)}>
+            <ThemedText style={[styles.sectionLabel, { marginBottom: Spacing.sm }]}>
+              ADD VEHICLE
             </ThemedText>
-
-            <PickerButton
-              label="Make"
-              value={make}
-              placeholder="Select make..."
-              onPress={() => setShowMakePicker(true)}
-            />
-
-            <PickerButton
-              label="Model"
-              value={model}
-              placeholder={make ? "Select model..." : "Select a make first"}
-              onPress={() => setShowModelPicker(true)}
-              disabled={!make}
-            />
-
-            <ThemedText type="small" style={[styles.fieldLabel, { color: theme.textSecondary }]}>
-              Year
-            </ThemedText>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: Spacing.sm, paddingBottom: Spacing.sm }}
-            >
-              {YEARS.slice(0, 15).map((y) => (
-                <Pressable
-                  key={y}
-                  onPress={() => setYear(y)}
-                  style={[
-                    styles.yearChip,
-                    {
-                      backgroundColor: year === y ? theme.primary : theme.backgroundDefault,
-                      borderColor: year === y ? theme.primary : theme.border,
-                    },
-                  ]}
-                >
-                  <ThemedText
-                    type="small"
-                    style={{ color: year === y ? "#FFFFFF" : theme.text, fontWeight: year === y ? "600" : "400" }}
-                  >
-                    {y}
-                  </ThemedText>
-                </Pressable>
-              ))}
-            </ScrollView>
-
-            <View style={{ marginTop: Spacing.md }}>
-              <ColorPicker selected={color} onSelect={setColor} />
+            <View style={[styles.addForm, { backgroundColor: theme.cardAnimatedBg }]}>
+              <VehicleForm
+                make={make} model={model} year={year} color={color}
+                tireType={tireType} fuelType={fuelType} drivetrain={drivetrain}
+                onMakePress={() => setShowMakePicker(true)}
+                onModelPress={() => setShowModelPicker(true)}
+                setYear={setYear} setColor={setColor}
+                setTireType={setTireType} setFuelType={setFuelType} setDrivetrain={setDrivetrain}
+                onCancel={resetForm} onSave={handleAdd} saveLabel="Save Vehicle"
+              />
             </View>
-
-            <ThemedText type="small" style={[styles.fieldLabel, { color: theme.textSecondary }]}>
-              Tire Type
-            </ThemedText>
-            <View style={styles.optionRow}>
-              {TIRE_TYPES.map((t) => (
-                <Pressable
-                  key={t.value}
-                  onPress={() => setTireType(t.value)}
-                  style={[
-                    styles.optionChip,
-                    {
-                      backgroundColor: tireType === t.value ? theme.primary + "15" : theme.backgroundDefault,
-                      borderColor: tireType === t.value ? theme.primary : theme.border,
-                      flex: 1,
-                    },
-                  ]}
-                >
-                  <ThemedText
-                    type="small"
-                    style={{
-                      color: tireType === t.value ? theme.primary : theme.text,
-                      fontWeight: tireType === t.value ? "600" : "400",
-                      textAlign: "center",
-                    }}
-                  >
-                    {t.label}
-                  </ThemedText>
-                </Pressable>
-              ))}
-            </View>
-
-            <ThemedText type="small" style={[styles.fieldLabel, { color: theme.textSecondary }]}>
-              Fuel Type
-            </ThemedText>
-            <View style={styles.optionRow}>
-              {FUEL_TYPES.map((f) => (
-                <Pressable
-                  key={f.value}
-                  onPress={() => setFuelType(f.value)}
-                  style={[
-                    styles.optionChip,
-                    {
-                      backgroundColor: fuelType === f.value ? theme.primary + "15" : theme.backgroundDefault,
-                      borderColor: fuelType === f.value ? theme.primary : theme.border,
-                      flex: 1,
-                    },
-                  ]}
-                >
-                  <Feather
-                    name={f.icon}
-                    size={14}
-                    color={fuelType === f.value ? theme.primary : theme.textSecondary}
-                  />
-                  <ThemedText
-                    type="small"
-                    style={{
-                      color: fuelType === f.value ? theme.primary : theme.text,
-                      fontWeight: fuelType === f.value ? "600" : "400",
-                      marginLeft: 4,
-                    }}
-                  >
-                    {f.label}
-                  </ThemedText>
-                </Pressable>
-              ))}
-            </View>
-
-            <ThemedText type="small" style={[styles.fieldLabel, { color: theme.textSecondary }]}>
-              Drivetrain
-            </ThemedText>
-            <View style={styles.optionRow}>
-              {DRIVETRAIN_TYPES.map((d) => (
-                <Pressable
-                  key={d.value}
-                  onPress={() => setDrivetrain(d.value)}
-                  style={[
-                    styles.optionChip,
-                    {
-                      backgroundColor: drivetrain === d.value ? theme.primary + "15" : theme.backgroundDefault,
-                      borderColor: drivetrain === d.value ? theme.primary : theme.border,
-                      flex: 1,
-                    },
-                  ]}
-                >
-                  <ThemedText
-                    type="small"
-                    style={{
-                      color: drivetrain === d.value ? theme.primary : theme.text,
-                      fontWeight: drivetrain === d.value ? "600" : "400",
-                      textAlign: "center",
-                    }}
-                  >
-                    {d.label}
-                  </ThemedText>
-                </Pressable>
-              ))}
-            </View>
-
-            <View style={styles.formActions}>
-              <Pressable
-                onPress={resetForm}
-                style={[styles.cancelButton, { borderColor: theme.border }]}
-              >
-                <ThemedText type="body" style={{ color: theme.textSecondary }}>
-                  Cancel
-                </ThemedText>
-              </Pressable>
-              <Pressable
-                onPress={handleAdd}
-                style={[styles.saveButton, { backgroundColor: theme.primary }]}
-              >
-                <Feather name="plus" size={18} color="#FFFFFF" />
-                <ThemedText type="body" style={{ color: "#FFFFFF", fontWeight: "600", marginLeft: Spacing.xs }}>
-                  Save Vehicle
-                </ThemedText>
-              </Pressable>
-            </View>
-          </View>
+          </Animated.View>
         ) : (
-          <Pressable
-            onPress={() => setShowAddForm(true)}
-            style={[styles.addButton, { borderColor: theme.primary }]}
-          >
-            <Feather name="plus-circle" size={20} color={theme.primary} />
-            <ThemedText type="body" style={{ color: theme.primary, fontWeight: "600", marginLeft: Spacing.sm }}>
-              Add a Vehicle
-            </ThemedText>
-          </Pressable>
+          <Animated.View entering={FadeIn.delay(160).duration(280)}>
+            <Pressable
+              onPress={() => setShowAddForm(true)}
+              style={[styles.addButton, { borderColor: "#0066FF55" }]}
+            >
+              <View style={[styles.addIconBox, { backgroundColor: "#0066FF22" }]}>
+                <Feather name="plus" size={18} color="#60A5FA" />
+              </View>
+              <ThemedText type="body" style={{ color: "#60A5FA", fontWeight: "600", marginLeft: Spacing.sm }}>
+                Add a Vehicle
+              </ThemedText>
+            </Pressable>
+          </Animated.View>
         )}
       </KeyboardAwareScrollViewCompat>
 
+      {/* Modals */}
       <SearchablePicker
         visible={showMakePicker}
         onClose={() => setShowMakePicker(false)}
-        onSelect={handleSelectMake}
+        onSelect={(m) => { setMake(m); setModel(""); setShowMakePicker(false); }}
         items={VEHICLE_MAKES}
         title="Select Make"
         searchPlaceholder="Search makes..."
       />
-
       <SearchablePicker
         visible={showModelPicker}
         onClose={() => setShowModelPicker(false)}
-        onSelect={handleSelectModel}
+        onSelect={(m) => { setModel(m); setShowModelPicker(false); }}
         items={availableModels}
         title={`${make} Models`}
         searchPlaceholder="Search models..."
       />
 
       <Modal visible={!!editingVehicle} animationType="slide" transparent>
-        <View style={[styles.modalOverlay]}>
+        <View style={styles.modalOverlay}>
           <View
             style={[
               styles.modalContent,
@@ -749,169 +809,19 @@ export default function VehicleManagementScreen() {
                 <Feather name="x" size={24} color={theme.text} />
               </Pressable>
             </View>
-
             <KeyboardAwareScrollViewCompat
-              contentContainerStyle={{ paddingBottom: Spacing.xl }}
+              contentContainerStyle={{ paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xl }}
               keyboardShouldPersistTaps="handled"
             >
-              <PickerButton
-                label="Make"
-                value={editMake}
-                placeholder="Select make..."
-                onPress={() => setShowEditMakePicker(true)}
+              <VehicleForm
+                make={editMake} model={editModel} year={editYear} color={editColor}
+                tireType={editTireType} fuelType={editFuelType} drivetrain={editDrivetrain}
+                onMakePress={() => setShowEditMakePicker(true)}
+                onModelPress={() => setShowEditModelPicker(true)}
+                setYear={setEditYear} setColor={setEditColor}
+                setTireType={setEditTireType} setFuelType={setEditFuelType} setDrivetrain={setEditDrivetrain}
+                onCancel={closeEdit} onSave={handleSaveEdit} saveLabel="Save Changes"
               />
-
-              <PickerButton
-                label="Model"
-                value={editModel}
-                placeholder={editMake ? "Select model..." : "Select a make first"}
-                onPress={() => setShowEditModelPicker(true)}
-                disabled={!editMake}
-              />
-
-              <ThemedText type="small" style={[styles.fieldLabel, { color: theme.textSecondary }]}>
-                Year
-              </ThemedText>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ gap: Spacing.sm, paddingBottom: Spacing.sm }}
-              >
-                {YEARS.slice(0, 15).map((y) => (
-                  <Pressable
-                    key={y}
-                    onPress={() => setEditYear(y)}
-                    style={[
-                      styles.yearChip,
-                      {
-                        backgroundColor: editYear === y ? theme.primary : theme.backgroundDefault,
-                        borderColor: editYear === y ? theme.primary : theme.border,
-                      },
-                    ]}
-                  >
-                    <ThemedText
-                      type="small"
-                      style={{ color: editYear === y ? "#FFFFFF" : theme.text, fontWeight: editYear === y ? "600" : "400" }}
-                    >
-                      {y}
-                    </ThemedText>
-                  </Pressable>
-                ))}
-              </ScrollView>
-
-              <View style={{ marginTop: Spacing.md }}>
-                <ColorPicker selected={editColor} onSelect={setEditColor} />
-              </View>
-
-              <ThemedText type="small" style={[styles.fieldLabel, { color: theme.textSecondary }]}>
-                Tire Type
-              </ThemedText>
-              <View style={styles.optionRow}>
-                {TIRE_TYPES.map((t) => (
-                  <Pressable
-                    key={t.value}
-                    onPress={() => setEditTireType(t.value)}
-                    style={[
-                      styles.optionChip,
-                      {
-                        backgroundColor: editTireType === t.value ? theme.primary + "15" : theme.backgroundDefault,
-                        borderColor: editTireType === t.value ? theme.primary : theme.border,
-                        flex: 1,
-                      },
-                    ]}
-                  >
-                    <ThemedText
-                      type="small"
-                      style={{
-                        color: editTireType === t.value ? theme.primary : theme.text,
-                        fontWeight: editTireType === t.value ? "600" : "400",
-                        textAlign: "center",
-                      }}
-                    >
-                      {t.label}
-                    </ThemedText>
-                  </Pressable>
-                ))}
-              </View>
-
-              <ThemedText type="small" style={[styles.fieldLabel, { color: theme.textSecondary }]}>
-                Fuel Type
-              </ThemedText>
-              <View style={styles.optionRow}>
-                {FUEL_TYPES.map((f) => (
-                  <Pressable
-                    key={f.value}
-                    onPress={() => setEditFuelType(f.value)}
-                    style={[
-                      styles.optionChip,
-                      {
-                        backgroundColor: editFuelType === f.value ? theme.primary + "15" : theme.backgroundDefault,
-                        borderColor: editFuelType === f.value ? theme.primary : theme.border,
-                        flex: 1,
-                      },
-                    ]}
-                  >
-                    <Feather
-                      name={f.icon}
-                      size={14}
-                      color={editFuelType === f.value ? theme.primary : theme.textSecondary}
-                    />
-                    <ThemedText
-                      type="small"
-                      style={{
-                        color: editFuelType === f.value ? theme.primary : theme.text,
-                        fontWeight: editFuelType === f.value ? "600" : "400",
-                        marginLeft: 4,
-                      }}
-                    >
-                      {f.label}
-                    </ThemedText>
-                  </Pressable>
-                ))}
-              </View>
-
-              <ThemedText type="small" style={[styles.fieldLabel, { color: theme.textSecondary }]}>
-                Drivetrain
-              </ThemedText>
-              <View style={styles.optionRow}>
-                {DRIVETRAIN_TYPES.map((d) => (
-                  <Pressable
-                    key={d.value}
-                    onPress={() => setEditDrivetrain(d.value)}
-                    style={[
-                      styles.optionChip,
-                      {
-                        backgroundColor: editDrivetrain === d.value ? theme.primary + "15" : theme.backgroundDefault,
-                        borderColor: editDrivetrain === d.value ? theme.primary : theme.border,
-                        flex: 1,
-                      },
-                    ]}
-                  >
-                    <ThemedText
-                      type="small"
-                      style={{
-                        color: editDrivetrain === d.value ? theme.primary : theme.text,
-                        fontWeight: editDrivetrain === d.value ? "600" : "400",
-                        textAlign: "center",
-                      }}
-                    >
-                      {d.label}
-                    </ThemedText>
-                  </Pressable>
-                ))}
-              </View>
-
-              <View style={styles.formActions}>
-                <Pressable onPress={closeEdit} style={[styles.cancelButton, { borderColor: theme.border }]}>
-                  <ThemedText type="body" style={{ color: theme.textSecondary }}>Cancel</ThemedText>
-                </Pressable>
-                <Pressable onPress={handleSaveEdit} style={[styles.saveButton, { backgroundColor: theme.primary }]}>
-                  <Feather name="check" size={18} color="#FFFFFF" />
-                  <ThemedText type="body" style={{ color: "#FFFFFF", fontWeight: "600", marginLeft: Spacing.xs }}>
-                    Save Changes
-                  </ThemedText>
-                </Pressable>
-              </View>
             </KeyboardAwareScrollViewCompat>
           </View>
         </View>
@@ -925,7 +835,6 @@ export default function VehicleManagementScreen() {
         title="Select Make"
         searchPlaceholder="Search makes..."
       />
-
       <SearchablePicker
         visible={showEditModelPicker}
         onClose={() => setShowEditModelPicker(false)}
@@ -934,22 +843,62 @@ export default function VehicleManagementScreen() {
         title={`${editMake} Models`}
         searchPlaceholder="Search models..."
       />
-    </ThemedView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#000000",
   },
   scrollContent: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.lg,
   },
+  // Hero
+  heroCard: {
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    marginBottom: Spacing.lg,
+    gap: Spacing.md,
+  },
+  heroLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+  },
+  heroIconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: "rgba(96,165,250,0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  heroDefaultTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(96,165,250,0.1)",
+    borderRadius: BorderRadius.xs,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 5,
+    alignSelf: "flex-start",
+  },
+  // Section label
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.9,
+    textTransform: "uppercase",
+    color: "rgba(148,163,184,0.8)",
+    marginBottom: Spacing.sm,
+  },
+  // Vehicle card
   vehicleCard: {
     borderRadius: BorderRadius.md,
     padding: Spacing.lg,
     marginBottom: Spacing.md,
+    overflow: "hidden",
   },
   vehicleCardHeader: {
     flexDirection: "row",
@@ -959,10 +908,10 @@ const styles = StyleSheet.create({
   vehicleIconWrap: {
     position: "relative",
   },
-  vehicleIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  vehicleIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: BorderRadius.xs,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -970,14 +919,14 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: -2,
     right: -2,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
     borderWidth: 2,
   },
   vehicleCardInfo: {
     flex: 1,
-    gap: 2,
+    gap: 3,
   },
   vehicleMetaRow: {
     flexDirection: "row",
@@ -992,36 +941,56 @@ const styles = StyleSheet.create({
   },
   defaultBadge: {
     paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
+    paddingVertical: 3,
     borderRadius: BorderRadius.xs,
+  },
+  vehicleCardDivider: {
+    height: 1,
+    marginVertical: Spacing.md,
+    opacity: 0.4,
   },
   vehicleActions: {
     flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: Spacing.md,
-    marginTop: Spacing.md,
+    gap: Spacing.sm,
+    flexWrap: "wrap",
   },
   actionButton: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.sm,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 6,
+    borderRadius: BorderRadius.xs,
     borderWidth: 1,
   },
+  // Empty state
   emptyState: {
     alignItems: "center",
     padding: Spacing["2xl"],
     borderRadius: BorderRadius.lg,
     marginBottom: Spacing.lg,
+    overflow: "hidden",
   },
+  emptyIconBox: {
+    width: 64,
+    height: 64,
+    borderRadius: BorderRadius.sm,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  // Add form
   addForm: {
     borderRadius: BorderRadius.lg,
     padding: Spacing.lg,
-    marginTop: Spacing.md,
+    marginBottom: Spacing.lg,
+    overflow: "hidden",
   },
-  fieldLabel: {
-    fontWeight: "600",
+  // Field elements
+  sectionLabelInForm: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.9,
+    textTransform: "uppercase",
+    color: "rgba(148,163,184,0.8)",
     marginBottom: Spacing.sm,
     marginTop: Spacing.md,
   },
@@ -1031,6 +1000,7 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     borderRadius: BorderRadius.md,
     borderWidth: 1,
+    marginBottom: Spacing.xs,
   },
   yearChip: {
     paddingHorizontal: Spacing.md,
@@ -1043,7 +1013,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: Spacing.sm,
-    marginTop: Spacing.md,
   },
   colorSelectedTag: {
     flexDirection: "row",
@@ -1097,33 +1066,44 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: "center",
   },
-  saveButton: {
+  saveButtonWrap: {
     flex: 2,
+    borderRadius: BorderRadius.md,
+    overflow: "hidden",
+  },
+  saveButtonGradient: {
     flexDirection: "row",
     paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.md,
     alignItems: "center",
     justifyContent: "center",
   },
+  // Add button
   addButton: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
     padding: Spacing.lg,
     borderRadius: BorderRadius.md,
     borderWidth: 1.5,
     borderStyle: "dashed",
-    marginTop: Spacing.md,
+    marginTop: Spacing.xs,
   },
+  addIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: BorderRadius.xs,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  // Modals
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "rgba(0,0,0,0.6)",
     justifyContent: "flex-end",
   },
   modalContent: {
     borderTopLeftRadius: BorderRadius.xl,
     borderTopRightRadius: BorderRadius.xl,
-    height: "75%",
+    height: "82%",
   },
   modalHeader: {
     flexDirection: "row",
