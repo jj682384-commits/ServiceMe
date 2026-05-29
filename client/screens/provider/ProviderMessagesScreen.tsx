@@ -20,6 +20,8 @@ const SERVICE_LABELS: Record<string, string> = {
   fuel: "Fuel Delivery",
   lockout: "Lockout",
   obd_diagnostic: "OBD Diagnostic",
+  mobile_inflation: "Mobile Tire Inflation",
+  tire_check: "Tire Check / Inspection",
   other: "Other",
 };
 

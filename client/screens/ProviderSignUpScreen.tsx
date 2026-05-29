@@ -48,6 +48,8 @@ const SERVICE_OPTIONS: { key: ServiceType; label: string; icon: keyof typeof Fea
   { key: "fuel", label: "Fuel Delivery", icon: "droplet" },
   { key: "lockout", label: "Lockout", icon: "key" },
   { key: "obd_diagnostic", label: "OBD Diagnostic", icon: "cpu" },
+  { key: "mobile_inflation", label: "Mobile Tire Inflation", icon: "wind" },
+  { key: "tire_check", label: "Tire Check / Inspection", icon: "search" },
 ];
 
 const LEGAL_DOCUMENTS = [

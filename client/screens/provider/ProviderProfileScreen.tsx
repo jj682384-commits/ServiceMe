@@ -25,6 +25,8 @@ const serviceTypeLabels: Partial<Record<ServiceType, string>> = {
   fuel: "Fuel Delivery",
   lockout: "Lockout",
   obd_diagnostic: "OBD Diagnostic",
+  mobile_inflation: "Mobile Tire Inflation",
+  tire_check: "Tire Check / Inspection",
 };
 
 const evServiceLabels: Record<string, { label: string; icon: keyof typeof Feather.glyphMap }> = {

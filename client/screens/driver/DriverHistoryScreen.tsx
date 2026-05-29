@@ -22,6 +22,8 @@ const serviceTypeLabels: Record<ServiceType, string> = {
   fuel: "Fuel Delivery",
   lockout: "Lockout",
   obd_diagnostic: "OBD Diagnostic",
+  mobile_inflation: "Mobile Tire Inflation",
+  tire_check: "Tire Check / Inspection",
   other: "Other",
 };
 
@@ -32,6 +34,8 @@ const serviceTypeIcons: Record<ServiceType, keyof typeof Feather.glyphMap> = {
   fuel: "droplet",
   lockout: "key",
   obd_diagnostic: "cpu",
+  mobile_inflation: "wind",
+  tire_check: "search",
   other: "more-horizontal",
 };
 

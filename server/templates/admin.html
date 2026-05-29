@@ -1033,7 +1033,7 @@
       </div>
       <div class="card-details">
         <div class="detail-item"><div class="detail-label">Vehicle</div>${esc(p.vehicleMake)} ${esc(p.vehicleModel)} &bull; ${esc(p.licensePlate || "No plate")}</div>
-        <div class="detail-item"><div class="detail-label">Services</div>${(p.servicesOffered || []).slice(0,4).map(s=>s.replace(/_/g," ")).join(", ") || "None"}</div>
+        <div class="detail-item"><div class="detail-label">Services</div>${(p.servicesOffered || []).slice(0,4).map(s=>svcLabel(s)).join(", ") || "None"}</div>
         <div class="detail-item"><div class="detail-label">Rating</div>${p.rating ? `${Number(p.rating).toFixed(1)} (${p.reviewCount} reviews)` : "No reviews"}</div>
         <div class="detail-item"><div class="detail-label">Balance</div>${fmtMoney(p.earningsBalance)} ${p.stripeAccountId ? '&bull; <span style="color:var(--success);font-size:11px">Stripe &#10003;</span>' : ''}</div>
       </div>
@@ -1152,7 +1152,7 @@
         : "";
       return `<tr>
         <td style="font-size:11px;color:var(--muted);font-family:monospace">${j.id.slice(0,8)}</td>
-        <td>${esc((j.service_type || "").replace(/_/g," "))}</td>
+        <td>${esc(svcLabel(j.service_type))}</td>
         <td><span class="badge ${j.status}">${j.status}</span></td>
         <td>${esc(driverName)}</td>
         <td>${esc(providerName)}</td>
@@ -1399,11 +1399,22 @@
   let liveMapFitted = false; // true after first auto-fit — never re-fit so user can pan freely
 
   const SVC_ICONS = {
-    flat_tire:"&#128295;", jump_start:"&#9889;", towing:"&#128663;",
-    fuel_delivery:"&#9981;", lockout:"&#128273;", minor_repair:"&#128296;",
+    flat_tire:"&#128295;", jump_start:"&#9889;", tow:"&#128663;", towing:"&#128663;",
+    fuel:"&#9981;", fuel_delivery:"&#9981;", lockout:"&#128273;", minor_repair:"&#128296;",
+    obd_diagnostic:"&#128187;", mobile_inflation:"&#127787;", tire_check:"&#128269;",
     ev_charging:"&#128267;", ev_towing:"&#9889;", battery_replacement:"&#128267;",
     tire_rotation:"&#128295;", oil_change:"&#128296;",
   };
+  const SVC_LABELS = {
+    flat_tire:"Flat Tire", jump_start:"Jump Start", tow:"Tow Service", towing:"Tow Service",
+    fuel:"Fuel Delivery", fuel_delivery:"Fuel Delivery", lockout:"Lockout",
+    obd_diagnostic:"OBD Diagnostic", mobile_inflation:"Mobile Tire Inflation",
+    tire_check:"Tire Check / Inspection", minor_repair:"Minor Repair",
+    ev_charging:"EV Charging", ev_towing:"EV-Safe Towing",
+    battery_replacement:"Battery Replacement", tire_rotation:"Tire Rotation",
+    oil_change:"Oil Change",
+  };
+  function svcLabel(type) { return SVC_LABELS[type] || (type||"").replace(/_/g," "); }
   function svcIcon(type) { return SVC_ICONS[type] || "&#128736;"; }
 
   const STATUS_LABEL = {
@@ -1528,7 +1539,7 @@
     return `<div class="live-card ${j.status}" style="${dimStyle}" onclick="openLiveJobDetail('${j.id}')">
       <div class="lc-top">
         <div>
-          <div class="lc-service"><span class="lc-svc-icon">${svcIcon(j.service_type)}</span>${esc((j.service_type||"").replace(/_/g," "))}</div>
+          <div class="lc-service"><span class="lc-svc-icon">${svcIcon(j.service_type)}</span>${esc(svcLabel(j.service_type))}</div>
           <div class="lc-elapsed">${elapsed(j.created_at)} &bull; #${j.id.slice(0,8)}</div>
         </div>
         <div style="text-align:right">
@@ -1596,7 +1607,7 @@
     document.getElementById("drawer-header").innerHTML = `
       <div class="drawer-avatar">${svcIcon(j.service_type)}</div>
       <div style="flex:1;min-width:0">
-        <div class="drawer-title">${esc((j.service_type||"").replace(/_/g," "))}</div>
+        <div class="drawer-title">${esc(svcLabel(j.service_type))}</div>
         <div class="drawer-sub">#${j.id.slice(0,8)} &bull; Started ${elapsed(j.created_at)}</div>
         <div style="margin-top:6px">
           <span class="lc-status-badge ${j.status}">${statusLabel(j.status)}</span>
@@ -1719,7 +1730,7 @@
         });
         const m = L.marker([loc.latitude, loc.longitude], { icon })
           .addTo(leafletMap)
-          .bindPopup(`<b>${esc((j.service_type||"").replace(/_/g," "))}</b><br>Driver: ${esc(driverName)}<br>Status: ${statusLabel(j.status)}<br>Cost: ${fmtMoney(j.total_cost ?? j.estimated_cost)}<br><small>${esc(loc.address||"")}</small>`);
+          .bindPopup(`<b>${esc(svcLabel(j.service_type))}</b><br>Driver: ${esc(driverName)}<br>Status: ${statusLabel(j.status)}<br>Cost: ${fmtMoney(j.total_cost ?? j.estimated_cost)}<br><small>${esc(loc.address||"")}</small>`);
         m.on("click", () => { openLiveJobDetail(j.id); });
         leafletMarkers.push(m);
         bounds.push([loc.latitude, loc.longitude]);
@@ -1827,7 +1838,7 @@
 
       <div class="drawer-section">
         <div class="drawer-section-title">Services Offered</div>
-        <div>${(p.servicesOffered || []).length ? (p.servicesOffered).map(s => `<span class="service-tag">${s.replace(/_/g," ")}</span>`).join("") : '<span style="color:var(--muted);font-size:13px">None listed</span>'}</div>
+        <div>${(p.servicesOffered || []).length ? (p.servicesOffered).map(s => `<span class="service-tag">${svcLabel(s)}</span>`).join("") : '<span style="color:var(--muted);font-size:13px">None listed</span>'}</div>
       </div>
 
       <div class="drawer-section">
@@ -1905,7 +1916,7 @@
           : providerJobs.slice().sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).slice(0,50).map(j => `
             <div class="drawer-job-row">
               <div style="flex:1">
-                <div class="djr-type">${esc((j.service_type||"").replace(/_/g," "))} ${j.is_ev ? '<span class="badge ev" style="font-size:10px">EV</span>' : ""} ${j.is_emergency ? '<span class="badge cancelled" style="font-size:10px">Emergency</span>' : ""}</div>
+                <div class="djr-type">${esc(svcLabel(j.service_type))} ${j.is_ev ? '<span class="badge ev" style="font-size:10px">EV</span>' : ""} ${j.is_emergency ? '<span class="badge cancelled" style="font-size:10px">Emergency</span>' : ""}</div>
                 <div class="djr-sub">${esc(j.driver?.name || "Unknown driver")} &bull; ${fmtDate(j.created_at)}</div>
               </div>
               <div style="text-align:right">
@@ -1964,7 +1975,7 @@
           : driverJobs.slice().sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).slice(0,50).map(j => `
             <div class="drawer-job-row">
               <div style="flex:1">
-                <div class="djr-type">${esc((j.service_type||"").replace(/_/g," "))} ${j.is_ev ? '<span class="badge ev" style="font-size:10px">EV</span>' : ""} ${j.is_emergency ? '<span class="badge cancelled" style="font-size:10px">Emergency</span>' : ""}</div>
+                <div class="djr-type">${esc(svcLabel(j.service_type))} ${j.is_ev ? '<span class="badge ev" style="font-size:10px">EV</span>' : ""} ${j.is_emergency ? '<span class="badge cancelled" style="font-size:10px">Emergency</span>' : ""}</div>
                 <div class="djr-sub">${esc(j.provider?.name || "No provider yet")} &bull; ${fmtDate(j.created_at)}</div>
               </div>
               <div style="text-align:right">

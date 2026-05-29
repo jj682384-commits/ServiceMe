@@ -39,6 +39,8 @@ const serviceTypeLabels: Record<string, string> = {
   fuel: "Fuel Delivery",
   lockout: "Lockout",
   obd_diagnostic: "OBD Diagnostic",
+  mobile_inflation: "Mobile Tire Inflation",
+  tire_check: "Tire Check / Inspection",
 };
 
 const serviceTypeIcons: Record<string, keyof typeof Feather.glyphMap> = {
@@ -48,6 +50,8 @@ const serviceTypeIcons: Record<string, keyof typeof Feather.glyphMap> = {
   fuel: "droplet",
   lockout: "key",
   obd_diagnostic: "cpu",
+  mobile_inflation: "wind",
+  tire_check: "search",
 };
 
 function jobLabel(job: ServiceRequest): string {

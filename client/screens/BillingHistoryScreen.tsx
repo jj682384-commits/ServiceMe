@@ -17,6 +17,8 @@ const serviceTypeLabels: Record<ServiceType, string> = {
   fuel: "Fuel Delivery",
   lockout: "Lockout",
   obd_diagnostic: "OBD Diagnostic",
+  mobile_inflation: "Mobile Tire Inflation",
+  tire_check: "Tire Check / Inspection",
 };
 
 interface BillingEntry {
