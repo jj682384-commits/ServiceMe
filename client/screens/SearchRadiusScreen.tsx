@@ -9,9 +9,10 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from "react-native-reanimated";
+import { LinearGradient } from "expo-linear-gradient";
 
-import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
+import AnimatedBackground from "@/components/AnimatedBackground";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/context/AppContext";
 import { apiRequest } from "@/lib/query-client";
@@ -38,26 +39,25 @@ function RadiusOption({ value, isSelected, onSelect }: RadiusOptionProps) {
   return (
     <AnimatedPressable
       onPress={onSelect}
-      onPressIn={() => { scale.value = withSpring(0.95); }}
+      onPressIn={() => { scale.value = withSpring(0.93); }}
       onPressOut={() => { scale.value = withSpring(1); }}
       style={[
         styles.radiusOption,
         {
-          backgroundColor: isSelected ? theme.primary : theme.backgroundDefault,
-          borderColor: isSelected ? theme.primary : theme.border,
+          backgroundColor: isSelected ? theme.primary : theme.cardAnimatedBg,
+          borderColor: isSelected ? theme.primary : "transparent",
         },
         animatedStyle,
       ]}
     >
       <ThemedText
-        type="h4"
-        style={{ color: isSelected ? "#FFFFFF" : theme.text }}
+        style={{ fontSize: 22, fontWeight: "800", color: isSelected ? "#FFFFFF" : theme.text }}
       >
         {value}
       </ThemedText>
       <ThemedText
         type="small"
-        style={{ color: isSelected ? "rgba(255,255,255,0.8)" : theme.textSecondary }}
+        style={{ color: isSelected ? "rgba(255,255,255,0.75)" : theme.textSecondary, marginTop: 2 }}
       >
         miles
       </ThemedText>
@@ -68,7 +68,7 @@ function RadiusOption({ value, isSelected, onSelect }: RadiusOptionProps) {
 export default function SearchRadiusScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const { userRole, searchRadius, setSearchRadius, serviceRadius, setServiceRadius } = useApp();
   const navigation = useNavigation();
 
@@ -77,16 +77,15 @@ export default function SearchRadiusScreen() {
   const setRadius = isProvider ? setServiceRadius : setSearchRadius;
 
   const [selectedRadius, setSelectedRadius] = useState(currentRadius);
+  const sectionBg = theme.cardAnimatedBg;
 
   const scale = useSharedValue(1);
-
   const animatedButtonStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
 
   const handleSave = () => {
     setRadius(selectedRadius);
-    // Only driver search radius is server-persisted (serviceRadius is provider-local preference)
     if (!isProvider) {
       apiRequest("PATCH", "/api/auth/preferences", { searchRadius: selectedRadius }).catch(() => {});
     }
@@ -94,34 +93,46 @@ export default function SearchRadiusScreen() {
   };
 
   return (
-    <ThemedView style={styles.container}>
+    <View style={[styles.container, { backgroundColor: isDark ? "#04060E" : theme.backgroundRoot }]}>
+      <AnimatedBackground />
       <View
-        style={[
-          styles.content,
-          {
-            paddingTop: headerHeight + Spacing.lg,
-            paddingBottom: insets.bottom + Spacing.xl,
-          },
-        ]}
+        style={{
+          flex: 1,
+          paddingTop: headerHeight + Spacing.lg,
+          paddingBottom: insets.bottom + Spacing.xl,
+          paddingHorizontal: Spacing.lg,
+        }}
       >
-        <View style={styles.header}>
-          <View style={[styles.iconContainer, { backgroundColor: theme.primary + "15" }]}>
-            <Feather name="map-pin" size={32} color={theme.primary} />
+        {/* Hero card */}
+        <LinearGradient
+          colors={isProvider ? ["#1A2E1A", "#0F3020", "#082010"] : ["#0A1F3A", "#0F2855", "#081840"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.heroCard}
+        >
+          <View style={[styles.heroBadge, { backgroundColor: isProvider ? "rgba(16,185,129,0.15)" : "rgba(59,130,246,0.15)" }]}>
+            <Feather name={isProvider ? "navigation" : "map-pin"} size={26} color={isProvider ? "#10B981" : "#93C5FD"} />
           </View>
-          <ThemedText type="h3" style={styles.title}>
+          <ThemedText style={{ color: "#FFFFFF", fontSize: 22, fontWeight: "800", marginTop: Spacing.md, marginBottom: Spacing.xs }}>
             {isProvider ? "Service Radius" : "Search Radius"}
           </ThemedText>
-          <ThemedText type="body" style={[styles.subtitle, { color: theme.textSecondary }]}>
+          <ThemedText type="small" style={{ color: "rgba(255,255,255,0.55)", textAlign: "center" }}>
             {isProvider
               ? "Set how far you're willing to travel to help drivers"
               : "Set how far to search for nearby service providers"}
           </ThemedText>
-        </View>
+          <View style={[styles.currentBadge, { backgroundColor: "rgba(255,255,255,0.1)" }]}>
+            <ThemedText type="small" style={{ color: "#93C5FD", fontWeight: "700" }}>
+              Currently {selectedRadius} miles
+            </ThemedText>
+          </View>
+        </LinearGradient>
 
-        <View style={styles.optionsContainer}>
-          <ThemedText type="small" style={[styles.sectionLabel, { color: theme.textSecondary }]}>
-            SELECT DISTANCE
-          </ThemedText>
+        {/* Radius grid */}
+        <ThemedText type="small" style={[styles.sectionLabel, { color: theme.textSecondary }]}>
+          SELECT DISTANCE
+        </ThemedText>
+        <View style={[styles.gridSection, { backgroundColor: sectionBg }]}>
           <View style={styles.optionsGrid}>
             {radiusOptions.map((value) => (
               <RadiusOption
@@ -134,71 +145,68 @@ export default function SearchRadiusScreen() {
           </View>
         </View>
 
-        <View style={[styles.infoCard, { backgroundColor: theme.backgroundSecondary }]}>
-          <Feather name="info" size={16} color={theme.textSecondary} />
-          <ThemedText type="small" style={{ color: theme.textSecondary, flex: 1, marginLeft: Spacing.sm }}>
+        {/* Info row */}
+        <View style={[styles.infoRow, { backgroundColor: sectionBg }]}>
+          <View style={[styles.iconBox, { backgroundColor: theme.textSecondary + "20" }]}>
+            <Feather name="info" size={16} color={theme.textSecondary} />
+          </View>
+          <ThemedText type="small" style={{ color: theme.textSecondary, flex: 1 }}>
             {isProvider
               ? "A larger radius means more potential jobs, but longer travel times."
               : "A larger radius shows more providers, but they may take longer to arrive."}
           </ThemedText>
         </View>
 
-        <View style={styles.footer}>
-          <AnimatedPressable
-            onPress={handleSave}
-            onPressIn={() => { scale.value = withSpring(0.97); }}
-            onPressOut={() => { scale.value = withSpring(1); }}
-            style={[
-              styles.saveButton,
-              { backgroundColor: theme.primary },
-              animatedButtonStyle,
-            ]}
-          >
-            <Feather name="check" size={20} color="#FFFFFF" />
-            <ThemedText type="body" style={styles.saveButtonText}>
-              Save Changes
-            </ThemedText>
-          </AnimatedPressable>
-        </View>
+        <View style={{ flex: 1 }} />
+
+        {/* Save button */}
+        <AnimatedPressable
+          onPress={handleSave}
+          onPressIn={() => { scale.value = withSpring(0.97); }}
+          onPressOut={() => { scale.value = withSpring(1); }}
+          style={[styles.saveButton, { backgroundColor: theme.primary }, animatedButtonStyle]}
+        >
+          <Feather name="check" size={20} color="#FFFFFF" />
+          <ThemedText type="body" style={{ color: "#FFFFFF", fontWeight: "700" }}>
+            Save Changes
+          </ThemedText>
+        </AnimatedPressable>
       </View>
-    </ThemedView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: Spacing.lg,
-  },
-  header: {
-    alignItems: "center",
-    marginBottom: Spacing["2xl"],
-  },
-  iconContainer: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    justifyContent: "center",
+  container: { flex: 1 },
+  heroCard: {
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.xl,
     alignItems: "center",
     marginBottom: Spacing.lg,
   },
-  title: {
-    marginBottom: Spacing.sm,
-    textAlign: "center",
+  heroBadge: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  subtitle: {
-    textAlign: "center",
-    paddingHorizontal: Spacing.xl,
-  },
-  optionsContainer: {
-    flex: 1,
+  currentBadge: {
+    marginTop: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
   },
   sectionLabel: {
-    marginBottom: Spacing.md,
-    marginLeft: Spacing.xs,
+    paddingBottom: Spacing.sm,
+    fontWeight: "600",
+    letterSpacing: 0.5,
+  },
+  gridSection: {
+    borderRadius: BorderRadius.md,
+    padding: Spacing.lg,
+    marginBottom: Spacing.lg,
+    overflow: "hidden",
   },
   optionsGrid: {
     flexDirection: "row",
@@ -208,31 +216,35 @@ const styles = StyleSheet.create({
   radiusOption: {
     width: 80,
     height: 80,
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.md,
     borderWidth: 2,
     justifyContent: "center",
     alignItems: "center",
   },
-  infoCard: {
+  infoRow: {
     flexDirection: "row",
-    padding: Spacing.md,
-    borderRadius: BorderRadius.lg,
-    alignItems: "flex-start",
-    marginBottom: Spacing.xl,
+    alignItems: "center",
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    gap: Spacing.md,
+    marginBottom: Spacing.lg,
+    overflow: "hidden",
   },
-  footer: {
-    marginTop: "auto",
+  iconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: BorderRadius.xs,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
   },
   saveButton: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.lg,
+    paddingVertical: Spacing.lg,
+    borderRadius: BorderRadius.md,
     gap: Spacing.sm,
-  },
-  saveButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "600",
+    minHeight: 54,
   },
 });
