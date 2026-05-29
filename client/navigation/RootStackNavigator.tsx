@@ -16,6 +16,7 @@ import ChatScreen from "@/screens/ChatScreen";
 import LegalDocumentsScreen from "@/screens/LegalDocumentsScreen";
 import ReportProblemScreen from "@/screens/ReportProblemScreen";
 import EditProfileScreen from "@/screens/EditProfileScreen";
+import EmergencyContactsScreen from "@/screens/EmergencyContactsScreen";
 import SearchRadiusScreen from "@/screens/SearchRadiusScreen";
 import SupportScreen from "@/screens/SupportScreen";
 import TowRequestScreen from "@/screens/TowRequestScreen";
@@ -63,6 +64,7 @@ export type RootStackParamList = {
   LegalDocuments: { initialTab?: "privacy" | "terms" | "liability" } | undefined;
   ReportProblem: undefined;
   EditProfile: undefined;
+  EmergencyContacts: undefined;
   SearchRadius: undefined;
   Support: undefined;
   TowRequest: undefined;
@@ -191,6 +193,13 @@ export default function RootStackNavigator() {
         component={EditProfileScreen}
         options={{
           headerTitle: "Edit Profile",
+        }}
+      />
+      <Stack.Screen
+        name="EmergencyContacts"
+        component={EmergencyContactsScreen}
+        options={{
+          headerTitle: "Emergency Contacts",
         }}
       />
       <Stack.Screen

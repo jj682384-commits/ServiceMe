@@ -315,7 +315,7 @@ export default function DriverProfileScreen() {
             icon="users"
             label="Emergency Contacts"
             iconBg={theme.error + "20"} iconColor={theme.error}
-            onPress={() => navigation.navigate("EditProfile")}
+            onPress={() => navigation.navigate("EmergencyContacts")}
           />
           <MenuItem
             icon="alert-circle"
