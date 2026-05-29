@@ -1,34 +1,22 @@
 import React, { useState, useMemo } from "react";
-import {
-  View,
-  StyleSheet,
-  Pressable,
-  ScrollView,
-  TextInput,
-  Alert,
-  FlatList,
-  Modal,
-} from "react-native";
+import { View, StyleSheet, Pressable, TextInput, Alert, FlatList, Modal } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import Animated, { FadeInDown, FadeIn } from "react-native-reanimated";
 
-import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
-import { ScreenDecoration } from "@/components/ScreenDecoration";
+import AnimatedBackground from "@/components/AnimatedBackground";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/context/AppContext";
 import { apiRequest } from "@/lib/query-client";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import {
-  VEHICLE_MAKES,
-  VEHICLE_MAKES_MODELS,
-  TOW_TRUCK_MAKES,
-  TOW_TRUCK_MAKES_MODELS,
-  TOW_TRUCK_CLASSES,
-  SERVICE_VAN_MAKES,
-  SERVICE_VAN_MAKES_MODELS,
+  VEHICLE_MAKES, VEHICLE_MAKES_MODELS,
+  TOW_TRUCK_MAKES, TOW_TRUCK_MAKES_MODELS, TOW_TRUCK_CLASSES,
+  SERVICE_VAN_MAKES, SERVICE_VAN_MAKES_MODELS,
 } from "@/constants/vehicleData";
 
 type ProviderVehicleType = "tow_truck" | "service_van" | "pickup";
@@ -40,22 +28,15 @@ const VEHICLE_TYPES: { value: ProviderVehicleType; label: string; icon: keyof ty
 ];
 
 const currentYear = new Date().getFullYear();
-const YEARS = Array.from({ length: 30 }, (_, i) => currentYear - i);
+const YEARS = Array.from({ length: currentYear - 1969 }, (_, i) => currentYear - i);
+const YEAR_STRINGS = YEARS.map(String);
 
+// ─── Searchable Picker ────────────────────────────────────────────────────────
 function SearchablePicker({
-  visible,
-  onClose,
-  onSelect,
-  items,
-  title,
-  searchPlaceholder,
+  visible, onClose, onSelect, items, title, searchPlaceholder,
 }: {
-  visible: boolean;
-  onClose: () => void;
-  onSelect: (item: string) => void;
-  items: string[];
-  title: string;
-  searchPlaceholder: string;
+  visible: boolean; onClose: () => void; onSelect: (item: string) => void;
+  items: string[]; title: string; searchPlaceholder: string;
 }) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -70,28 +51,14 @@ function SearchablePicker({
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.modalOverlay}>
-        <View
-          style={[
-            styles.modalContent,
-            {
-              backgroundColor: theme.backgroundDefault,
-              paddingTop: insets.top + Spacing.md,
-              paddingBottom: insets.bottom + Spacing.md,
-            },
-          ]}
-        >
+        <View style={[styles.modalContent, { backgroundColor: theme.backgroundDefault, paddingTop: insets.top + Spacing.md, paddingBottom: insets.bottom + Spacing.md }]}>
           <View style={styles.modalHeader}>
             <ThemedText type="h3">{title}</ThemedText>
             <Pressable onPress={() => { setSearch(""); onClose(); }} hitSlop={12}>
               <Feather name="x" size={24} color={theme.text} />
             </Pressable>
           </View>
-          <View
-            style={[
-              styles.searchBar,
-              { backgroundColor: theme.backgroundSecondary, borderColor: theme.border },
-            ]}
-          >
+          <View style={[styles.searchBar, { backgroundColor: theme.cardAnimatedBg, borderColor: theme.border }]}>
             <Feather name="search" size={18} color={theme.textSecondary} />
             <TextInput
               style={[styles.searchInput, { color: theme.text }]}
@@ -115,10 +82,7 @@ function SearchablePicker({
             renderItem={({ item }) => (
               <Pressable
                 onPress={() => { setSearch(""); onSelect(item); }}
-                style={({ pressed }) => [
-                  styles.pickerItem,
-                  { backgroundColor: pressed ? theme.backgroundSecondary : "transparent" },
-                ]}
+                style={({ pressed }) => [styles.pickerItem, { backgroundColor: pressed ? theme.cardAnimatedBg : "transparent" }]}
               >
                 <ThemedText type="body">{item}</ThemedText>
                 <Feather name="chevron-right" size={16} color={theme.textSecondary} />
@@ -126,14 +90,10 @@ function SearchablePicker({
             )}
             ListEmptyComponent={
               <View style={styles.emptySearch}>
-                <ThemedText type="body" style={{ color: theme.textSecondary }}>
-                  No results for "{search}"
-                </ThemedText>
+                <ThemedText type="body" style={{ color: theme.textSecondary }}>No results for "{search}"</ThemedText>
               </View>
             }
-            ItemSeparatorComponent={() => (
-              <View style={[styles.separator, { backgroundColor: theme.border }]} />
-            )}
+            ItemSeparatorComponent={() => <View style={[styles.separator, { backgroundColor: theme.border }]} />}
           />
         </View>
       </View>
@@ -141,31 +101,15 @@ function SearchablePicker({
   );
 }
 
-function TowClassPicker({
-  visible,
-  onClose,
-  onSelect,
-}: {
-  visible: boolean;
-  onClose: () => void;
-  onSelect: (cls: string) => void;
-}) {
+// ─── Tow Class Picker ─────────────────────────────────────────────────────────
+function TowClassPicker({ visible, onClose, onSelect }: { visible: boolean; onClose: () => void; onSelect: (cls: string) => void }) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.modalOverlay}>
-        <View
-          style={[
-            styles.modalContent,
-            {
-              backgroundColor: theme.backgroundDefault,
-              paddingTop: insets.top + Spacing.md,
-              paddingBottom: insets.bottom + Spacing.md,
-            },
-          ]}
-        >
+        <View style={[styles.modalContent, { backgroundColor: theme.backgroundDefault, paddingTop: insets.top + Spacing.md, paddingBottom: insets.bottom + Spacing.md }]}>
           <View style={styles.modalHeader}>
             <ThemedText type="h3">Tow Truck Class</ThemedText>
             <Pressable onPress={onClose} hitSlop={12}>
@@ -179,23 +123,19 @@ function TowClassPicker({
             renderItem={({ item }) => (
               <Pressable
                 onPress={() => onSelect(item.label)}
-                style={({ pressed }) => [
-                  styles.classPickerItem,
-                  { backgroundColor: pressed ? theme.backgroundSecondary : "transparent" },
-                ]}
+                style={({ pressed }) => [styles.classPickerItem, { backgroundColor: pressed ? theme.cardAnimatedBg : "transparent" }]}
               >
+                <View style={[styles.classIconBox, { backgroundColor: "#0066FF18" }]}>
+                  <Feather name="truck" size={16} color="#60A5FA" />
+                </View>
                 <View style={{ flex: 1 }}>
                   <ThemedText type="body" style={{ fontWeight: "600" }}>{item.label}</ThemedText>
-                  <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: 2 }}>
-                    {item.description}
-                  </ThemedText>
+                  <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: 2 }}>{item.description}</ThemedText>
                 </View>
                 <Feather name="chevron-right" size={16} color={theme.textSecondary} />
               </Pressable>
             )}
-            ItemSeparatorComponent={() => (
-              <View style={[styles.separator, { backgroundColor: theme.border }]} />
-            )}
+            ItemSeparatorComponent={() => <View style={[styles.separator, { backgroundColor: theme.border }]} />}
           />
         </View>
       </View>
@@ -203,62 +143,41 @@ function TowClassPicker({
   );
 }
 
+// ─── Picker Button ────────────────────────────────────────────────────────────
 function PickerButton({
-  label,
-  value,
-  placeholder,
-  onPress,
-  disabled,
-  badge,
+  label, value, placeholder, onPress, disabled, badge, sectionBg,
 }: {
-  label: string;
-  value: string;
-  placeholder: string;
-  onPress: () => void;
-  disabled?: boolean;
-  badge?: string;
+  label: string; value: string; placeholder: string; onPress: () => void;
+  disabled?: boolean; badge?: string; sectionBg?: string;
 }) {
   const { theme } = useTheme();
+  const bg = sectionBg ?? theme.backgroundDefault;
 
   return (
-    <>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: Spacing.sm }}>
-        <ThemedText type="small" style={[styles.fieldLabel, { color: theme.textSecondary, marginTop: 0, marginBottom: 0, flex: 1 }]}>
-          {label}
-        </ThemedText>
+    <View style={{ marginBottom: Spacing.xs }}>
+      <View style={{ flexDirection: "row", alignItems: "center", marginBottom: Spacing.sm }}>
+        <ThemedText style={[styles.sectionLabel, { marginBottom: 0, flex: 1 }]}>{label.toUpperCase()}</ThemedText>
         {badge ? (
-          <View style={[styles.badge, { backgroundColor: theme.primary + "20" }]}>
-            <ThemedText type="small" style={{ color: theme.primary, fontSize: 10, fontWeight: "700" }}>
-              {badge}
-            </ThemedText>
+          <View style={[styles.badge, { backgroundColor: "#0066FF22" }]}>
+            <ThemedText type="small" style={{ color: "#60A5FA", fontSize: 10, fontWeight: "700" }}>{badge}</ThemedText>
           </View>
         ) : null}
       </View>
       <Pressable
         onPress={onPress}
         disabled={disabled}
-        style={[
-          styles.pickerButton,
-          {
-            backgroundColor: theme.backgroundDefault,
-            borderColor: value ? theme.primary : theme.border,
-            opacity: disabled ? 0.5 : 1,
-            marginTop: Spacing.sm,
-          },
-        ]}
+        style={[styles.pickerButton, { backgroundColor: bg, borderColor: value ? theme.primary : theme.border, opacity: disabled ? 0.5 : 1 }]}
       >
-        <ThemedText
-          type="body"
-          style={{ color: value ? theme.text : theme.textSecondary, flex: 1 }}
-        >
+        <ThemedText type="body" style={{ color: value ? theme.text : theme.textSecondary, flex: 1 }}>
           {value || placeholder}
         </ThemedText>
         <Feather name="chevron-down" size={18} color={theme.textSecondary} />
       </Pressable>
-    </>
+    </View>
   );
 }
 
+// ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function ProviderVehicleScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
@@ -268,14 +187,12 @@ export default function ProviderVehicleScreen() {
   const [make, setMake] = useState(currentProvider?.vehicleMake || "");
   const [model, setModel] = useState(currentProvider?.vehicleModel || "");
   const [year, setYear] = useState(currentYear);
-  const [vehicleType, setVehicleType] = useState<ProviderVehicleType>(
-    currentProvider?.vehicleType || "pickup"
-  );
+  const [vehicleType, setVehicleType] = useState<ProviderVehicleType>(currentProvider?.vehicleType || "pickup");
   const [licensePlate, setLicensePlate] = useState(currentProvider?.licensePlate || "");
   const [towClass, setTowClass] = useState("");
-
   const [showMakePicker, setShowMakePicker] = useState(false);
   const [showModelPicker, setShowModelPicker] = useState(false);
+  const [showYearPicker, setShowYearPicker] = useState(false);
   const [showTowClassPicker, setShowTowClassPicker] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -285,27 +202,13 @@ export default function ProviderVehicleScreen() {
   const activeMakes = isTowTruck ? TOW_TRUCK_MAKES : isServiceVan ? SERVICE_VAN_MAKES : VEHICLE_MAKES;
   const activeMakesModels = isTowTruck ? TOW_TRUCK_MAKES_MODELS : isServiceVan ? SERVICE_VAN_MAKES_MODELS : VEHICLE_MAKES_MODELS;
 
-  const availableModels = useMemo(() => {
-    if (!make) return [];
-    return activeMakesModels[make] || [];
-  }, [make, activeMakesModels]);
+  const availableModels = useMemo(() => (!make ? [] : activeMakesModels[make] || []), [make, activeMakesModels]);
 
   const handleChangeVehicleType = (type: ProviderVehicleType) => {
     setVehicleType(type);
     setMake("");
     setModel("");
     setTowClass("");
-  };
-
-  const handleSelectMake = (selectedMake: string) => {
-    setMake(selectedMake);
-    setModel("");
-    setShowMakePicker(false);
-  };
-
-  const handleSelectModel = (selectedModel: string) => {
-    setModel(selectedModel);
-    setShowModelPicker(false);
   };
 
   const handleSave = async () => {
@@ -340,326 +243,210 @@ export default function ProviderVehicleScreen() {
     }
   };
 
+  const heroIcon: keyof typeof Feather.glyphMap = isTowTruck ? "truck" : isServiceVan ? "package" : "navigation";
+  const hasVehicle = make && model;
+  const sectionBg = theme.cardAnimatedBg;
+
   return (
-    <ThemedView style={styles.container}>
-      <ScreenDecoration />
+    <View style={styles.container}>
+      <AnimatedBackground />
+
       <KeyboardAwareScrollViewCompat
+        style={{ backgroundColor: "transparent" }}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: headerHeight + Spacing.lg, paddingBottom: insets.bottom + Spacing.xl },
+          { paddingTop: headerHeight + Spacing.md, paddingBottom: insets.bottom + Spacing["2xl"] },
         ]}
+        keyboardShouldPersistTaps="handled"
       >
-        <ThemedText type="body" style={{ color: theme.textSecondary, marginBottom: Spacing.lg }}>
-          Update your work vehicle information so drivers know what to look for when you arrive.
-        </ThemedText>
-
-        <View style={[styles.formCard, { backgroundColor: theme.backgroundSecondary }]}>
-          <ThemedText type="small" style={[styles.fieldLabel, { color: theme.textSecondary }]}>
-            Vehicle Type
-          </ThemedText>
-          <View style={styles.optionRow}>
-            {VEHICLE_TYPES.map((t) => (
-              <Pressable
-                key={t.value}
-                onPress={() => handleChangeVehicleType(t.value)}
-                style={[
-                  styles.optionChip,
-                  {
-                    backgroundColor: vehicleType === t.value ? theme.primary + "15" : theme.backgroundDefault,
-                    borderColor: vehicleType === t.value ? theme.primary : theme.border,
-                    flex: 1,
-                  },
-                ]}
-              >
-                <Feather
-                  name={t.icon}
-                  size={14}
-                  color={vehicleType === t.value ? theme.primary : theme.textSecondary}
-                />
-                <ThemedText
-                  type="small"
-                  style={{
-                    color: vehicleType === t.value ? theme.primary : theme.text,
-                    fontWeight: vehicleType === t.value ? "600" : "400",
-                    marginLeft: 4,
-                    textAlign: "center",
-                  }}
-                >
-                  {t.label}
-                </ThemedText>
-              </Pressable>
-            ))}
+        {/* Hero */}
+        <LinearGradient
+          colors={["#1A0A0E", "#2D0F16", "#1A0A0E"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.heroCard}
+        >
+          <View style={styles.heroLeft}>
+            <View style={styles.heroIconCircle}>
+              <Feather name={heroIcon} size={28} color="#F87171" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <ThemedText style={{ color: "#FFFFFF", fontSize: 22, fontWeight: "800", marginBottom: 2 }}>
+                Work Vehicle
+              </ThemedText>
+              <ThemedText type="small" style={{ color: "rgba(255,255,255,0.55)" }}>
+                {hasVehicle ? `${make} ${model}` : "No vehicle set yet"}
+              </ThemedText>
+            </View>
           </View>
+          <ThemedText type="small" style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>
+            Drivers see this vehicle when you arrive
+          </ThemedText>
+        </LinearGradient>
 
-          {isTowTruck ? (
-            <View style={[styles.towBanner, { backgroundColor: theme.primary + "10", borderColor: theme.primary + "30" }]}>
-              <Feather name="info" size={14} color={theme.primary} />
-              <ThemedText type="small" style={{ color: theme.primary, flex: 1, marginLeft: Spacing.sm }}>
-                Showing commercial tow truck manufacturers. Select your chassis make and model.
-              </ThemedText>
+        {/* Vehicle Type */}
+        <Animated.View entering={FadeIn.delay(60).duration(280)}>
+          <ThemedText style={[styles.sectionLabel, { marginBottom: Spacing.sm }]}>VEHICLE TYPE</ThemedText>
+          <View style={[styles.formCard, { backgroundColor: sectionBg }]}>
+            <View style={styles.typeRow}>
+              {VEHICLE_TYPES.map((t) => (
+                <Pressable
+                  key={t.value}
+                  onPress={() => handleChangeVehicleType(t.value)}
+                  style={[
+                    styles.typeChip,
+                    { backgroundColor: vehicleType === t.value ? "#D9222222" : "transparent", borderColor: vehicleType === t.value ? "#D92222" : theme.border },
+                  ]}
+                >
+                  <Feather name={t.icon} size={14} color={vehicleType === t.value ? "#F87171" : theme.textSecondary} />
+                  <ThemedText
+                    type="small"
+                    style={{ color: vehicleType === t.value ? "#F87171" : theme.text, fontWeight: vehicleType === t.value ? "700" : "400", marginLeft: 5, textAlign: "center" }}
+                  >
+                    {t.label}
+                  </ThemedText>
+                </Pressable>
+              ))}
             </View>
-          ) : null}
-          {isServiceVan ? (
-            <View style={[styles.towBanner, { backgroundColor: theme.secondary + "10", borderColor: theme.secondary + "30" }]}>
-              <Feather name="info" size={14} color={theme.secondary} />
-              <ThemedText type="small" style={{ color: theme.secondary, flex: 1, marginLeft: Spacing.sm }}>
-                Showing commercial service van manufacturers. Select your van make and model.
-              </ThemedText>
-            </View>
-          ) : null}
 
-          <View style={{ marginTop: Spacing.md }}>
+            {isTowTruck ? (
+              <View style={[styles.infoBanner, { backgroundColor: "#0066FF12", borderColor: "#0066FF30" }]}>
+                <Feather name="info" size={13} color="#60A5FA" />
+                <ThemedText type="small" style={{ color: "#60A5FA", flex: 1, marginLeft: Spacing.sm }}>
+                  Showing commercial tow truck manufacturers. Select your chassis make and model.
+                </ThemedText>
+              </View>
+            ) : null}
+            {isServiceVan ? (
+              <View style={[styles.infoBanner, { backgroundColor: "#D9222212", borderColor: "#D9222230" }]}>
+                <Feather name="info" size={13} color="#F87171" />
+                <ThemedText type="small" style={{ color: "#F87171", flex: 1, marginLeft: Spacing.sm }}>
+                  Showing commercial service van manufacturers. Select your van make and model.
+                </ThemedText>
+              </View>
+            ) : null}
+          </View>
+        </Animated.View>
+
+        {/* Vehicle Details */}
+        <Animated.View entering={FadeInDown.delay(120).duration(280).springify().damping(20)}>
+          <ThemedText style={[styles.sectionLabel, { marginBottom: Spacing.sm }]}>VEHICLE DETAILS</ThemedText>
+          <View style={[styles.formCard, { backgroundColor: sectionBg }]}>
             <PickerButton
               label="Make"
               value={make}
               placeholder={isTowTruck ? "Select tow truck make..." : "Select make..."}
               onPress={() => setShowMakePicker(true)}
-              badge={isTowTruck ? "TOW" : undefined}
+              badge={isTowTruck ? "TOW" : isServiceVan ? "VAN" : undefined}
+              sectionBg={sectionBg}
             />
-          </View>
-
-          <View style={{ marginTop: Spacing.md }}>
             <PickerButton
               label="Model"
               value={model}
               placeholder={make ? "Select model..." : "Select a make first"}
               onPress={() => setShowModelPicker(true)}
               disabled={!make}
+              sectionBg={sectionBg}
             />
-          </View>
-
-          {isTowTruck ? (
-            <View style={{ marginTop: Spacing.md }}>
+            {isTowTruck ? (
               <PickerButton
                 label="Tow Truck Class"
                 value={towClass}
                 placeholder="Select wrecker class..."
                 onPress={() => setShowTowClassPicker(true)}
+                sectionBg={sectionBg}
               />
+            ) : null}
+            <PickerButton
+              label="Year"
+              value={year ? String(year) : ""}
+              placeholder="Select year..."
+              onPress={() => setShowYearPicker(true)}
+              sectionBg={sectionBg}
+            />
+          </View>
+        </Animated.View>
+
+        {/* License Plate */}
+        <Animated.View entering={FadeIn.delay(200).duration(280)}>
+          <ThemedText style={[styles.sectionLabel, { marginBottom: Spacing.sm }]}>LICENSE PLATE</ThemedText>
+          <View style={[styles.plateCard, { backgroundColor: sectionBg }]}>
+            <View style={[styles.plateIconBox, { backgroundColor: "#D9222218" }]}>
+              <Feather name="credit-card" size={20} color="#F87171" />
             </View>
-          ) : null}
+            <TextInput
+              style={[styles.plateInput, { color: theme.text }]}
+              value={licensePlate}
+              onChangeText={setLicensePlate}
+              placeholder="e.g. ABC-1234"
+              placeholderTextColor={theme.textSecondary}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              maxLength={10}
+            />
+          </View>
+        </Animated.View>
 
-          <ThemedText type="small" style={[styles.fieldLabel, { color: theme.textSecondary }]}>
-            Year
-          </ThemedText>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: Spacing.sm, paddingBottom: Spacing.sm }}
-          >
-            {YEARS.slice(0, 15).map((y) => (
-              <Pressable
-                key={y}
-                onPress={() => setYear(y)}
-                style={[
-                  styles.chip,
-                  {
-                    backgroundColor: year === y ? theme.primary : theme.backgroundDefault,
-                    borderColor: year === y ? theme.primary : theme.border,
-                  },
-                ]}
-              >
-                <ThemedText
-                  type="small"
-                  style={{
-                    color: year === y ? "#FFFFFF" : theme.text,
-                    fontWeight: year === y ? "600" : "400",
-                  }}
-                >
-                  {y}
-                </ThemedText>
-              </Pressable>
-            ))}
-          </ScrollView>
-
-          <ThemedText type="small" style={[styles.fieldLabel, { color: theme.textSecondary }]}>
-            License Plate
-          </ThemedText>
-          <TextInput
-            style={[
-              styles.textInput,
-              {
-                backgroundColor: theme.backgroundDefault,
-                borderColor: licensePlate ? theme.primary : theme.border,
-                color: theme.text,
-              },
-            ]}
-            value={licensePlate}
-            onChangeText={setLicensePlate}
-            placeholder="e.g. ABC-1234"
-            placeholderTextColor={theme.textSecondary}
-            autoCapitalize="characters"
-            autoCorrect={false}
-            maxLength={10}
-          />
-        </View>
-
-        <Pressable
-          onPress={handleSave}
-          disabled={isSaving}
-          style={({ pressed }) => [
-            styles.saveButton,
-            { backgroundColor: theme.primary, opacity: pressed || isSaving ? 0.7 : 1 },
-          ]}
-        >
-          <Feather name={isSaving ? "loader" : "check"} size={20} color="#FFFFFF" />
-          <ThemedText type="body" style={{ color: "#FFFFFF", fontWeight: "600", marginLeft: Spacing.sm }}>
-            {isSaving ? "Saving..." : "Save Vehicle"}
-          </ThemedText>
-        </Pressable>
+        {/* Save Button */}
+        <Animated.View entering={FadeIn.delay(260).duration(280)} style={{ marginTop: Spacing.lg }}>
+          <Pressable onPress={handleSave} disabled={isSaving} style={{ borderRadius: BorderRadius.md, overflow: "hidden", opacity: isSaving ? 0.7 : 1 }}>
+            <LinearGradient
+              colors={["#AA1818", "#D92222"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.saveButton}
+            >
+              <Feather name={isSaving ? "loader" : "check"} size={20} color="#FFFFFF" />
+              <ThemedText type="body" style={{ color: "#FFFFFF", fontWeight: "700", marginLeft: Spacing.sm }}>
+                {isSaving ? "Saving..." : "Save Vehicle"}
+              </ThemedText>
+            </LinearGradient>
+          </Pressable>
+        </Animated.View>
       </KeyboardAwareScrollViewCompat>
 
-      <SearchablePicker
-        visible={showMakePicker}
-        onClose={() => setShowMakePicker(false)}
-        onSelect={handleSelectMake}
-        items={activeMakes}
-        title={isTowTruck ? "Select Tow Truck Make" : "Select Make"}
-        searchPlaceholder="Search makes..."
-      />
-
-      <SearchablePicker
-        visible={showModelPicker}
-        onClose={() => setShowModelPicker(false)}
-        onSelect={handleSelectModel}
-        items={availableModels}
-        title={`${make} Models`}
-        searchPlaceholder="Search models..."
-      />
-
-      <TowClassPicker
-        visible={showTowClassPicker}
-        onClose={() => setShowTowClassPicker(false)}
-        onSelect={(cls) => { setTowClass(cls); setShowTowClassPicker(false); }}
-      />
-    </ThemedView>
+      <SearchablePicker visible={showMakePicker} onClose={() => setShowMakePicker(false)} onSelect={(m) => { setMake(m); setModel(""); setShowMakePicker(false); }} items={activeMakes} title={isTowTruck ? "Select Tow Truck Make" : "Select Make"} searchPlaceholder="Search makes..." />
+      <SearchablePicker visible={showModelPicker} onClose={() => setShowModelPicker(false)} onSelect={(m) => { setModel(m); setShowModelPicker(false); }} items={availableModels} title={`${make} Models`} searchPlaceholder="Search models..." />
+      <SearchablePicker visible={showYearPicker} onClose={() => setShowYearPicker(false)} onSelect={(y) => { setYear(parseInt(y)); setShowYearPicker(false); }} items={YEAR_STRINGS} title="Select Year" searchPlaceholder="Search years..." />
+      <TowClassPicker visible={showTowClassPicker} onClose={() => setShowTowClassPicker(false)} onSelect={(cls) => { setTowClass(cls); setShowTowClassPicker(false); }} />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollContent: {
-    paddingHorizontal: Spacing.lg,
-  },
-  formCard: {
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    marginBottom: Spacing.xl,
-  },
-  fieldLabel: {
-    fontWeight: "600",
-    marginBottom: Spacing.sm,
-    marginTop: Spacing.md,
-  },
-  pickerButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: Spacing.md,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-  },
-  chip: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.sm,
-    borderWidth: 1,
-  },
-  optionRow: {
-    flexDirection: "row",
-    gap: Spacing.sm,
-  },
-  optionChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.xs,
-    borderRadius: BorderRadius.sm,
-    borderWidth: 1,
-  },
-  towBanner: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    borderWidth: 1,
-    borderRadius: BorderRadius.sm,
-    padding: Spacing.sm,
-    marginTop: Spacing.md,
-    gap: 0,
-  },
-  badge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  textInput: {
-    padding: Spacing.md,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    fontSize: 16,
-    fontWeight: "600",
-    letterSpacing: 1,
-  },
-  saveButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: Spacing.lg,
-    borderRadius: BorderRadius.md,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "flex-end",
-  },
-  modalContent: {
-    borderTopLeftRadius: BorderRadius.xl,
-    borderTopRightRadius: BorderRadius.xl,
-    height: "75%",
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.md,
-  },
-  searchBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    gap: Spacing.sm,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    padding: 0,
-  },
-  pickerItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-  },
-  classPickerItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    gap: Spacing.sm,
-  },
-  separator: {
-    height: 1,
-    marginHorizontal: Spacing.lg,
-  },
-  emptySearch: {
-    padding: Spacing.xl,
-    alignItems: "center",
-  },
+  container: { flex: 1, backgroundColor: "#000000" },
+  scrollContent: { paddingHorizontal: Spacing.lg },
+  // Hero
+  heroCard: { borderRadius: BorderRadius.lg, padding: Spacing.lg, marginBottom: Spacing.lg, gap: Spacing.sm },
+  heroLeft: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
+  heroIconCircle: { width: 52, height: 52, borderRadius: 26, backgroundColor: "rgba(248,113,113,0.15)", alignItems: "center", justifyContent: "center" },
+  // Section label
+  sectionLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 0.9, textTransform: "uppercase", color: "rgba(148,163,184,0.8)", marginBottom: Spacing.sm },
+  // Cards
+  formCard: { borderRadius: BorderRadius.lg, padding: Spacing.lg, marginBottom: Spacing.lg, overflow: "hidden" },
+  // Type selector
+  typeRow: { flexDirection: "row", gap: Spacing.sm },
+  typeChip: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: Spacing.sm, paddingHorizontal: Spacing.xs, borderRadius: BorderRadius.sm, borderWidth: 1 },
+  // Info banner
+  infoBanner: { flexDirection: "row", alignItems: "flex-start", borderWidth: 1, borderRadius: BorderRadius.sm, padding: Spacing.sm, marginTop: Spacing.md },
+  // Picker button
+  pickerButton: { flexDirection: "row", alignItems: "center", padding: Spacing.md, borderRadius: BorderRadius.md, borderWidth: 1 },
+  badge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: BorderRadius.xs },
+  // License plate card
+  plateCard: { flexDirection: "row", alignItems: "center", borderRadius: BorderRadius.lg, padding: Spacing.md, marginBottom: Spacing.md, gap: Spacing.md, overflow: "hidden" },
+  plateIconBox: { width: 44, height: 44, borderRadius: BorderRadius.xs, alignItems: "center", justifyContent: "center" },
+  plateInput: { flex: 1, fontSize: 18, fontWeight: "700", letterSpacing: 2, padding: 0 },
+  // Save
+  saveButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", padding: Spacing.lg },
+  // Modals
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
+  modalContent: { borderTopLeftRadius: BorderRadius.xl, borderTopRightRadius: BorderRadius.xl, height: "75%" },
+  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: Spacing.lg, paddingBottom: Spacing.md },
+  searchBar: { flexDirection: "row", alignItems: "center", marginHorizontal: Spacing.lg, marginBottom: Spacing.sm, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: BorderRadius.md, borderWidth: 1, gap: Spacing.sm },
+  searchInput: { flex: 1, fontSize: 16, padding: 0 },
+  pickerItem: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: Spacing.md, paddingHorizontal: Spacing.lg },
+  classPickerItem: { flexDirection: "row", alignItems: "center", paddingVertical: Spacing.md, paddingHorizontal: Spacing.lg, gap: Spacing.md },
+  classIconBox: { width: 36, height: 36, borderRadius: BorderRadius.xs, alignItems: "center", justifyContent: "center" },
+  separator: { height: 1, marginHorizontal: Spacing.lg },
+  emptySearch: { padding: Spacing.xl, alignItems: "center" },
 });
