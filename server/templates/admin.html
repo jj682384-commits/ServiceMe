@@ -499,6 +499,10 @@
         <span class="nav-icon">&#9888;</span> Reports
         <span class="nav-badge red" id="badge-reports" style="display:none">0</span>
       </div>
+      <div class="nav-item" onclick="showPage('support-chats')" id="nav-support-chats">
+        <span class="nav-icon">&#128172;</span> Support Chats
+        <span class="nav-badge red" id="badge-support-chats" style="display:none">0</span>
+      </div>
       <div class="nav-section">Growth</div>
       <div class="nav-item" onclick="showPage('waitlist')" id="nav-waitlist">
         <span class="nav-icon">&#128233;</span> Waitlist
@@ -677,6 +681,61 @@
       </div>
     </div>
 
+    <!-- Support Chats -->
+    <div class="page" id="page-support-chats">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Support Chats</div>
+          <div class="page-sub">Live user conversations — step in to replace the AI at any time</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="loadSupportChats()">&#8635; Refresh</button>
+      </div>
+      <div style="display:grid;grid-template-columns:320px 1fr;gap:16px;height:calc(100vh - 200px)">
+        <!-- Conversation list -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow-y:auto;">
+          <div id="sc-list" style="padding:8px;">
+            <div style="color:var(--muted);font-size:13px;padding:20px;text-align:center">Loading...</div>
+          </div>
+        </div>
+        <!-- Conversation view -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);display:flex;flex-direction:column;">
+          <div id="sc-empty" style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px;">
+            Select a conversation to view
+          </div>
+          <div id="sc-thread" style="display:none;flex-direction:column;flex:1;min-height:0;">
+            <!-- Thread header -->
+            <div id="sc-thread-header" style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+              <div>
+                <div style="font-weight:700;font-size:15px" id="sc-thread-name"></div>
+                <div style="color:var(--muted);font-size:12px;margin-top:2px" id="sc-thread-meta"></div>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <span id="sc-takeover-badge" style="display:none;background:var(--success);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px;">LIVE AGENT</span>
+                <button class="btn btn-success btn-sm" id="sc-takeover-btn" onclick="takeOverChat()">Take Over</button>
+                <button class="btn btn-ghost btn-sm" id="sc-release-btn" style="display:none" onclick="releaseChat()">Release to AI</button>
+                <button class="btn btn-ghost btn-sm" onclick="closeSupportChat()">Mark Closed</button>
+              </div>
+            </div>
+            <!-- Messages -->
+            <div id="sc-messages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px;"></div>
+            <!-- Reply input (only shown when admin has taken over) -->
+            <div id="sc-reply-area" style="display:none;padding:12px 16px;border-top:1px solid var(--border);flex-shrink:0;">
+              <div style="display:flex;gap:8px;align-items:flex-end;">
+                <textarea id="sc-reply-input" placeholder="Type your reply..." rows="2"
+                  style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:14px;font-family:inherit;resize:none;outline:none;"></textarea>
+                <button class="btn btn-primary" style="flex-shrink:0;height:44px" onclick="sendAdminReply()">Send</button>
+              </div>
+              <div style="color:var(--muted);font-size:11px;margin-top:6px;">You are replying as a live agent. The user will see your message instantly.</div>
+            </div>
+            <!-- Info bar when not taken over -->
+            <div id="sc-ai-bar" style="padding:10px 16px;border-top:1px solid var(--border);background:var(--surface2);flex-shrink:0;display:flex;align-items:center;gap:8px;">
+              <span style="font-size:12px;color:var(--muted);">AI is handling this conversation. Click <strong style="color:var(--text)">Take Over</strong> to step in as a live agent.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Waitlist -->
     <div class="page" id="page-waitlist">
       <div class="page-header">
@@ -755,6 +814,10 @@
   let jobStatusFilter = "";
   let waitlistRoleFilter = "";
   let autoRefreshTimer = null;
+  let scRefreshTimer = null;
+  let scActiveId = null;
+  let scActiveData = null;
+  let allSupportChats = [];
 
   const DOC_LABELS = { photoId:"Photo ID", selfie:"Selfie", businessLicense:"Business License", ownerId:"Owner ID", insurance:"Insurance" };
   const REQUIRED_DOCS = { independent:["photoId","selfie"], shop:["businessLicense","ownerId","insurance"] };
@@ -867,6 +930,17 @@
     } else {
       clearInterval(liveRefreshTimer);
       liveRefreshTimer = null;
+    }
+    if (id === "support-chats") {
+      loadSupportChats();
+      clearInterval(scRefreshTimer);
+      scRefreshTimer = setInterval(() => {
+        loadSupportChats(true);
+        if (scActiveId) loadSupportThread(scActiveId, true);
+      }, 5000);
+    } else {
+      clearInterval(scRefreshTimer);
+      scRefreshTimer = null;
     }
   }
 
@@ -1127,6 +1201,136 @@
       </tr>`).join("");
     } catch {}
   }
+
+  // ── Support Chats ──
+  async function loadSupportChats(silent) {
+    try {
+      const res = await fetch(`${getBase()}/api/admin/support-chats`, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.status === 401) { signOut(true); return; }
+      allSupportChats = await res.json();
+      const openCount = allSupportChats.filter(c => c.status === 'open').length;
+      const badge = document.getElementById("badge-support-chats");
+      if (openCount > 0) { badge.style.display = "inline"; badge.textContent = openCount; }
+      else { badge.style.display = "none"; }
+      renderSupportList();
+    } catch {}
+  }
+
+  function renderSupportList() {
+    const el = document.getElementById("sc-list");
+    if (!allSupportChats.length) {
+      el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:20px;text-align:center">No support conversations yet</div>';
+      return;
+    }
+    el.innerHTML = allSupportChats.map(c => {
+      const isActive = c.id === scActiveId;
+      const dot = c.admin_taken_over
+        ? '<span style="width:8px;height:8px;border-radius:50%;background:var(--success);display:inline-block;margin-right:6px;flex-shrink:0"></span>'
+        : '<span style="width:8px;height:8px;border-radius:50%;background:var(--muted);display:inline-block;margin-right:6px;flex-shrink:0"></span>';
+      const roleBadge = c.user_role ? `<span style="font-size:10px;padding:1px 7px;border-radius:100px;background:var(--surface3);color:var(--muted)">${esc(c.user_role)}</span>` : "";
+      return `<div onclick="loadSupportThread('${c.id}')" style="padding:10px 12px;border-radius:8px;cursor:pointer;border:1px solid ${isActive ? 'rgba(255,255,255,0.15)' : 'transparent'};background:${isActive ? 'var(--surface2)' : 'transparent'};margin-bottom:4px;transition:background .15s">
+        <div style="display:flex;align-items:center;margin-bottom:4px">${dot}<span style="font-weight:600;font-size:13px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.user_name || "Anonymous")}</span>${roleBadge}</div>
+        <div style="color:var(--muted);font-size:11px;display:flex;justify-content:space-between">
+          <span>${c.message_count || 0} messages${c.admin_taken_over ? ' · <span style="color:var(--success)">Live Agent</span>' : ' · AI'}</span>
+          <span>${fmtDate(c.updated_at)}</span>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  async function loadSupportThread(id, silent) {
+    scActiveId = id;
+    if (!silent) renderSupportList();
+    try {
+      const res = await fetch(`${getBase()}/api/admin/support-chats/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) return;
+      const data = await res.json();
+      scActiveData = data;
+      document.getElementById("sc-empty").style.display = "none";
+      const thread = document.getElementById("sc-thread");
+      thread.style.display = "flex";
+      document.getElementById("sc-thread-name").textContent = data.user_name || "Anonymous";
+      document.getElementById("sc-thread-meta").textContent = `${data.user_role || "unknown"} · ${data.id} · ${fmtDate(data.created_at)}`;
+      // Takeover state
+      const taken = !!data.admin_taken_over;
+      document.getElementById("sc-takeover-badge").style.display = taken ? "inline" : "none";
+      document.getElementById("sc-takeover-btn").style.display = taken ? "none" : "inline-flex";
+      document.getElementById("sc-release-btn").style.display = taken ? "inline-flex" : "none";
+      document.getElementById("sc-reply-area").style.display = taken ? "block" : "none";
+      document.getElementById("sc-ai-bar").style.display = taken ? "none" : "flex";
+      // Render messages
+      const msgs = data.messages || [];
+      const msgsEl = document.getElementById("sc-messages");
+      if (!msgs.length) { msgsEl.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">No messages yet</div>'; return; }
+      msgsEl.innerHTML = msgs.map(m => {
+        const isUser = m.role === "user";
+        const isAdminMsg = !isUser && m.fromAdmin;
+        const bg = isUser ? 'var(--surface3)' : isAdminMsg ? 'rgba(34,197,94,0.12)' : 'var(--surface2)';
+        const align = isUser ? 'flex-end' : 'flex-start';
+        const label = isUser ? (data.user_name || "User") : isAdminMsg ? '<span style="color:var(--success);font-size:11px;font-weight:700">Live Agent (You)</span>' : '<span style="color:var(--muted);font-size:11px">AI Agent</span>';
+        const border = isAdminMsg ? '1px solid rgba(34,197,94,0.25)' : '1px solid transparent';
+        return `<div style="display:flex;flex-direction:column;align-items:${align};max-width:75%">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:3px;${isUser ? 'text-align:right' : ''}">${label}</div>
+          <div style="background:${bg};padding:10px 14px;border-radius:10px;font-size:13px;border:${border};line-height:1.5">${esc(m.content)}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:3px">${m.ts ? new Date(m.ts).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : ''}</div>
+        </div>`;
+      }).join("");
+      // Auto-scroll to bottom
+      msgsEl.scrollTop = msgsEl.scrollHeight;
+    } catch {}
+  }
+
+  async function takeOverChat() {
+    if (!scActiveId) return;
+    await fetch(`${getBase()}/api/admin/support-chats/${scActiveId}/status`, {
+      method: "PATCH", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ adminTakenOver: true })
+    });
+    loadSupportThread(scActiveId);
+  }
+
+  async function releaseChat() {
+    if (!scActiveId) return;
+    await fetch(`${getBase()}/api/admin/support-chats/${scActiveId}/status`, {
+      method: "PATCH", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ adminTakenOver: false })
+    });
+    loadSupportThread(scActiveId);
+  }
+
+  async function closeSupportChat() {
+    if (!scActiveId) return;
+    await fetch(`${getBase()}/api/admin/support-chats/${scActiveId}/status`, {
+      method: "PATCH", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "closed" })
+    });
+    scActiveId = null; scActiveData = null;
+    document.getElementById("sc-empty").style.display = "flex";
+    document.getElementById("sc-thread").style.display = "none";
+    loadSupportChats();
+  }
+
+  async function sendAdminReply() {
+    if (!scActiveId) return;
+    const input = document.getElementById("sc-reply-input");
+    const msg = input.value.trim();
+    if (!msg) return;
+    input.value = "";
+    await fetch(`${getBase()}/api/admin/support-chats/${scActiveId}/reply`, {
+      method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ message: msg })
+    });
+    loadSupportThread(scActiveId);
+  }
+
+  // Allow Ctrl+Enter or Enter in reply box to send
+  document.addEventListener("keydown", function(e) {
+    const input = document.getElementById("sc-reply-input");
+    if (document.activeElement === input && e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendAdminReply();
+    }
+  });
 
   // ── Waitlist ──
   async function loadWaitlist() {

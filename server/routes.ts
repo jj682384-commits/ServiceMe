@@ -449,6 +449,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS search_radius INT DEFAULT 10`).catch(() => {});
   await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS notifications_enabled BOOLEAN DEFAULT TRUE`).catch(() => {});
   await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS emergency_contacts JSONB DEFAULT '[]'`).catch(() => {});
+  // ── support conversations ────────────────────────────────────────────────────
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS support_conversations (
+      id TEXT PRIMARY KEY,
+      user_id TEXT,
+      user_role TEXT,
+      user_name TEXT,
+      status TEXT DEFAULT 'open',
+      admin_taken_over BOOLEAN DEFAULT FALSE,
+      messages JSONB DEFAULT '[]',
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `).catch(() => {});
   // ── providers column migrations ─────────────────────────────────────────────
   await pool.query(`ALTER TABLE providers ADD COLUMN IF NOT EXISTS push_token TEXT DEFAULT NULL`).catch(() => {});
   await pool.query(`ALTER TABLE providers ADD COLUMN IF NOT EXISTS stripe_account_id TEXT DEFAULT NULL`).catch(() => {});
@@ -2729,12 +2743,61 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
 
   app.post("/api/support/chat", async (req: Request, res: Response) => {
     try {
-      const { message, history } = req.body as {
+      const { message, history, conversationId, userId, userRole, userName } = req.body as {
         message: string;
         history?: Array<{ role: "user" | "assistant"; content: string }>;
+        conversationId?: string;
+        userId?: string;
+        userRole?: string;
+        userName?: string;
       };
       if (!message) return res.status(400).json({ error: "message required" });
-      const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
+
+      const now = new Date().toISOString();
+      const userMsg = { role: "user", content: message, ts: now, fromAdmin: false };
+
+      // Upsert conversation in DB
+      let convId = conversationId;
+      let adminTakenOver = false;
+
+      if (convId) {
+        // Load existing conversation to check admin_taken_over
+        const { rows } = await pool.query(
+          "SELECT admin_taken_over, messages FROM support_conversations WHERE id = $1",
+          [convId]
+        );
+        if (rows.length > 0) {
+          adminTakenOver = rows[0].admin_taken_over;
+          // Append user message
+          const msgs = [...(rows[0].messages || []), userMsg];
+          await pool.query(
+            "UPDATE support_conversations SET messages = $1, updated_at = NOW() WHERE id = $2",
+            [JSON.stringify(msgs), convId]
+          );
+        } else {
+          // Conversation not found, create it
+          convId = `conv-${Date.now()}`;
+          await pool.query(
+            "INSERT INTO support_conversations (id, user_id, user_role, user_name, messages) VALUES ($1,$2,$3,$4,$5)",
+            [convId, userId || null, userRole || null, userName || null, JSON.stringify([userMsg])]
+          );
+        }
+      } else {
+        // New conversation
+        convId = `conv-${Date.now()}`;
+        await pool.query(
+          "INSERT INTO support_conversations (id, user_id, user_role, user_name, messages) VALUES ($1,$2,$3,$4,$5)",
+          [convId, userId || null, userRole || null, userName || null, JSON.stringify([userMsg])]
+        );
+      }
+
+      // If admin has taken over, don't call AI — user waits for admin reply
+      if (adminTakenOver) {
+        return res.json({ reply: null, conversationId: convId, waitingForAgent: true });
+      }
+
+      // Call AI
+      const aiMessages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
         {
           role: "system",
           content:
@@ -2747,14 +2810,100 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
         { role: "user", content: message },
       ];
       const response = await openai.chat.completions.create({
-        model: "gpt-4o", messages, max_tokens: 250,
+        model: "gpt-4o", messages: aiMessages, max_tokens: 250,
       });
       const reply = response.choices[0]?.message?.content ||
         "I couldn't process your message right now. Please call 1-800-SERVICE for immediate assistance.";
-      res.json({ reply });
+
+      // Save AI reply to conversation
+      const aiMsg = { role: "assistant", content: reply, ts: new Date().toISOString(), fromAdmin: false };
+      await pool.query(
+        `UPDATE support_conversations SET messages = messages || $1::jsonb, updated_at = NOW() WHERE id = $2`,
+        [JSON.stringify([aiMsg]), convId]
+      );
+
+      res.json({ reply, conversationId: convId, waitingForAgent: false });
     } catch (error) {
       console.error("[Support chat error]", error);
       res.status(500).json({ error: "Support chat unavailable" });
+    }
+  });
+
+  // ── Support conversation polling (client fetches new messages) ────────────────
+  app.get("/api/support/conversation/:id", async (req: Request, res: Response) => {
+    try {
+      const { rows } = await pool.query(
+        "SELECT id, messages, admin_taken_over, status FROM support_conversations WHERE id = $1",
+        [req.params.id]
+      );
+      if (rows.length === 0) return res.status(404).json({ error: "Not found" });
+      res.json(rows[0]);
+    } catch (err) {
+      res.status(500).json({ error: "DB error" });
+    }
+  });
+
+  // ── Admin: list support chats ─────────────────────────────────────────────────
+  app.get("/api/admin/support-chats", adminAuth, async (_req: Request, res: Response) => {
+    try {
+      const { rows } = await pool.query(
+        `SELECT id, user_id, user_role, user_name, status, admin_taken_over,
+                jsonb_array_length(messages) AS message_count, created_at, updated_at
+         FROM support_conversations ORDER BY updated_at DESC LIMIT 200`
+      );
+      res.json(rows);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── Admin: get single support chat ────────────────────────────────────────────
+  app.get("/api/admin/support-chats/:id", adminAuth, async (req: Request, res: Response) => {
+    try {
+      const { rows } = await pool.query(
+        "SELECT * FROM support_conversations WHERE id = $1",
+        [req.params.id]
+      );
+      if (rows.length === 0) return res.status(404).json({ error: "Not found" });
+      res.json(rows[0]);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── Admin: reply to support chat ──────────────────────────────────────────────
+  app.post("/api/admin/support-chats/:id/reply", adminAuth, async (req: Request, res: Response) => {
+    const { message } = req.body as { message: string };
+    if (!message) return res.status(400).json({ error: "message required" });
+    try {
+      const adminMsg = { role: "assistant", content: message, ts: new Date().toISOString(), fromAdmin: true };
+      await pool.query(
+        `UPDATE support_conversations
+         SET messages = messages || $1::jsonb, admin_taken_over = TRUE, status = 'open', updated_at = NOW()
+         WHERE id = $2`,
+        [JSON.stringify([adminMsg]), req.params.id]
+      );
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── Admin: update support chat status ─────────────────────────────────────────
+  app.patch("/api/admin/support-chats/:id/status", adminAuth, async (req: Request, res: Response) => {
+    const { status, adminTakenOver } = req.body as { status?: string; adminTakenOver?: boolean };
+    try {
+      await pool.query(
+        `UPDATE support_conversations SET
+           status = COALESCE($1, status),
+           admin_taken_over = COALESCE($2, admin_taken_over),
+           updated_at = NOW()
+         WHERE id = $3`,
+        [status ?? null, adminTakenOver ?? null, req.params.id]
+      );
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
     }
   });
 

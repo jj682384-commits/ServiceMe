@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   View,
   StyleSheet,
@@ -24,15 +24,18 @@ import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { useTheme } from "@/hooks/useTheme";
-import { getApiUrl } from "@/lib/query-client";
-import { Spacing, BorderRadius, Shadows } from "@/constants/theme";
+import { useApp } from "@/context/AppContext";
+import { apiRequest, getApiUrl } from "@/lib/query-client";
+import { Spacing, BorderRadius } from "@/constants/theme";
 
 const SUPPORT_PHONE = "1-800-SERVICE";
+const POLL_INTERVAL_MS = 3000;
 
 interface ChatMessage {
   id: string;
   text: string;
   isUser: boolean;
+  fromAdmin?: boolean;
   timestamp: Date;
 }
 
@@ -56,18 +59,82 @@ export default function SupportScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const { theme } = useTheme();
+  const { authUser, currentDriver, currentProvider, userRole } = useApp();
   const [activeTab, setActiveTab] = useState<"options" | "chat">("options");
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [inputText, setInputText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [adminActive, setAdminActive] = useState(false);
+  const [waitingForAgent, setWaitingForAgent] = useState(false);
 
-  React.useEffect(() => {
+  const chatHistoryRef = useRef<Array<{ role: "user" | "assistant"; content: string }>>([]);
+  const conversationIdRef = useRef<string | null>(null);
+  const lastMessageCountRef = useRef(1); // starts at 1 for the welcome message
+  const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const scrollRef = useRef<ScrollView>(null);
+
+  const userName = currentDriver?.name || currentProvider?.name || "User";
+  const userId = authUser?.id || currentDriver?.id || currentProvider?.id;
+
+  useEffect(() => {
     const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
     const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
     const show = Keyboard.addListener(showEvent, (e) => setKeyboardHeight(e.endCoordinates.height));
     const hide = Keyboard.addListener(hideEvent, () => setKeyboardHeight(0));
     return () => { show.remove(); hide.remove(); };
+  }, []);
+
+  // Poll for admin replies while chat tab is open
+  useEffect(() => {
+    if (activeTab !== "chat") {
+      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+      return;
+    }
+    pollTimerRef.current = setInterval(pollConversation, POLL_INTERVAL_MS);
+    return () => {
+      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+    };
+  }, [activeTab]);
+
+  const pollConversation = useCallback(async () => {
+    const convId = conversationIdRef.current;
+    if (!convId) return;
+    try {
+      const url = new URL(`/api/support/conversation/${convId}`, getApiUrl()).toString();
+      const res = await fetch(url);
+      if (!res.ok) return;
+      const data = await res.json();
+      const serverMsgs: Array<{ role: string; content: string; ts: string; fromAdmin: boolean }> =
+        data.messages || [];
+
+      setAdminActive(!!data.admin_taken_over);
+
+      // Only append messages we haven't shown yet (by index)
+      if (serverMsgs.length > lastMessageCountRef.current) {
+        const newMsgs = serverMsgs.slice(lastMessageCountRef.current);
+        lastMessageCountRef.current = serverMsgs.length;
+
+        const chatMsgs: ChatMessage[] = newMsgs
+          .filter((m) => m.role === "assistant")
+          .map((m) => ({
+            id: `${m.ts}-${Math.random()}`,
+            text: m.content,
+            isUser: false,
+            fromAdmin: m.fromAdmin,
+            timestamp: new Date(m.ts),
+          }));
+
+        if (chatMsgs.length > 0) {
+          setIsTyping(false);
+          setWaitingForAgent(false);
+          setMessages((prev) => [...prev, ...chatMsgs]);
+          setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+        }
+      }
+    } catch {
+      // Network error during poll — ignore silently
+    }
   }, []);
 
   const handleCallSupport = () => {
@@ -76,12 +143,10 @@ export default function SupportScreen() {
       android: `tel:${SUPPORT_PHONE}`,
       default: `tel:${SUPPORT_PHONE}`,
     });
-    Linking.openURL(phoneUrl).catch(() => {
+    Linking.openURL(phoneUrl!).catch(() => {
       alert("Unable to open phone app. Please call " + SUPPORT_PHONE);
     });
   };
-
-  const chatHistoryRef = React.useRef<Array<{ role: "user" | "assistant"; content: string }>>([]);
 
   const handleSendMessage = async (text: string) => {
     if (!text.trim()) return;
@@ -94,9 +159,11 @@ export default function SupportScreen() {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    lastMessageCountRef.current += 1; // account for the user message we just added
     setInputText("");
     setIsTyping(true);
     Keyboard.dismiss();
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
 
     chatHistoryRef.current = [
       ...chatHistoryRef.current,
@@ -104,16 +171,27 @@ export default function SupportScreen() {
     ];
 
     try {
-      const url = new URL("/api/support/chat", getApiUrl()).toString();
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: text.trim(),
-          history: chatHistoryRef.current.slice(-6),
-        }),
+      const data = await apiRequest("POST", "/api/support/chat", {
+        message: text.trim(),
+        history: chatHistoryRef.current.slice(-6),
+        conversationId: conversationIdRef.current ?? undefined,
+        userId,
+        userRole,
+        userName,
       });
-      const data = res.ok ? await res.json() : null;
+
+      // Store conversation ID for polling
+      if (data?.conversationId && !conversationIdRef.current) {
+        conversationIdRef.current = data.conversationId;
+      }
+
+      if (data?.waitingForAgent) {
+        setIsTyping(false);
+        setWaitingForAgent(true);
+        // Don't add an AI message — admin will reply via polling
+        return;
+      }
+
       const replyText: string =
         data?.reply ||
         "I'm having trouble right now. Please call 1-800-SERVICE for immediate help.";
@@ -130,6 +208,8 @@ export default function SupportScreen() {
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, agentResponse]);
+      lastMessageCountRef.current += 1; // AI reply
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
     } catch {
       const agentResponse: ChatMessage = {
         id: (Date.now() + 1).toString(),
@@ -141,10 +221,6 @@ export default function SupportScreen() {
     } finally {
       setIsTyping(false);
     }
-  };
-
-  const handleQuickReply = (reply: string) => {
-    handleSendMessage(reply);
   };
 
   const renderSupportOptions = () => (
@@ -177,14 +253,7 @@ export default function SupportScreen() {
 
       <Pressable
         onPress={handleCallSupport}
-        style={({ pressed }) => [
-          styles.supportCard,
-          {
-            backgroundColor: theme.backgroundSecondary,
-            opacity: pressed ? 0.9 : 1,
-            ...Shadows.sm,
-          },
-        ]}
+        style={({ pressed }) => [styles.supportCard, { backgroundColor: theme.backgroundSecondary, opacity: pressed ? 0.9 : 1 }]}
       >
         <View style={[styles.cardIcon, { backgroundColor: theme.secondary }]}>
           <Feather name="phone" size={24} color="#FFFFFF" />
@@ -203,14 +272,7 @@ export default function SupportScreen() {
 
       <Pressable
         onPress={() => setActiveTab("chat")}
-        style={({ pressed }) => [
-          styles.supportCard,
-          {
-            backgroundColor: theme.backgroundSecondary,
-            opacity: pressed ? 0.9 : 1,
-            ...Shadows.sm,
-          },
-        ]}
+        style={({ pressed }) => [styles.supportCard, { backgroundColor: theme.backgroundSecondary, opacity: pressed ? 0.9 : 1 }]}
       >
         <View style={[styles.cardIcon, { backgroundColor: theme.primary }]}>
           <Feather name="message-circle" size={24} color="#FFFFFF" />
@@ -245,13 +307,7 @@ export default function SupportScreen() {
               setActiveTab("chat");
               setTimeout(() => handleSendMessage(item.q), 300);
             }}
-            style={({ pressed }) => [
-              styles.faqItem,
-              {
-                borderBottomColor: theme.border,
-                opacity: pressed ? 0.7 : 1,
-              },
-            ]}
+            style={({ pressed }) => [styles.faqItem, { borderBottomColor: theme.border, opacity: pressed ? 0.7 : 1 }]}
           >
             <Feather name={item.icon} size={18} color={theme.textSecondary} />
             <ThemedText type="body" style={{ flex: 1, marginLeft: Spacing.sm }}>
@@ -266,6 +322,7 @@ export default function SupportScreen() {
 
   const renderLiveChat = () => (
     <View style={{ flex: 1, paddingBottom: keyboardHeight }}>
+      {/* Chat header */}
       <View style={[styles.chatHeader, { borderBottomColor: theme.border }]}>
         <Pressable
           onPress={() => setActiveTab("options")}
@@ -274,43 +331,63 @@ export default function SupportScreen() {
           <Feather name="arrow-left" size={20} color={theme.text} />
         </Pressable>
         <View style={styles.chatHeaderInfo}>
-          <View style={[styles.agentAvatar, { backgroundColor: theme.primary }]}>
-            <Feather name="headphones" size={18} color="#FFFFFF" />
+          <View style={[styles.agentAvatar, { backgroundColor: adminActive ? theme.secondary : theme.primary }]}>
+            <Feather name={adminActive ? "user" : "headphones"} size={18} color="#FFFFFF" />
           </View>
           <View>
-            <ThemedText type="h4">ResqRide Support</ThemedText>
+            <ThemedText type="h4">{adminActive ? "Live Agent" : "ResqRide Support"}</ThemedText>
             <View style={styles.onlineStatus}>
               <View style={[styles.onlineDot, { backgroundColor: theme.success }]} />
               <ThemedText type="small" style={{ color: theme.success }}>
-                Online
+                {adminActive ? "Agent active" : "Online"}
               </ThemedText>
             </View>
           </View>
         </View>
+        {adminActive ? (
+          <View style={[styles.agentBadge, { backgroundColor: theme.secondary + "20" }]}>
+            <ThemedText type="small" style={{ color: theme.secondary, fontWeight: "700" }}>
+              Live
+            </ThemedText>
+          </View>
+        ) : null}
       </View>
 
+      {/* Admin takeover banner */}
+      {adminActive ? (
+        <View style={[styles.agentBanner, { backgroundColor: theme.secondary + "15", borderBottomColor: theme.secondary + "30" }]}>
+          <Feather name="user-check" size={14} color={theme.secondary} />
+          <ThemedText type="small" style={{ color: theme.secondary, marginLeft: 6, fontWeight: "600" }}>
+            A live agent has joined this conversation
+          </ThemedText>
+        </View>
+      ) : null}
+
       <ScrollView
+        ref={scrollRef}
         style={{ flex: 1 }}
-        contentContainerStyle={{
-          padding: Spacing.lg,
-          paddingBottom: Spacing.xl,
-          flexGrow: 1,
-          justifyContent: "flex-end",
-        }}
+        contentContainerStyle={{ padding: Spacing.lg, paddingBottom: Spacing.xl, flexGrow: 1, justifyContent: "flex-end" }}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
       >
         {messages.map((message, index) => (
           <Animated.View
             key={message.id}
-            entering={FadeInDown.delay(index * 50).springify()}
+            entering={FadeInDown.delay(index < 5 ? 0 : 50).springify()}
             style={[
               styles.messageBubble,
               message.isUser
                 ? [styles.userMessage, { backgroundColor: theme.primary }]
-                : [styles.agentMessage, { backgroundColor: theme.backgroundSecondary }],
+                : message.fromAdmin
+                  ? [styles.agentMessage, { backgroundColor: theme.secondary + "20", borderWidth: 1, borderColor: theme.secondary + "40" }]
+                  : [styles.agentMessage, { backgroundColor: theme.backgroundSecondary }],
             ]}
           >
+            {!message.isUser && message.fromAdmin ? (
+              <ThemedText type="small" style={{ color: theme.secondary, fontWeight: "700", marginBottom: 3 }}>
+                Live Agent
+              </ThemedText>
+            ) : null}
             <ThemedText
               type="body"
               style={message.isUser ? { color: "#FFFFFF" } : undefined}
@@ -331,6 +408,15 @@ export default function SupportScreen() {
           </Animated.View>
         ) : null}
 
+        {waitingForAgent ? (
+          <Animated.View entering={FadeIn} style={[styles.waitingBadge, { backgroundColor: theme.warning + "15" }]}>
+            <Feather name="clock" size={13} color={theme.warning} />
+            <ThemedText type="small" style={{ color: theme.warning, marginLeft: 6 }}>
+              Waiting for a live agent to respond...
+            </ThemedText>
+          </Animated.View>
+        ) : null}
+
         {messages.length <= 2 ? (
           <View style={styles.quickReplies}>
             <ThemedText type="small" style={{ color: theme.textSecondary, marginBottom: Spacing.sm }}>
@@ -339,18 +425,10 @@ export default function SupportScreen() {
             {quickReplies.map((reply, index) => (
               <Pressable
                 key={index}
-                onPress={() => handleQuickReply(reply)}
-                style={({ pressed }) => [
-                  styles.quickReplyButton,
-                  {
-                    borderColor: theme.primary,
-                    opacity: pressed ? 0.7 : 1,
-                  },
-                ]}
+                onPress={() => handleSendMessage(reply)}
+                style={({ pressed }) => [styles.quickReplyButton, { borderColor: theme.primary, opacity: pressed ? 0.7 : 1 }]}
               >
-                <ThemedText type="small" style={{ color: theme.primary }}>
-                  {reply}
-                </ThemedText>
+                <ThemedText type="small" style={{ color: theme.primary }}>{reply}</ThemedText>
               </Pressable>
             ))}
           </View>
@@ -372,13 +450,7 @@ export default function SupportScreen() {
           onChangeText={setInputText}
           placeholder="Type your message..."
           placeholderTextColor={theme.textSecondary}
-          style={[
-            styles.chatInput,
-            {
-              backgroundColor: theme.backgroundSecondary,
-              color: theme.text,
-            },
-          ]}
+          style={[styles.chatInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
           multiline
           maxLength={500}
           returnKeyType="send"
@@ -390,10 +462,7 @@ export default function SupportScreen() {
           disabled={!inputText.trim()}
           style={({ pressed }) => [
             styles.sendButton,
-            {
-              backgroundColor: inputText.trim() ? theme.primary : theme.border,
-              opacity: pressed && inputText.trim() ? 0.9 : 1,
-            },
+            { backgroundColor: inputText.trim() ? theme.primary : theme.border, opacity: pressed && inputText.trim() ? 0.9 : 1 },
           ]}
         >
           <Feather name="send" size={20} color="#FFFFFF" />
@@ -410,167 +479,35 @@ export default function SupportScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    alignItems: "center",
-    marginBottom: Spacing.xl,
-  },
-  supportIcon: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: Spacing.lg,
-  },
-  title: {
-    marginBottom: Spacing.sm,
-  },
-  availabilityBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "center",
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    borderRadius: BorderRadius.full,
-    marginBottom: Spacing.xl,
-    gap: Spacing.sm,
-  },
-  availabilityDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  supportCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: Spacing.lg,
-    borderRadius: BorderRadius.md,
-    marginBottom: Spacing.md,
-    gap: Spacing.md,
-  },
-  cardIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  cardContent: {
-    flex: 1,
-  },
-  responseTime: {
-    alignSelf: "flex-start",
-    paddingVertical: 2,
-    paddingHorizontal: Spacing.sm,
-    borderRadius: BorderRadius.full,
-    marginTop: Spacing.xs,
-  },
-  faqSection: {
-    padding: Spacing.lg,
-    borderRadius: BorderRadius.md,
-    marginTop: Spacing.lg,
-  },
-  faqItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-  },
-  chatHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-  },
-  backButton: {
-    marginRight: Spacing.md,
-    padding: Spacing.xs,
-  },
-  chatHeaderInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-  },
-  agentAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  onlineStatus: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  onlineDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  messageBubble: {
-    maxWidth: "80%",
-    padding: Spacing.md,
-    borderRadius: BorderRadius.md,
-    marginBottom: Spacing.sm,
-  },
-  userMessage: {
-    alignSelf: "flex-end",
-    borderBottomRightRadius: 4,
-  },
-  agentMessage: {
-    alignSelf: "flex-start",
-    borderBottomLeftRadius: 4,
-  },
-  typingIndicator: {
-    flexDirection: "row",
-    alignSelf: "flex-start",
-    padding: Spacing.md,
-    borderRadius: BorderRadius.md,
-    gap: 4,
-  },
-  typingDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    opacity: 0.6,
-  },
-  quickReplies: {
-    marginTop: Spacing.lg,
-  },
-  quickReplyButton: {
-    borderWidth: 1,
-    borderRadius: BorderRadius.md,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    marginBottom: Spacing.sm,
-    alignSelf: "flex-start",
-  },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.sm,
-    borderTopWidth: 1,
-    gap: Spacing.sm,
-  },
-  chatInput: {
-    flex: 1,
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    maxHeight: 100,
-    fontSize: 16,
-  },
-  sendButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  container: { flex: 1 },
+  header: { alignItems: "center", marginBottom: Spacing.xl },
+  supportIcon: { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center", marginBottom: Spacing.lg },
+  title: { marginBottom: Spacing.sm },
+  availabilityBadge: { flexDirection: "row", alignItems: "center", alignSelf: "center", paddingVertical: Spacing.sm, paddingHorizontal: Spacing.md, borderRadius: BorderRadius.full, marginBottom: Spacing.xl, gap: Spacing.sm },
+  availabilityDot: { width: 8, height: 8, borderRadius: 4 },
+  supportCard: { flexDirection: "row", alignItems: "center", padding: Spacing.lg, borderRadius: BorderRadius.md, marginBottom: Spacing.md, gap: Spacing.md },
+  cardIcon: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center" },
+  cardContent: { flex: 1 },
+  responseTime: { alignSelf: "flex-start", paddingVertical: 2, paddingHorizontal: Spacing.sm, borderRadius: BorderRadius.full, marginTop: Spacing.xs },
+  faqSection: { padding: Spacing.lg, borderRadius: BorderRadius.md, marginTop: Spacing.lg },
+  faqItem: { flexDirection: "row", alignItems: "center", paddingVertical: Spacing.md, borderBottomWidth: 1 },
+  chatHeader: { flexDirection: "row", alignItems: "center", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md, borderBottomWidth: 1 },
+  backButton: { marginRight: Spacing.md, padding: Spacing.xs },
+  chatHeaderInfo: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, flex: 1 },
+  agentAvatar: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
+  agentBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+  agentBanner: { flexDirection: "row", alignItems: "center", paddingHorizontal: Spacing.lg, paddingVertical: 10, borderBottomWidth: 1 },
+  onlineStatus: { flexDirection: "row", alignItems: "center", gap: 4 },
+  onlineDot: { width: 6, height: 6, borderRadius: 3 },
+  messageBubble: { maxWidth: "80%", padding: Spacing.md, borderRadius: BorderRadius.md, marginBottom: Spacing.sm },
+  userMessage: { alignSelf: "flex-end", borderBottomRightRadius: 4 },
+  agentMessage: { alignSelf: "flex-start", borderBottomLeftRadius: 4 },
+  typingIndicator: { flexDirection: "row", alignSelf: "flex-start", padding: Spacing.md, borderRadius: BorderRadius.md, gap: 4 },
+  typingDot: { width: 8, height: 8, borderRadius: 4, opacity: 0.6 },
+  waitingBadge: { flexDirection: "row", alignItems: "center", alignSelf: "flex-start", padding: Spacing.sm, paddingHorizontal: Spacing.md, borderRadius: BorderRadius.md, marginBottom: Spacing.sm },
+  quickReplies: { marginTop: Spacing.lg },
+  quickReplyButton: { borderWidth: 1, borderRadius: BorderRadius.md, paddingVertical: Spacing.sm, paddingHorizontal: Spacing.md, marginBottom: Spacing.sm, alignSelf: "flex-start" },
+  inputContainer: { flexDirection: "row", alignItems: "flex-end", paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm, borderTopWidth: 1, gap: Spacing.sm },
+  chatInput: { flex: 1, borderRadius: BorderRadius.md, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, maxHeight: 100, fontSize: 16 },
+  sendButton: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
 });
