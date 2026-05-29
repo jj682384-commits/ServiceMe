@@ -239,7 +239,7 @@ function IndependentProfile({ currentProvider, theme, isDark, sectionBg, padding
     <View style={[styles.container, { backgroundColor: isDark ? "#04060E" : theme.backgroundRoot }]}>
       <AnimatedBackground />
       <KeyboardAwareScrollViewCompat
-        contentContainerStyle={{ paddingTop, paddingBottom, paddingHorizontal: Spacing.lg }}
+        contentContainerStyle={{ paddingTop, paddingBottom, paddingHorizontal: Spacing.lg, gap: Spacing.md }}
         scrollIndicatorInsets={{ bottom: insets.bottom }}
       >
         {/* Casual greeting header */}
@@ -360,14 +360,18 @@ function IndependentProfile({ currentProvider, theme, isDark, sectionBg, padding
             value={currentProvider?.verificationStatus === "verified" ? "Verified" : currentProvider?.verificationStatus === "pending" ? "In Review" : "Not Started"}
             iconBg="#00C85320" iconColor="#00C853"
             onPress={() => navigation.navigate("ProviderVerification")} />
-          <MenuItem icon="bell" label="Notifications"
-            iconBg={theme.textSecondary + "20"} iconColor={theme.textSecondary}
-            onPress={() => navigation.navigate("Support")} />
-          <MenuItem icon="zap" label="Priority Jobs"
-            value={priorityOptIn ? "On · 10% fee" : "Off"}
-            iconBg={priorityOptIn ? theme.warning + "25" : theme.border}
-            iconColor={priorityOptIn ? theme.warning : theme.textSecondary}
-            onPress={() => handlePriorityToggle(!priorityOptIn)} />
+          <View style={styles.menuItem}>
+            <View style={[styles.iconBox, { backgroundColor: theme.textSecondary + "20" }]}>
+              <Feather name="bell" size={16} color={theme.textSecondary} />
+            </View>
+            <ThemedText type="body" style={styles.menuLabel}>Notifications</ThemedText>
+            <Switch
+              value={notificationsEnabled}
+              onValueChange={setNotificationsEnabled}
+              trackColor={{ false: theme.border, true: theme.secondary }}
+              thumbColor="#FFFFFF"
+            />
+          </View>
         </View>
 
         {/* Service radius */}
@@ -704,10 +708,10 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
 
   // Independent
-  indyHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: Spacing.lg },
+  indyHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   onlinePill: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#00C85310", borderWidth: 1, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
   onlineDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: "#00C853" },
-  earningsCard: { borderRadius: BorderRadius.lg, padding: Spacing.xl, marginBottom: Spacing.lg },
+  earningsCard: { borderRadius: BorderRadius.lg, padding: Spacing.xl },
   earningsStat: { flex: 1, backgroundColor: "rgba(255,255,255,0.1)", borderRadius: BorderRadius.md, paddingVertical: 8, alignItems: "center" },
   sectionHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingTop: Spacing.lg, paddingBottom: Spacing.sm },
 
