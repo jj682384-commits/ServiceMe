@@ -181,6 +181,7 @@ export default function ReportProblemScreen() {
             paddingBottom: insets.bottom + Spacing.xl,
           },
         ]}
+        bottomOffset={160}
       >
         <View style={styles.header}>
           <ThemedText type="body" style={{ color: theme.textSecondary, textAlign: "center" }}>
