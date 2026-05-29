@@ -19,6 +19,7 @@ const SLIDES = [
   {
     icon: "alert-circle" as const,
     iconColor: "#D92222",
+    lightAccent: "#0D0D0D",
     title: "Help in Minutes",
     body: "Stuck on the side of the road? Tap once and a verified provider is on their way — flat tire, jump start, fuel, lockout, and more.",
     gradient: ["#1a0a0a", "#04060E"] as [string, string],
@@ -49,6 +50,7 @@ interface SlideProps {
 function Slide({ item }: SlideProps) {
   const { isDark } = useTheme();
   const bodyColor = isDark ? "rgba(255,255,255,0.55)" : "rgba(0,0,0,0.55)";
+  const slideAccent = isDark ? item.accent : (item.lightAccent ?? item.accent);
 
   return (
     <View style={[styles.slide, { width: SCREEN_W }]}>
@@ -56,9 +58,9 @@ function Slide({ item }: SlideProps) {
 
       <Animated.View
         entering={FadeIn.duration(600)}
-        style={[styles.iconWrap, { backgroundColor: item.accent + "1A", borderColor: item.accent + "30" }]}
+        style={[styles.iconWrap, { backgroundColor: slideAccent + "1A", borderColor: slideAccent + "30" }]}
       >
-        <Feather name={item.icon} size={52} color={item.accent} />
+        <Feather name={item.icon} size={52} color={slideAccent} />
       </Animated.View>
 
       <Animated.View entering={FadeInDown.delay(100).duration(500).springify()} style={styles.textBlock}>

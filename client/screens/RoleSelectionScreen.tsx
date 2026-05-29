@@ -122,7 +122,7 @@ export default function RoleSelectionScreen() {
         </Animated.View>
 
         <View style={styles.cardsContainer}>
-          <RoleCard icon="truck" title="I Need Help" description="Find nearby service providers instantly. Average response time: 8 minutes" onPress={handleDriverSelect} accentColor="#CC1B1B" delay={300} />
+          <RoleCard icon="truck" title="I Need Help" description="Find nearby service providers instantly. Average response time: 8 minutes" onPress={handleDriverSelect} accentColor={theme.primary} delay={300} />
           <RoleCard icon="tool" title="Earn Helping Others" description="No experience needed. Help nearby drivers on your own time" onPress={handleProviderSelect} accentColor={isDark ? "#C0C0C0" : "#555555"} delay={450} />
         </View>
       </View>
