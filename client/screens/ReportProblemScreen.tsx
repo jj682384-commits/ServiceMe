@@ -15,7 +15,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/context/AppContext";
-import { getApiUrl } from "@/lib/query-client";
+import { apiRequest } from "@/lib/query-client";
 import { Spacing, BorderRadius, Shadows } from "@/constants/theme";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -150,18 +150,12 @@ export default function ReportProblemScreen() {
 
     setIsSubmitting(true);
     try {
-      const url = new URL("/api/reports", getApiUrl()).toString();
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          category: selectedCategory,
-          description: description.trim(),
-          userId: authUser?.id || currentDriver?.id || currentProvider?.id,
-          userRole,
-        }),
+      await apiRequest("POST", "/api/reports", {
+        category: selectedCategory,
+        description: description.trim(),
+        userId: authUser?.id || currentDriver?.id || currentProvider?.id,
+        userRole,
       });
-      if (!res.ok) throw new Error("Server error");
       Alert.alert(
         "Report Submitted",
         "Thank you for your feedback. Our support team will review your report and get back to you within 24-48 hours.",
