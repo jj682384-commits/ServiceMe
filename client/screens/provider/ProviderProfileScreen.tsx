@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { View, StyleSheet, ScrollView, Pressable, Switch, Alert, TextInput } from "react-native";
+import { View, StyleSheet, Pressable, Switch, Alert, TextInput } from "react-native";
+import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
@@ -199,7 +200,7 @@ export default function ProviderProfileScreen() {
   return (
     <View style={[styles.container, { backgroundColor: isDark ? "#000000" : theme.backgroundRoot }]}>
       <AnimatedBackground />
-      <ScrollView
+      <KeyboardAwareScrollViewCompat
         contentContainerStyle={{
           paddingTop: Math.max(insets.top, Spacing["2xl"]) + Spacing.lg,
           paddingBottom: tabBarHeight + Spacing.xl,
@@ -495,7 +496,7 @@ export default function ProviderProfileScreen() {
           <MenuItem icon="log-out" label="Sign Out" isDestructive onPress={handleSignOut} />
           <MenuItem icon="trash-2" label="Delete Account" isDestructive onPress={handleDeleteAccount} />
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollViewCompat>
     </View>
   );
 }

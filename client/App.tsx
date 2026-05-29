@@ -3,6 +3,7 @@ import { StyleSheet } from "react-native";
 import { NavigationContainer, DefaultTheme, DarkTheme } from "@react-navigation/native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 import { StatusBar } from "expo-status-bar";
 import StripeWrapper from "@/components/StripeWrapper";
 import { useFonts, Exo2_400Regular, Exo2_400Regular_Italic, Exo2_500Medium, Exo2_600SemiBold, Exo2_700Bold, Exo2_700Bold_Italic } from "@expo-google-fonts/exo-2";
@@ -68,13 +69,15 @@ function AppInner({ stripePublishableKey }: { stripePublishableKey: string }) {
   return (
     <StripeWrapper publishableKey={stripePublishableKey}>
       <SafeAreaProvider>
-        <GestureHandlerRootView style={styles.root}>
-          <NavigationContainer theme={navTheme} ref={navigationRef}>
-            <NotificationSetup />
-            <RootStackNavigator />
-          </NavigationContainer>
-          <StatusBar style={isDark ? "light" : "dark"} />
-        </GestureHandlerRootView>
+        <KeyboardProvider>
+          <GestureHandlerRootView style={styles.root}>
+            <NavigationContainer theme={navTheme} ref={navigationRef}>
+              <NotificationSetup />
+              <RootStackNavigator />
+            </NavigationContainer>
+            <StatusBar style={isDark ? "light" : "dark"} />
+          </GestureHandlerRootView>
+        </KeyboardProvider>
       </SafeAreaProvider>
     </StripeWrapper>
   );
