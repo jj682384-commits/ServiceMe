@@ -82,9 +82,8 @@ export default function ProviderProfileScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { theme, isDark } = useTheme();
-  const { currentProvider, setCurrentProvider, setUserRole, logout, serviceRadius, toggleTheme } = useApp();
+  const { currentProvider, setCurrentProvider, setUserRole, logout, serviceRadius, toggleTheme, notificationsEnabled, setNotificationsEnabled } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
   const [priorityOptIn, setPriorityOptIn] = React.useState(currentProvider?.acceptsPriorityJobs ?? false);
   const [radiusInput, setRadiusInput] = useState(String(currentProvider?.serviceRadiusMiles ?? 25));
   const [savingRadius, setSavingRadius] = useState(false);
@@ -106,6 +105,11 @@ export default function ProviderProfileScreen() {
     } finally {
       setSavingRadius(false);
     }
+  };
+
+  const handleNotificationsToggle = (enabled: boolean) => {
+    setNotificationsEnabled(enabled);
+    apiRequest("PATCH", "/api/auth/preferences", { notificationsEnabled: enabled }).catch(() => {});
   };
 
   const handlePriorityToggle = async (value: boolean) => {
@@ -192,7 +196,7 @@ export default function ProviderProfileScreen() {
       insets={insets}
       navigation={navigation}
       notificationsEnabled={notificationsEnabled}
-      setNotificationsEnabled={setNotificationsEnabled}
+      handleNotificationsToggle={handleNotificationsToggle}
       priorityOptIn={priorityOptIn}
       handlePriorityToggle={handlePriorityToggle}
       radiusInput={radiusInput}
@@ -215,7 +219,7 @@ export default function ProviderProfileScreen() {
     insets={insets}
     navigation={navigation}
     notificationsEnabled={notificationsEnabled}
-    setNotificationsEnabled={setNotificationsEnabled}
+    handleNotificationsToggle={handleNotificationsToggle}
     priorityOptIn={priorityOptIn}
     handlePriorityToggle={handlePriorityToggle}
     radiusInput={radiusInput}
@@ -232,7 +236,7 @@ export default function ProviderProfileScreen() {
 // ─────────────────────────────────────────────
 // INDEPENDENT PROVIDER — relaxed, personal
 // ─────────────────────────────────────────────
-function IndependentProfile({ currentProvider, theme, isDark, sectionBg, paddingTop, paddingBottom, insets, navigation, notificationsEnabled, setNotificationsEnabled, priorityOptIn, handlePriorityToggle, radiusInput, setRadiusInput, savingRadius, handleSaveRadius, toggleTheme, handleSwitchRole, handleSignOut, handleDeleteAccount }: any) {
+function IndependentProfile({ currentProvider, theme, isDark, sectionBg, paddingTop, paddingBottom, insets, navigation, notificationsEnabled, handleNotificationsToggle, priorityOptIn, handlePriorityToggle, radiusInput, setRadiusInput, savingRadius, handleSaveRadius, toggleTheme, handleSwitchRole, handleSignOut, handleDeleteAccount }: any) {
   const firstName = currentProvider?.name?.split(" ")[0] || "there";
 
   return (
@@ -367,7 +371,7 @@ function IndependentProfile({ currentProvider, theme, isDark, sectionBg, padding
             <ThemedText type="body" style={styles.menuLabel}>Notifications</ThemedText>
             <Switch
               value={notificationsEnabled}
-              onValueChange={setNotificationsEnabled}
+              onValueChange={handleNotificationsToggle}
               trackColor={{ false: theme.border, true: theme.secondary }}
               thumbColor="#FFFFFF"
             />
@@ -460,7 +464,7 @@ function IndependentProfile({ currentProvider, theme, isDark, sectionBg, padding
 // ─────────────────────────────────────────────
 // BUSINESS PROVIDER — professional, management
 // ─────────────────────────────────────────────
-function BusinessProfile({ currentProvider, theme, isDark, sectionBg, paddingTop, paddingBottom, insets, navigation, notificationsEnabled, setNotificationsEnabled, priorityOptIn, handlePriorityToggle, radiusInput, setRadiusInput, savingRadius, handleSaveRadius, toggleTheme, handleSignOut, handleDeleteAccount }: any) {
+function BusinessProfile({ currentProvider, theme, isDark, sectionBg, paddingTop, paddingBottom, insets, navigation, notificationsEnabled, handleNotificationsToggle, priorityOptIn, handlePriorityToggle, radiusInput, setRadiusInput, savingRadius, handleSaveRadius, toggleTheme, handleSignOut, handleDeleteAccount }: any) {
   const companyName = currentProvider?.name || "My Business";
   const initials = companyName.split(" ").map((w: string) => w[0]).slice(0, 2).join("").toUpperCase();
 
@@ -662,7 +666,7 @@ function BusinessProfile({ currentProvider, theme, isDark, sectionBg, paddingTop
               <View style={styles.menuItem}>
                 <Feather name="bell" size={20} color={theme.textSecondary} />
                 <ThemedText type="body" style={styles.menuLabel}>Push Notifications</ThemedText>
-                <Switch value={notificationsEnabled} onValueChange={setNotificationsEnabled}
+                <Switch value={notificationsEnabled} onValueChange={handleNotificationsToggle}
                   trackColor={{ false: theme.border, true: theme.secondary }} thumbColor="#FFFFFF" />
               </View>
               <View style={[styles.menuItem, { borderTopWidth: 1, borderTopColor: theme.border }]}>
