@@ -985,6 +985,10 @@
         earningsBalance: p.earnings_balance ?? p.earningsBalance ?? 0,
         stripeAccountId: p.stripe_account_id || p.stripeAccountId || null,
         evCapable: !!(p.ev_capable || p.evCapable),
+        serviceRadiusMiles: p.service_radius_miles ?? p.serviceRadiusMiles ?? 25,
+        teamMembers: p.team_members || p.teamMembers || [],
+        fleetVehicles: p.fleet_vehicles || p.fleetVehicles || [],
+        businessHours: p.business_hours || p.businessHours || null,
         createdAt: p.created_at || p.createdAt,
       }));
       renderProviders();
@@ -1824,6 +1828,58 @@
       <div class="drawer-section">
         <div class="drawer-section-title">Services Offered</div>
         <div>${(p.servicesOffered || []).length ? (p.servicesOffered).map(s => `<span class="service-tag">${s.replace(/_/g," ")}</span>`).join("") : '<span style="color:var(--muted);font-size:13px">None listed</span>'}</div>
+      </div>
+
+      <div class="drawer-section">
+        <div class="drawer-section-title">Service Territory</div>
+        <div class="info-grid">
+          <div class="info-item"><div class="info-label">Coverage Radius</div><div class="info-val">${p.serviceRadiusMiles || 25} miles</div></div>
+        </div>
+      </div>
+
+      <div class="drawer-section">
+        <div class="drawer-section-title">Team Members (${(p.teamMembers || []).length})</div>
+        ${(p.teamMembers || []).length === 0
+          ? '<div style="color:var(--muted);font-size:13px">No team members added</div>'
+          : `<div style="display:flex;flex-direction:column;gap:8px">${(p.teamMembers || []).map(m => `
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,.04);border-radius:8px;border:1px solid rgba(255,255,255,.07)">
+              <div style="width:34px;height:34px;border-radius:50%;background:rgba(168,85,247,.15);display:flex;align-items:center;justify-content:center;font-size:14px;color:#a855f7;font-weight:600;flex-shrink:0">${esc((m.name||"?")[0].toUpperCase())}</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-weight:500;font-size:13px;color:var(--text)">${esc(m.name||"Unknown")}</div>
+                <div style="font-size:11px;color:var(--muted);margin-top:1px">${esc(m.role||"Staff")}${m.phone ? ` &bull; ${esc(m.phone)}` : ""}</div>
+              </div>
+            </div>`).join("")}</div>`
+        }
+      </div>
+
+      <div class="drawer-section">
+        <div class="drawer-section-title">Fleet Vehicles (${(p.fleetVehicles || []).length})</div>
+        ${(p.fleetVehicles || []).length === 0
+          ? '<div style="color:var(--muted);font-size:13px">No fleet vehicles added</div>'
+          : `<div style="display:flex;flex-direction:column;gap:8px">${(p.fleetVehicles || []).map(v => `
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,.04);border-radius:8px;border:1px solid rgba(255,255,255,.07)">
+              <div style="width:34px;height:34px;border-radius:50%;background:rgba(59,130,246,.15);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">&#128663;</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-weight:500;font-size:13px;color:var(--text)">${esc(v.year||"")} ${esc(v.make||"")} ${esc(v.model||"")}</div>
+                <div style="font-size:11px;color:var(--muted);margin-top:1px">${esc(v.type||"Vehicle")}${v.plate ? ` &bull; ${esc(v.plate)}` : ""}</div>
+              </div>
+            </div>`).join("")}</div>`
+        }
+      </div>
+
+      <div class="drawer-section">
+        <div class="drawer-section-title">Business Hours</div>
+        ${!p.businessHours
+          ? '<div style="color:var(--muted);font-size:13px">Not configured</div>'
+          : `<div style="display:flex;flex-direction:column;gap:6px">${["monday","tuesday","wednesday","thursday","friday","saturday","sunday"].map(day => {
+              const d = p.businessHours[day];
+              if (!d) return `<div style="display:flex;justify-content:space-between;padding:7px 12px;background:rgba(255,255,255,.03);border-radius:6px"><span style="color:var(--muted);font-size:13px;text-transform:capitalize">${day}</span><span style="font-size:13px;color:var(--muted)">Closed</span></div>`;
+              return `<div style="display:flex;justify-content:space-between;padding:7px 12px;background:rgba(255,255,255,.04);border-radius:6px;border:1px solid rgba(255,255,255,.06)">
+                <span style="font-size:13px;color:${d.open?"var(--text)":"var(--muted)"};text-transform:capitalize;font-weight:${d.open?500:400}">${day}</span>
+                <span style="font-size:13px;color:${d.open?"var(--cyan)":"var(--muted)"}">${d.open ? `${d.from||"9:00 AM"} – ${d.to||"5:00 PM"}` : "Closed"}</span>
+              </div>`;
+            }).join("")}</div>`
+        }
       </div>
 
       <div class="drawer-section">

@@ -1061,6 +1061,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           earningsBalance: p.earningsBalance ?? 0,
           stripeAccountId: p.stripeAccountId || null,
           evCapable: p.evCapable ?? false,
+          serviceRadiusMiles: p.serviceRadiusMiles ?? 25,
+          teamMembers: p.teamMembers ?? [],
+          fleetVehicles: p.fleetVehicles ?? [],
+          businessHours: p.businessHours ?? null,
           createdAt: r.created_at,
         };
       }));
