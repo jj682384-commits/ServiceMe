@@ -676,6 +676,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
+    // Invalidate the server-side session so the bearer token can't be reused
+    apiRequest("POST", "/api/auth/signout").catch(() => {});
     setIsAuthenticated(false);
     setAuthUser(null);
     setUserRole(null);

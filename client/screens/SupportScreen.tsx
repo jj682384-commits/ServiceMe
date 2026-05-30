@@ -24,7 +24,7 @@ import AnimatedBackground from "@/components/AnimatedBackground";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/context/AppContext";
-import { apiRequest, getApiUrl } from "@/lib/query-client";
+import { apiRequest, getApiUrl, getAuthToken } from "@/lib/query-client";
 import { Spacing, BorderRadius } from "@/constants/theme";
 
 const SUPPORT_PHONE = "1-800-SERVICE";
@@ -217,7 +217,8 @@ export default function SupportScreen() {
     if (!convId) return;
     try {
       const url = new URL(`/api/support/conversation/${convId}`, getApiUrl()).toString();
-      const res = await fetch(url);
+      const token = getAuthToken();
+      const res = await fetch(url, token ? { headers: { Authorization: `Bearer ${token}` } } : {});
       if (!res.ok) return;
       const data = await res.json();
       const serverMsgs: Array<{ role: string; content: string; ts: string; fromAdmin: boolean }> = data.messages || [];
@@ -264,7 +265,8 @@ export default function SupportScreen() {
   const openHistoryDetail = async (conv: ConvSummary) => {
     try {
       const url = new URL(`/api/support/conversation/${conv.id}`, getApiUrl()).toString();
-      const res = await fetch(url);
+      const token = getAuthToken();
+      const res = await fetch(url, token ? { headers: { Authorization: `Bearer ${token}` } } : {});
       const data = await res.json();
       const msgs: ChatMessage[] = (data.messages || []).map((m: any) => ({
         id: `${m.ts}-${Math.random()}`,

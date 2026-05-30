@@ -23,7 +23,7 @@ import { ScreenDecoration } from "@/components/ScreenDecoration";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceType, ServiceRequest } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
-import { getApiUrl, apiRequest } from "@/lib/query-client";
+import { getApiUrl, apiRequest, getAuthToken } from "@/lib/query-client";
 import * as Location from "expo-location";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { markJobSeen } from "@/hooks/useProviderJobAlerts";
@@ -425,8 +425,13 @@ export default function ProviderJobsScreen() {
       try {
         const url = new URL("/api/jobs/pending", getApiUrl());
         if (providerId) url.searchParams.set("providerId", providerId);
+        const token = getAuthToken();
         const res = await fetch(url.toString(), {
-          headers: { "Cache-Control": "no-cache", "Pragma": "no-cache" },
+          headers: {
+            "Cache-Control": "no-cache",
+            "Pragma": "no-cache",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
           signal: controller.signal,
         });
         if (!res.ok) throw new Error("Failed to fetch pending jobs");

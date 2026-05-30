@@ -128,7 +128,11 @@ export default function EditProfileScreen() {
     setIsSaving(true);
     try {
       await apiRequest("PATCH", "/api/auth/profile", { name: name.trim(), phone: phone.trim(), email: email.trim() });
-    } catch {}
+    } catch (err: any) {
+      setIsSaving(false);
+      Alert.alert("Save Failed", err?.message?.includes("409") ? "That email is already in use." : "Could not save your profile. Please try again.");
+      return;
+    }
 
     if (authUser) {
       setAuthUser({ ...authUser, name: name.trim(), email: email.trim(), phone: phone.trim() });
@@ -141,7 +145,13 @@ export default function EditProfileScreen() {
         servicesOffered, evCapable, evServices: evCapable ? evServices : [],
       };
       setCurrentProvider(updatedProvider);
-      try { await apiRequest("POST", "/api/providers/register", updatedProvider); } catch {}
+      try {
+        await apiRequest("POST", "/api/providers/register", updatedProvider);
+      } catch (err: any) {
+        setIsSaving(false);
+        Alert.alert("Save Failed", "Profile saved but provider details could not be updated. Please try again.");
+        return;
+      }
     } else {
       const base = currentDriver ?? { id: authUser?.id ?? "", avatarPreset: 1, membership: "free" as const };
       setCurrentDriver({ ...base, name: name.trim(), phone: phone.trim(), email: email.trim() });
