@@ -839,6 +839,30 @@
               </label>
             </div>
 
+            <!-- Towing: Distance calculator -->
+            <div id="tow-distance-panel" style="display:none;margin-bottom:16px">
+              <div class="section-label" style="margin-top:0;margin-bottom:10px">Estimated Distance</div>
+              <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:10px">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                  <span style="font-size:13px;color:var(--muted);font-weight:700">Hookup Fee</span>
+                  <span style="font-size:15px;font-weight:800">$65.00</span>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+                  <span style="font-size:13px;color:var(--muted);font-weight:700">Per Mile</span>
+                  <span style="font-size:15px;font-weight:800">$3.50 / mi</span>
+                </div>
+                <label class="input-label" style="margin-bottom:7px">Miles to destination</label>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <input class="web-input" type="number" id="tow-miles-input" value="5" min="1" max="200" style="flex:1" oninput="onTowMilesInput(this.value)" />
+                  <span style="font-size:13px;color:var(--muted);font-weight:700;white-space:nowrap">mi</span>
+                </div>
+                <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:space-between">
+                  <span style="font-size:12px;color:var(--muted)">Estimated total</span>
+                  <span style="font-size:17px;font-weight:900;color:var(--cyan)" id="tow-price-preview">$82.50</span>
+                </div>
+              </div>
+            </div>
+
             <!-- Fuel Delivery: Amount picker -->
             <div id="fuel-picker-panel" style="display:none;margin-bottom:16px">
               <div class="section-label" style="margin-top:0;margin-bottom:10px">How much fuel do you need?</div>
@@ -1118,15 +1142,21 @@
   let selectedFuelIndex = 2;
   let useCustomFuel = false;
   let customFuelAmount = "";
+  let towMiles = 5;
 
   const SERVICE_FEE = 2.99;
 
   const SERVICES = [
-    { name: "Flat Tire",      type: "flat_tire",      price: 40,  display: "$40",       eta: 15, emoji: "&#128739;" },
-    { name: "Jump Start",     type: "jump_start",     price: 25,  display: "$25",       eta: 12, emoji: "&#9889;" },
-    { name: "Fuel Delivery",  type: "fuel",           price: 0,   display: "From $10",  eta: 18, emoji: "&#9981;" },
-    { name: "Lockout",        type: "lockout",        price: 55,  display: "$55",       eta: 15, emoji: "&#128273;" },
-    { name: "OBD Diagnostic", type: "obd_diagnostic", price: 21,  display: "$21",       eta: 25, emoji: "&#128187;" },
+    { name: "Flat Tire",        type: "flat_tire",        price: 40,  display: "$40",       eta: 15, emoji: "&#128739;" },
+    { name: "Jump Start",       type: "jump_start",       price: 25,  display: "$25",       eta: 12, emoji: "&#9889;" },
+    { name: "Towing",           type: "tow",              price: 65,  display: "From $65",  eta: 25, emoji: "&#128664;" },
+    { name: "Fuel Delivery",    type: "fuel",             price: 0,   display: "From $10",  eta: 18, emoji: "&#9981;" },
+    { name: "Lockout",          type: "lockout",          price: 55,  display: "$55",       eta: 15, emoji: "&#128273;" },
+    { name: "OBD Diagnostic",   type: "obd_diagnostic",   price: 21,  display: "$21",       eta: 25, emoji: "&#128187;" },
+    { name: "Mobile Inflation", type: "mobile_inflation", price: 18,  display: "$18",       eta: 12, emoji: "&#128161;" },
+    { name: "Tire Check",       type: "tire_check",       price: 15,  display: "$15",       eta: 10, emoji: "&#128270;" },
+    { name: "Tire Replacement", type: "tire_replacement", price: 75,  display: "$75",       eta: 35, emoji: "&#128735;" },
+    { name: "Battery Check",    type: "battery_check",    price: 29,  display: "$29",       eta: 15, emoji: "&#9889;" },
   ];
 
   const FUEL_AMOUNTS = [
@@ -1141,7 +1171,12 @@
     { label: "$50", desc: "Get back on the road worry-free", price: 50 },
   ];
 
-  const SVC_ICONS = { "Flat Tire":"&#128739;","Jump Start":"&#9889;","Fuel Delivery":"&#9981;","Lockout":"&#128273;","OBD Diagnostic":"&#128187;" };
+  const SVC_ICONS = { "Flat Tire":"&#128739;","Jump Start":"&#9889;","Towing":"&#128664;","Fuel Delivery":"&#9981;","Lockout":"&#128273;","OBD Diagnostic":"&#128187;","Mobile Inflation":"&#128161;","Tire Check":"&#128270;","Tire Replacement":"&#128735;","Battery Check":"&#9889;" };
+
+  function getTowPrice() {
+    const miles = parseFloat(towMiles) || 0;
+    return 65 + (miles * 3.50);
+  }
 
   function getEffectivePrice() {
     if (!selectedService) return 0;
@@ -1149,6 +1184,7 @@
       if (useCustomFuel) return parseFloat(customFuelAmount) || 0;
       return FUEL_AMOUNTS[selectedFuelIndex].price;
     }
+    if (selectedService.type === "tow") return getTowPrice();
     let p = selectedService.price;
     if (selectedService.type === "jump_start" && addBatteryCheck) p += 8;
     return p;
@@ -1298,6 +1334,7 @@
     selectedFuelIndex = 2;
     useCustomFuel = false;
     customFuelAmount = "";
+    towMiles = 5;
     document.getElementById("request-form").style.display = "block";
     document.getElementById("request-title").textContent = svc.name;
     document.getElementById("request-eta").textContent = `~${svc.eta} min`;
@@ -1308,6 +1345,12 @@
     addOnPanel.style.display = svc.type === "jump_start" ? "block" : "none";
     const battChk = document.getElementById("battery-check-toggle");
     if (battChk) { battChk.checked = false; }
+
+    // Tow distance panel
+    const towPanel = document.getElementById("tow-distance-panel");
+    towPanel.style.display = svc.type === "tow" ? "block" : "none";
+    const towInput = document.getElementById("tow-miles-input");
+    if (towInput) towInput.value = "5";
 
     // Fuel picker panel
     const fuelPanel = document.getElementById("fuel-picker-panel");
@@ -1452,6 +1495,14 @@
     } catch { toast("Network error. Check your connection."); }
   }
 
+  function onTowMilesInput(val) {
+    towMiles = val;
+    const preview = document.getElementById("tow-price-preview");
+    const price = getTowPrice();
+    if (preview) preview.textContent = `$${price.toFixed(2)}`;
+    updatePriceDisplay();
+  }
+
   function cancelRequest() {
     document.getElementById("request-form").style.display = "none";
     document.querySelectorAll(".service-btn").forEach(b => b.classList.remove("selected"));
@@ -1461,6 +1512,7 @@
     selectedFuelIndex = 2;
     useCustomFuel = false;
     customFuelAmount = "";
+    towMiles = 5;
   }
 
   function resetRequest() {
@@ -1502,7 +1554,7 @@
   }
 
   // ── Provider Jobs ──
-  const JOB_ICONS = { flat_tire:"&#128739;", jump_start:"&#9889;", towing:"&#128664;", fuel_delivery:"&#9981;", lockout:"&#128273;", obd_diagnostic:"&#128187;", mobile_ev_charging:"&#128268;", ev_safe_tow:"&#128690;" };
+  const JOB_ICONS = { flat_tire:"&#128739;", jump_start:"&#9889;", tow:"&#128664;", towing:"&#128664;", fuel:"&#9981;", fuel_delivery:"&#9981;", lockout:"&#128273;", obd_diagnostic:"&#128187;", mobile_inflation:"&#128161;", tire_check:"&#128270;", tire_replacement:"&#128735;", battery_check:"&#9889;", mobile_ev_charging:"&#128268;", ev_safe_tow:"&#128690;" };
 
   async function loadProviderJobs() {
     try {
