@@ -450,11 +450,13 @@
       </div>
     </div>
     <p>Sign in to manage your platform.</p>
+    <form onsubmit="event.preventDefault();login()">
     <div class="field">
       <label>Admin Password</label>
-      <input type="password" id="password-input" placeholder="Enter admin password" onkeydown="if(event.key==='Enter')login()" />
+      <input type="password" id="password-input" placeholder="Enter admin password" autocomplete="current-password" />
     </div>
-    <button class="btn btn-primary" onclick="login()" id="login-btn">Sign In</button>
+    <button class="btn btn-primary" type="submit" id="login-btn">Sign In</button>
+    </form>
     <div class="error-msg" id="login-error"></div>
   </div>
 </div>

@@ -1030,9 +1030,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const privacyPage = path.resolve(process.cwd(), "server", "templates", "privacy.html");
     if (fs.existsSync(privacyPage)) {
       res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+      res.setHeader("Clear-Site-Data", '"cache"');
       res.send(fs.readFileSync(privacyPage, "utf-8"));
     } else {
       res.status(404).send("Privacy policy not found");
+    }
+  });
+
+  app.get("/terms", (_req: Request, res: Response) => {
+    const termsPage = path.resolve(process.cwd(), "server", "templates", "terms.html");
+    if (fs.existsSync(termsPage)) {
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+      res.setHeader("Clear-Site-Data", '"cache"');
+      res.send(fs.readFileSync(termsPage, "utf-8"));
+    } else {
+      res.status(404).send("Terms of Service not found");
     }
   });
 
