@@ -215,6 +215,7 @@
     .badge.verified { background: rgba(34,197,94,.15); color: var(--success); }
     .badge.not-started { background: rgba(255,255,255,.08); color: var(--muted); }
     .badge.revoked { background: rgba(239,68,68,.15); color: #ef4444; }
+    .badge.suspended { background: rgba(245,158,11,.18); color: #f59e0b; }
     .badge.completed { background: rgba(34,197,94,.15); color: var(--success); }
     .badge.accepted { background: rgba(192,192,192,.1); color: #C0C0C0; }
     .badge.cancelled { background: rgba(239,68,68,.12); color: var(--danger); }
@@ -231,6 +232,7 @@
     }
     .provider-card.pending { border-left: 3px solid var(--warning); }
     .provider-card.verified { border-left: 3px solid var(--success); }
+    .provider-card.suspended { border-left: 3px solid #f59e0b; opacity: 0.75; }
     .provider-card.not_started { border-left: 3px solid rgba(255,255,255,.12); }
     .card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
     .card-name { font-size: 15px; font-weight: 800; }
@@ -510,6 +512,13 @@
       <div class="nav-item" onclick="showPage('notify')" id="nav-notify">
         <span class="nav-icon">&#128276;</span> Notifications
       </div>
+      <div class="nav-section">System</div>
+      <div class="nav-item" onclick="showPage('audit-log')" id="nav-audit-log">
+        <span class="nav-icon">&#128196;</span> Audit Log
+      </div>
+      <div class="nav-item" onclick="showPage('search')" id="nav-search">
+        <span class="nav-icon">&#128269;</span> Search
+      </div>
     </nav>
     <div class="sidebar-footer">
       <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="signOut()">Sign Out</button>
@@ -538,6 +547,20 @@
         <div class="stat-card"><div class="stat-label">Total Volume</div><div class="stat-value" id="ov-volume">—</div></div>
         <div class="stat-card"><div class="stat-label">Direct Requests</div><div class="stat-value" style="color:#c084fc" id="ov-direct">—</div><div class="stat-sub" style="font-size:11px;color:var(--muted);margin-top:2px">Provider-specific jobs</div></div>
         <div class="stat-card"><div class="stat-label">Waitlist Signups</div><div class="stat-value purple" style="color:var(--purple)" id="ov-waitlist">—</div></div>
+      </div>
+      <!-- Revenue Chart -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-top:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div>
+            <div style="font-weight:700;font-size:15px">Revenue — Last 30 Days</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">Daily platform fees from completed jobs</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="loadRevenueChart()">&#8635; Refresh</button>
+        </div>
+        <div id="revenue-chart-wrap" style="position:relative;height:180px">
+          <canvas id="revenue-chart" style="width:100%;height:180px"></canvas>
+          <div id="revenue-chart-empty" style="display:none;position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px">No job data yet</div>
+        </div>
       </div>
     </div>
 
@@ -580,6 +603,8 @@
         <button class="ftab" onclick="setProviderTab('pending')" id="ftab-pending">Pending</button>
         <button class="ftab" onclick="setProviderTab('verified')" id="ftab-verified">Verified</button>
         <button class="ftab" onclick="setProviderTab('not_started')" id="ftab-not-started">Not Started</button>
+        <button class="ftab" onclick="setProviderTab('revoked')" id="ftab-revoked">Revoked</button>
+        <button class="ftab" onclick="setProviderTab('suspended')" id="ftab-suspended">Suspended</button>
       </div>
       <div class="provider-list" id="provider-list">
         <div class="loading">Loading providers...</div>
@@ -593,14 +618,17 @@
           <div class="page-title">Drivers</div>
           <div class="page-sub">All registered driver accounts</div>
         </div>
-        <button class="btn btn-ghost btn-sm" onclick="loadUsers()">&#8635; Refresh</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="exportUsersCSV()">&#8615; Export CSV</button>
+          <button class="btn btn-ghost btn-sm" onclick="loadUsers()">&#8635; Refresh</button>
+        </div>
       </div>
       <div class="table-wrap">
         <div class="table-toolbar">
           <input class="search-input" placeholder="Search by name or email..." oninput="filterUsers(this.value)" />
         </div>
         <table>
-          <thead><tr><th>Name / Email</th><th>Joined</th><th>Stripe</th><th>Push Token</th><th>Jobs</th><th></th></tr></thead>
+          <thead><tr><th>Name / Email</th><th>Joined</th><th>Status</th><th>Stripe</th><th>Push Token</th><th>Jobs</th><th></th></tr></thead>
           <tbody id="users-table-body"></tbody>
         </table>
       </div>
@@ -613,7 +641,10 @@
           <div class="page-title">Jobs</div>
           <div class="page-sub" id="jobs-updated">All service requests (last 200)</div>
         </div>
-        <button class="btn btn-ghost btn-sm" onclick="loadJobs()">&#8635; Refresh</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="exportJobsCSV()">&#8615; Export CSV</button>
+          <button class="btn btn-ghost btn-sm" onclick="loadJobs()">&#8635; Refresh</button>
+        </div>
       </div>
       <div class="table-wrap">
         <div class="table-toolbar">
@@ -628,7 +659,7 @@
           </select>
         </div>
         <table>
-          <thead><tr><th>ID</th><th>Service</th><th>Status</th><th>Driver</th><th>Provider</th><th>Amount</th><th>Flags</th><th>Date</th></tr></thead>
+          <thead><tr><th>ID</th><th>Service</th><th>Status</th><th>Driver</th><th>Provider</th><th>Amount</th><th>Flags</th><th>Date</th><th>Actions</th></tr></thead>
           <tbody id="jobs-table-body"></tbody>
         </table>
       </div>
@@ -797,7 +828,46 @@
       </div>
     </div>
 
+    <!-- Audit Log -->
+    <div class="page" id="page-audit-log">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Audit Log</div>
+          <div class="page-sub">All admin actions, newest first</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="loadAuditLog()">&#8635; Refresh</button>
+      </div>
+      <div class="table-wrap">
+        <div class="table-toolbar">
+          <input class="search-input" placeholder="Filter by action or name..." oninput="filterAuditLog(this.value)" />
+        </div>
+        <table>
+          <thead><tr><th>Action</th><th>Type</th><th>Target</th><th>Details</th><th>Date</th></tr></thead>
+          <tbody id="audit-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Global Search -->
+    <div class="page" id="page-search">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Global Search</div>
+          <div class="page-sub">Search across jobs, drivers, and providers</div>
+        </div>
+      </div>
+      <div style="margin-bottom:20px">
+        <div style="display:flex;gap:10px">
+          <input id="global-search-input" class="search-input" style="flex:1;font-size:15px;padding:10px 16px" placeholder="Type to search..." oninput="globalSearch(this.value)" />
+        </div>
+      </div>
+      <div id="search-results">
+        <div style="color:var(--muted);font-size:14px;text-align:center;padding:40px 0">Enter a search term above</div>
+      </div>
+    </div>
+
   </div>
+
 </div>
 
 <!-- Detail Drawer -->
@@ -809,7 +879,7 @@
 
 <script>
   let token = localStorage.getItem("sm_admin_token") || "";
-  let allProviders = [], allUsers = [], allJobs = [], allWaitlist = [], allReports = [];
+  let allProviders = [], allUsers = [], allJobs = [], allWaitlist = [], allReports = [], allAuditLog = [];
   let providerTab = "all";
   let jobStatusFilter = "";
   let waitlistRoleFilter = "";
@@ -942,6 +1012,8 @@
       clearInterval(scRefreshTimer);
       scRefreshTimer = null;
     }
+    if (id === "audit-log") loadAuditLog();
+    if (id === "search") { setTimeout(() => { const el = document.getElementById("global-search-input"); if (el) el.focus(); }, 100); }
   }
 
   // ── Load All ──
@@ -949,6 +1021,7 @@
     document.getElementById("overview-time").textContent = "Last updated " + new Date().toLocaleTimeString();
     await Promise.all([loadProviders(), loadUsers(), loadJobs(), loadEarnings(), loadReports(), loadWaitlist(), loadLiveJobs()]);
     updateOverview();
+    loadRevenueChart();
   }
 
   function updateOverview() {
@@ -1013,7 +1086,7 @@
 
   function buildProviderCard(p) {
     const status = p.verificationStatus || "not_started";
-    const badgeLabel = status === "verified" ? "Verified" : status === "pending" ? "Pending Review" : status === "revoked" ? "Revoked" : "Not Started";
+    const badgeLabel = status === "verified" ? "Verified" : status === "pending" ? "Pending Review" : status === "revoked" ? "Revoked" : status === "suspended" ? "Suspended" : "Not Started";
     const docs = REQUIRED_DOCS[p.providerType] || REQUIRED_DOCS.independent;
     const docsHtml = docs.map(key => {
       const val = p.verificationDocuments && p.verificationDocuments[key];
@@ -1021,11 +1094,13 @@
     }).join("");
     const submittedDate = p.verificationSubmittedAt ? `Submitted ${fmtDate(p.verificationSubmittedAt)}` : "";
     const rejNote = p.verificationNotes ? `<div class="rejection-note">Previous note: ${esc(p.verificationNotes)}</div>` : "";
+    const providerJobCount = allJobs.filter(j => j.provider && j.provider.id === p.id).length;
     const actionsHtml = status === "pending"
       ? `<input class="reject-input" id="note-${p.id}" placeholder="Rejection reason (optional)" onclick="event.stopPropagation()" /><button class="btn btn-success btn-sm" onclick="event.stopPropagation();approveProvider('${p.id}')">Approve</button><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();rejectProvider('${p.id}')">Reject</button>`
-      : status === "not_started" ? `<span style="font-size:12px;color:var(--muted)">Awaiting documents</span>`
-      : status === "revoked" ? `<button class="btn btn-sm" style="background:var(--warning,#f59e0b);color:#000" onclick="event.stopPropagation();reinstateProvider('${p.id}')">Reinstate</button>`
-      : `<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();revokeProvider('${p.id}')">Revoke</button>`;
+      : status === "not_started" ? `<span style="font-size:12px;color:var(--muted)">Awaiting documents</span><button class="btn btn-sm" style="background:var(--danger,#ef4444);color:#fff;margin-left:8px" onclick="event.stopPropagation();suspendProvider('${p.id}','${esc(p.name)}')">Suspend</button>`
+      : status === "revoked" ? `<button class="btn btn-sm" style="background:var(--warning,#f59e0b);color:#000" onclick="event.stopPropagation();reinstateProvider('${p.id}')">Reinstate</button><button class="btn btn-sm" style="background:var(--danger,#ef4444);color:#fff;margin-left:8px" onclick="event.stopPropagation();suspendProvider('${p.id}','${esc(p.name)}')">Suspend</button>`
+      : status === "suspended" ? `<button class="btn btn-sm" style="background:var(--success,#22c55e);color:#fff" onclick="event.stopPropagation();unsuspendProvider('${p.id}','${esc(p.name)}')">Unsuspend</button>`
+      : `<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();revokeProvider('${p.id}')">Revoke</button><button class="btn btn-sm" style="background:var(--danger,#ef4444);color:#fff;margin-left:8px" onclick="event.stopPropagation();suspendProvider('${p.id}','${esc(p.name)}')">Suspend</button>`;
     return `<div class="provider-card ${status}" id="card-${p.id}" onclick="openProviderDetail('${p.id}')" style="position:relative">
       <div class="card-header">
         <div><div class="card-name">${esc(p.name)}</div><div class="card-meta">${esc(p.email)} &bull; ${esc(p.phone || "No phone")} &bull; ${p.providerType === "shop" ? "Business / Shop" : "Independent"}</div></div>
@@ -1034,7 +1109,7 @@
       <div class="card-details">
         <div class="detail-item"><div class="detail-label">Vehicle</div>${esc(p.vehicleMake)} ${esc(p.vehicleModel)} &bull; ${esc(p.licensePlate || "No plate")}</div>
         <div class="detail-item"><div class="detail-label">Services</div>${(p.servicesOffered || []).slice(0,4).map(s=>svcLabel(s)).join(", ") || "None"}</div>
-        <div class="detail-item"><div class="detail-label">Rating</div>${p.rating ? `${Number(p.rating).toFixed(1)} (${p.reviewCount} reviews)` : "No reviews"}</div>
+        <div class="detail-item"><div class="detail-label">Rating</div>${p.rating ? `${Number(p.rating).toFixed(1)} (${p.reviewCount} reviews)` : "No reviews"} &bull; ${providerJobCount} job${providerJobCount !== 1 ? "s" : ""}</div>
         <div class="detail-item"><div class="detail-label">Balance</div>${fmtMoney(p.earningsBalance)} ${p.stripeAccountId ? '&bull; <span style="color:var(--success);font-size:11px">Stripe &#10003;</span>' : ''}</div>
       </div>
       <div class="docs-section"><div class="docs-title">Documents</div><div class="docs-list">${docsHtml}</div></div>
@@ -1095,10 +1170,16 @@
   function renderUsers(users) {
     const drivers = users.filter(u => u.role !== "provider");
     const body = document.getElementById("users-table-body");
-    if (!drivers.length) { body.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">&#128100;</div><p>No drivers found.</p></div></td></tr>`; return; }
-    body.innerHTML = drivers.map(u => `<tr class="clickable-row" onclick="openDriverDetail('${u.id}')">
+    if (!drivers.length) { body.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">&#128100;</div><p>No drivers found.</p></div></td></tr>`; return; }
+    body.innerHTML = drivers.map(u => `<tr class="clickable-row" onclick="openDriverDetail('${u.id}')" style="${u.suspended ? 'opacity:0.65' : ''}">
       <td><div class="td-name">${esc(u.name)}</div><div class="td-sub">${esc(u.email)}</div></td>
       <td style="color:var(--muted);font-size:12px">${fmtDate(u.created_at)}</td>
+      <td onclick="event.stopPropagation()">
+        ${u.suspended
+          ? `<span class="badge cancelled" style="font-size:11px;margin-right:6px">Suspended</span><button class="btn btn-sm" style="background:var(--success);color:#fff;font-size:11px" onclick="unsuspendUser('${u.id}','${esc(u.name)}')">Restore</button>`
+          : `<span style="font-size:11px;color:var(--success)">Active</span><button class="btn btn-sm btn-ghost" style="margin-left:6px;font-size:11px" onclick="suspendUser('${u.id}','${esc(u.name)}')">Suspend</button>`
+        }
+      </td>
       <td><span style="font-size:11px;color:${u.stripe_customer_id ? "var(--success)" : "var(--muted)"}">${u.stripe_customer_id ? "&#10003; Connected" : "Not linked"}</span></td>
       <td><span style="font-size:11px;color:${u.push_token ? "var(--success)" : "var(--muted)"}">${u.push_token ? "&#10003; Registered" : "None"}</span></td>
       <td style="color:var(--muted);font-size:12px">${allJobs.filter(j => j.driver && j.driver.name === u.name).length} jobs</td>
@@ -1142,7 +1223,7 @@
   function filterJobsByStatus(s) { jobStatusFilter = s; renderJobs(applyJobFilters(allJobs)); }
   function renderJobs(jobs) {
     const body = document.getElementById("jobs-table-body");
-    if (!jobs.length) { body.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">&#128203;</div><p>No jobs found.</p></div></td></tr>`; return; }
+    if (!jobs.length) { body.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="empty-icon">&#128203;</div><p>No jobs found.</p></div></td></tr>`; return; }
     body.innerHTML = jobs.map(j => {
       const driverName = j.driver?.name || "—";
       const providerName = j.provider?.name || "—";
@@ -1150,6 +1231,9 @@
       const directBadge = j.requested_provider_id
         ? `<span title="Provider ID: ${esc(j.requested_provider_id)}" style="display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;background:rgba(192,132,252,0.18);color:#c084fc;border:1px solid rgba(192,132,252,0.35);margin-right:3px;cursor:default;">direct</span>`
         : "";
+      const isActive = !["completed","cancelled"].includes(j.status);
+      const cancelBtn = isActive ? `<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();adminCancelJob('${j.id}')">Cancel</button>` : "";
+      const refundBtn = `<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();adminRefundJob('${j.id}','${esc(j.stripe_payment_intent_id||'')}','${fmtMoney(j.total_cost||j.estimated_cost)}')" style="font-size:10px">Refund</button>`;
       return `<tr>
         <td style="font-size:11px;color:var(--muted);font-family:monospace">${j.id.slice(0,8)}</td>
         <td>${esc(svcLabel(j.service_type))}</td>
@@ -1159,6 +1243,7 @@
         <td>${fmtMoney(j.total_cost || j.estimated_cost)}</td>
         <td>${directBadge}${flags.map(f => `<span class="badge ${f}" style="margin-right:3px">${f}</span>`).join("")}</td>
         <td style="color:var(--muted);font-size:12px">${fmtDate(j.created_at)}</td>
+        <td onclick="event.stopPropagation()" style="white-space:nowrap">${cancelBtn} ${refundBtn}</td>
       </tr>`;
     }).join("");
   }
@@ -1988,9 +2073,246 @@
 
       <div class="drawer-section">
         <div class="drawer-section-title">Actions</div>
-        <button class="btn btn-danger btn-sm" onclick="closeDrawer(); setTimeout(() => deleteUser('${u.id}', '${esc(u.name).replace(/'/g,"\\'")}'), 200)">Remove Account</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          ${u.suspended
+            ? `<button class="btn btn-sm" style="background:var(--success,#22c55e);color:#fff" onclick="closeDrawer();setTimeout(()=>unsuspendUser('${u.id}','${esc(u.name).replace(/'/g,"\\'")}'),200)">Restore Account</button>`
+            : `<button class="btn btn-sm" style="background:var(--warning,#f59e0b);color:#000" onclick="closeDrawer();setTimeout(()=>suspendUser('${u.id}','${esc(u.name).replace(/'/g,"\\'")}'),200)">Suspend Account</button>`
+          }
+          <button class="btn btn-danger btn-sm" onclick="closeDrawer(); setTimeout(() => deleteUser('${u.id}', '${esc(u.name).replace(/'/g,"\\'")}'), 200)">Remove Account</button>
+        </div>
       </div>`;
     openDrawer();
+  }
+
+  // ── Suspend / Unsuspend Users ──────────────────────────────────────────────
+  async function suspendUser(id, name) {
+    if (!confirm(`Suspend driver "${name}"? They will be signed out and unable to log in.`)) return;
+    try {
+      const res = await fetch(`${getBase()}/api/admin/users/${id}/suspend`, { method:"POST", headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"} });
+      if (!res.ok) throw new Error((await res.json().catch(()=>({}))).error || "Request failed");
+      await loadUsers();
+    } catch(e) { alert("Failed to suspend: " + e.message); }
+  }
+  async function unsuspendUser(id, name) {
+    if (!confirm(`Restore driver "${name}"? They will be able to log in again.`)) return;
+    try {
+      const res = await fetch(`${getBase()}/api/admin/users/${id}/unsuspend`, { method:"POST", headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"} });
+      if (!res.ok) throw new Error((await res.json().catch(()=>({}))).error || "Request failed");
+      await loadUsers();
+    } catch(e) { alert("Failed to restore: " + e.message); }
+  }
+
+  // ── Suspend / Unsuspend Providers ─────────────────────────────────────────
+  async function suspendProvider(id, name) {
+    if (!confirm(`Suspend provider "${name}"? They will be unable to accept jobs.`)) return;
+    try {
+      const res = await fetch(`${getBase()}/api/admin/providers/${id}/suspend`, { method:"POST", headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"} });
+      if (!res.ok) throw new Error((await res.json().catch(()=>({}))).error || "Request failed");
+      await loadProviders();
+    } catch(e) { alert("Failed to suspend: " + e.message); }
+  }
+  async function unsuspendProvider(id, name) {
+    if (!confirm(`Unsuspend provider "${name}"? They will go back to awaiting verification.`)) return;
+    try {
+      const res = await fetch(`${getBase()}/api/admin/providers/${id}/unsuspend`, { method:"POST", headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"} });
+      if (!res.ok) throw new Error((await res.json().catch(()=>({}))).error || "Request failed");
+      await loadProviders();
+    } catch(e) { alert("Failed to unsuspend: " + e.message); }
+  }
+
+  // ── Admin Cancel / Refund Job ─────────────────────────────────────────────
+  async function adminCancelJob(id) {
+    if (!confirm(`Force-cancel job ${id.slice(0,8)}? The driver will see the job as cancelled.`)) return;
+    try {
+      const res = await fetch(`${getBase()}/api/admin/jobs/${id}/cancel`, { method:"POST", headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"} });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Cancel failed");
+      await loadJobs();
+    } catch(e) { alert("Failed to cancel: " + e.message); }
+  }
+  async function adminRefundJob(id, piId, displayAmount) {
+    const piInput = prompt(`Refund job ${id.slice(0,8)} (${displayAmount})\n\nEnter Stripe Payment Intent ID (leave blank to try stored value):\n${piId ? "Stored: " + piId : "Not stored — paste from Stripe Dashboard"}`, piId || "");
+    if (piInput === null) return;
+    const amtStr = prompt(`Amount to refund in USD (leave blank for full refund of ${displayAmount}):`, "");
+    if (amtStr === null) return;
+    const amount = amtStr.trim() ? parseFloat(amtStr.trim()) : undefined;
+    if (amtStr.trim() && (isNaN(amount) || amount <= 0)) { alert("Invalid amount."); return; }
+    try {
+      const body = { paymentIntentId: piInput.trim() || undefined };
+      if (amount) body.amount = amount;
+      const res = await fetch(`${getBase()}/api/admin/jobs/${id}/refund`, { method:"POST", headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"}, body:JSON.stringify(body) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Refund failed");
+      alert(`Refund of $${data.amount.toFixed(2)} issued successfully. Refund ID: ${data.refundId}`);
+    } catch(e) { alert("Refund failed: " + e.message); }
+  }
+
+  // ── Audit Log ─────────────────────────────────────────────────────────────
+  async function loadAuditLog() {
+    try {
+      const res = await fetch(`${getBase()}/api/admin/audit-log`, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.status === 401) { signOut(true); return; }
+      allAuditLog = await res.json();
+      renderAuditLog(allAuditLog);
+    } catch {}
+  }
+  function renderAuditLog(items) {
+    const body = document.getElementById("audit-table-body");
+    if (!body) return;
+    if (!items.length) { body.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">&#128196;</div><p>No admin actions recorded yet.</p></div></td></tr>`; return; }
+    const actionColors = { suspend_user:"var(--warning,#f59e0b)", unsuspend_user:"var(--success)", suspend_provider:"var(--warning,#f59e0b)", unsuspend_provider:"var(--success)", revoke_provider:"var(--danger,#ef4444)", refund_job:"#a855f7", cancel_job:"var(--danger,#ef4444)", delete_user:"var(--danger,#ef4444)", approve_provider:"var(--success)", reject_provider:"var(--warning,#f59e0b)" };
+    body.innerHTML = items.map(a => {
+      const color = actionColors[a.action] || "var(--cyan)";
+      return `<tr>
+        <td><span style="font-size:11px;font-weight:700;color:${color};background:${color}22;padding:2px 8px;border-radius:100px">${a.action.replace(/_/g," ")}</span></td>
+        <td style="font-size:12px;color:var(--muted)">${a.target_type || "—"}</td>
+        <td style="font-size:12px">${esc(a.target_name || a.target_id || "—")}</td>
+        <td style="font-size:12px;color:var(--muted)">${esc(a.details || "—")}</td>
+        <td style="font-size:11px;color:var(--muted)">${fmtDate(a.created_at)}</td>
+      </tr>`;
+    }).join("");
+  }
+  function filterAuditLog(q) {
+    const filtered = allAuditLog.filter(a => `${a.action} ${a.target_name} ${a.target_id} ${a.details}`.toLowerCase().includes(q.toLowerCase()));
+    renderAuditLog(filtered);
+  }
+
+  // ── Revenue Chart ─────────────────────────────────────────────────────────
+  async function loadRevenueChart() {
+    try {
+      const res = await fetch(`${getBase()}/api/admin/revenue-chart`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) return;
+      const data = await res.json();
+      renderRevenueChart(data);
+    } catch {}
+  }
+  function renderRevenueChart(data) {
+    const canvas = document.getElementById("revenue-chart");
+    const emptyDiv = document.getElementById("revenue-chart-empty");
+    if (!canvas) return;
+    if (!data || !data.length) {
+      canvas.style.display = "none";
+      if (emptyDiv) emptyDiv.style.display = "flex";
+      return;
+    }
+    if (emptyDiv) emptyDiv.style.display = "none";
+    canvas.style.display = "block";
+    const ctx = canvas.getContext("2d");
+    const W = canvas.offsetWidth || 800;
+    const H = 180;
+    canvas.width = W;
+    canvas.height = H;
+    const isLight = document.documentElement.getAttribute("data-theme") === "light";
+    const textColor = isLight ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.4)";
+    const gridColor = isLight ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.07)";
+    const barColor = "#0066FF";
+    const zeroColor = isLight ? "rgba(0,102,255,0.12)" : "rgba(0,102,255,0.2)";
+    const pad = { left: 48, right: 12, top: 12, bottom: 32 };
+    const chartW = W - pad.left - pad.right;
+    const chartH = H - pad.top - pad.bottom;
+    const maxRev = Math.max(...data.map(d => d.revenue), 0.01);
+    const labels = data.map(d => {
+      const dt = new Date(d.day);
+      return (dt.getMonth()+1) + "/" + dt.getDate();
+    });
+    ctx.clearRect(0, 0, W, H);
+    const gridLines = 4;
+    for (let i = 0; i <= gridLines; i++) {
+      const y = pad.top + chartH - (i / gridLines) * chartH;
+      ctx.strokeStyle = gridColor;
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(W - pad.right, y); ctx.stroke();
+      ctx.fillStyle = textColor;
+      ctx.font = "10px sans-serif";
+      ctx.textAlign = "right";
+      ctx.fillText("$" + ((maxRev * i / gridLines).toFixed(0)), pad.left - 4, y + 3);
+    }
+    const barW = Math.max(2, Math.floor(chartW / data.length) - 2);
+    data.forEach((d, i) => {
+      const x = pad.left + (i / data.length) * chartW + (chartW / data.length - barW) / 2;
+      const barH = d.revenue > 0 ? Math.max(2, (d.revenue / maxRev) * chartH) : 0;
+      const y = pad.top + chartH - barH;
+      ctx.fillStyle = d.revenue > 0 ? barColor : zeroColor;
+      ctx.beginPath();
+      ctx.roundRect ? ctx.roundRect(x, y, barW, barH, [2, 2, 0, 0]) : ctx.rect(x, y, barW, barH);
+      ctx.fill();
+      if (data.length <= 20 && i % Math.ceil(data.length / 10) === 0) {
+        ctx.fillStyle = textColor;
+        ctx.font = "9px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(labels[i], x + barW / 2, H - 8);
+      }
+    });
+  }
+
+  // ── CSV Exports ───────────────────────────────────────────────────────────
+  function exportJobsCSV() {
+    if (!allJobs.length) { alert("No jobs to export."); return; }
+    const headers = ["ID","Service","Status","Driver","Provider","Amount","Fee","Date","Express","EV","Emergency"];
+    const rows = allJobs.map(j => [
+      j.id, j.service_type, j.status,
+      j.driver?.name || "", j.provider?.name || "",
+      j.total_cost || j.estimated_cost || "",
+      j.service_fee || "",
+      j.created_at ? new Date(j.created_at).toISOString() : "",
+      j.is_express ? "yes" : "no", j.is_ev ? "yes" : "no", j.is_emergency ? "yes" : "no"
+    ]);
+    downloadCSV("resqride-jobs-" + new Date().toISOString().slice(0,10) + ".csv", [headers, ...rows]);
+  }
+  function exportUsersCSV() {
+    const drivers = allUsers.filter(u => u.role !== "provider");
+    if (!drivers.length) { alert("No drivers to export."); return; }
+    const headers = ["ID","Name","Email","Joined","Stripe","Suspended","Jobs"];
+    const rows = drivers.map(u => [
+      u.id, u.name, u.email,
+      u.created_at ? new Date(u.created_at).toISOString() : "",
+      u.stripe_customer_id ? "yes" : "no",
+      u.suspended ? "yes" : "no",
+      allJobs.filter(j => j.driver && j.driver.name === u.name).length
+    ]);
+    downloadCSV("resqride-drivers-" + new Date().toISOString().slice(0,10) + ".csv", [headers, ...rows]);
+  }
+  function downloadCSV(filename, rows) {
+    const csv = rows.map(r => r.map(v => `"${String(v||"").replace(/"/g,'""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  // ── Global Search ─────────────────────────────────────────────────────────
+  function globalSearch(q) {
+    const container = document.getElementById("search-results");
+    if (!q || q.length < 2) { container.innerHTML = `<div style="color:var(--muted);font-size:14px;text-align:center;padding:40px 0">Enter at least 2 characters</div>`; return; }
+    const ql = q.toLowerCase();
+    const matchedJobs = allJobs.filter(j => `${j.id} ${j.service_type} ${j.driver?.name||""} ${j.provider?.name||""}`.toLowerCase().includes(ql)).slice(0,10);
+    const matchedUsers = allUsers.filter(u => u.role !== "provider" && `${u.name} ${u.email}`.toLowerCase().includes(ql)).slice(0,10);
+    const matchedProviders = allProviders.filter(p => `${p.name} ${p.email} ${p.phone||""}`.toLowerCase().includes(ql)).slice(0,10);
+    if (!matchedJobs.length && !matchedUsers.length && !matchedProviders.length) {
+      container.innerHTML = `<div style="color:var(--muted);font-size:14px;text-align:center;padding:40px 0">No results for "${esc(q)}"</div>`; return;
+    }
+    let html = "";
+    if (matchedJobs.length) {
+      html += `<div style="font-weight:700;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Jobs (${matchedJobs.length})</div>`;
+      html += `<div class="table-wrap" style="margin-bottom:24px"><table><thead><tr><th>ID</th><th>Service</th><th>Status</th><th>Driver</th><th>Provider</th><th>Amount</th><th>Date</th></tr></thead><tbody>`;
+      html += matchedJobs.map(j => `<tr><td style="font-size:11px;font-family:monospace;color:var(--muted)">${j.id.slice(0,8)}</td><td>${esc(svcLabel(j.service_type))}</td><td><span class="badge ${j.status}">${j.status}</span></td><td>${esc(j.driver?.name||"—")}</td><td>${esc(j.provider?.name||"—")}</td><td>${fmtMoney(j.total_cost||j.estimated_cost)}</td><td style="color:var(--muted);font-size:12px">${fmtDate(j.created_at)}</td></tr>`).join("");
+      html += `</tbody></table></div>`;
+    }
+    if (matchedUsers.length) {
+      html += `<div style="font-weight:700;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Drivers (${matchedUsers.length})</div>`;
+      html += `<div class="table-wrap" style="margin-bottom:24px"><table><thead><tr><th>Name</th><th>Email</th><th>Joined</th><th>Status</th><th></th></tr></thead><tbody>`;
+      html += matchedUsers.map(u => `<tr class="clickable-row" onclick="showPage('users');setTimeout(()=>openDriverDetail('${u.id}'),300)"><td>${esc(u.name)}</td><td style="color:var(--muted);font-size:12px">${esc(u.email)}</td><td style="color:var(--muted);font-size:12px">${fmtDate(u.created_at)}</td><td>${u.suspended ? '<span class="badge cancelled">Suspended</span>' : '<span style="font-size:11px;color:var(--success)">Active</span>'}</td><td><button class="btn btn-ghost btn-sm">View</button></td></tr>`).join("");
+      html += `</tbody></table></div>`;
+    }
+    if (matchedProviders.length) {
+      html += `<div style="font-weight:700;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Providers (${matchedProviders.length})</div>`;
+      html += `<div class="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Type</th><th>Status</th><th></th></tr></thead><tbody>`;
+      html += matchedProviders.map(p => `<tr class="clickable-row" onclick="showPage('providers');setTimeout(()=>openProviderDetail('${p.id}'),300)"><td>${esc(p.name)}</td><td style="color:var(--muted);font-size:12px">${esc(p.email)}</td><td style="font-size:12px">${p.providerType==="shop"?"Shop":"Independent"}</td><td><span class="badge ${p.verificationStatus}">${p.verificationStatus}</span></td><td><button class="btn btn-ghost btn-sm">View</button></td></tr>`).join("");
+      html += `</tbody></table></div>`;
+    }
+    container.innerHTML = html;
   }
 
   // ── Auto-login ──

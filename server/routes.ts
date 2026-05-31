@@ -253,6 +253,15 @@ function verifyAdminToken(token: string): boolean {
   return Date.now() < parseInt(expiry, 10);
 }
 
+async function logAudit(action: string, targetType: string, targetId: string, targetName: string, details?: string) {
+  try {
+    await pool.query(
+      `INSERT INTO admin_audit_log (action, target_type, target_id, target_name, details) VALUES ($1, $2, $3, $4, $5)`,
+      [action, targetType, targetId, targetName, details || null]
+    );
+  } catch {}
+}
+
 function adminAuth(req: Request, res: Response, next: NextFunction) {
   const auth = req.headers["authorization"] || "";
   const token = auth.replace("Bearer ", "").trim();
@@ -449,6 +458,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS search_radius INT DEFAULT 10`).catch(() => {});
   await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS notifications_enabled BOOLEAN DEFAULT TRUE`).catch(() => {});
   await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS emergency_contacts JSONB DEFAULT '[]'`).catch(() => {});
+  await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS suspended BOOLEAN DEFAULT FALSE`).catch(() => {});
+  await pool.query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS stripe_payment_intent_id TEXT DEFAULT NULL`).catch(() => {});
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS admin_audit_log (
+      id SERIAL PRIMARY KEY,
+      action TEXT NOT NULL,
+      target_type TEXT,
+      target_id TEXT,
+      target_name TEXT,
+      details TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `).catch(() => {});
   // ── support conversations ────────────────────────────────────────────────────
   await pool.query(`
     CREATE TABLE IF NOT EXISTS support_conversations (
@@ -559,6 +581,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       clearLoginAttempts(email);
+      // Check if account is suspended
+      const { rows: suspendRows } = await pool.query("SELECT suspended FROM auth_users WHERE id = $1", [user.id]);
+      if (suspendRows[0]?.suspended) {
+        return res.status(403).json({ error: "Your account has been suspended. Please contact support." });
+      }
       const token = await createSession(user.id);
       console.log(`[AUTH] signin userId=${user.id} email=${email}`);
       res.json({ userId: user.id, token, role: user.role, name: user.name, email: user.email, phone: user.phone });
@@ -1112,15 +1139,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/admin/providers/:id/revoke", adminAuth, async (req: Request, res: Response) => {
     try {
-      const { rowCount } = await pool.query(
-        `UPDATE providers
-         SET verification_status = 'revoked',
-             verification_notes = 'Verification revoked by admin.',
-             updated_at = NOW()
-         WHERE id = $1`,
+      const { rows, rowCount } = await pool.query(
+        `UPDATE providers SET verification_status = 'revoked',
+             verification_notes = 'Verification revoked by admin.', updated_at = NOW()
+         WHERE id = $1 RETURNING name`,
         [req.params.id]
       );
       if (!rowCount) return res.status(404).json({ error: "Provider not found" });
+      logAudit("revoke_provider", "provider", req.params.id, rows[0]?.name || req.params.id);
       res.json({ success: true, verificationStatus: "revoked" });
     } catch (err) {
       console.error("[admin/revoke]", err);
@@ -1128,12 +1154,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/admin/providers/:id/suspend", adminAuth, async (req: Request, res: Response) => {
+    try {
+      const { rows } = await pool.query(
+        "UPDATE providers SET verification_status = 'suspended', updated_at = NOW() WHERE id = $1 RETURNING id, name",
+        [req.params.id]
+      );
+      if (!rows.length) return res.status(404).json({ error: "Provider not found" });
+      logAudit("suspend_provider", "provider", rows[0].id, rows[0].name);
+      res.json({ success: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/admin/providers/:id/unsuspend", adminAuth, async (req: Request, res: Response) => {
+    try {
+      const { rows } = await pool.query(
+        "UPDATE providers SET verification_status = 'not_started', updated_at = NOW() WHERE id = $1 RETURNING id, name",
+        [req.params.id]
+      );
+      if (!rows.length) return res.status(404).json({ error: "Provider not found" });
+      logAudit("unsuspend_provider", "provider", rows[0].id, rows[0].name);
+      res.json({ success: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
   // ── Admin: users ──────────────────────────────────────────────────────────────
 
   app.get("/api/admin/users", adminAuth, async (_req: Request, res: Response) => {
     try {
       const { rows } = await pool.query(
-        `SELECT id, name, email, role, stripe_customer_id, push_token, created_at
+        `SELECT id, name, email, role, stripe_customer_id, push_token, suspended, created_at
          FROM auth_users ORDER BY created_at DESC`
       );
       res.json(rows);
@@ -1145,12 +1195,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/admin/users/:id", adminAuth, async (req: Request, res: Response) => {
     try {
       await pool.query("DELETE FROM sessions WHERE user_id = $1", [req.params.id]);
-      const { rowCount } = await pool.query("DELETE FROM auth_users WHERE id = $1", [req.params.id]);
+      const { rows, rowCount } = await pool.query("DELETE FROM auth_users WHERE id = $1 RETURNING name", [req.params.id]);
       if (!rowCount) return res.status(404).json({ error: "User not found" });
+      logAudit("delete_user", "user", req.params.id, rows[0]?.name || req.params.id);
       res.json({ success: true });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
+  });
+
+  app.post("/api/admin/users/:id/suspend", adminAuth, async (req: Request, res: Response) => {
+    try {
+      const { rows } = await pool.query(
+        "UPDATE auth_users SET suspended = TRUE WHERE id = $1 RETURNING id, name",
+        [req.params.id]
+      );
+      if (!rows.length) return res.status(404).json({ error: "User not found" });
+      await pool.query("DELETE FROM sessions WHERE user_id = $1", [req.params.id]);
+      logAudit("suspend_user", "user", rows[0].id, rows[0].name);
+      res.json({ success: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/admin/users/:id/unsuspend", adminAuth, async (req: Request, res: Response) => {
+    try {
+      const { rows } = await pool.query(
+        "UPDATE auth_users SET suspended = FALSE WHERE id = $1 RETURNING id, name",
+        [req.params.id]
+      );
+      if (!rows.length) return res.status(404).json({ error: "User not found" });
+      logAudit("unsuspend_user", "user", rows[0].id, rows[0].name);
+      res.json({ success: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
   // ── Admin: jobs ───────────────────────────────────────────────────────────────
@@ -1200,10 +1276,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
         [id]
       );
       if (!rows.length) return res.status(404).json({ error: "Job not found or already finished." });
+      logAudit("cancel_job", "job", id, `Job ${id.slice(0, 8)}`);
       res.json({ ok: true });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
+  });
+
+  // ── Admin: refund a job ───────────────────────────────────────────────────────
+  app.post("/api/admin/jobs/:id/refund", adminAuth, async (req: Request, res: Response) => {
+    const { amount, paymentIntentId } = req.body as { amount?: number; paymentIntentId?: string };
+    try {
+      const { rows } = await pool.query(
+        "SELECT id, stripe_payment_intent_id, total_cost, estimated_cost FROM jobs WHERE id = $1",
+        [req.params.id]
+      );
+      if (!rows.length) return res.status(404).json({ error: "Job not found" });
+      const job = rows[0];
+      const piId = paymentIntentId?.trim() || job.stripe_payment_intent_id;
+      if (!piId) return res.status(400).json({ error: "No Stripe Payment Intent ID found for this job. Enter it manually." });
+      const refundParams: Record<string, unknown> = { payment_intent: piId };
+      if (amount && amount > 0) refundParams.amount = Math.round(amount * 100);
+      const refund = await stripe.refunds.create(refundParams as Parameters<typeof stripe.refunds.create>[0]);
+      logAudit("refund_job", "job", job.id, `Job ${job.id.slice(0,8)}`, `$${(refund.amount / 100).toFixed(2)} refunded via ${piId}`);
+      res.json({ ok: true, refundId: refund.id, amount: refund.amount / 100 });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── Admin: revenue chart (last 30 days) ───────────────────────────────────────
+  app.get("/api/admin/revenue-chart", adminAuth, async (_req: Request, res: Response) => {
+    try {
+      const { rows } = await pool.query(`
+        SELECT
+          DATE(created_at AT TIME ZONE 'UTC') as day,
+          COALESCE(SUM(service_fee), 0)::float as revenue,
+          COALESCE(SUM(total_cost), 0)::float as volume,
+          COUNT(*)::int as jobs,
+          COUNT(*) FILTER (WHERE status = 'completed')::int as completed
+        FROM jobs
+        WHERE created_at > NOW() - INTERVAL '30 days'
+        GROUP BY day ORDER BY day ASC
+      `);
+      res.json(rows);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // ── Admin: audit log ──────────────────────────────────────────────────────────
+  app.get("/api/admin/audit-log", adminAuth, async (_req: Request, res: Response) => {
+    try {
+      const { rows } = await pool.query(`SELECT * FROM admin_audit_log ORDER BY created_at DESC LIMIT 300`);
+      res.json(rows);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
   // ── Admin: earnings & payouts ─────────────────────────────────────────────────
