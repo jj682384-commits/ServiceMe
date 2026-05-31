@@ -1924,22 +1924,34 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
       return res.json([]);
     }
     try {
-      const url = new URL("https://maps.googleapis.com/maps/api/place/autocomplete/json");
-      url.searchParams.set("input", input.trim());
-      url.searchParams.set("key", key);
-      url.searchParams.set("types", "geocode|establishment");
-      if (sessiontoken) url.searchParams.set("sessiontoken", sessiontoken);
-      const r = await fetch(url.toString());
-      const data = await r.json() as { status: string; predictions?: Array<{ description: string; structured_formatting?: { main_text: string; secondary_text: string } }> };
-      if (data.status === "OK" && Array.isArray(data.predictions)) {
+      // Use Places API (New) endpoint
+      const body: Record<string, any> = { input: input.trim(), languageCode: "en" };
+      if (sessiontoken) body.sessionToken = sessiontoken;
+      const r = await fetch("https://places.googleapis.com/v1/places:autocomplete", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Goog-Api-Key": key,
+        },
+        body: JSON.stringify(body),
+      });
+      const data = await r.json() as { suggestions?: Array<{ placePrediction?: { text?: { text: string }; structuredFormat?: { mainText?: { text: string }; secondaryText?: { text: string } } } }> };
+      if (Array.isArray(data.suggestions)) {
         res.json(
-          data.predictions.map((p) => ({
-            description: p.description,
-            mainText: p.structured_formatting?.main_text || p.description,
-            secondaryText: p.structured_formatting?.secondary_text || "",
-          }))
+          data.suggestions
+            .filter((s) => s.placePrediction)
+            .map((s) => {
+              const p = s.placePrediction!;
+              const full = p.text?.text || "";
+              return {
+                description: full,
+                mainText: p.structuredFormat?.mainText?.text || full,
+                secondaryText: p.structuredFormat?.secondaryText?.text || "",
+              };
+            })
         );
       } else {
+        console.error("[places/autocomplete] unexpected response:", JSON.stringify(data).slice(0, 200));
         res.json([]);
       }
     } catch (err) {
