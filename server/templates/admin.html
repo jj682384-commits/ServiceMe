@@ -1149,9 +1149,9 @@
     } catch(e) { alert("Failed to revoke: " + e.message); }
   }
   async function reinstateProvider(id) {
-    if (!confirm("Reinstate this provider? They will need to go through verification again.")) return;
+    if (!confirm("Reinstate this provider? They will need to resubmit their verification documents.")) return;
     try {
-      const res = await fetch(`${getBase()}/api/admin/providers/${id}/reject`, { method:"POST", headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"}, body:JSON.stringify({notes:"Your account has been reinstated. Please resubmit your verification documents."}) });
+      const res = await fetch(`${getBase()}/api/admin/providers/${id}/reinstate`, { method:"POST", headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"} });
       if (!res.ok) throw new Error((await res.json().catch(()=>({}))).error || "Request failed");
       await loadProviders();
     } catch(e) { alert("Failed to reinstate: " + e.message); }
@@ -2164,7 +2164,7 @@
     const body = document.getElementById("audit-table-body");
     if (!body) return;
     if (!items.length) { body.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">&#128196;</div><p>No admin actions recorded yet.</p></div></td></tr>`; return; }
-    const actionColors = { suspend_user:"var(--warning,#f59e0b)", unsuspend_user:"var(--success)", suspend_provider:"var(--warning,#f59e0b)", unsuspend_provider:"var(--success)", revoke_provider:"var(--danger,#ef4444)", refund_job:"#a855f7", cancel_job:"var(--danger,#ef4444)", delete_user:"var(--danger,#ef4444)", approve_provider:"var(--success)", reject_provider:"var(--warning,#f59e0b)" };
+    const actionColors = { suspend_user:"var(--warning,#f59e0b)", unsuspend_user:"var(--success)", suspend_provider:"var(--warning,#f59e0b)", unsuspend_provider:"var(--success)", revoke_provider:"var(--danger,#ef4444)", reinstate_provider:"var(--cyan,#00aaff)", refund_job:"#a855f7", cancel_job:"var(--danger,#ef4444)", delete_user:"var(--danger,#ef4444)", approve_provider:"var(--success)", reject_provider:"var(--warning,#f59e0b)" };
     body.innerHTML = items.map(a => {
       const color = actionColors[a.action] || "var(--cyan)";
       return `<tr>

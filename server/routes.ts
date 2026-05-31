@@ -1117,11 +1117,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/admin/providers/:id/approve", adminAuth, async (req: Request, res: Response) => {
     try {
-      const { rowCount } = await pool.query(
-        "UPDATE providers SET verification_status = 'verified', verification_notes = NULL, updated_at = NOW() WHERE id = $1",
+      const { rows, rowCount } = await pool.query(
+        "UPDATE providers SET verification_status = 'verified', verification_notes = NULL, updated_at = NOW() WHERE id = $1 RETURNING name",
         [req.params.id]
       );
       if (!rowCount) return res.status(404).json({ error: "Provider not found" });
+      logAudit("approve_provider", "provider", req.params.id, rows[0]?.name || req.params.id);
       res.json({ success: true, verificationStatus: "verified" });
     } catch (err) {
       console.error("[admin/approve]", err);
@@ -1133,20 +1134,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const { notes } = req.body as { notes?: string };
     const noteText = notes || "Your documents were not accepted. Please re-upload and resubmit.";
     try {
-      const { rowCount } = await pool.query(
+      const { rows, rowCount } = await pool.query(
         `UPDATE providers
          SET verification_status = 'not_started',
              verification_notes = $2,
              verification_documents = '{}',
              verification_submitted_at = NULL,
              updated_at = NOW()
-         WHERE id = $1`,
+         WHERE id = $1 RETURNING name`,
         [req.params.id, noteText]
       );
       if (!rowCount) return res.status(404).json({ error: "Provider not found" });
+      logAudit("reject_provider", "provider", req.params.id, rows[0]?.name || req.params.id, noteText);
       res.json({ success: true, verificationStatus: "not_started", notes: noteText });
     } catch (err) {
       console.error("[admin/reject]", err);
+      res.status(500).json({ error: "Database error" });
+    }
+  });
+
+  app.post("/api/admin/providers/:id/reinstate", adminAuth, async (req: Request, res: Response) => {
+    try {
+      const { rows, rowCount } = await pool.query(
+        `UPDATE providers
+         SET verification_status = 'not_started',
+             verification_notes = 'Account reinstated by admin. Please resubmit your verification documents.',
+             verification_documents = '{}',
+             verification_submitted_at = NULL,
+             updated_at = NOW()
+         WHERE id = $1 RETURNING name`,
+        [req.params.id]
+      );
+      if (!rowCount) return res.status(404).json({ error: "Provider not found" });
+      logAudit("reinstate_provider", "provider", req.params.id, rows[0]?.name || req.params.id);
+      res.json({ success: true, verificationStatus: "not_started" });
+    } catch (err) {
+      console.error("[admin/reinstate]", err);
       res.status(500).json({ error: "Database error" });
     }
   });
