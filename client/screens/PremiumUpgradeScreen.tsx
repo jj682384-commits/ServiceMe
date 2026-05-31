@@ -19,21 +19,24 @@ import { Spacing, BorderRadius } from "@/constants/theme";
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const BENEFIT_ROWS = [
-  { icon: "gift" as const, title: "Free Services Included", descMonthly: "1 free service per month — any type", descYearly: "2 free services per month — any type", color: "#F59E0B" },
-  { icon: "percent" as const, title: "Service Discounts", descMonthly: "20% off every roadside request", descYearly: "25% off every roadside request", color: "#10B981" },
-  { icon: "truck" as const, title: "Discounted Tows", descMonthly: "Reduced rates on all towing services", descYearly: "Reduced rates on all towing services", color: "#3B82F6" },
-  { icon: "zap" as const, title: "Priority Response", descMonthly: "Get connected to providers faster", descYearly: "Get connected to providers faster", color: "#8B5CF6" },
-  { icon: "shield" as const, title: "Extended Coverage", descMonthly: "Coverage in more remote areas", descYearly: "Coverage in more remote areas", color: "#EC4899" },
-  { icon: "clock" as const, title: "24/7 Priority Support", descMonthly: "Skip the queue when you need help", descYearly: "Skip the queue when you need help", color: "#14B8A6" },
+  { icon: "gift" as const, title: "Free Services Included", descMonthly: "1 free service/month — up to $55 value (excludes towing)", descYearly: "2 free services/month — up to $65 value (excludes towing)", color: "#F59E0B" },
+  { icon: "percent" as const, title: "Service Discounts", descMonthly: "15% off every roadside request + service fee always waived", descYearly: "20% off every roadside request + service fee always waived", color: "#10B981" },
+  { icon: "zap" as const, title: "Express Service", descMonthly: "50% off Express upgrades — $4.99 instead of $9.99", descYearly: "1 free Express upgrade per month, then 50% off after", color: "#8B5CF6" },
+  { icon: "truck" as const, title: "Tow Discount", descMonthly: "Reduced tow rates on all vehicle sizes", descYearly: "15% off tow base price + service fee waived on tows", color: "#3B82F6" },
+  { icon: "bookmark" as const, title: "Service Rollover", descMonthly: "Unused free services expire each month", descYearly: "Unused free services roll over to next month (max 4 banked)", color: "#F97316" },
+  { icon: "shield" as const, title: "Priority Dispatch", descMonthly: "Jobs flagged priority — verified providers matched first", descYearly: "Top-priority dispatch — bumped above Plus in provider queue", color: "#EC4899" },
+  { icon: "clock" as const, title: "24/7 Priority Support", descMonthly: "Skip the queue when you need help", descYearly: "Dedicated support line — fastest response times", color: "#14B8A6" },
 ];
 
 const COMPARISON_ROWS = [
-  { feature: "Free services", free: "None", monthlyPremium: "1/month", yearlyPremium: "2/month" },
-  { feature: "All services", free: "Standard", monthlyPremium: "20% off", yearlyPremium: "25% off" },
-  { feature: "Tow service", free: "Full price", monthlyPremium: "Discounted", yearlyPremium: "Discounted" },
-  { feature: "Priority response", free: false, monthlyPremium: true, yearlyPremium: true },
+  { feature: "Free services", free: "None", monthlyPremium: "1/month (≤$55)", yearlyPremium: "2/month (≤$65)" },
+  { feature: "Service discount", free: "None", monthlyPremium: "15% off", yearlyPremium: "20% off" },
+  { feature: "Service fee ($3.99)", free: "Always charged", monthlyPremium: "Always waived", yearlyPremium: "Always waived" },
+  { feature: "Express upgrades", free: "$9.99", monthlyPremium: "50% off ($4.99)", yearlyPremium: "1 free/mo, then 50% off" },
+  { feature: "Tow discount", free: "Full price", monthlyPremium: "Reduced rates", yearlyPremium: "15% off + fee waived" },
+  { feature: "Free service rollover", free: false, monthlyPremium: false, yearlyPremium: true },
+  { feature: "Priority dispatch", free: false, monthlyPremium: true, yearlyPremium: true },
   { feature: "24/7 support", free: false, monthlyPremium: true, yearlyPremium: true },
-  { feature: "Extended coverage", free: false, monthlyPremium: true, yearlyPremium: true },
 ];
 
 export default function PremiumUpgradeScreen() {
@@ -150,7 +153,7 @@ export default function PremiumUpgradeScreen() {
                   <Feather name="calendar" size={16} color={selectedTab === "monthly" ? theme.primary : theme.textSecondary} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <ThemedText type="body" style={{ fontWeight: "600" }}>Monthly</ThemedText>
+                  <ThemedText type="body" style={{ fontWeight: "600" }}>Monthly Plus</ThemedText>
                   <ThemedText type="small" style={{ color: theme.textSecondary }}>{monthlyPrice}/month · cancel anytime</ThemedText>
                 </View>
                 <View style={[styles.radioOuter, { borderColor: selectedTab === "monthly" ? theme.primary : theme.border }]}>
@@ -169,7 +172,7 @@ export default function PremiumUpgradeScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: Spacing.sm }}>
-                    <ThemedText type="body" style={{ fontWeight: "600" }}>Yearly</ThemedText>
+                    <ThemedText type="body" style={{ fontWeight: "600" }}>Yearly Premium</ThemedText>
                     <View style={[styles.saveBadge, { backgroundColor: "#10B981" }]}>
                       <ThemedText style={{ color: "#FFFFFF", fontSize: 10, fontWeight: "800" }}>SAVE 33%</ThemedText>
                     </View>

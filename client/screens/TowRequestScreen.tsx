@@ -50,11 +50,11 @@ const vehicleSizes: {
   { type: "commercial", label: "Commercial Van",   icon: "box",     surcharge: 50, desc: "Transit, Sprinter, work vans" },
 ];
 
-function calcPrice(miles: number, surcharge: number, winch: boolean, express: boolean) {
+function calcPrice(miles: number, surcharge: number, winch: boolean, express: boolean, discount = 0, svcFee = SERVICE_FEE, expressFee = EXPRESS_FEE) {
   const billableMiles = Math.max(0, miles - FREE_MILES);
   const mileageCost   = billableMiles * RATE_PER_MILE;
-  const base          = HOOKUP_FEE + mileageCost + surcharge;
-  const total         = base + (winch ? WINCH_FEE : 0) + SERVICE_FEE + (express ? EXPRESS_FEE : 0);
+  const base          = (HOOKUP_FEE + mileageCost + surcharge) * (1 - discount);
+  const total         = base + (winch ? WINCH_FEE : 0) + svcFee + (express ? expressFee : 0);
   return { billableMiles, mileageCost, base, total };
 }
 
@@ -146,11 +146,17 @@ export default function TowRequestScreen() {
     return () => { mountedRef.current = false; };
   }, []);
 
+  const isPremium        = currentDriver?.membership === "premium";
+  const isYearlyPremium  = isPremium && currentDriver?.billingCycle === "yearly";
+  const towDiscount      = isYearlyPremium ? 0.15 : 0;
+  const towSvcFee        = isPremium ? 0 : SERVICE_FEE;
+  const towExpressFee    = isPremium ? EXPRESS_FEE * 0.5 : EXPRESS_FEE;
+
   const selectedSizeData = vehicleSizes.find((s) => s.type === selectedSize);
   const surcharge        = selectedSizeData?.surcharge ?? 0;
   const distanceMiles    = parseFloat(milesText) || 0;
   const hasDistance      = milesText.trim().length > 0 && distanceMiles > 0;
-  const pricing          = calcPrice(distanceMiles, surcharge, needsWinch, isExpress);
+  const pricing          = calcPrice(distanceMiles, surcharge, needsWinch, isExpress, towDiscount, towSvcFee, towExpressFee);
 
   const handleSubmit = async () => {
     if (!selectedSize || isSubmitting) return;
@@ -426,9 +432,16 @@ export default function TowRequestScreen() {
           <View style={styles.expressContent}>
             <View style={styles.expressHeader}>
               <ThemedText type="body" style={{ fontWeight: "700" }}>Express Tow</ThemedText>
-              <ThemedText type="body" style={{ color: theme.warning, fontWeight: "700" }}>
-                +${EXPRESS_FEE.toFixed(2)}
-              </ThemedText>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                {isPremium && (
+                  <ThemedText type="small" style={{ color: theme.textSecondary, textDecorationLine: "line-through" }}>
+                    +${EXPRESS_FEE.toFixed(2)}
+                  </ThemedText>
+                )}
+                <ThemedText type="body" style={{ color: theme.warning, fontWeight: "700" }}>
+                  +${towExpressFee.toFixed(2)}
+                </ThemedText>
+              </View>
             </View>
             <ThemedText type="small" style={{ color: theme.textSecondary }}>
               Priority dispatch — avg. 6 min vs 12 min
@@ -474,6 +487,12 @@ export default function TowRequestScreen() {
                   <ThemedText type="body">${surcharge.toFixed(2)}</ThemedText>
                 </View>
               ) : null}
+              {isYearlyPremium ? (
+                <View style={styles.costRow}>
+                  <ThemedText type="body" style={{ color: theme.success }}>Yearly Premium (15% off base)</ThemedText>
+                  <ThemedText type="body" style={{ color: theme.success }}>-{(towDiscount * 100).toFixed(0)}%</ThemedText>
+                </View>
+              ) : null}
               {needsWinch ? (
                 <View style={styles.costRow}>
                   <ThemedText type="body">Winch-out service</ThemedText>
@@ -482,7 +501,9 @@ export default function TowRequestScreen() {
               ) : null}
               <View style={styles.costRow}>
                 <ThemedText type="body">Service fee</ThemedText>
-                <ThemedText type="body">${SERVICE_FEE.toFixed(2)}</ThemedText>
+                <ThemedText type="body" style={{ color: isPremium ? theme.success : theme.text }}>
+                  {isPremium ? "Waived (Plus/Premium)" : `$${SERVICE_FEE.toFixed(2)}`}
+                </ThemedText>
               </View>
               {isExpress ? (
                 <View style={styles.costRow}>
@@ -490,7 +511,14 @@ export default function TowRequestScreen() {
                     <Feather name="zap" size={13} color={theme.warning} />
                     <ThemedText type="body" style={{ color: theme.warning }}>Express tow</ThemedText>
                   </View>
-                  <ThemedText type="body" style={{ color: theme.warning }}>${EXPRESS_FEE.toFixed(2)}</ThemedText>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                    {isPremium && (
+                      <ThemedText type="small" style={{ color: theme.textSecondary, textDecorationLine: "line-through" }}>
+                        ${EXPRESS_FEE.toFixed(2)}
+                      </ThemedText>
+                    )}
+                    <ThemedText type="body" style={{ color: theme.warning }}>${towExpressFee.toFixed(2)}</ThemedText>
+                  </View>
                 </View>
               ) : null}
               <View style={[styles.costDivider, { backgroundColor: theme.border }]} />

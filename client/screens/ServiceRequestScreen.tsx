@@ -32,8 +32,8 @@ import { getApiUrl, apiRequest } from "@/lib/query-client";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-const PREMIUM_DISCOUNT_MONTHLY = 0.20;
-const PREMIUM_DISCOUNT_YEARLY  = 0.25;
+const PREMIUM_DISCOUNT_MONTHLY = 0.15;
+const PREMIUM_DISCOUNT_YEARLY  = 0.20;
 
 const FLAT_TIRE_PRICES = { change: 40, inflation: 28 } as const;
 type FlatTireSubType = keyof typeof FLAT_TIRE_PRICES;
@@ -162,7 +162,7 @@ export default function ServiceRequestScreen() {
   const headerHeight = useHeaderHeight();
   const { theme, isDark } = useTheme();
   const sectionBg = theme.cardAnimatedBg;
-  const { nearbyProviders, getProvidersWithDistance, setActiveRequest, addToHistory, addPendingJob, currentDriver, getDefaultVehicle, useFreeService } = useApp();
+  const { nearbyProviders, getProvidersWithDistance, setActiveRequest, addToHistory, addPendingJob, currentDriver, getDefaultVehicle, useFreeService, useFreeExpress } = useApp();
   const defaultVehicle = getDefaultVehicle();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, "ServiceRequest">>();
@@ -260,28 +260,41 @@ export default function ServiceRequestScreen() {
   const customFuelValid = useCustomFuel && !isNaN(parsedCustom) && parsedCustom > 0;
   const fuelPrice = useCustomFuel ? (customFuelValid ? parsedCustom : 0) : (FUEL_AMOUNTS[selectedFuelIndex]?.price || 0);
   const basePrice = isFuelSelected ? fuelPrice : isFlatTire ? flatTireBasePrice : (selectedServiceData?.price || 0);
-  const premiumDiscount = currentDriver?.billingCycle === "yearly" ? PREMIUM_DISCOUNT_YEARLY : PREMIUM_DISCOUNT_MONTHLY;
+  const isYearly = currentDriver?.billingCycle === "yearly";
+  const premiumDiscount = isYearly ? PREMIUM_DISCOUNT_YEARLY : PREMIUM_DISCOUNT_MONTHLY;
   const discountAmount = isPremium ? basePrice * premiumDiscount : 0;
   const discountedBasePrice = basePrice - discountAmount;
-  const expressFee = isExpress ? EXPRESS_FEE : 0;
   const isScheduled = scheduleMode === "later";
   const scheduleValid = !isScheduled || selectedTimeIndex !== null;
 
-  // Free service allowance
-  const freeAllowance = isPremium ? (currentDriver?.billingCycle === "yearly" ? 2 : 1) : 0;
+  // Express fee: 50% off for all premium; yearly get 1 free per month
+  const freeExpressThisPeriod = currentDriver?.freeExpressThisPeriod ?? 0;
+  const freeExpressReset = currentDriver?.freeServicesReset ? new Date(currentDriver.freeServicesReset) : null;
+  const expressResetPassed = !freeExpressReset || new Date() > freeExpressReset;
+  const hasYearlyFreeExpress = isPremium && isYearly && (expressResetPassed ? true : freeExpressThisPeriod < 1);
+  const expressFeeBase = isPremium
+    ? (isExpress && hasYearlyFreeExpress ? 0 : EXPRESS_FEE * 0.5)
+    : EXPRESS_FEE;
+  const expressFee = isExpress ? expressFeeBase : 0;
+
+  // Free service allowance (+ banked rollover for yearly)
+  const freeAllowance = isPremium ? (isYearly ? 2 : 1) : 0;
+  const freeServiceValueCap = isYearly ? 65 : 55;
   const freeServicesRemaining = (() => {
     if (!isPremium || !currentDriver) return 0;
     const now = new Date();
     const resetDate = currentDriver.freeServicesReset ? new Date(currentDriver.freeServicesReset) : null;
-    if (!resetDate || now > resetDate) return freeAllowance;
-    return Math.max(0, freeAllowance - (currentDriver.freeServicesUsed ?? 0));
+    const banked = isYearly ? (currentDriver.freeServicesBanked ?? 0) : 0;
+    if (!resetDate || now > resetDate) return freeAllowance + banked;
+    return Math.max(0, freeAllowance + banked - (currentDriver.freeServicesUsed ?? 0));
   })();
-  const canUseFree = !isScheduled && isPremium && freeServicesRemaining > 0;
+  const canUseFree = !isScheduled && isPremium && freeServicesRemaining > 0 && basePrice <= freeServiceValueCap;
   const [useFreeSvc, setUseFreeSvc] = useState(false);
   const isUsingFree = canUseFree && useFreeSvc;
 
   const effectiveBase = isUsingFree ? 0 : discountedBasePrice;
-  const effectiveSvcFee = isUsingFree ? 0 : SERVICE_FEE;
+  // Service fee always waived for premium members
+  const effectiveSvcFee = isPremium ? 0 : SERVICE_FEE;
   const effectiveExpressFee = isUsingFree ? 0 : expressFee;
   const totalCost = effectiveBase + effectiveSvcFee + effectiveExpressFee + batteryCheckFee + tireCheckFee;
   const canSubmit = selectedService
@@ -369,7 +382,8 @@ export default function ServiceRequestScreen() {
 
       // ── Free service: skip Stripe entirely when charge is $0 ──────────────
       if (isUsingFree && totalCost === 0) {
-        useFreeService();
+        await useFreeService(basePrice);
+        if (isExpress && hasYearlyFreeExpress) await useFreeExpress();
         const pendingJob: ServiceRequest = { ...newRequest, provider: undefined, status: "pending" };
         addPendingJob(pendingJob);
         setActiveRequest(pendingJob);
@@ -419,7 +433,9 @@ export default function ServiceRequestScreen() {
       // ─────────────────────────────────────────────────────────────────────
 
       // If a free service was used, record it server-side (enforced & cross-device)
-      if (isUsingFree) await useFreeService();
+      if (isUsingFree) await useFreeService(basePrice);
+      // If yearly free express was used, record it
+      if (isExpress && hasYearlyFreeExpress && !isUsingFree) await useFreeExpress();
 
       // Register the job locally so the driver's UI works immediately
       const pendingJob: ServiceRequest = { ...newRequest, provider: undefined, status: "pending" };
@@ -1083,7 +1099,7 @@ export default function ServiceRequestScreen() {
                 </View>
               </View>
               <ThemedText type="small" style={{ color: theme.textSecondary }}>
-                {currentDriver?.billingCycle === "yearly" ? "2 free services/month" : "1 free service/month"} included with your plan
+                {isYearly ? "2 free services/month" : "1 free service/month"} — up to ${freeServiceValueCap} value
               </ThemedText>
             </View>
             <View
@@ -1179,8 +1195,8 @@ export default function ServiceRequestScreen() {
                 <ThemedText type="small" style={{ color: theme.textSecondary }}>
                   Service Fee
                 </ThemedText>
-                <ThemedText type="small" style={{ color: isUsingFree ? theme.success : theme.textSecondary }}>
-                  {isUsingFree ? "FREE" : `$${SERVICE_FEE.toFixed(2)}`}
+                <ThemedText type="small" style={{ color: isPremium ? theme.success : theme.textSecondary }}>
+                  {isPremium ? "Waived (Plus/Premium)" : `$${SERVICE_FEE.toFixed(2)}`}
                 </ThemedText>
               </View>
               {isExpress && !isUsingFree ? (
@@ -1188,9 +1204,16 @@ export default function ServiceRequestScreen() {
                   <ThemedText type="small" style={{ color: theme.warning }}>
                     Express Service
                   </ThemedText>
-                  <ThemedText type="small" style={{ color: theme.warning }}>
-                    ${EXPRESS_FEE.toFixed(2)}
-                  </ThemedText>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                    {isPremium && (
+                      <ThemedText type="small" style={[styles.strikethrough, { color: theme.textSecondary }]}>
+                        ${EXPRESS_FEE.toFixed(2)}
+                      </ThemedText>
+                    )}
+                    <ThemedText type="small" style={{ color: hasYearlyFreeExpress ? theme.success : theme.warning }}>
+                      {hasYearlyFreeExpress ? "FREE" : `$${expressFee.toFixed(2)}`}
+                    </ThemedText>
+                  </View>
                 </View>
               ) : null}
               <View style={[styles.costDivider, { backgroundColor: theme.border }]} />
@@ -1207,14 +1230,14 @@ export default function ServiceRequestScreen() {
               <View style={[styles.savingsBanner, { backgroundColor: theme.success + "15" }]}>
                 <Feather name="gift" size={14} color={theme.success} />
                 <ThemedText type="small" style={{ color: theme.success, fontWeight: "600", marginLeft: Spacing.xs }}>
-                  Using 1 of your {freeAllowance} free service{freeAllowance > 1 ? "s" : ""} — {freeServicesRemaining - 1} remaining after this
+                  Using 1 of your {freeAllowance + (currentDriver?.freeServicesBanked ?? 0)} free service{(freeAllowance + (currentDriver?.freeServicesBanked ?? 0)) > 1 ? "s" : ""} — {freeServicesRemaining - 1} remaining after this
                 </ThemedText>
               </View>
             ) : isPremium ? (
               <View style={[styles.savingsBanner, { backgroundColor: theme.success + "15" }]}>
                 <Feather name="tag" size={14} color={theme.success} />
                 <ThemedText type="small" style={{ color: theme.success, fontWeight: "600", marginLeft: Spacing.xs }}>
-                  You're saving ${discountAmount.toFixed(2)} with Premium
+                  Saving ${(discountAmount + SERVICE_FEE).toFixed(2)} with {isYearly ? "Yearly Premium" : "Monthly Plus"}
                 </ThemedText>
               </View>
             ) : (

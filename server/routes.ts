@@ -487,6 +487,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS billing_cycle TEXT NOT NULL DEFAULT 'monthly'`).catch(() => {});
   await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS free_services_used INT NOT NULL DEFAULT 0`).catch(() => {});
   await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS free_services_reset TIMESTAMPTZ DEFAULT NULL`).catch(() => {});
+  await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS free_services_banked INT NOT NULL DEFAULT 0`).catch(() => {});
+  await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS free_express_this_period INT NOT NULL DEFAULT 0`).catch(() => {});
   await pool.query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS stripe_payment_intent_id TEXT DEFAULT NULL`).catch(() => {});
   await pool.query(`
     CREATE TABLE IF NOT EXISTS admin_audit_log (
@@ -660,7 +662,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!user) return res.status(401).json({ error: "Invalid or expired session" });
       const { rows } = await pool.query(
         `SELECT search_radius, notifications_enabled, emergency_contacts,
-                membership, billing_cycle, free_services_used, free_services_reset
+                membership, billing_cycle, free_services_used, free_services_reset,
+                free_services_banked, free_express_this_period
          FROM auth_users WHERE id = $1`,
         [user.id]
       );
@@ -674,6 +677,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         billingCycle: prefs.billing_cycle ?? "monthly",
         freeServicesUsed: prefs.free_services_used ?? 0,
         freeServicesReset: prefs.free_services_reset ? new Date(prefs.free_services_reset).toISOString() : null,
+        freeServicesBanked: prefs.free_services_banked ?? 0,
+        freeExpressThisPeriod: prefs.free_express_this_period ?? 0,
       });
     } catch (err) {
       console.error("[auth/me]", err);
@@ -964,8 +969,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await getUserByToken(token);
       if (!user) return res.status(401).json({ error: "Unauthorized" });
 
+      const { serviceBasePrice } = req.body as { serviceBasePrice?: number };
+
       const { rows } = await pool.query(
-        `SELECT membership, billing_cycle, free_services_used, free_services_reset FROM auth_users WHERE id = $1`,
+        `SELECT membership, billing_cycle, free_services_used, free_services_reset, free_services_banked
+         FROM auth_users WHERE id = $1`,
         [user.id]
       );
       if (!rows.length) return res.status(404).json({ error: "User not found" });
@@ -977,42 +985,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const billingCycle: string = row.billing_cycle ?? "monthly";
       const allowance = billingCycle === "yearly" ? 2 : 1;
+      // Value cap enforcement: $55 for monthly Plus, $65 for yearly Premium
+      const valueCap = billingCycle === "yearly" ? 65 : 55;
+      if (serviceBasePrice !== undefined && serviceBasePrice > valueCap) {
+        return res.status(422).json({
+          error: `Free service value cap exceeded ($${valueCap} for your plan)`,
+          valueCap,
+        });
+      }
+
       const now = new Date();
       const existingReset: Date | null = row.free_services_reset ? new Date(row.free_services_reset) : null;
       const isPastReset = !existingReset || now > existingReset;
 
-      const currentUsed: number = isPastReset ? 0 : (row.free_services_used ?? 0);
-      if (currentUsed >= allowance) {
+      let currentBanked: number = row.free_services_banked ?? 0;
+      let currentUsed: number = row.free_services_used ?? 0;
+      let newReset: Date;
+
+      if (isPastReset) {
+        // Period rolled over — bank any unused services (yearly only, max 2 banked)
+        if (billingCycle === "yearly") {
+          const unused = Math.max(0, allowance - currentUsed);
+          currentBanked = Math.min(currentBanked + unused, 2);
+        } else {
+          currentBanked = 0;
+        }
+        currentUsed = 0;
+        newReset = new Date(now);
+        newReset.setMonth(newReset.getMonth() + 1);
+      } else {
+        newReset = existingReset!;
+      }
+
+      const totalAvailable = allowance + currentBanked;
+      if (currentUsed >= totalAvailable) {
         return res.status(409).json({
           error: "No free services remaining this month",
           freeServicesUsed: currentUsed,
+          freeServicesBanked: currentBanked,
           allowance,
-          freeServicesReset: existingReset?.toISOString() ?? null,
+          freeServicesReset: newReset.toISOString(),
         });
       }
 
       const newUsed = currentUsed + 1;
-      const newReset: Date = isPastReset ? (() => {
-        const d = new Date(now);
-        d.setMonth(d.getMonth() + 1);
-        return d;
-      })() : existingReset!;
-
       await pool.query(
-        `UPDATE auth_users SET free_services_used = $2, free_services_reset = $3, updated_at = NOW() WHERE id = $1`,
-        [user.id, newUsed, newReset.toISOString()]
+        `UPDATE auth_users
+         SET free_services_used = $2, free_services_reset = $3, free_services_banked = $4, updated_at = NOW()
+         WHERE id = $1`,
+        [user.id, newUsed, newReset.toISOString(), currentBanked]
       );
 
-      console.log(`[free-service] userId=${user.id} used=${newUsed}/${allowance} reset=${newReset.toISOString()}`);
+      console.log(`[free-service] userId=${user.id} used=${newUsed}/${totalAvailable} banked=${currentBanked} reset=${newReset.toISOString()}`);
       res.json({
         success: true,
         freeServicesUsed: newUsed,
         freeServicesReset: newReset.toISOString(),
+        freeServicesBanked: currentBanked,
         allowance,
-        remaining: allowance - newUsed,
+        remaining: totalAvailable - newUsed,
       });
     } catch (err) {
       console.error("[auth/use-free-service]", err);
+      res.status(500).json({ error: "Database error" });
+    }
+  });
+
+  // ── Free Express Usage (yearly Premium — 1 free Express/month) ───────────
+  app.post("/api/auth/use-free-express", async (req: Request, res: Response) => {
+    const token = extractToken(req.headers["authorization"]);
+    if (!token) return res.status(401).json({ error: "No token" });
+    try {
+      const user = await getUserByToken(token);
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+      const { rows } = await pool.query(
+        `SELECT membership, billing_cycle, free_services_reset, free_express_this_period FROM auth_users WHERE id = $1`,
+        [user.id]
+      );
+      if (!rows.length) return res.status(404).json({ error: "User not found" });
+      const row = rows[0];
+
+      if (row.membership !== "premium" || row.billing_cycle !== "yearly") {
+        return res.status(403).json({ error: "Yearly Premium membership required" });
+      }
+
+      const now = new Date();
+      const existingReset: Date | null = row.free_services_reset ? new Date(row.free_services_reset) : null;
+      const isPastReset = !existingReset || now > existingReset;
+      const currentExpressUsed: number = isPastReset ? 0 : (row.free_express_this_period ?? 0);
+
+      if (currentExpressUsed >= 1) {
+        return res.status(409).json({ error: "Free Express already used this month" });
+      }
+
+      await pool.query(
+        `UPDATE auth_users SET free_express_this_period = $2, updated_at = NOW() WHERE id = $1`,
+        [user.id, 1]
+      );
+
+      console.log(`[free-express] userId=${user.id} used free express this period`);
+      res.json({ success: true, freeExpressThisPeriod: 1 });
+    } catch (err) {
+      console.error("[auth/use-free-express]", err);
       res.status(500).json({ error: "Database error" });
     }
   });
@@ -1033,15 +1108,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "membership and billingCycle are required" });
       }
 
-      // Reset free service counter on upgrade
+      // Reset all counters on upgrade — fresh start
       const resetDate = new Date();
       resetDate.setMonth(resetDate.getMonth() + 1);
 
       await pool.query(
         `UPDATE auth_users
          SET membership = $2, billing_cycle = $3,
-             free_services_used = 0,
+             free_services_used = 0, free_services_banked = 0,
              free_services_reset = $4,
+             free_express_this_period = 0,
              updated_at = NOW()
          WHERE id = $1`,
         [user.id, membership, billingCycle, membership === "premium" ? resetDate.toISOString() : null]
