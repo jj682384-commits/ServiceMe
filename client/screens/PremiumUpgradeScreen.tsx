@@ -19,7 +19,7 @@ import { Spacing, BorderRadius } from "@/constants/theme";
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const BENEFIT_ROWS = [
-  { icon: "gift" as const, title: "Free Services Included", descMonthly: "1 free service per month — any type", descYearly: "2 free services per year — any type", color: "#F59E0B" },
+  { icon: "gift" as const, title: "Free Services Included", descMonthly: "1 free service per month — any type", descYearly: "2 free services per month — any type", color: "#F59E0B" },
   { icon: "percent" as const, title: "Service Discounts", descMonthly: "20% off every roadside request", descYearly: "25% off every roadside request", color: "#10B981" },
   { icon: "truck" as const, title: "Discounted Tows", descMonthly: "Reduced rates on all towing services", descYearly: "Reduced rates on all towing services", color: "#3B82F6" },
   { icon: "zap" as const, title: "Priority Response", descMonthly: "Get connected to providers faster", descYearly: "Get connected to providers faster", color: "#8B5CF6" },
@@ -28,7 +28,7 @@ const BENEFIT_ROWS = [
 ];
 
 const COMPARISON_ROWS = [
-  { feature: "Free services", free: "None", monthlyPremium: "1/month", yearlyPremium: "2/year" },
+  { feature: "Free services", free: "None", monthlyPremium: "1/month", yearlyPremium: "2/month" },
   { feature: "All services", free: "Standard", monthlyPremium: "20% off", yearlyPremium: "25% off" },
   { feature: "Tow service", free: "Full price", monthlyPremium: "Discounted", yearlyPremium: "Discounted" },
   { feature: "Priority response", free: false, monthlyPremium: true, yearlyPremium: true },

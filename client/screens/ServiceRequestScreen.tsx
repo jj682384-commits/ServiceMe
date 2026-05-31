@@ -1083,7 +1083,7 @@ export default function ServiceRequestScreen() {
                 </View>
               </View>
               <ThemedText type="small" style={{ color: theme.textSecondary }}>
-                {currentDriver?.billingCycle === "yearly" ? "2 free services/year" : "1 free service/month"} included with your plan
+                {currentDriver?.billingCycle === "yearly" ? "2 free services/month" : "1 free service/month"} included with your plan
               </ThemedText>
             </View>
             <View
