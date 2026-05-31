@@ -794,6 +794,19 @@
                   <input class="web-input" type="text" id="req-notes" placeholder="e.g. Silver Toyota, right lane" />
                 </div>
               </div>
+              <!-- Priority Service: Express -->
+              <div style="margin-bottom:16px">
+                <div class="section-label" style="margin-top:0;margin-bottom:10px">Priority Service</div>
+                <label class="addon-card" id="express-card" onclick="toggleExpress()" style="cursor:pointer">
+                  <div class="addon-icon" style="background:rgba(251,191,36,0.15);color:#FBBF24;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:20px">&#9889;</div>
+                  <div class="addon-body">
+                    <div class="addon-title">Express Service <span class="addon-price" style="color:#FBBF24">+$9.99</span></div>
+                    <div class="addon-desc">Get help faster &bull; Average response: 2 min</div>
+                  </div>
+                  <div class="addon-checkbox" id="express-checkbox"></div>
+                </label>
+              </div>
+
               <div style="display:flex;gap:10px;flex-wrap:wrap">
                 <button class="btn btn-cyan" style="flex:1;min-width:160px" onclick="submitRequest()" id="submit-request-btn">&#128205; Request Now</button>
                 <button class="btn btn-ghost btn-sm" onclick="backToServices()">Cancel</button>
@@ -1144,6 +1157,8 @@
   let selectedSubType = null;   // tire_services sub: "tire_change" | "mobile_inflation" | "tire_check" | "tire_replacement"
   let addTireInspection = false;
   let addBatteryCheck = false;
+  let isExpressService = false;
+  const EXPRESS_FEE = 9.99;
   let selectedFuelIndex = 2;
   let useCustomFuel = false;
   let customFuelAmount = "";
@@ -1548,7 +1563,7 @@
   }
 
   function backToServices() {
-    selectedService = null; selectedSubType = null; addTireInspection = false; addBatteryCheck = false;
+    selectedService = null; selectedSubType = null; addTireInspection = false; addBatteryCheck = false; isExpressService = false;
     document.getElementById("step-service-select").style.display = "block";
     document.getElementById("step-subservice").style.display = "none";
     document.getElementById("request-form-wrap").style.display = "none";
@@ -1591,9 +1606,12 @@
     document.getElementById("tow-distance-panel").style.display = "none";
     document.getElementById("fuel-picker-panel").style.display = "none";
     addBatteryCheck = false;
+    isExpressService = false;
     const battChk = document.getElementById("battery-check-toggle");
     if (battChk) { battChk.checked = false; }
     document.getElementById("battery-addon-card")?.classList.remove("checked");
+    document.getElementById("express-card")?.classList.remove("checked");
+    document.getElementById("express-checkbox")?.classList.remove("checked");
     towMiles = 5;
     selectedFuelIndex = 2; useCustomFuel = false; customFuelAmount = "";
 
@@ -1640,12 +1658,14 @@
   }
 
   function updatePriceDisplay() {
-    const base = getEffectivePrice();
-    const total = base + SERVICE_FEE;
+    const base  = getEffectivePrice();
+    const total = base + SERVICE_FEE + (isExpressService ? EXPRESS_FEE : 0);
     const priceEl = document.getElementById("request-price");
     const totalEl = document.getElementById("request-total");
+    const etaEl   = document.getElementById("request-eta");
     if (priceEl) priceEl.textContent = `$${base.toFixed(0)}`;
     if (totalEl) totalEl.textContent = `$${total.toFixed(2)}`;
+    if (etaEl)   etaEl.textContent   = isExpressService ? "~2 min" : "~8 min";
   }
 
   function renderFuelPicker() {
@@ -1679,6 +1699,15 @@
   }
   function toggleBatteryCheck(checked) { addBatteryCheck = checked; updatePriceDisplay(); }
 
+  function toggleExpress() {
+    isExpressService = !isExpressService;
+    const card = document.getElementById("express-card");
+    const box  = document.getElementById("express-checkbox");
+    if (card) card.classList.toggle("checked", isExpressService);
+    if (box)  box.classList.toggle("checked", isExpressService);
+    updatePriceDisplay();
+  }
+
   function onTowMilesInput(val) {
     towMiles = val;
     const miles = parseFloat(val) || 0;
@@ -1709,6 +1738,7 @@
       const dropoff = document.getElementById("tow-dropoff")?.value?.trim();
       if (dropoff) extraNotes = `Drop-off: ${dropoff}` + (notes ? ` | ${notes}` : "");
     }
+    if (isExpressService) extraNotes = (extraNotes ? extraNotes + " " : "") + "[Express Service]";
 
     const btn = document.getElementById("submit-request-btn");
     btn.disabled = true; btn.textContent = "Submitting...";

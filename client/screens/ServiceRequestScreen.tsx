@@ -1017,7 +1017,7 @@ export default function ServiceRequestScreen() {
               </ThemedText>
             </View>
             <ThemedText type="small" style={{ color: theme.textSecondary }}>
-              Get help ~50% faster • Average arrival: 4 min
+              Get help faster • Average response: 2 min
             </ThemedText>
           </View>
           <View
