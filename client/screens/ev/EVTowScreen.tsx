@@ -172,7 +172,7 @@ export default function EVTowScreen() {
     const pendingJob: ServiceRequest = {
       id: jobId,
       serviceType: "tow",
-      notes: `EV Tow — ${towOpt.label} to ${selectedDest === 0 && pickedCharger ? pickedCharger.name : dest.label} (${towMiles} mi)`,
+      notes: `EV Tow — ${towOpt.label} to ${selectedDest === 0 && pickedCharger ? pickedCharger.name : selectedDest === DESTINATIONS.length - 1 && customAddress ? customAddress : dest.label} (${towMiles} mi)`,
       location: { address: "Current Location", latitude: coords.latitude, longitude: coords.longitude },
       status: "pending",
       estimatedCost: base,
