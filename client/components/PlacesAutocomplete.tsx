@@ -3,7 +3,7 @@ import {
   View,
   TextInput,
   Pressable,
-  FlatList,
+  ScrollView,
   StyleSheet,
   ActivityIndicator,
   Platform,
@@ -166,13 +166,9 @@ export default function PlacesAutocomplete({
             },
           ]}
         >
-          <FlatList
-            data={predictions}
-            keyExtractor={(item) => item.description}
-            keyboardShouldPersistTaps="always"
-            scrollEnabled={predictions.length > 4}
-            renderItem={({ item, index }) => (
-              <>
+          <ScrollView keyboardShouldPersistTaps="always" scrollEnabled={predictions.length > 4}>
+            {predictions.map((item, index) => (
+              <View key={item.description}>
                 {index > 0 ? (
                   <View style={[styles.divider, { backgroundColor: theme.border }]} />
                 ) : null}
@@ -198,9 +194,9 @@ export default function PlacesAutocomplete({
                   </View>
                   <Feather name="arrow-up-left" size={14} color={theme.textSecondary} />
                 </Pressable>
-              </>
-            )}
-          />
+              </View>
+            ))}
+          </ScrollView>
         </View>
       ) : null}
     </View>
