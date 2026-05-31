@@ -9,10 +9,10 @@ const emergencyRed  = "#CC1B1B";
 const emergencyRedDk = "#A01515";
 const emergencyRedLt = "#E83030";
 
-// Dark-mode accent — chrome / metallic pastel baby blue
-const chromeBabyBlue   = "#88C8E8";
-const chromeBabyBlueDk = "#6AAED8";
-const chromeBabyBlueLt = "#AADCF4";
+// Dark-mode accent — chrome / metallic steel blue (dark enough for white text)
+const chromeBabyBlue   = "#4A9CC6";
+const chromeBabyBlueDk = "#2C7BAF";
+const chromeBabyBlueLt = "#6BBDE0";
 
 export const Colors = {
   light: {

@@ -18,12 +18,12 @@ export const ONBOARDING_KEY = "@resqride_onboarded_v1";
 const SLIDES = [
   {
     icon: "alert-circle" as const,
-    iconColor: "#88C8E8",
+    iconColor: "#4A9CC6",
     lightAccent: "#0D0D0D",
     title: "Help in Minutes",
     body: "Stuck on the side of the road? Tap once and a verified provider is on their way — flat tire, jump start, fuel, lockout, and more.",
     gradient: ["#061420", "#04060E"] as [string, string],
-    accent: "#88C8E8",
+    accent: "#4A9CC6",
   },
   {
     icon: "shield" as const,

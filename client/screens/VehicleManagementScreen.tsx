@@ -388,7 +388,7 @@ function VehicleCard({
               { text: "Remove", style: "destructive", onPress: onRemove },
             ]);
           }}
-          style={[styles.actionButton, { borderColor: "#88C8E855" }]}
+          style={[styles.actionButton, { borderColor: "#4A9CC655" }]}
         >
           <Feather name="trash-2" size={13} color="#EF4444" />
           <ThemedText type="small" style={{ color: "#EF4444", marginLeft: 4, fontSize: 12 }}>Remove</ThemedText>
