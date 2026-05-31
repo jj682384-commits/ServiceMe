@@ -483,6 +483,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS notifications_enabled BOOLEAN DEFAULT TRUE`).catch(() => {});
   await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS emergency_contacts JSONB DEFAULT '[]'`).catch(() => {});
   await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS suspended BOOLEAN DEFAULT FALSE`).catch(() => {});
+  await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS membership TEXT NOT NULL DEFAULT 'free'`).catch(() => {});
+  await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS billing_cycle TEXT NOT NULL DEFAULT 'monthly'`).catch(() => {});
+  await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS free_services_used INT NOT NULL DEFAULT 0`).catch(() => {});
+  await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS free_services_reset TIMESTAMPTZ DEFAULT NULL`).catch(() => {});
   await pool.query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS stripe_payment_intent_id TEXT DEFAULT NULL`).catch(() => {});
   await pool.query(`
     CREATE TABLE IF NOT EXISTS admin_audit_log (
@@ -655,7 +659,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await getUserByToken(token);
       if (!user) return res.status(401).json({ error: "Invalid or expired session" });
       const { rows } = await pool.query(
-        "SELECT search_radius, notifications_enabled, emergency_contacts FROM auth_users WHERE id = $1",
+        `SELECT search_radius, notifications_enabled, emergency_contacts,
+                membership, billing_cycle, free_services_used, free_services_reset
+         FROM auth_users WHERE id = $1`,
         [user.id]
       );
       const prefs = rows[0] || {};
@@ -664,6 +670,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         searchRadius: prefs.search_radius ?? 10,
         notificationsEnabled: prefs.notifications_enabled ?? true,
         emergencyContacts: Array.isArray(prefs.emergency_contacts) ? prefs.emergency_contacts : [],
+        membership: prefs.membership ?? "free",
+        billingCycle: prefs.billing_cycle ?? "monthly",
+        freeServicesUsed: prefs.free_services_used ?? 0,
+        freeServicesReset: prefs.free_services_reset ? new Date(prefs.free_services_reset).toISOString() : null,
       });
     } catch (err) {
       console.error("[auth/me]", err);
@@ -942,6 +952,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (err) {
       console.error("[auth/push-token]", err);
+      res.status(500).json({ error: "Database error" });
+    }
+  });
+
+  // ── Free Service Usage (server-side enforcement) ─────────────────────────────
+  app.post("/api/auth/use-free-service", async (req: Request, res: Response) => {
+    const token = extractToken(req.headers["authorization"]);
+    if (!token) return res.status(401).json({ error: "No token" });
+    try {
+      const user = await getUserByToken(token);
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+      const { rows } = await pool.query(
+        `SELECT membership, billing_cycle, free_services_used, free_services_reset FROM auth_users WHERE id = $1`,
+        [user.id]
+      );
+      if (!rows.length) return res.status(404).json({ error: "User not found" });
+      const row = rows[0];
+
+      if (row.membership !== "premium") {
+        return res.status(403).json({ error: "Premium membership required" });
+      }
+
+      const billingCycle: string = row.billing_cycle ?? "monthly";
+      const allowance = billingCycle === "yearly" ? 2 : 1;
+      const now = new Date();
+      const existingReset: Date | null = row.free_services_reset ? new Date(row.free_services_reset) : null;
+      const isPastReset = !existingReset || now > existingReset;
+
+      const currentUsed: number = isPastReset ? 0 : (row.free_services_used ?? 0);
+      if (currentUsed >= allowance) {
+        return res.status(409).json({
+          error: "No free services remaining this month",
+          freeServicesUsed: currentUsed,
+          allowance,
+          freeServicesReset: existingReset?.toISOString() ?? null,
+        });
+      }
+
+      const newUsed = currentUsed + 1;
+      const newReset: Date = isPastReset ? (() => {
+        const d = new Date(now);
+        d.setMonth(d.getMonth() + 1);
+        return d;
+      })() : existingReset!;
+
+      await pool.query(
+        `UPDATE auth_users SET free_services_used = $2, free_services_reset = $3, updated_at = NOW() WHERE id = $1`,
+        [user.id, newUsed, newReset.toISOString()]
+      );
+
+      console.log(`[free-service] userId=${user.id} used=${newUsed}/${allowance} reset=${newReset.toISOString()}`);
+      res.json({
+        success: true,
+        freeServicesUsed: newUsed,
+        freeServicesReset: newReset.toISOString(),
+        allowance,
+        remaining: allowance - newUsed,
+      });
+    } catch (err) {
+      console.error("[auth/use-free-service]", err);
+      res.status(500).json({ error: "Database error" });
+    }
+  });
+
+  // ── Sync membership/billing tier to database ──────────────────────────────
+  app.post("/api/auth/sync-membership", async (req: Request, res: Response) => {
+    const token = extractToken(req.headers["authorization"]);
+    if (!token) return res.status(401).json({ error: "No token" });
+    try {
+      const user = await getUserByToken(token);
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+      const { membership, billingCycle } = req.body as {
+        membership?: string;
+        billingCycle?: string;
+      };
+      if (!membership || !billingCycle) {
+        return res.status(400).json({ error: "membership and billingCycle are required" });
+      }
+
+      // Reset free service counter on upgrade
+      const resetDate = new Date();
+      resetDate.setMonth(resetDate.getMonth() + 1);
+
+      await pool.query(
+        `UPDATE auth_users
+         SET membership = $2, billing_cycle = $3,
+             free_services_used = 0,
+             free_services_reset = $4,
+             updated_at = NOW()
+         WHERE id = $1`,
+        [user.id, membership, billingCycle, membership === "premium" ? resetDate.toISOString() : null]
+      );
+
+      console.log(`[sync-membership] userId=${user.id} membership=${membership} cycle=${billingCycle}`);
+      res.json({ success: true });
+    } catch (err) {
+      console.error("[auth/sync-membership]", err);
       res.status(500).json({ error: "Database error" });
     }
   });

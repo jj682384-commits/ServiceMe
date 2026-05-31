@@ -246,7 +246,7 @@ interface AppContextType {
   setDefaultPaymentMethod: (id: string) => void;
   pendingJobs: ServiceRequest[];
   addPendingJob: (job: ServiceRequest) => void;
-  useFreeService: () => void;
+  useFreeService: () => Promise<void>;
   removePendingJob: (id: string) => void;
   logout: () => void;
   themeOverride: "dark" | "light" | null;
@@ -410,7 +410,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     AsyncStorage.setItem("searchRadius", String(searchRadius)).catch(() => {});
   }, [searchRadius, _persisted]);
 
-  // On first hydration, pull preferences from server to stay in sync across devices.
+  // On first hydration, pull preferences + premium state from server to stay in sync across devices.
   useEffect(() => {
     if (!_persisted) return;
     (async () => {
@@ -422,11 +422,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
           searchRadius?: number;
           notificationsEnabled?: boolean;
           emergencyContacts?: EmergencyContact[];
+          membership?: MembershipTier;
+          billingCycle?: BillingCycle;
+          freeServicesUsed?: number;
+          freeServicesReset?: string | null;
         };
         if (me.searchRadius !== undefined) setSearchRadius(me.searchRadius);
         if (me.notificationsEnabled !== undefined) setNotificationsEnabled(me.notificationsEnabled);
         if (Array.isArray(me.emergencyContacts) && me.emergencyContacts.length > 0) {
           setEmergencyContacts(me.emergencyContacts);
+        }
+        // Sync membership & free service counter from server (authoritative source)
+        if (me.membership) {
+          setCurrentDriver((prev) => prev ? {
+            ...prev,
+            membership: me.membership!,
+            billingCycle: me.billingCycle ?? prev.billingCycle,
+            freeServicesUsed: me.freeServicesUsed ?? prev.freeServicesUsed ?? 0,
+            freeServicesReset: me.freeServicesReset ?? prev.freeServicesReset,
+          } : prev);
         }
       } catch {}
     })();
@@ -498,11 +512,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const selectedCycle = cycle || billingCycle;
       const now = new Date();
       const resetDate = new Date(now);
-      if (selectedCycle === "yearly") {
-        resetDate.setFullYear(resetDate.getFullYear() + 1);
-      } else {
-        resetDate.setMonth(resetDate.getMonth() + 1);
-      }
+      resetDate.setMonth(resetDate.getMonth() + 1);
       setCurrentDriver({
         ...currentDriver,
         membership: tier,
@@ -512,11 +522,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
         freeServicesReset: tier === "premium" ? resetDate.toISOString() : undefined,
       });
       if (cycle) setBillingCycle(cycle);
+      // Persist membership/tier to server so it survives cross-device logins
+      apiRequest("POST", "/api/auth/sync-membership", { membership: tier, billingCycle: selectedCycle })
+        .catch(() => {});
     }
   };
 
-  const useFreeService = () => {
+  const useFreeService = async (): Promise<void> => {
     if (!currentDriver || currentDriver.membership !== "premium") return;
+    // Optimistic local update so the UI feels instant
     const now = new Date();
     const cycle = currentDriver.billingCycle ?? "monthly";
     const existingReset = currentDriver.freeServicesReset ? new Date(currentDriver.freeServicesReset) : null;
@@ -524,11 +538,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const newUsed = isPastReset ? 1 : (currentDriver.freeServicesUsed ?? 0) + 1;
     const newReset = isPastReset ? (() => {
       const d = new Date(now);
-      if (cycle === "yearly") d.setFullYear(d.getFullYear() + 1);
-      else d.setMonth(d.getMonth() + 1);
+      d.setMonth(d.getMonth() + 1);
       return d.toISOString();
     })() : currentDriver.freeServicesReset;
     setCurrentDriver({ ...currentDriver, freeServicesUsed: newUsed, freeServicesReset: newReset });
+    // Persist to server so count is enforced across devices
+    try {
+      const res = await apiRequest("POST", "/api/auth/use-free-service");
+      if (res.ok) {
+        const data = await res.json() as { freeServicesUsed: number; freeServicesReset: string };
+        setCurrentDriver((prev) => prev ? { ...prev, freeServicesUsed: data.freeServicesUsed, freeServicesReset: data.freeServicesReset } : prev);
+      }
+    } catch {
+      // Network error — local optimistic update already applied, will re-sync on next app open
+    }
   };
 
   const startFreeTrial = () => {

@@ -418,8 +418,8 @@ export default function ServiceRequestScreen() {
       }
       // ─────────────────────────────────────────────────────────────────────
 
-      // If a free service was used, record it
-      if (isUsingFree) useFreeService();
+      // If a free service was used, record it server-side (enforced & cross-device)
+      if (isUsingFree) await useFreeService();
 
       // Register the job locally so the driver's UI works immediately
       const pendingJob: ServiceRequest = { ...newRequest, provider: undefined, status: "pending" };
