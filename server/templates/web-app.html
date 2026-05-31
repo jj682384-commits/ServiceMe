@@ -97,7 +97,7 @@
     .role-card .role-name { font-size: 13px; font-weight: 800; }
     .role-card .role-desc { font-size: 11px; color: var(--muted); margin-top: 3px; }
     .field label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 7px; letter-spacing: .7px; text-transform: uppercase; }
-    .field input { width: 100%; padding: 13px 16px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-size: 14px; outline: none; font-family: inherit; transition: all .2s; }
+    .field input { width: 100%; padding: 13px 16px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-size: 16px; outline: none; font-family: inherit; transition: all .2s; }
     .field input:focus { border-color: rgba(0,102,255,0.5); box-shadow: 0 0 0 3px rgba(0,102,255,0.08); }
     .field { margin-bottom: 16px; }
 
@@ -948,9 +948,28 @@
             <div class="ev-dest-pill" onclick="selectTowDest(3)" id="ev-dest-3">&#128205; Custom Destination</div>
           </div>
 
+          <div id="ev-custom-dest-wrap" style="display:none;margin-bottom:12px">
+            <label class="input-label">Custom Destination</label>
+            <div class="ac-wrap">
+              <div class="ac-input-row">
+                <span class="ac-pin">&#128205;</span>
+                <input class="ac-input" type="text" id="ev-custom-dest" placeholder="Search destination address..." autocomplete="off" oninput="acQuery('ev-custom-dest',this.value)" onfocus="acQuery('ev-custom-dest',this.value)" onblur="setTimeout(()=>acHide('ev-custom-dest'),200)" />
+                <button class="ac-clear" id="ev-custom-dest-clear" onclick="acClear('ev-custom-dest')" style="display:none">&#10005;</button>
+              </div>
+              <ul class="ac-dropdown" id="ev-custom-dest-list" style="display:none"></ul>
+            </div>
+          </div>
+
           <div style="margin-bottom:6px">
             <label class="input-label">Your current location</label>
-            <input class="web-input" type="text" id="ev-location" placeholder="123 Main St — where are you now?" style="margin-bottom:14px" />
+            <div class="ac-wrap" style="margin-bottom:14px">
+              <div class="ac-input-row">
+                <span class="ac-pin">&#128205;</span>
+                <input class="ac-input" type="text" id="ev-location" placeholder="Search your address..." autocomplete="off" oninput="acQuery('ev-location',this.value)" onfocus="acQuery('ev-location',this.value)" onblur="setTimeout(()=>acHide('ev-location'),200)" />
+                <button class="ac-clear" id="ev-location-clear" onclick="acClear('ev-location')" style="display:none">&#10005;</button>
+              </div>
+              <ul class="ac-dropdown" id="ev-location-list" style="display:none"></ul>
+            </div>
           </div>
           <button class="btn btn-cyan" style="margin-bottom:28px" onclick="submitEvTow()">&#128690; Request EV Tow</button>
 
@@ -1893,6 +1912,8 @@
   function selectTowDest(i) {
     selectedTowDest = i;
     for (let j = 0; j < 4; j++) document.getElementById(`ev-dest-${j}`)?.classList.toggle("selected", j === i);
+    const customWrap = document.getElementById("ev-custom-dest-wrap");
+    if (customWrap) customWrap.style.display = i === 3 ? "block" : "none";
   }
 
   function updateEvTowCalc() {
@@ -1935,7 +1956,9 @@
   async function submitEvTow() {
     if (!userToken) { toast("Please sign in first."); return; }
     const tow = EV_TOW_TYPES[selectedEvTowType];
-    const dest = EV_DEST_LABELS[selectedTowDest];
+    const customDestAddr = document.getElementById("ev-custom-dest")?.value?.trim();
+    const dest = selectedTowDest === 3 && customDestAddr ? customDestAddr : EV_DEST_LABELS[selectedTowDest];
+    if (selectedTowDest === 3 && !customDestAddr) { toast("Please enter a custom destination address."); return; }
     const miles = parseFloat(document.getElementById("ev-tow-miles")?.value) || 5;
     const location = document.getElementById("ev-location")?.value.trim() || "Current Location";
     const billable = Math.max(0, miles - 5);
@@ -2211,12 +2234,12 @@
     if (!list) return;
     list.innerHTML = '<div class="glass-card" style="text-align:center;padding:28px"><p style="color:var(--muted)">Loading history...</p></div>';
     try {
-      const res = await fetch(`${BASE}/api/jobs?driverId=${encodeURIComponent(currentUser.id)}&status=completed`, {
+      const res = await fetch(`${BASE}/api/jobs/driver/${encodeURIComponent(currentUser.id)}`, {
         headers: { Authorization: `Bearer ${userToken}` }
       });
       if (!res.ok) { list.innerHTML = ''; return; }
       const jobs = await res.json();
-      const completed = Array.isArray(jobs) ? jobs.filter(j => j.status === "completed" || j.driver?.id === currentUser.id) : [];
+      const completed = Array.isArray(jobs) ? jobs.filter(j => ["completed","cancelled","canceled"].includes(j.status)) : [];
       if (!completed.length) {
         list.innerHTML = `<div class="glass-card" style="text-align:center;padding:56px 24px">
           <div style="font-size:44px;margin-bottom:16px">&#128203;</div>
@@ -2272,7 +2295,7 @@
       const predictions = await r.json();
       if (Array.isArray(predictions) && predictions.length) {
         list.innerHTML = predictions.map(p => {
-          return `<li onclick="acSelect('${id}',${JSON.stringify(p.description)})">
+          return `<li onmousedown="event.preventDefault()" onclick="acSelect('${id}',${JSON.stringify(p.description)})">
             <div class="ac-icon">&#128205;</div>
             <div style="overflow:hidden;min-width:0">
               <div class="ac-main">${p.mainText || p.description}</div>
@@ -2304,6 +2327,35 @@
     acHide(id);
     if (id === "tow-dropoff" && address) {
       autoFillTowMiles(address);
+    }
+    if (id === "ev-custom-dest" && address) {
+      autoFillEvTowMiles(address);
+    }
+  }
+
+  async function autoFillEvTowMiles(destinationAddress) {
+    const milesInput = document.getElementById("ev-tow-miles");
+    if (!milesInput) return;
+    milesInput.placeholder = "Calculating...";
+    try {
+      const getPos = () => new Promise((resolve, reject) => {
+        if (!navigator.geolocation) { reject(new Error("no geo")); return; }
+        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 6000 });
+      });
+      const pos = await getPos();
+      const { latitude, longitude } = pos.coords;
+      const url = `${BASE}/api/places/distance?originLat=${latitude}&originLng=${longitude}&destination=${encodeURIComponent(destinationAddress)}`;
+      const r = await fetch(url);
+      const d = await r.json();
+      if (typeof d.miles === "number") {
+        milesInput.value = String(d.miles);
+        milesInput.placeholder = "0";
+        updateEvTowCalc();
+      } else {
+        milesInput.placeholder = "Enter miles";
+      }
+    } catch {
+      milesInput.placeholder = "Enter miles";
     }
   }
 

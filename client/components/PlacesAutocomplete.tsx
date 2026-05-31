@@ -131,7 +131,7 @@ export default function PlacesAutocomplete({
           autoCapitalize="words"
           returnKeyType="search"
           onBlur={() => {
-            setTimeout(() => setShowDropdown(false), 180);
+            setTimeout(() => setShowDropdown(false), 350);
           }}
           onFocus={() => {
             if (predictions.length > 0) setShowDropdown(true);
