@@ -581,8 +581,13 @@ export default function ProviderSignUpScreen() {
   };
 
   const handleBack = () => {
-    if (step > 0) setStep(step - 1);
-    else navigation.goBack();
+    if (step > 0) {
+      setStep(step - 1);
+    } else if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "RoleSelection" }] }));
+    }
   };
 
   const handleSubmit = async () => {
