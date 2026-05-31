@@ -1408,14 +1408,15 @@
 
   // ── Provider Profile & Duality ──
   async function loadProviderProfile() {
-    if (!userToken || !currentUser) return;
+    if (!userToken || !currentUser?.email) return;
     try {
-      const res = await fetch(`${BASE}/api/providers`, { headers: { Authorization: `Bearer ${userToken}` } });
+      const res = await fetch(`${BASE}/api/providers/by-email/${encodeURIComponent(currentUser.email)}`, {
+        headers: { Authorization: `Bearer ${userToken}` },
+      });
       if (res.ok) {
-        const list = await res.json();
-        const found = list.find(p => p.email === currentUser.email || p.id === currentUser.id);
-        if (found) providerProfile = found;
+        providerProfile = await res.json();
       }
+      // 404 = no provider profile for this user; that's fine
     } catch {}
     // applyProviderDuality is called by applyActiveRole when switching to provider mode
   }
@@ -1473,7 +1474,7 @@
     if (sub) sub.textContent = online ? "You can receive job requests" : "You are not receiving job requests";
     if (online) loadProviderJobs();
     if (providerProfile?.id) {
-      fetch(`${BASE}/api/providers/${providerProfile.id}/status`, {
+      fetch(`${BASE}/api/providers/${providerProfile.id}/availability`, {
         method: "PATCH", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${userToken}` },
         body: JSON.stringify({ isAvailable: online }),
       }).catch(() => {});
