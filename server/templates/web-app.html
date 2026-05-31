@@ -2199,6 +2199,40 @@
     const clearBtn = document.getElementById(`${id}-clear`);
     if (clearBtn) clearBtn.style.display = "inline-flex";
     acHide(id);
+    if (id === "tow-dropoff" && address && GMAPS_KEY) {
+      autoFillTowMiles(address);
+    }
+  }
+
+  async function autoFillTowMiles(destinationAddress) {
+    const milesInput = document.getElementById("tow-miles-input");
+    const preview    = document.getElementById("tow-price-preview");
+    if (!milesInput) return;
+    milesInput.placeholder = "Calculating...";
+    milesInput.value = "";
+    try {
+      const getPos = () => new Promise((resolve, reject) => {
+        if (!navigator.geolocation) { reject(new Error("no geo")); return; }
+        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 6000 });
+      });
+      const pos = await getPos();
+      const { latitude, longitude } = pos.coords;
+      const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${latitude},${longitude}&destinations=${encodeURIComponent(destinationAddress)}&key=${GMAPS_KEY}&units=imperial`;
+      const r = await fetch(url);
+      const d = await r.json();
+      const el = d?.rows?.[0]?.elements?.[0];
+      if (el?.status === "OK") {
+        const meters = el.distance?.value ?? 0;
+        const miles  = Math.round((meters / 1609.34) * 10) / 10;
+        milesInput.value = String(miles);
+        milesInput.placeholder = "0";
+        onTowMilesInput(String(miles));
+      } else {
+        milesInput.placeholder = "Enter miles";
+      }
+    } catch {
+      milesInput.placeholder = "Enter miles";
+    }
   }
 
   function acHide(id) {

@@ -17,6 +17,7 @@ import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import PlacesAutocomplete from "@/components/PlacesAutocomplete";
+import { fetchDrivingMiles } from "@/lib/distanceMatrix";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceRequest } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
@@ -338,7 +339,15 @@ export default function TowRequestScreen() {
         <PlacesAutocomplete
           value={destination}
           onChangeText={setDestination}
-          onSelect={setDestination}
+          onSelect={async (addr) => {
+            setDestination(addr);
+            if (addr && userLocation) {
+              const miles = await fetchDrivingMiles(userLocation.latitude, userLocation.longitude, addr);
+              if (miles !== null && mountedRef.current) {
+                setMilesText(String(miles));
+              }
+            }
+          }}
           placeholder="Search address or mechanic name..."
         />
 

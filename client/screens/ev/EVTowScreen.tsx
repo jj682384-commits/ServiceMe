@@ -28,6 +28,7 @@ import { getApiUrl, apiRequest } from "@/lib/query-client";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { consumePendingCharger } from "@/lib/chargerSelection";
 import PlacesAutocomplete from "@/components/PlacesAutocomplete";
+import { fetchDrivingMiles } from "@/lib/distanceMatrix";
 
 const FLATBED_HOOKUP  = 85;   // EV-certified flatbed premium
 const WHEELLIFT_HOOKUP = 65;  // Same as standard tow hookup
@@ -374,7 +375,13 @@ export default function EVTowScreen() {
             <PlacesAutocomplete
               value={customAddress}
               onChangeText={setCustomAddress}
-              onSelect={setCustomAddress}
+              onSelect={async (addr) => {
+                setCustomAddress(addr);
+                if (addr && userLocation) {
+                  const miles = await fetchDrivingMiles(userLocation.latitude, userLocation.longitude, addr);
+                  if (miles !== null) setCustomMiles(String(miles));
+                }
+              }}
               placeholder="Search destination address..."
             />
             <View style={[styles.customMilesRow, { borderColor: EV.border, backgroundColor: EV.bgCard }]}>
