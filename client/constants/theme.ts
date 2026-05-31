@@ -9,6 +9,11 @@ const emergencyRed  = "#CC1B1B";
 const emergencyRedDk = "#A01515";
 const emergencyRedLt = "#E83030";
 
+// Dark-mode accent — chrome / metallic pastel baby blue
+const chromeBabyBlue   = "#88C8E8";
+const chromeBabyBlueDk = "#6AAED8";
+const chromeBabyBlueLt = "#AADCF4";
+
 export const Colors = {
   light: {
     text:                "#0D0D0D",
@@ -42,9 +47,9 @@ export const Colors = {
     tabIconDefault:      "#555555",
     tabIconSelected:     chromeSilver,
     link:                chromeSilver,
-    primary:             emergencyRed,
-    primaryDark:         emergencyRedDk,
-    primaryLight:        emergencyRedLt,
+    primary:             chromeBabyBlue,
+    primaryDark:         chromeBabyBlueDk,
+    primaryLight:        chromeBabyBlueLt,
     secondary:           chromeSilver,
     secondaryDark:       chromeGray,
     accent:              chromeWhite,
@@ -190,7 +195,7 @@ export const Shadows = {
     elevation: 6,
   },
   fab: {
-    shadowColor: emergencyRed,
+    shadowColor: chromeBabyBlue,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.40,
     shadowRadius: 10,
@@ -200,7 +205,7 @@ export const Shadows = {
 
 export const Gradients = {
   primary: {
-    colors: [emergencyRed, emergencyRedDk] as [string, string],
+    colors: [chromeBabyBlue, chromeBabyBlueDk] as [string, string],
     start: { x: 0, y: 0 },
     end: { x: 1, y: 1 },
   },

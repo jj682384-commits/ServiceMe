@@ -194,8 +194,8 @@ export default function EditProfileScreen() {
                 {displayName}
               </ThemedText>
             </View>
-            <View style={[styles.rolePill, { backgroundColor: isProvider ? "#D9222218" : "#0066FF18", borderColor: isProvider ? "#D9222240" : "#0066FF40" }]}>
-              <ThemedText style={{ color: isProvider ? "#F87171" : "#60A5FA", fontSize: 11, fontWeight: "700" }}>
+            <View style={[styles.rolePill, { backgroundColor: isProvider ? "#88C8E818" : "#0066FF18", borderColor: isProvider ? "#88C8E840" : "#0066FF40" }]}>
+              <ThemedText style={{ color: isProvider ? "#88C8E8" : "#60A5FA", fontSize: 11, fontWeight: "700" }}>
                 {isProvider ? "PROVIDER" : "DRIVER"}
               </ThemedText>
             </View>
@@ -385,7 +385,7 @@ export default function EditProfileScreen() {
             style={{ borderRadius: BorderRadius.md, overflow: "hidden", opacity: isSaving ? 0.7 : 1 }}
           >
             <LinearGradient
-              colors={isProvider ? ["#AA1818", "#D92222"] : ["#0055CC", "#0066FF"]}
+              colors={isProvider ? ["#6AAED8", "#88C8E8"] : ["#0055CC", "#0066FF"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.saveButton}

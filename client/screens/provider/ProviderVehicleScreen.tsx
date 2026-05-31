@@ -295,13 +295,13 @@ export default function ProviderVehicleScreen() {
                   onPress={() => handleChangeVehicleType(t.value)}
                   style={[
                     styles.typeChip,
-                    { backgroundColor: vehicleType === t.value ? "#D9222222" : "transparent", borderColor: vehicleType === t.value ? "#D92222" : theme.border },
+                    { backgroundColor: vehicleType === t.value ? "#88C8E822" : "transparent", borderColor: vehicleType === t.value ? "#88C8E8" : theme.border },
                   ]}
                 >
-                  <Feather name={t.icon} size={14} color={vehicleType === t.value ? "#F87171" : theme.textSecondary} />
+                  <Feather name={t.icon} size={14} color={vehicleType === t.value ? "#88C8E8" : theme.textSecondary} />
                   <ThemedText
                     type="small"
-                    style={{ color: vehicleType === t.value ? "#F87171" : theme.text, fontWeight: vehicleType === t.value ? "700" : "400", marginLeft: 5, textAlign: "center" }}
+                    style={{ color: vehicleType === t.value ? "#88C8E8" : theme.text, fontWeight: vehicleType === t.value ? "700" : "400", marginLeft: 5, textAlign: "center" }}
                   >
                     {t.label}
                   </ThemedText>
@@ -318,9 +318,9 @@ export default function ProviderVehicleScreen() {
               </View>
             ) : null}
             {isServiceVan ? (
-              <View style={[styles.infoBanner, { backgroundColor: "#D9222212", borderColor: "#D9222230" }]}>
-                <Feather name="info" size={13} color="#F87171" />
-                <ThemedText type="small" style={{ color: "#F87171", flex: 1, marginLeft: Spacing.sm }}>
+              <View style={[styles.infoBanner, { backgroundColor: "#88C8E812", borderColor: "#88C8E830" }]}>
+                <Feather name="info" size={13} color="#88C8E8" />
+                <ThemedText type="small" style={{ color: "#88C8E8", flex: 1, marginLeft: Spacing.sm }}>
                   Showing commercial service van manufacturers. Select your van make and model.
                 </ThemedText>
               </View>
@@ -371,8 +371,8 @@ export default function ProviderVehicleScreen() {
         <Animated.View entering={FadeIn.delay(200).duration(280)}>
           <ThemedText style={[styles.sectionLabel, { marginBottom: Spacing.sm }]}>LICENSE PLATE</ThemedText>
           <View style={[styles.plateCard, { backgroundColor: sectionBg }]}>
-            <View style={[styles.plateIconBox, { backgroundColor: "#D9222218" }]}>
-              <Feather name="credit-card" size={20} color="#F87171" />
+            <View style={[styles.plateIconBox, { backgroundColor: "#88C8E818" }]}>
+              <Feather name="credit-card" size={20} color="#88C8E8" />
             </View>
             <TextInput
               style={[styles.plateInput, { color: theme.text }]}
@@ -391,7 +391,7 @@ export default function ProviderVehicleScreen() {
         <Animated.View entering={FadeIn.delay(260).duration(280)} style={{ marginTop: Spacing.lg }}>
           <Pressable onPress={handleSave} disabled={isSaving} style={{ borderRadius: BorderRadius.md, overflow: "hidden", opacity: isSaving ? 0.7 : 1 }}>
             <LinearGradient
-              colors={["#AA1818", "#D92222"]}
+              colors={["#6AAED8", "#88C8E8"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.saveButton}
