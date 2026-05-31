@@ -441,7 +441,7 @@ export default function ProviderSignUpScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<ProviderSignUpRouteProp>();
   const { setIsAuthenticated, setAuthUser, setUserRole, setCurrentProvider } = useApp();
-  const providerType = route.params.providerType;
+  const providerType = route.params?.providerType ?? "independent";
   const isIndependent = providerType === "independent";
 
   const [step, setStep] = useState(0);

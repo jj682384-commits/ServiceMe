@@ -93,7 +93,7 @@ export default function RoleSelectionScreen() {
       return;
     }
     // No provider profile yet — send to sign-up flow
-    navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "ProviderSignUp" }] }));
+    navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "ProviderSignUp", params: { providerType: "independent" } }] }));
   };
 
   const taglineColor  = isDark ? "rgba(192,192,192,0.5)" : theme.textSecondary;

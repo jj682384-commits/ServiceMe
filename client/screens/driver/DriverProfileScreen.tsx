@@ -111,7 +111,7 @@ export default function DriverProfileScreen() {
               await switchUserRole("provider");
               navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "ProviderTabs" }] }));
             } else {
-              navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "ProviderSignUp" }] }));
+              navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "ProviderSignUp", params: { providerType: "independent" } }] }));
             }
           },
         },
