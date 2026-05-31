@@ -129,6 +129,7 @@ function makeRateLimiter(limit: number, windowMs: number) {
 }
 const generalLimit = makeRateLimiter(100, 60_000);  // 100 req/min per IP
 const authLimit    = makeRateLimiter(10,  60_000);  // 10 req/min per IP (auth endpoints)
+const adminLimit   = makeRateLimiter(5,   300_000); // 5 attempts per 5 min (admin login)
 
 // ── Account Lockout ────────────────────────────────────────────────────────────
 const _loginAttempts = new Map<string, { count: number; lockedUntil: number }>();
@@ -366,6 +367,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ── Rate limiting: 100 req/min per IP on all /api routes ─────────────────────
   app.use("/api", generalLimit);
+
+  // ── Input sanitization: strip null bytes and enforce field length caps ────────
+  app.use("/api", (req: Request, _res: Response, next: NextFunction) => {
+    if (req.body && typeof req.body === "object") {
+      const sanitize = (obj: unknown, depth = 0): unknown => {
+        if (depth > 10) return obj;
+        if (typeof obj === "string") {
+          return obj.replace(/\0/g, "").slice(0, 10_000);
+        }
+        if (Array.isArray(obj)) return obj.slice(0, 100).map(v => sanitize(v, depth + 1));
+        if (obj && typeof obj === "object") {
+          const out: Record<string, unknown> = {};
+          for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+            out[k.replace(/\0/g, "").slice(0, 256)] = sanitize(v, depth + 1);
+          }
+          return out;
+        }
+        return obj;
+      };
+      req.body = sanitize(req.body);
+    }
+    next();
+  });
 
   // ── DB column migrations (idempotent) ────────────────────────────────────────
   await pool.query(`
@@ -1092,12 +1116,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ── Admin auth ────────────────────────────────────────────────────────────────
 
-  app.post("/api/admin/login", (req: Request, res: Response) => {
+  app.post("/api/admin/login", adminLimit, (req: Request, res: Response) => {
     const { password } = req.body as { password: string };
     const adminPassword = (process.env.ADMIN_PASSWORD || "").trim();
     const submitted = (password || "").trim();
     if (!adminPassword) return res.status(503).json({ error: "ADMIN_PASSWORD not configured" });
-    if (!submitted || submitted !== adminPassword) return res.status(401).json({ error: "Invalid password" });
+    // Constant-time comparison to prevent timing attacks
+    const aBuf = Buffer.alloc(256);
+    const bBuf = Buffer.alloc(256);
+    aBuf.write(submitted);
+    bBuf.write(adminPassword);
+    const match = crypto.timingSafeEqual(aBuf, bBuf) && submitted === adminPassword;
+    if (!match) return res.status(401).json({ error: "Invalid password" });
     const token = signAdminToken();
     res.json({ token });
   });

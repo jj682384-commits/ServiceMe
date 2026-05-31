@@ -42,7 +42,22 @@ const log = console.log;
 app.use(helmet({
   crossOriginEmbedderPolicy: false,  // Expo web assets need cross-origin access
   contentSecurityPolicy: false,       // Expo web manages its own CSP
+  referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+  hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+  noSniff: true,
+  xssFilter: true,
+  frameguard: { action: "deny" },
+  permittedCrossDomainPolicies: false,
 }));
+
+// Permissions-Policy: restrict sensitive browser features
+app.use((_req: Request, res: Response, next: NextFunction) => {
+  res.setHeader(
+    "Permissions-Policy",
+    "geolocation=(), camera=(), microphone=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()"
+  );
+  next();
+});
 
 declare module "http" {
   interface IncomingMessage {

@@ -17,8 +17,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self'; frame-ancestors 'none';" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous" defer></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -882,7 +883,7 @@
 </div>
 
 <script>
-  let token = localStorage.getItem("sm_admin_token") || "";
+  let token = sessionStorage.getItem("sm_admin_token") || "";
   let allProviders = [], allUsers = [], allJobs = [], allWaitlist = [], allReports = [], allAuditLog = [];
   let providerTab = "all";
   let jobStatusFilter = "";
@@ -905,11 +906,23 @@
     const p = allProviders.find(x => x.id === providerId);
     if (!p || !p.verificationDocuments) return;
     const val = p.verificationDocuments[docKey];
-    if (typeof val !== "string" || !val.startsWith("data:")) return;
-    const w = window.open("", "_blank");
-    if (!w) return;
+    if (typeof val !== "string" || !val.startsWith("data:image/")) return;
     const label = DOC_LABELS[docKey] || docKey;
-    w.document.write(`<!DOCTYPE html><html><head><title>${label} — ${p.name}</title><style>body{margin:0;background:#111;display:flex;align-items:center;justify-content:center;min-height:100vh}img{max-width:100%;max-height:100vh;object-fit:contain;border-radius:4px}</style></head><body><img src="${val}" alt="${label}"></body></html>`);
+    const img = document.createElement("img");
+    img.src = val;
+    img.alt = label;
+    img.style.cssText = "max-width:100%;max-height:100vh;object-fit:contain;border-radius:4px";
+    const html = `<!DOCTYPE html><html><head><title></title><style>body{margin:0;background:#111;display:flex;align-items:center;justify-content:center;min-height:100vh}</style></head><body></body></html>`;
+    const blob = new Blob([html], { type: "text/html" });
+    const blobUrl = URL.createObjectURL(blob);
+    const w = window.open(blobUrl, "_blank");
+    if (w) {
+      w.addEventListener("load", () => {
+        URL.revokeObjectURL(blobUrl);
+        const body = w.document.body;
+        if (body) body.appendChild(img.cloneNode());
+      });
+    }
   }
 
   function buildDocChip(providerId, key, val) {
@@ -944,14 +957,14 @@
       const data = await res.json();
       if (!res.ok) { err.textContent = data.error || "Invalid password."; return; }
       token = data.token;
-      localStorage.setItem("sm_admin_token", token);
+      sessionStorage.setItem("sm_admin_token", token);
       showDashboard();
     } catch { err.textContent = "Could not reach the server."; }
     finally { btn.disabled = false; btn.textContent = "Sign In"; }
   }
 
   function signOut(expired = false) {
-    token = ""; localStorage.removeItem("sm_admin_token");
+    token = ""; sessionStorage.removeItem("sm_admin_token");
     clearInterval(autoRefreshTimer);
     clearInterval(liveRefreshTimer);
     clearInterval(jobsRefreshTimer);
