@@ -27,6 +27,7 @@ import { useStripe } from "@/lib/stripe";
 import { getApiUrl, apiRequest } from "@/lib/query-client";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { consumePendingCharger } from "@/lib/chargerSelection";
+import PlacesAutocomplete from "@/components/PlacesAutocomplete";
 
 const FLATBED_HOOKUP  = 85;   // EV-certified flatbed premium
 const WHEELLIFT_HOOKUP = 65;  // Same as standard tow hookup
@@ -80,6 +81,7 @@ export default function EVTowScreen() {
   const [selectedTow, setSelectedTow] = useState(0);
   const [selectedDest, setSelectedDest] = useState(0);
   const [customMiles, setCustomMiles] = useState("");
+  const [customAddress, setCustomAddress] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [pickedCharger, setPickedCharger] = useState<{ name: string; address: string; miles: number } | null>(null);
 
@@ -368,17 +370,25 @@ export default function EVTowScreen() {
         })}
 
         {selectedDest === DESTINATIONS.length - 1 ? (
-          <View style={[styles.customMilesRow, { borderColor: EV.border, backgroundColor: EV.bgCard }]}>
-            <Feather name="navigation" size={15} color={EV.whiteDim} />
-            <TextInput
-              style={[styles.customMilesInput, { color: EV.white }]}
-              placeholder="Estimated miles to destination"
-              placeholderTextColor={EV.whiteGhost}
-              keyboardType="decimal-pad"
-              value={customMiles}
-              onChangeText={setCustomMiles}
+          <View style={{ marginTop: 8, gap: 10, zIndex: 100 }}>
+            <PlacesAutocomplete
+              value={customAddress}
+              onChangeText={setCustomAddress}
+              onSelect={setCustomAddress}
+              placeholder="Search destination address..."
             />
-            <Animated.Text style={[styles.customMilesUnit, { color: EV.whiteDim }]}>mi</Animated.Text>
+            <View style={[styles.customMilesRow, { borderColor: EV.border, backgroundColor: EV.bgCard }]}>
+              <Feather name="navigation" size={15} color={EV.whiteDim} />
+              <TextInput
+                style={[styles.customMilesInput, { color: EV.white }]}
+                placeholder="Estimated miles to destination"
+                placeholderTextColor={EV.whiteGhost}
+                keyboardType="decimal-pad"
+                value={customMiles}
+                onChangeText={setCustomMiles}
+              />
+              <Animated.Text style={[styles.customMilesUnit, { color: EV.whiteDim }]}>mi</Animated.Text>
+            </View>
           </View>
         ) : null}
 

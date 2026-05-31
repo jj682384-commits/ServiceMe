@@ -432,6 +432,49 @@
       .app-bar-user { display: none; }
       .sub-svc-grid { grid-template-columns: 1fr; }
     }
+
+    /* ── Address Autocomplete ── */
+    .ac-wrap { position: relative; }
+    .ac-input-row {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--card); border: 1.5px solid var(--border);
+      border-radius: 12px; padding: 0 12px; min-height: 48px;
+      transition: border-color 0.15s;
+    }
+    .ac-input-row:focus-within { border-color: var(--accent); }
+    .ac-pin { font-size: 16px; flex-shrink: 0; }
+    .ac-input {
+      flex: 1; background: transparent; border: none; outline: none;
+      color: var(--text); font-size: 15px; padding: 12px 0;
+    }
+    .ac-input::placeholder { color: var(--muted); }
+    .ac-clear {
+      background: none; border: none; cursor: pointer; color: var(--muted);
+      font-size: 14px; padding: 4px; line-height: 1; border-radius: 50%;
+      transition: color 0.15s;
+    }
+    .ac-clear:hover { color: var(--text); }
+    .ac-dropdown {
+      position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+      list-style: none; margin: 0; padding: 6px 0;
+      z-index: 999; max-height: 240px; overflow-y: auto;
+    }
+    .ac-dropdown li {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; cursor: pointer; transition: background 0.1s;
+    }
+    .ac-dropdown li:hover { background: rgba(0,102,255,0.1); }
+    .ac-dropdown li + li { border-top: 1px solid var(--border); }
+    .ac-icon {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(0,102,255,0.15); display: flex;
+      align-items: center; justify-content: center; flex-shrink: 0; font-size: 12px;
+    }
+    .ac-main { font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ac-sub  { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ac-loading { text-align: center; padding: 14px; color: var(--muted); font-size: 13px; }
   </style>
 </head>
 <body>
@@ -665,8 +708,17 @@
                 </label>
               </div>
 
-              <!-- Towing: Distance calculator -->
+              <!-- Towing: Drop-off + Distance -->
               <div id="tow-distance-panel" style="display:none;margin-bottom:16px">
+                <div class="section-label" style="margin-top:0;margin-bottom:10px">Drop-off Location</div>
+                <div class="ac-wrap" style="margin-bottom:14px">
+                  <div class="ac-input-row">
+                    <span class="ac-pin">&#128205;</span>
+                    <input class="ac-input" type="text" id="tow-dropoff" placeholder="Search address or mechanic name..." autocomplete="off" oninput="acQuery('tow-dropoff',this.value)" onfocus="acQuery('tow-dropoff',this.value)" onblur="setTimeout(()=>acHide('tow-dropoff'),200)" />
+                    <button class="ac-clear" id="tow-dropoff-clear" onclick="acClear('tow-dropoff')" style="display:none">&#10005;</button>
+                  </div>
+                  <ul class="ac-dropdown" id="tow-dropoff-list" style="display:none"></ul>
+                </div>
                 <div class="section-label" style="margin-top:0;margin-bottom:10px">Estimated Distance</div>
                 <div style="background:rgba(0,102,255,0.05);border:1px solid rgba(0,102,255,0.15);border-radius:14px;padding:16px 18px;margin-bottom:10px">
                   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -728,7 +780,14 @@
               <div class="form-row" style="margin-bottom:16px">
                 <div class="input-group">
                   <label class="input-label">Your Location / Address</label>
-                  <input class="web-input" type="text" id="req-location" placeholder="123 Main St, City, State" />
+                  <div class="ac-wrap">
+                    <div class="ac-input-row">
+                      <span class="ac-pin">&#128205;</span>
+                      <input class="ac-input" type="text" id="req-location" placeholder="Search your address..." autocomplete="off" oninput="acQuery('req-location',this.value)" onfocus="acQuery('req-location',this.value)" onblur="setTimeout(()=>acHide('req-location'),200)" />
+                      <button class="ac-clear" id="req-location-clear" onclick="acClear('req-location')" style="display:none">&#10005;</button>
+                    </div>
+                    <ul class="ac-dropdown" id="req-location-list" style="display:none"></ul>
+                  </div>
                 </div>
                 <div class="input-group">
                   <label class="input-label">Additional Notes</label>
@@ -1646,6 +1705,10 @@
       const sub = TIRE_SUBS.find(s => s.key === selectedSubType);
       extraNotes = (sub ? sub.name : "") + (addTireInspection && sub?.hasInspectionAddon ? " + Tire Inspection" : "") + (notes ? " | " + notes : "");
     }
+    if (selectedService.type === "tow") {
+      const dropoff = document.getElementById("tow-dropoff")?.value?.trim();
+      if (dropoff) extraNotes = `Drop-off: ${dropoff}` + (notes ? ` | ${notes}` : "");
+    }
 
     const btn = document.getElementById("submit-request-btn");
     btn.disabled = true; btn.textContent = "Submitting...";
@@ -2079,6 +2142,76 @@
         <p>Check your connection and try again.</p>
       </div>`;
     }
+  }
+
+  // ── Address Autocomplete ──
+  const GMAPS_KEY = "__GOOGLE_MAPS_API_KEY__";
+  const acTimers = {};
+  const acTokens = {};
+
+  function acGetToken(id) {
+    if (!acTokens[id]) acTokens[id] = Math.random().toString(36).slice(2);
+    return acTokens[id];
+  }
+  function acResetToken(id) { acTokens[id] = Math.random().toString(36).slice(2); }
+
+  async function acFetch(id, input) {
+    if (!GMAPS_KEY || input.length < 3) { acHide(id); return; }
+    const list = document.getElementById(`${id}-list`);
+    if (!list) return;
+    list.innerHTML = `<li class="ac-loading">Searching...</li>`;
+    list.style.display = "block";
+    try {
+      const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(input)}&key=${GMAPS_KEY}&sessiontoken=${acGetToken(id)}&types=geocode`;
+      const r = await fetch(url);
+      const d = await r.json();
+      if (d.status === "OK" && d.predictions?.length) {
+        list.innerHTML = d.predictions.map(p => {
+          const main = p.structured_formatting?.main_text || p.description;
+          const sub  = p.structured_formatting?.secondary_text || "";
+          return `<li onclick="acSelect('${id}',${JSON.stringify(p.description)})">
+            <div class="ac-icon">&#128205;</div>
+            <div style="overflow:hidden;min-width:0">
+              <div class="ac-main">${main}</div>
+              ${sub ? `<div class="ac-sub">${sub}</div>` : ""}
+            </div>
+          </li>`;
+        }).join("");
+        list.style.display = "block";
+      } else {
+        acHide(id);
+      }
+    } catch { acHide(id); }
+  }
+
+  function acQuery(id, value) {
+    const clearBtn = document.getElementById(`${id}-clear`);
+    if (clearBtn) clearBtn.style.display = value.length > 0 ? "inline-flex" : "none";
+    if (acTimers[id]) clearTimeout(acTimers[id]);
+    if (value.length < 3) { acHide(id); return; }
+    acTimers[id] = setTimeout(() => acFetch(id, value), 280);
+  }
+
+  function acSelect(id, address) {
+    acResetToken(id);
+    const input = document.getElementById(id);
+    if (input) input.value = address;
+    const clearBtn = document.getElementById(`${id}-clear`);
+    if (clearBtn) clearBtn.style.display = "inline-flex";
+    acHide(id);
+  }
+
+  function acHide(id) {
+    const list = document.getElementById(`${id}-list`);
+    if (list) list.style.display = "none";
+  }
+
+  function acClear(id) {
+    const input = document.getElementById(id);
+    if (input) { input.value = ""; input.focus(); }
+    const clearBtn = document.getElementById(`${id}-clear`);
+    if (clearBtn) clearBtn.style.display = "none";
+    acHide(id);
   }
 
   // ── Auto-login ──

@@ -1548,7 +1548,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
       res.setHeader("Pragma", "no-cache");
       res.setHeader("Expires", "0");
-      res.send(fs.readFileSync(webAppPath, "utf-8"));
+      const mapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || "";
+      const html = fs.readFileSync(webAppPath, "utf-8")
+        .replace("__GOOGLE_MAPS_API_KEY__", mapsKey);
+      res.send(html);
     } else {
       res.status(404).send("Web app not found");
     }

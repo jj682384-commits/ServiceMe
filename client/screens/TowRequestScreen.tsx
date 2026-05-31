@@ -16,6 +16,7 @@ import * as Location from "expo-location";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
+import PlacesAutocomplete from "@/components/PlacesAutocomplete";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceRequest } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
@@ -334,12 +335,11 @@ export default function TowRequestScreen() {
         </View>
 
         <ThemedText type="h4" style={styles.sectionTitle}>Drop-off Location</ThemedText>
-        <TextInput
+        <PlacesAutocomplete
           value={destination}
           onChangeText={setDestination}
-          placeholder="Enter destination address or mechanic name"
-          placeholderTextColor={theme.textSecondary}
-          style={[styles.textInput, { backgroundColor: theme.backgroundSecondary, color: theme.text, borderColor: theme.border }]}
+          onSelect={setDestination}
+          placeholder="Search address or mechanic name..."
         />
 
         <ThemedText type="h4" style={[styles.sectionTitle, { marginTop: Spacing.lg }]}>

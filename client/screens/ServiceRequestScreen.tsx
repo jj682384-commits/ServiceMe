@@ -23,6 +23,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { ThemedText } from "@/components/ThemedText";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import AnimatedBackground from "@/components/AnimatedBackground";
+import PlacesAutocomplete from "@/components/PlacesAutocomplete";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceType, ServiceRequest } from "@/context/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
@@ -180,6 +181,8 @@ export default function ServiceRequestScreen() {
   const mountedRef = useRef(true);
   const submitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [manualAddress, setManualAddress] = useState("");
+  const [editingLocation, setEditingLocation] = useState(false);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -328,7 +331,7 @@ export default function ServiceRequestScreen() {
       id: requestId,
       serviceType: effectiveServiceType,
       location: {
-        address: "Current Location",
+        address: manualAddress.trim() || "Current Location",
         latitude: coords.latitude,
         longitude: coords.longitude,
       },
@@ -830,18 +833,46 @@ export default function ServiceRequestScreen() {
         <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
           Your Exact Location
         </ThemedText>
-        <View style={[styles.locationCard, { backgroundColor: sectionBg }]}>
-          <Feather name="map-pin" size={20} color={theme.primary} />
-          <View style={styles.locationInfo}>
-            <ThemedText type="body" style={{ fontWeight: "500" }}>
-              Current Location
-            </ThemedText>
-            <ThemedText type="small" style={{ color: theme.textSecondary }}>
-              Sharing GPS • Average response: 8 min
-            </ThemedText>
+        {editingLocation ? (
+          <View style={{ zIndex: 100 }}>
+            <PlacesAutocomplete
+              value={manualAddress}
+              onChangeText={setManualAddress}
+              onSelect={(addr) => {
+                setManualAddress(addr);
+                if (addr) setEditingLocation(false);
+              }}
+              placeholder="Search your address..."
+              autoFocus
+            />
+            {manualAddress.length === 0 ? (
+              <Pressable
+                onPress={() => setEditingLocation(false)}
+                style={{ marginTop: Spacing.xs, alignSelf: "flex-end" }}
+              >
+                <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                  Use GPS instead
+                </ThemedText>
+              </Pressable>
+            ) : null}
           </View>
-          <Feather name="edit-2" size={18} color={theme.textSecondary} />
-        </View>
+        ) : (
+          <Pressable
+            onPress={() => setEditingLocation(true)}
+            style={[styles.locationCard, { backgroundColor: sectionBg }]}
+          >
+            <Feather name="map-pin" size={20} color={theme.primary} />
+            <View style={styles.locationInfo}>
+              <ThemedText type="body" style={{ fontWeight: "500" }}>
+                {manualAddress.trim() ? manualAddress : "Current Location"}
+              </ThemedText>
+              <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                {manualAddress.trim() ? "Custom address set" : "Sharing GPS • Average response: 8 min"}
+              </ThemedText>
+            </View>
+            <Feather name="edit-2" size={18} color={theme.textSecondary} />
+          </Pressable>
+        )}
 
         <ThemedText type="small" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
           When do you need service?
