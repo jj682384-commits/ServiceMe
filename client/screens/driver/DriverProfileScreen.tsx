@@ -68,7 +68,9 @@ export default function DriverProfileScreen() {
   const { theme, isDark } = useTheme();
   const {
     currentDriver,
+    currentProvider,
     setUserRole,
+    switchUserRole,
     logout,
     searchRadius,
     getTrialDaysRemaining,
@@ -94,16 +96,23 @@ export default function DriverProfileScreen() {
   const paddingBottom = tabBarHeight + Spacing.xl;
 
   const handleSwitchRole = () => {
+    const hasProviderProfile = currentProvider?.servicesOffered && currentProvider.servicesOffered.length > 0;
     Alert.alert(
-      "Switch Role",
-      "Are you sure you want to switch to Provider mode?",
+      "Switch to Provider Mode",
+      hasProviderProfile
+        ? "Switch back to your provider dashboard?"
+        : "You'll need to set up a provider profile first.",
       [
         { text: "Cancel", style: "cancel" },
         {
-          text: "Switch",
-          onPress: () => {
-            setUserRole(null);
-            navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "RoleSelection" }] }));
+          text: hasProviderProfile ? "Switch" : "Set Up",
+          onPress: async () => {
+            if (hasProviderProfile) {
+              await switchUserRole("provider");
+              navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "ProviderTabs" }] }));
+            } else {
+              navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "ProviderSignUp" }] }));
+            }
           },
         },
       ]

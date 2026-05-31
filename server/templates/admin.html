@@ -1030,7 +1030,7 @@
 
   function updateOverview() {
     const pending = allProviders.filter(p => p.verificationStatus === "pending").length;
-    document.getElementById("ov-drivers").textContent = allUsers.filter(u => u.role !== "provider").length;
+    document.getElementById("ov-drivers").textContent = allUsers.length;
     document.getElementById("ov-providers").textContent = allProviders.length;
     document.getElementById("ov-pending").textContent = pending;
     document.getElementById("ov-jobs").textContent = allJobs.length;
@@ -1167,28 +1167,30 @@
     } catch {}
   }
   function filterUsers(q) {
-    const drivers = allUsers.filter(u => u.role !== "provider");
-    const filtered = drivers.filter(u => `${u.name} ${u.email}`.toLowerCase().includes(q.toLowerCase()));
+    const filtered = allUsers.filter(u => `${u.name} ${u.email}`.toLowerCase().includes(q.toLowerCase()));
     renderUsers(filtered);
   }
   function renderUsers(users) {
-    const drivers = users.filter(u => u.role !== "provider");
     const body = document.getElementById("users-table-body");
-    if (!drivers.length) { body.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">&#128100;</div><p>No drivers found.</p></div></td></tr>`; return; }
-    body.innerHTML = drivers.map(u => `<tr class="clickable-row" onclick="openDriverDetail('${u.id}')" style="${u.suspended ? 'opacity:0.65' : ''}">
-      <td><div class="td-name">${esc(u.name)}</div><div class="td-sub">${esc(u.email)}</div></td>
-      <td style="color:var(--muted);font-size:12px">${fmtDate(u.created_at)}</td>
-      <td onclick="event.stopPropagation()">
-        ${u.suspended
-          ? `<span class="badge cancelled" style="font-size:11px;margin-right:6px">Suspended</span><button class="btn btn-sm" style="background:var(--success);color:#fff;font-size:11px" onclick="unsuspendUser('${u.id}','${esc(u.name)}')">Restore</button>`
-          : `<span style="font-size:11px;color:var(--success)">Active</span><button class="btn btn-sm btn-ghost" style="margin-left:6px;font-size:11px" onclick="suspendUser('${u.id}','${esc(u.name)}')">Suspend</button>`
-        }
-      </td>
-      <td><span style="font-size:11px;color:${u.stripe_customer_id ? "var(--success)" : "var(--muted)"}">${u.stripe_customer_id ? "&#10003; Connected" : "Not linked"}</span></td>
-      <td><span style="font-size:11px;color:${u.push_token ? "var(--success)" : "var(--muted)"}">${u.push_token ? "&#10003; Registered" : "None"}</span></td>
-      <td style="color:var(--muted);font-size:12px">${allJobs.filter(j => j.driver && j.driver.name === u.name).length} jobs</td>
-      <td onclick="event.stopPropagation()"><button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}','${esc(u.name)}')">Remove</button></td>
-    </tr>`).join("");
+    if (!users.length) { body.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">&#128100;</div><p>No users found.</p></div></td></tr>`; return; }
+    body.innerHTML = users.map(u => {
+      const dualRole = u.has_provider_profile;
+      const dualBadge = dualRole ? `<span class="badge" style="font-size:10px;background:rgba(96,165,250,.15);color:#60a5fa;margin-left:6px;padding:1px 6px">Also Provider</span>` : "";
+      return `<tr class="clickable-row" onclick="openDriverDetail('${u.id}')" style="${u.suspended ? 'opacity:0.65' : ''}">
+        <td><div class="td-name">${esc(u.name)}${dualBadge}</div><div class="td-sub">${esc(u.email)}</div></td>
+        <td style="color:var(--muted);font-size:12px">${fmtDate(u.created_at)}</td>
+        <td onclick="event.stopPropagation()">
+          ${u.suspended
+            ? `<span class="badge cancelled" style="font-size:11px;margin-right:6px">Suspended</span><button class="btn btn-sm" style="background:var(--success);color:#fff;font-size:11px" onclick="unsuspendUser('${u.id}','${esc(u.name)}')">Restore</button>`
+            : `<span style="font-size:11px;color:var(--success)">Active</span><button class="btn btn-sm btn-ghost" style="margin-left:6px;font-size:11px" onclick="suspendUser('${u.id}','${esc(u.name)}')">Suspend</button>`
+          }
+        </td>
+        <td><span style="font-size:11px;color:${u.stripe_customer_id ? "var(--success)" : "var(--muted)"}">${u.stripe_customer_id ? "&#10003; Connected" : "Not linked"}</span></td>
+        <td><span style="font-size:11px;color:${u.push_token ? "var(--success)" : "var(--muted)"}">${u.push_token ? "&#10003; Registered" : "None"}</span></td>
+        <td style="color:var(--muted);font-size:12px">${allJobs.filter(j => j.driver && j.driver.name === u.name).length} jobs</td>
+        <td onclick="event.stopPropagation()"><button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}','${esc(u.name)}')">Remove</button></td>
+      </tr>`;
+    }).join("");
   }
   async function deleteUser(id, name) {
     if (!confirm(`Remove driver "${name}"? This cannot be undone.`)) return;
@@ -2264,17 +2266,17 @@
     downloadCSV("resqride-jobs-" + new Date().toISOString().slice(0,10) + ".csv", [headers, ...rows]);
   }
   function exportUsersCSV() {
-    const drivers = allUsers.filter(u => u.role !== "provider");
-    if (!drivers.length) { alert("No drivers to export."); return; }
-    const headers = ["ID","Name","Email","Joined","Stripe","Suspended","Jobs"];
-    const rows = drivers.map(u => [
-      u.id, u.name, u.email,
+    if (!allUsers.length) { alert("No users to export."); return; }
+    const headers = ["ID","Name","Email","Role","Also Provider","Joined","Stripe","Suspended","Jobs"];
+    const rows = allUsers.map(u => [
+      u.id, u.name, u.email, u.role || "driver",
+      u.has_provider_profile ? "yes" : "no",
       u.created_at ? new Date(u.created_at).toISOString() : "",
       u.stripe_customer_id ? "yes" : "no",
       u.suspended ? "yes" : "no",
       allJobs.filter(j => j.driver && j.driver.name === u.name).length
     ]);
-    downloadCSV("resqride-drivers-" + new Date().toISOString().slice(0,10) + ".csv", [headers, ...rows]);
+    downloadCSV("resqride-users-" + new Date().toISOString().slice(0,10) + ".csv", [headers, ...rows]);
   }
   function downloadCSV(filename, rows) {
     const csv = rows.map(r => r.map(v => `"${String(v||"").replace(/"/g,'""')}"`).join(",")).join("\n");

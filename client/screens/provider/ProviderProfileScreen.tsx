@@ -86,7 +86,7 @@ export default function ProviderProfileScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { theme, isDark } = useTheme();
-  const { currentProvider, setCurrentProvider, setUserRole, logout, serviceRadius, toggleTheme, setThemePreference, themeOverride, notificationsEnabled, setNotificationsEnabled } = useApp();
+  const { currentProvider, setCurrentProvider, setUserRole, switchUserRole, logout, serviceRadius, toggleTheme, setThemePreference, themeOverride, notificationsEnabled, setNotificationsEnabled } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [priorityOptIn, setPriorityOptIn] = React.useState(currentProvider?.acceptsPriorityJobs ?? false);
   const [radiusInput, setRadiusInput] = useState(String(currentProvider?.serviceRadiusMiles ?? 25));
@@ -141,13 +141,13 @@ export default function ProviderProfileScreen() {
   };
 
   const handleSwitchRole = () => {
-    Alert.alert("Switch Role", "Are you sure you want to switch to Driver mode?", [
+    Alert.alert("Switch to Driver Mode", "Switch back to your driver dashboard?", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Switch",
-        onPress: () => {
-          setUserRole(null);
-          navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "RoleSelection" }] }));
+        onPress: async () => {
+          await switchUserRole("driver");
+          navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "DriverTabs" }] }));
         },
       },
     ]);

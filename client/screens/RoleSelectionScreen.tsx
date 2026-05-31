@@ -66,42 +66,34 @@ function RoleCard({ icon, title, description, onPress, accentColor, delay }: Rol
 export default function RoleSelectionScreen() {
   const insets = useSafeAreaInsets();
   const { theme, isDark } = useTheme();
-  const { switchUserRole, setCurrentDriver, setCurrentProvider, authUser } = useApp();
+  const { switchUserRole, setCurrentDriver, setCurrentProvider, currentDriver, currentProvider, authUser } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const handleDriverSelect = async () => {
     await switchUserRole("driver");
-    setCurrentDriver({
-      id: authUser?.id || `d-${Date.now()}`,
-      name: authUser?.name || "Driver",
-      phone: authUser?.phone || "",
-      email: authUser?.email || "",
-      avatarPreset: Math.floor(Math.random() * 5) + 1,
-      membership: "free",
-    });
+    // Only initialise driver profile if one doesn't already exist
+    if (!currentDriver?.id) {
+      setCurrentDriver({
+        id: authUser?.id || `d-${Date.now()}`,
+        name: authUser?.name || "Driver",
+        phone: authUser?.phone || "",
+        email: authUser?.email || "",
+        avatarPreset: Math.floor(Math.random() * 5) + 1,
+        membership: "free",
+      });
+    }
     navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "DriverTabs" }] }));
   };
 
   const handleProviderSelect = async () => {
-    await switchUserRole("provider");
-    setCurrentProvider({
-      id: authUser?.id || `p-${Date.now()}`,
-      name: authUser?.name || "Provider",
-      phone: authUser?.phone || "",
-      email: authUser?.email || "",
-      rating: 0,
-      reviewCount: 0,
-      vehicleType: "service_van",
-      vehicleMake: "",
-      vehicleModel: "",
-      licensePlate: "",
-      servicesOffered: [],
-      isAvailable: false,
-      providerType: "independent",
-      verificationStatus: "not_started",
-      badges: [],
-    });
-    navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "ProviderTabs" }] }));
+    // If a provider profile already exists, go straight to ProviderTabs
+    if (currentProvider?.servicesOffered && currentProvider.servicesOffered.length > 0) {
+      await switchUserRole("provider");
+      navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "ProviderTabs" }] }));
+      return;
+    }
+    // No provider profile yet — send to sign-up flow
+    navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "ProviderSignUp" }] }));
   };
 
   const taglineColor  = isDark ? "rgba(192,192,192,0.5)" : theme.textSecondary;
