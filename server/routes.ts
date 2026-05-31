@@ -505,6 +505,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await pool.query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW()`).catch(() => {});
   await pool.query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS provider_rating SMALLINT DEFAULT NULL`).catch(() => {});
 
+  // ── Performance indexes (CREATE IF NOT EXISTS — safe to run on every start) ──
+  // sessions.token: every authenticated request does WHERE token = $1 — critical
+  await pool.query(`CREATE INDEX IF NOT EXISTS sessions_token_idx ON sessions(token)`).catch(() => {});
+  // sessions.user_id: used by signout and account deletion
+  await pool.query(`CREATE INDEX IF NOT EXISTS sessions_user_id_idx ON sessions(user_id)`).catch(() => {});
+  // sessions.expires_at: used by cleanup and token validation
+  await pool.query(`CREATE INDEX IF NOT EXISTS sessions_expires_at_idx ON sessions(expires_at)`).catch(() => {});
+  // jobs.status: used by pending job queries and admin filters
+  await pool.query(`CREATE INDEX IF NOT EXISTS jobs_status_idx ON jobs(status)`).catch(() => {});
+  // jobs driver/provider JSONB expression indexes: used by history and job lookup endpoints
+  await pool.query(`CREATE INDEX IF NOT EXISTS jobs_driver_id_idx ON jobs((driver->>'id'))`).catch(() => {});
+  await pool.query(`CREATE INDEX IF NOT EXISTS jobs_provider_id_idx ON jobs((provider->>'id'))`).catch(() => {});
+  // admin_audit_log: ordered by created_at descending
+  await pool.query(`CREATE INDEX IF NOT EXISTS audit_log_created_at_idx ON admin_audit_log(created_at DESC)`).catch(() => {});
+  // support_conversations: ordered by updated_at descending
+  await pool.query(`CREATE INDEX IF NOT EXISTS support_conv_updated_idx ON support_conversations(updated_at DESC)`).catch(() => {});
+
+  // ── Expired session cleanup (runs once on startup) ────────────────────────
+  pool.query(`DELETE FROM sessions WHERE expires_at < NOW()`).catch(() => {});
+
   function getSmartcarRedirectUri(): string {
     const prodDomain = process.env.REPLIT_INTERNAL_APP_DOMAIN;
     if (prodDomain) return `https://${prodDomain}/api/smartcar/callback`;
