@@ -440,16 +440,17 @@ export default function ProviderSignUpScreen() {
   const { theme, isDark } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<ProviderSignUpRouteProp>();
-  const { setIsAuthenticated, setAuthUser, setUserRole, setCurrentProvider } = useApp();
+  const { setIsAuthenticated, setAuthUser, setUserRole, setCurrentProvider, authUser, currentDriver, switchUserRole } = useApp();
   const providerType = route.params?.providerType ?? "independent";
+  const linkedDriverAccount = route.params?.linkedDriverAccount ?? false;
   const isIndependent = providerType === "independent";
 
   const [step, setStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  const [fullName, setFullName] = useState(linkedDriverAccount ? (authUser?.name ?? currentDriver?.name ?? "") : "");
+  const [email, setEmail] = useState(linkedDriverAccount ? (authUser?.email ?? currentDriver?.email ?? "") : "");
+  const [phone, setPhone] = useState(linkedDriverAccount ? (authUser?.phone ?? currentDriver?.phone ?? "") : "");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
@@ -541,6 +542,7 @@ export default function ProviderSignUpScreen() {
 
   const validateStep = (): boolean => {
     if (step === 0) {
+      if (linkedDriverAccount) return true;
       if (!fullName.trim() || !email.trim() || !phone.trim() || !password.trim() || !confirmPassword.trim()) {
         Alert.alert("Missing Information", "Please fill in all fields."); return false;
       }
@@ -593,21 +595,37 @@ export default function ProviderSignUpScreen() {
   const handleSubmit = async () => {
     setIsLoading(true);
     try {
-      let signupData: { userId: string; token: string; role: string; name: string; email: string; phone: string };
-      try {
-        const signupRes = await apiRequest("POST", "/api/auth/signup", {
-          email: email.trim(), name: fullName.trim(), phone: phone.trim(), password, role: "provider",
-        });
-        signupData = await signupRes.json();
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : "";
-        Alert.alert(msg.includes("409") ? "Account Exists" : "Sign Up Failed",
-          msg.includes("409") ? "An account with this email already exists. Please sign in instead." : "Could not create account. Please check your connection and try again.");
-        return;
+      let userId: string;
+
+      if (linkedDriverAccount) {
+        // Existing driver — use their current account, skip signup
+        userId = authUser?.id ?? currentDriver?.id ?? "";
+        if (!userId) {
+          Alert.alert("Error", "Could not find your account. Please sign in again.");
+          return;
+        }
+      } else {
+        // Brand new user — create account first
+        let signupData: { userId: string; token: string; role: string; name: string; email: string; phone: string };
+        try {
+          const signupRes = await apiRequest("POST", "/api/auth/signup", {
+            email: email.trim(), name: fullName.trim(), phone: phone.trim(), password, role: "provider",
+          });
+          signupData = await signupRes.json();
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : "";
+          Alert.alert(msg.includes("409") ? "Account Exists" : "Sign Up Failed",
+            msg.includes("409") ? "An account with this email already exists. Please sign in instead." : "Could not create account. Please check your connection and try again.");
+          return;
+        }
+        const { userId: newId, token } = signupData;
+        userId = newId;
+        setAuthToken(token);
+        await saveAuthToken(token);
+        setAuthUser({ id: userId, name: fullName.trim(), email: email.trim(), phone: phone.trim() });
+        setIsAuthenticated(true);
       }
-      const { userId, token } = signupData;
-      setAuthToken(token);
-      await saveAuthToken(token);
+
       const providerProfile = {
         id: userId, name: isIndependent ? fullName.trim() : companyName.trim(),
         phone: isIndependent ? phone.trim() : businessPhone.trim() || phone.trim(),
@@ -627,8 +645,7 @@ export default function ProviderSignUpScreen() {
         verificationDocuments: uploadedDocs,
         verificationSubmittedAt: new Date().toISOString(),
       }).catch(() => {});
-      setAuthUser({ id: userId, name: fullName.trim(), email: email.trim(), phone: phone.trim() });
-      setIsAuthenticated(true);
+      await switchUserRole("provider");
       setUserRole("provider");
       setCurrentProvider(providerProfile as any);
       navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "ProviderTabs" }] }));
@@ -700,26 +717,77 @@ export default function ProviderSignUpScreen() {
     : (isDark ? ["rgba(255,255,255,0.10)", "rgba(255,255,255,0.05)"] : ["rgba(0,0,0,0.08)", "rgba(0,0,0,0.04)"]);
   const btnTextColor = canProceed ? "#FFF" : (isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.3)");
 
-  const renderStep0 = () => (
-    <Animated.View entering={FadeInDown.duration(400)} key="step0" style={styles.stepContent}>
-      <View style={styles.stepHeader}>
-        <View style={[styles.stepHeaderIcon, { backgroundColor: iconBg }]}>
-          <Feather name="user" size={24} color={isDark ? "#C0C0C0" : "#555555"} />
+  const renderStep0 = () => {
+    if (linkedDriverAccount) {
+      return (
+        <Animated.View entering={FadeInDown.duration(400)} key="step0-linked" style={styles.stepContent}>
+          <View style={styles.stepHeader}>
+            <View style={[styles.stepHeaderIcon, { backgroundColor: iconBg }]}>
+              <Feather name="link" size={24} color={isDark ? "#C0C0C0" : "#555555"} />
+            </View>
+            <ThemedText type="h3" style={{ color: stepTitleColor, marginBottom: 4 }}>Add Provider Role</ThemedText>
+            <ThemedText type="small" style={{ color: stepSubColor, textAlign: "center", paddingHorizontal: 20 }}>
+              You are adding provider capabilities to your existing ResqRide account. No new account needed.
+            </ThemedText>
+          </View>
+          <View style={[styles.form, { gap: 16 }]}>
+            <View style={[styles.inputContainer, { backgroundColor: cardBg, borderColor: cardBorder, borderWidth: 1, borderRadius: 14, padding: 16 }]}>
+              <ThemedText type="small" style={{ color: stepSubColor, fontSize: 12, marginBottom: 12, letterSpacing: 0.5, textTransform: "uppercase" }}>Your Account</ThemedText>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 10 }}>
+                <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: isDark ? "rgba(0,102,255,0.15)" : "rgba(0,102,255,0.1)", alignItems: "center", justifyContent: "center" }}>
+                  <Feather name="user" size={16} color="#0066FF" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <ThemedText type="body" style={{ color: stepTitleColor, fontWeight: "600", fontSize: 15 }}>
+                    {fullName || "—"}
+                  </ThemedText>
+                  <ThemedText type="small" style={{ color: stepSubColor, fontSize: 13 }}>
+                    {email || "—"}
+                  </ThemedText>
+                </View>
+                <View style={{ backgroundColor: isDark ? "rgba(16,185,129,0.15)" : "rgba(16,185,129,0.1)", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 }}>
+                  <ThemedText type="small" style={{ color: "#10B981", fontSize: 11, fontWeight: "600" }}>Verified</ThemedText>
+                </View>
+              </View>
+              {phone ? (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                  <Feather name="phone" size={14} color={stepSubColor} />
+                  <ThemedText type="small" style={{ color: stepSubColor, fontSize: 13 }}>{phone}</ThemedText>
+                </View>
+              ) : null}
+            </View>
+            <View style={[{ backgroundColor: isDark ? "rgba(0,102,255,0.08)" : "rgba(0,102,255,0.05)", borderColor: isDark ? "rgba(0,102,255,0.2)" : "rgba(0,102,255,0.15)", borderWidth: 1, borderRadius: 12, padding: 14, flexDirection: "row", alignItems: "flex-start", gap: 10 }]}>
+              <Feather name="info" size={15} color="#0066FF" style={{ marginTop: 1 }} />
+              <ThemedText type="small" style={{ color: isDark ? "rgba(255,255,255,0.6)" : theme.textSecondary, flex: 1, fontSize: 13, lineHeight: 19 }}>
+                The next steps will collect your vehicle info, services, and verification documents. Tap Continue when ready.
+              </ThemedText>
+            </View>
+          </View>
+        </Animated.View>
+      );
+    }
+
+    return (
+      <Animated.View entering={FadeInDown.duration(400)} key="step0" style={styles.stepContent}>
+        <View style={styles.stepHeader}>
+          <View style={[styles.stepHeaderIcon, { backgroundColor: iconBg }]}>
+            <Feather name="user" size={24} color={isDark ? "#C0C0C0" : "#555555"} />
+          </View>
+          <ThemedText type="h3" style={{ color: stepTitleColor, marginBottom: 4 }}>Personal Information</ThemedText>
+          <ThemedText type="small" style={{ color: stepSubColor, textAlign: "center", paddingHorizontal: 20 }}>
+            {isIndependent ? "Tell us about yourself" : "Owner/manager information"}
+          </ThemedText>
         </View>
-        <ThemedText type="h3" style={{ color: stepTitleColor, marginBottom: 4 }}>Personal Information</ThemedText>
-        <ThemedText type="small" style={{ color: stepSubColor, textAlign: "center", paddingHorizontal: 20 }}>
-          {isIndependent ? "Tell us about yourself" : "Owner/manager information"}
-        </ThemedText>
-      </View>
-      <View style={styles.form}>
-        <InputField label="Full Name" value={fullName} onChangeText={setFullName} placeholder="Enter your full name" icon="user" autoCapitalize="words" />
-        <InputField label="Email Address" value={email} onChangeText={setEmail} placeholder="Enter your email" icon="mail" keyboardType="email-address" autoCapitalize="none" />
-        <InputField label="Phone Number" value={phone} onChangeText={setPhone} placeholder="Enter your phone number" icon="phone" keyboardType="phone-pad" />
-        <InputField label="Password" value={password} onChangeText={setPassword} placeholder="Create a password" icon="lock" secureTextEntry autoCapitalize="none" />
-        <InputField label="Confirm Password" value={confirmPassword} onChangeText={setConfirmPassword} placeholder="Confirm your password" icon="lock" secureTextEntry autoCapitalize="none" />
-      </View>
-    </Animated.View>
-  );
+        <View style={styles.form}>
+          <InputField label="Full Name" value={fullName} onChangeText={setFullName} placeholder="Enter your full name" icon="user" autoCapitalize="words" />
+          <InputField label="Email Address" value={email} onChangeText={setEmail} placeholder="Enter your email" icon="mail" keyboardType="email-address" autoCapitalize="none" />
+          <InputField label="Phone Number" value={phone} onChangeText={setPhone} placeholder="Enter your phone number" icon="phone" keyboardType="phone-pad" />
+          <InputField label="Password" value={password} onChangeText={setPassword} placeholder="Create a password" icon="lock" secureTextEntry autoCapitalize="none" />
+          <InputField label="Confirm Password" value={confirmPassword} onChangeText={setConfirmPassword} placeholder="Confirm your password" icon="lock" secureTextEntry autoCapitalize="none" />
+        </View>
+      </Animated.View>
+    );
+  };
 
   const renderStep1Independent = () => (
     <Animated.View entering={FadeInDown.duration(400)} key="step1-ind" style={styles.stepContent}>

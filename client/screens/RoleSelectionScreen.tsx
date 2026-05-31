@@ -13,6 +13,7 @@ import Animated, {
 
 import { ThemedText } from "@/components/ThemedText";
 import { useApp } from "@/context/AppContext";
+import { apiRequest } from "@/lib/query-client";
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
@@ -86,14 +87,29 @@ export default function RoleSelectionScreen() {
   };
 
   const handleProviderSelect = async () => {
-    // If a provider profile already exists, go straight to ProviderTabs
-    if (currentProvider?.servicesOffered && currentProvider.servicesOffered.length > 0) {
+    const email = currentDriver?.email || authUser?.email;
+    let resolvedProvider = currentProvider?.servicesOffered?.length ? currentProvider : null;
+
+    if (!resolvedProvider && email) {
+      try {
+        const res = await apiRequest("GET", `/api/providers/by-email/${encodeURIComponent(email)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.id) resolvedProvider = data;
+        }
+      } catch {}
+    }
+
+    if (resolvedProvider) {
+      if (resolvedProvider !== currentProvider) setCurrentProvider(resolvedProvider);
       await switchUserRole("provider");
       navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "ProviderTabs" }] }));
       return;
     }
-    // No provider profile yet — send to sign-up flow
-    navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "ProviderSignUp", params: { providerType: "independent" } }] }));
+
+    // No provider profile — send to sign-up, linked to existing account if already logged in
+    const isLoggedIn = !!(authUser?.id);
+    navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "ProviderSignUp", params: { providerType: "independent", linkedDriverAccount: isLoggedIn } }] }));
   };
 
   const taglineColor  = isDark ? "rgba(192,192,192,0.5)" : theme.textSecondary;

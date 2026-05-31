@@ -86,7 +86,7 @@ export type RootStackParamList = {
   EVAddVehicle: undefined;
   EVDiagnostic: undefined;
   EVChargerMap: undefined;
-  ProviderSignUp: { providerType: "independent" | "shop" };
+  ProviderSignUp: { providerType: "independent" | "shop"; linkedDriverAccount?: boolean };
   PreferredProviders: undefined;
   PaymentMethods: undefined;
   BillingHistory: undefined;

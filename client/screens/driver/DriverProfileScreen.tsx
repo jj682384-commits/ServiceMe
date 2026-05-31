@@ -69,6 +69,7 @@ export default function DriverProfileScreen() {
   const {
     currentDriver,
     currentProvider,
+    setCurrentProvider,
     setUserRole,
     switchUserRole,
     logout,
@@ -82,6 +83,7 @@ export default function DriverProfileScreen() {
     setNotificationsEnabled,
     requestHistory,
     vehicles,
+    authUser,
   } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
@@ -95,23 +97,37 @@ export default function DriverProfileScreen() {
   const paddingTop = Math.max(insets.top, Spacing["2xl"]) + Spacing.lg;
   const paddingBottom = tabBarHeight + Spacing.xl;
 
-  const handleSwitchRole = () => {
-    const hasProviderProfile = currentProvider?.servicesOffered && currentProvider.servicesOffered.length > 0;
+  const handleSwitchRole = async () => {
+    const email = currentDriver?.email || authUser?.email;
+    let resolvedProvider = currentProvider?.servicesOffered?.length ? currentProvider : null;
+
+    if (!resolvedProvider && email) {
+      try {
+        const res = await apiRequest("GET", `/api/providers/by-email/${encodeURIComponent(email)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.id) resolvedProvider = data;
+        }
+      } catch {}
+    }
+
+    const hasProviderProfile = !!resolvedProvider;
     Alert.alert(
       "Switch to Provider Mode",
       hasProviderProfile
         ? "Switch back to your provider dashboard?"
-        : "You'll need to set up a provider profile first.",
+        : "Add provider capabilities to your existing account.",
       [
         { text: "Cancel", style: "cancel" },
         {
           text: hasProviderProfile ? "Switch" : "Set Up",
           onPress: async () => {
             if (hasProviderProfile) {
+              if (resolvedProvider) setCurrentProvider(resolvedProvider);
               await switchUserRole("provider");
               navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "ProviderTabs" }] }));
             } else {
-              navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "ProviderSignUp", params: { providerType: "independent" } }] }));
+              navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "ProviderSignUp", params: { providerType: "independent", linkedDriverAccount: true } }] }));
             }
           },
         },
