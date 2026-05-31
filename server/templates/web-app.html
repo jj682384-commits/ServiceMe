@@ -608,12 +608,15 @@
             <div class="service-grid" id="service-grid"></div>
           </div>
 
-          <!-- Step 2: Sub-service picker (shown for Flat Tire, etc.) -->
+          <!-- Step 2: Sub-service picker -->
           <div id="step-subservice" style="display:none">
-            <div class="step-breadcrumb">
-              <span class="step-crumb" onclick="backToServices()">Services</span>
-              <span class="step-sep">›</span>
-              <span class="step-crumb active" id="sub-svc-crumb-label">Flat Tire</span>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+              <button class="btn btn-ghost btn-sm" onclick="backToServices()" style="padding:6px 12px;font-size:13px">&#8592; Back</button>
+              <div class="step-breadcrumb" style="margin-bottom:0">
+                <span class="step-crumb" onclick="backToServices()">Services</span>
+                <span class="step-sep">›</span>
+                <span class="step-crumb active" id="sub-svc-crumb-label">Tire Services</span>
+              </div>
             </div>
             <div class="section-label" id="sub-svc-section-label">Choose Option</div>
             <div class="sub-svc-grid" id="sub-svc-grid"></div>
@@ -1079,7 +1082,7 @@
   let providerProfile = null;
   let selectedRole = "driver";
   let selectedService = null;
-  let selectedSubType = null;   // flat_tire sub: "tire_change" | "mobile_inflation"
+  let selectedSubType = null;   // tire_services sub: "tire_change" | "mobile_inflation" | "tire_check" | "tire_replacement"
   let addTireInspection = false;
   let addBatteryCheck = false;
   let selectedFuelIndex = 2;
@@ -1090,22 +1093,22 @@
 
   const SERVICE_FEE = 3.99;
 
-  // 9 top-level services — Mobile Inflation is a sub-option of Flat Tire, not standalone
+  // 7 top-level services — all tire options live under one "Tire Services" tile
   const SERVICES = [
-    { name: "Flat Tire",        type: "flat_tire",        price: 40,  display: "$40",      eta: 18, emoji: "&#128739;",  hasSub: true  },
+    { name: "Tire Services",    type: "tire_services",    price: 40,  display: "From $15", eta: 18, emoji: "&#128739;",  hasSub: true  },
     { name: "Jump Start",       type: "jump_start",       price: 25,  display: "$25",      eta: 12, emoji: "&#9889;",    hasSub: false },
     { name: "Towing",           type: "tow",              price: 65,  display: "From $65", eta: 28, emoji: "&#128664;",  hasSub: false },
     { name: "Fuel Delivery",    type: "fuel",             price: 0,   display: "From $10", eta: 18, emoji: "&#9981;",    hasSub: false },
     { name: "Lockout",          type: "lockout",          price: 55,  display: "$55",      eta: 15, emoji: "&#128273;",  hasSub: false },
     { name: "OBD Diagnostic",   type: "obd_diagnostic",   price: 21,  display: "$21",      eta: 25, emoji: "&#128187;",  hasSub: false },
-    { name: "Tire Check",       type: "tire_check",       price: 15,  display: "$15",      eta: 10, emoji: "&#128270;",  hasSub: false },
-    { name: "Tire Replacement", type: "tire_replacement", price: 75,  display: "$75",      eta: 35, emoji: "&#128735;",  hasSub: false },
-    { name: "Battery Check",    type: "battery_check",    price: 29,  display: "$29",      eta: 15, emoji: "&#9889;",    hasSub: false },
+    { name: "Battery Check",    type: "battery_check",    price: 29,  display: "$29",      eta: 15, emoji: "&#128267;",  hasSub: false },
   ];
 
-  const FLAT_TIRE_SUBS = [
-    { key: "tire_change",       name: "Tire Change",        price: 40, emoji: "&#128739;", desc: "Using your spare tire or our backup spare. Includes lug nut torque check.", badge: "" },
-    { key: "mobile_inflation",  name: "Mobile Inflation",   price: 28, emoji: "&#128161;", desc: "Inflate your tire at the roadside. Best for slow leaks or after removing a nail.", badge: "Quick" },
+  const TIRE_SUBS = [
+    { key: "tire_change",       name: "Tire Change",        price: 40, emoji: "&#128739;", desc: "Using your spare tire or our backup spare. Includes lug nut torque check.", badge: "", hasInspectionAddon: true },
+    { key: "mobile_inflation",  name: "Mobile Inflation",   price: 28, emoji: "&#128161;", desc: "Inflate your tire at the roadside. Best for slow leaks or after removing a nail.", badge: "Quick", hasInspectionAddon: true },
+    { key: "tire_check",        name: "Tire Inspection",    price: 15, emoji: "&#128270;", desc: "Full tread depth check, pressure test, and sidewall inspection on all four tires.", badge: "", hasInspectionAddon: false },
+    { key: "tire_replacement",  name: "Tire Replacement",   price: 75, emoji: "&#128735;", desc: "Full tire replacement using your new tire or one we supply. Includes disposal.", badge: "", hasInspectionAddon: false },
   ];
 
   const FUEL_AMOUNTS = [
@@ -1120,7 +1123,7 @@
     { label: "$50", desc: "Get back on the road worry-free",  price: 50 },
   ];
 
-  const JOB_ICONS = { flat_tire:"&#128739;", jump_start:"&#9889;", tow:"&#128664;", towing:"&#128664;", fuel:"&#9981;", fuel_delivery:"&#9981;", lockout:"&#128273;", obd_diagnostic:"&#128187;", mobile_inflation:"&#128161;", tire_check:"&#128270;", tire_replacement:"&#128735;", battery_check:"&#9889;", mobile_ev_charging:"&#128268;", ev_safe_tow:"&#128690;" };
+  const JOB_ICONS = { tire_services:"&#128739;", flat_tire:"&#128739;", jump_start:"&#9889;", tow:"&#128664;", towing:"&#128664;", fuel:"&#9981;", fuel_delivery:"&#9981;", lockout:"&#128273;", obd_diagnostic:"&#128187;", mobile_inflation:"&#128161;", tire_change:"&#128739;", tire_check:"&#128270;", tire_replacement:"&#128735;", battery_check:"&#128267;", mobile_ev_charging:"&#128268;", ev_safe_tow:"&#128268;" };
 
   // EV tow state
   const EV_CHARGE_LEVELS = [
@@ -1436,9 +1439,9 @@
     document.getElementById("sub-svc-crumb-label").textContent = svc.name;
     document.getElementById("sub-svc-section-label").textContent = "Choose Your Option";
 
-    // Render sub-options (flat tire specific for now)
+    // Render sub-options
     const grid = document.getElementById("sub-svc-grid");
-    grid.innerHTML = FLAT_TIRE_SUBS.map(sub =>
+    grid.innerHTML = TIRE_SUBS.map(sub =>
       `<div class="sub-svc-card" onclick="selectSubType('${sub.key}')" id="sub-${sub.key}">
         ${sub.badge ? `<div class="sub-svc-badge">${sub.badge}</div>` : ""}
         <div class="sub-svc-icon">${sub.emoji}</div>
@@ -1448,12 +1451,11 @@
       </div>`
     ).join("");
 
-    // Tire Inspection add-on
+    // Hide tire inspection add-on until a relevant sub is selected
     const tiPanel = document.getElementById("tire-inspection-panel");
-    tiPanel.style.display = "block";
+    tiPanel.style.display = "none";
     const tiCard = document.getElementById("tire-inspection-card");
     tiCard.classList.remove("checked");
-    const tiBox = document.getElementById("tire-inspection-box");
     const tiChk = document.getElementById("tire-inspection-toggle");
     if (tiChk) tiChk.checked = false;
     addTireInspection = false;
@@ -1466,13 +1468,17 @@
     selectedSubType = key;
     document.querySelectorAll(".sub-svc-card").forEach(c => c.classList.remove("selected"));
     document.getElementById(`sub-${key}`)?.classList.add("selected");
+    // Show tire inspection add-on only for sub-types that support it
+    const sub = TIRE_SUBS.find(s => s.key === key);
+    const tiPanel = document.getElementById("tire-inspection-panel");
+    if (tiPanel) tiPanel.style.display = sub?.hasInspectionAddon ? "block" : "none";
     document.getElementById("sub-svc-confirm-btn").style.display = "flex";
   }
 
   function confirmSubService() {
     if (!selectedSubType) { toast("Please select an option first."); return; }
     document.getElementById("step-subservice").style.display = "none";
-    const sub = FLAT_TIRE_SUBS.find(s => s.key === selectedSubType);
+    const sub = TIRE_SUBS.find(s => s.key === selectedSubType);
     if (sub) showRequestForm(selectedService, sub);
   }
 
@@ -1566,10 +1572,10 @@
       return FUEL_AMOUNTS[selectedFuelIndex].price;
     }
     if (selectedService.type === "tow") return getTowPrice();
-    if (selectedService.type === "flat_tire") {
-      const sub = FLAT_TIRE_SUBS.find(s => s.key === selectedSubType);
+    if (selectedService.type === "tire_services") {
+      const sub = TIRE_SUBS.find(s => s.key === selectedSubType);
       let p = sub ? sub.price : selectedService.price;
-      if (addTireInspection) p += 12;
+      if (addTireInspection && sub?.hasInspectionAddon) p += 12;
       return p;
     }
     let p = selectedService.price;
@@ -1630,7 +1636,7 @@
   // ── Submit Request ──
   async function submitRequest() {
     if (!selectedService) { toast("Please select a service first."); return; }
-    if (selectedService.type === "flat_tire" && !selectedSubType) { toast("Please choose Tire Change or Mobile Inflation."); return; }
+    if (selectedService.type === "tire_services" && !selectedSubType) { toast("Please choose a tire service option first."); return; }
     const location = document.getElementById("req-location").value.trim();
     const notes = document.getElementById("req-notes").value.trim();
     if (!location) { toast("Please enter your location."); return; }
@@ -1639,9 +1645,9 @@
 
     let extraNotes = notes;
     if (selectedService.type === "jump_start" && addBatteryCheck) extraNotes = (notes ? notes + " " : "") + "[+Battery Health Check]";
-    if (selectedService.type === "flat_tire" && selectedSubType) {
-      const sub = FLAT_TIRE_SUBS.find(s => s.key === selectedSubType);
-      extraNotes = (sub ? sub.name : "") + (addTireInspection ? " + Tire Inspection" : "") + (notes ? " | " + notes : "");
+    if (selectedService.type === "tire_services" && selectedSubType) {
+      const sub = TIRE_SUBS.find(s => s.key === selectedSubType);
+      extraNotes = (sub ? sub.name : "") + (addTireInspection && sub?.hasInspectionAddon ? " + Tire Inspection" : "") + (notes ? " | " + notes : "");
     }
 
     const btn = document.getElementById("submit-request-btn");
