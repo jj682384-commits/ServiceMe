@@ -1917,14 +1917,14 @@
   <div class="section-inner">
     <div class="section-label">Premium Membership</div>
     <h2>More protection, <span>less to pay</span></h2>
-    <p class="section-sub">Get discounts on every service, free monthly requests, and priority dispatch — for less than a tank of gas.</p>
+    <p class="section-sub">Service fee always waived, discounts on every request, free monthly services, and priority dispatch — for less than a tank of gas.</p>
 
     <!-- Billing Toggle -->
     <div style="display:flex;align-items:center;justify-content:center;margin-top:48px;">
       <div class="premium-toggle">
-        <button class="premium-toggle-btn active" id="toggle-monthly" onclick="setPremiumCycle('monthly')">Monthly</button>
+        <button class="premium-toggle-btn active" id="toggle-monthly" onclick="setPremiumCycle('monthly')">Monthly Plus</button>
         <button class="premium-toggle-btn" id="toggle-yearly" onclick="setPremiumCycle('yearly')">
-          Yearly <span class="premium-save-badge">Save 33%</span>
+          Yearly Premium <span class="premium-save-badge">Save 33%</span>
         </button>
       </div>
     </div>
@@ -1932,9 +1932,9 @@
     <!-- Pricing Cards -->
     <div class="premium-cards">
 
-      <!-- Monthly -->
+      <!-- Monthly Plus -->
       <div class="premium-card" id="card-monthly">
-        <div class="premium-plan-name">Monthly</div>
+        <div class="premium-plan-name">Monthly Plus</div>
         <div class="premium-price">
           <span class="premium-price-amount">$9</span>
           <span class="premium-price-period">.99&nbsp;/&nbsp;month</span>
@@ -1945,15 +1945,29 @@
           <li class="premium-perk">
             <div class="premium-perk-check"></div>
             <div class="premium-perk-text">
-              <div class="premium-perk-title"><span class="premium-highlight">20% off</span> all services</div>
-              <div class="premium-perk-desc">Save on every roadside request — flat tires, tows, lockouts, and more.</div>
+              <div class="premium-perk-title"><span class="premium-highlight">15% off</span> all services</div>
+              <div class="premium-perk-desc">Save on every roadside request — flat tires, jump starts, lockouts, and more.</div>
             </div>
           </li>
           <li class="premium-perk">
             <div class="premium-perk-check"></div>
             <div class="premium-perk-text">
-              <div class="premium-perk-title"><span class="premium-highlight">1 free service</span> per month</div>
-              <div class="premium-perk-desc">One completely free roadside request every billing cycle — no minimum spend.</div>
+              <div class="premium-perk-title"><span class="premium-highlight">Service fee waived</span> every time</div>
+              <div class="premium-perk-desc">The $3.99 platform fee is automatically removed on every request — paid or free.</div>
+            </div>
+          </li>
+          <li class="premium-perk">
+            <div class="premium-perk-check"></div>
+            <div class="premium-perk-text">
+              <div class="premium-perk-title"><span class="premium-highlight">1 free service</span> per month (up to $55)</div>
+              <div class="premium-perk-desc">One completely free roadside request per billing cycle — covers most common services.</div>
+            </div>
+          </li>
+          <li class="premium-perk">
+            <div class="premium-perk-check"></div>
+            <div class="premium-perk-text">
+              <div class="premium-perk-title"><span class="premium-highlight">Express 50% off</span> &mdash; $4.99 (reg. $9.99)</div>
+              <div class="premium-perk-desc">Priority dispatch at half price on every request — avg. response drops from 12 min to 6 min.</div>
             </div>
           </li>
           <li class="premium-perk">
@@ -1966,31 +1980,17 @@
           <li class="premium-perk">
             <div class="premium-perk-check"></div>
             <div class="premium-perk-text">
-              <div class="premium-perk-title">Discounted towing rates</div>
-              <div class="premium-perk-desc">Reduced pricing on all tow truck services, including EV-safe tows.</div>
-            </div>
-          </li>
-          <li class="premium-perk">
-            <div class="premium-perk-check"></div>
-            <div class="premium-perk-text">
-              <div class="premium-perk-title">Extended coverage area</div>
-              <div class="premium-perk-desc">Access providers in more remote locations where standard coverage may not apply.</div>
-            </div>
-          </li>
-          <li class="premium-perk">
-            <div class="premium-perk-check"></div>
-            <div class="premium-perk-text">
               <div class="premium-perk-title">24/7 priority support</div>
               <div class="premium-perk-desc">Skip the queue and reach support faster whenever you need help.</div>
             </div>
           </li>
         </ul>
-        <a href="#waitlist" class="premium-cta secondary">Get Started</a>
+        <a href="#waitlist" class="premium-cta secondary">Get Monthly Plus</a>
       </div>
 
-      <!-- Yearly -->
+      <!-- Yearly Premium -->
       <div class="premium-card featured" id="card-yearly" style="display:none;">
-        <div class="premium-plan-name">Yearly</div>
+        <div class="premium-plan-name">Yearly Premium</div>
         <div class="premium-price">
           <span class="premium-price-amount">$79</span>
           <span class="premium-price-period">.99&nbsp;/&nbsp;year</span>
@@ -2001,53 +2001,60 @@
           <li class="premium-perk">
             <div class="premium-perk-check"></div>
             <div class="premium-perk-text">
-              <div class="premium-perk-title"><span class="premium-highlight">25% off</span> all services</div>
+              <div class="premium-perk-title"><span class="premium-highlight">20% off</span> all services</div>
               <div class="premium-perk-desc">Even bigger savings on every roadside request — 5% more than the monthly plan.</div>
             </div>
           </li>
           <li class="premium-perk">
             <div class="premium-perk-check"></div>
             <div class="premium-perk-text">
-              <div class="premium-perk-title"><span class="premium-highlight">2 free services</span> per month</div>
-              <div class="premium-perk-desc">Two completely free roadside requests every month — double the monthly plan.</div>
+              <div class="premium-perk-title"><span class="premium-highlight">Service fee waived</span> every time</div>
+              <div class="premium-perk-desc">The $3.99 platform fee is automatically removed on every request — paid or free.</div>
             </div>
           </li>
           <li class="premium-perk">
             <div class="premium-perk-check"></div>
             <div class="premium-perk-text">
-              <div class="premium-perk-title">Priority dispatch</div>
-              <div class="premium-perk-desc">Get matched with available providers faster than standard requests.</div>
+              <div class="premium-perk-title"><span class="premium-highlight">2 free services</span> per month (up to $65 each)</div>
+              <div class="premium-perk-desc">Two free requests every month with a higher value cap — covers nearly all services.</div>
             </div>
           </li>
           <li class="premium-perk">
             <div class="premium-perk-check"></div>
             <div class="premium-perk-text">
-              <div class="premium-perk-title">Discounted towing rates</div>
-              <div class="premium-perk-desc">Reduced pricing on all tow truck services, including EV-safe tows.</div>
+              <div class="premium-perk-title"><span class="premium-highlight">Rollover banking</span> — unused services carry over</div>
+              <div class="premium-perk-desc">Unused free services roll into next month (up to 2 banked), giving you up to 4 free services in a month.</div>
             </div>
           </li>
           <li class="premium-perk">
             <div class="premium-perk-check"></div>
             <div class="premium-perk-text">
-              <div class="premium-perk-title">Extended coverage area</div>
-              <div class="premium-perk-desc">Access providers in more remote locations where standard coverage may not apply.</div>
+              <div class="premium-perk-title"><span class="premium-highlight">1 free Express</span> per month + 50% off after</div>
+              <div class="premium-perk-desc">First Express upgrade each month is completely free. Additional Express requests cost $4.99 (reg. $9.99).</div>
             </div>
           </li>
           <li class="premium-perk">
             <div class="premium-perk-check"></div>
             <div class="premium-perk-text">
-              <div class="premium-perk-title">24/7 priority support</div>
-              <div class="premium-perk-desc">Skip the queue and reach support faster whenever you need help.</div>
+              <div class="premium-perk-title"><span class="premium-highlight">15% off towing</span> base price</div>
+              <div class="premium-perk-desc">Yearly members save 15% on the hookup fee and mileage for every tow request.</div>
+            </div>
+          </li>
+          <li class="premium-perk">
+            <div class="premium-perk-check"></div>
+            <div class="premium-perk-text">
+              <div class="premium-perk-title">Priority dispatch + 24/7 priority support</div>
+              <div class="premium-perk-desc">Faster matching and front-of-queue support whenever you need us.</div>
             </div>
           </li>
         </ul>
-        <a href="#waitlist" class="premium-cta">Get Started — Best Value</a>
+        <a href="#waitlist" class="premium-cta">Get Yearly Premium &mdash; Best Value</a>
       </div>
 
     </div>
 
     <p class="premium-trial-note">
-      <strong>10-day free trial</strong> included with every new Premium membership &mdash; cancel before it ends and you won't be charged a thing.
+      <strong>10-day free trial</strong> included with every new membership &mdash; cancel before it ends and you won't be charged a thing.
     </p>
   </div>
 </section>
