@@ -333,9 +333,9 @@ function IndependentProfile({ currentProvider, theme, isDark, sectionBg, padding
               {firstName}
             </ThemedText>
           </View>
-          <View style={[styles.onlinePill, { borderColor: "#00C85340" }]}>
-            <View style={styles.onlineDot} />
-            <ThemedText type="small" style={{ color: "#00C853", fontWeight: "700" }}>Online</ThemedText>
+          <View style={[styles.onlinePill, { borderColor: currentProvider?.isAvailable ? "#00C85340" : "#64748B40", backgroundColor: currentProvider?.isAvailable ? "#00C85310" : "rgba(100,116,139,0.08)" }]}>
+            <View style={[styles.onlineDot, { backgroundColor: currentProvider?.isAvailable ? "#00C853" : "#64748B" }]} />
+            <ThemedText type="small" style={{ color: currentProvider?.isAvailable ? "#00C853" : "#94A3B8", fontWeight: "700" }}>{currentProvider?.isAvailable ? "Online" : "Offline"}</ThemedText>
           </View>
         </View>
 
@@ -795,8 +795,8 @@ const styles = StyleSheet.create({
 
   // Independent
   indyHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  onlinePill: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#00C85310", borderWidth: 1, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
-  onlineDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: "#00C853" },
+  onlinePill: { flexDirection: "row", alignItems: "center", gap: 6, borderWidth: 1, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
+  onlineDot: { width: 7, height: 7, borderRadius: 3.5 },
   earningsCard: { borderRadius: BorderRadius.lg, padding: Spacing.xl },
   earningsStat: { flex: 1, backgroundColor: "rgba(255,255,255,0.1)", borderRadius: BorderRadius.md, paddingVertical: 8, alignItems: "center" },
   sectionHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingTop: Spacing.lg, paddingBottom: Spacing.sm },
