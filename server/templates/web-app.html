@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ResqRide — On-Demand Roadside Assistance</title>
   <meta name="description" content="Get roadside help in minutes with ResqRide. Request flat tire, jump start, towing, fuel delivery, lockout, and EV services from verified nearby providers — right from your browser." />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' wss:; frame-ancestors 'none';" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' wss: https://api.stripe.com; frame-src https://js.stripe.com; frame-ancestors 'none';" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,700&display=swap" rel="stylesheet" />
@@ -19,9 +19,9 @@
       --card2: rgba(255,255,255,0.04);
       --border: rgba(255,255,255,0.08);
       --border-glow: rgba(192,192,192,0.25);
-      --cyan: #C0C0C0;
-      --cyan2: #A0A0A0;
-      --coral: #C0C0C0;
+      --blue: #0066FF;
+      --blue2: #0055D4;
+      --red: #D92222;
       --purple: #A78BFA;
       --text: #ffffff;
       --muted: rgba(255,255,255,0.5);
@@ -30,34 +30,34 @@
       --danger: #ef4444;
     }
     html[data-theme="light"] {
-      --navy: #F0F0F0;
-      --navy2: #E8E8E8;
+      --navy: #F0F4FF;
+      --navy2: #E8EDFF;
       --card: rgba(0,0,0,0.04);
       --card-solid: #FFFFFF;
       --card2: rgba(0,0,0,0.04);
-      --border: rgba(0,0,0,0.1);
-      --border-glow: rgba(0,0,0,0.2);
-      --cyan: #444444;
-      --cyan2: #333333;
-      --coral: #222222;
-      --text: #0A0A0A;
+      --border: rgba(0,0,0,0.10);
+      --border-glow: rgba(0,102,255,0.2);
+      --blue: #0055B3;
+      --blue2: #004499;
+      --text: #0A0A1A;
       --muted: rgba(0,0,0,0.5);
     }
     html[data-theme="light"] body { background: var(--navy); color: var(--text); }
-    html[data-theme="light"] #app-bar {
-      background: rgba(240,240,240,0.96);
-      border-bottom: 1px solid rgba(0,0,0,0.1);
-    }
-    html[data-theme="light"] .app-sidebar { background: #E8E8E8; border-right: 1px solid rgba(0,0,0,0.1); }
-    html[data-theme="light"] .auth-box { background: rgba(255,255,255,0.85); border-color: rgba(0,0,0,0.12); }
+    html[data-theme="light"] #app-bar { background: rgba(240,244,255,0.97); border-bottom: 1px solid rgba(0,0,255,0.08); }
+    html[data-theme="light"] .app-sidebar { background: #E8EDFF; border-right: 1px solid rgba(0,0,255,0.1); }
+    html[data-theme="light"] .auth-box { background: rgba(255,255,255,0.9); border-color: rgba(0,102,255,0.12); }
     html[data-theme="light"] .nav-item { color: rgba(0,0,0,0.5); }
-    html[data-theme="light"] .nav-item.active { background: rgba(0,0,0,0.07); color: #0A0A0A; }
-    html[data-theme="light"] .panel { background: rgba(0,0,0,0.03); }
     html[data-theme="light"] .field input,
     html[data-theme="light"] .field select,
     html[data-theme="light"] .field textarea { background: #FFFFFF; border-color: rgba(0,0,0,0.15); color: #0A0A0A; }
-    html[data-theme="light"] .btn-ghost { background: rgba(0,0,0,0.07); color: #0A0A0A; border-color: rgba(0,0,0,0.12); }
-    html[data-theme="light"] .mode-chip { background: rgba(0,0,0,0.08); color: #333; }
+    html[data-theme="light"] .btn-ghost { background: rgba(0,0,0,0.06); color: #0A0A1A; border-color: rgba(0,0,0,0.12); }
+    html[data-theme="light"] .mode-chip { background: rgba(0,102,255,0.1); color: #0055B3; border-color: rgba(0,102,255,0.2); }
+    html[data-theme="light"] .mode-chip.provider { background: rgba(217,34,34,0.08); color: #B01C1C; border-color: rgba(217,34,34,0.15); }
+    html[data-theme="light"] .sidebar-item.active { background: rgba(0,102,255,0.1); color: #0055B3; }
+    html[data-theme="light"] .sidebar-item.active::before { background: #0066FF; }
+    html[data-theme="light"] .service-btn.selected { border-color: rgba(0,102,255,0.5); background: rgba(0,102,255,0.07); }
+    html[data-theme="light"] .sub-svc-card.selected { border-color: rgba(0,102,255,0.5); background: rgba(0,102,255,0.07); }
+
     .logo-dark { display: block !important; }
     .logo-light { display: none !important; }
     html[data-theme="light"] .logo-dark { display: none !important; }
@@ -68,162 +68,68 @@
       display: inline-flex; align-items: center; gap: 5px; transition: all .2s;
       font-family: inherit; flex-shrink: 0; white-space: nowrap;
     }
-    .theme-btn:hover { border-color: rgba(128,128,128,0.4); }
+    .theme-btn:hover { border-color: rgba(0,102,255,0.3); }
     html, body { height: 100%; }
-    body {
-      font-family: 'Exo 2', BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: var(--navy); color: var(--text); overflow: hidden; font-size: 14px;
-    }
+    body { font-family: 'Exo 2', BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--navy); color: var(--text); overflow: hidden; font-size: 14px; }
 
-    /* ── Static Background Glows ── */
-    .bg-glow {
-      position: fixed; border-radius: 50%; pointer-events: none; z-index: 0;
-      filter: blur(120px);
-    }
-    .bg-glow-red {
-      width: 600px; height: 600px; top: -200px; left: -150px;
-      background: radial-gradient(circle, rgba(255,255,255,0.025) 0%, transparent 65%);
-    }
-    .bg-glow-blue {
-      width: 600px; height: 600px; top: -200px; right: -150px;
-      background: radial-gradient(circle, rgba(255,255,255,0.02) 0%, transparent 65%);
-    }
+    /* ── Background Glows ── */
+    .bg-glow { position: fixed; border-radius: 50%; pointer-events: none; z-index: 0; filter: blur(140px); }
+    .bg-glow-red { width: 700px; height: 700px; top: -200px; left: -200px; background: radial-gradient(circle, rgba(217,34,34,0.05) 0%, transparent 65%); }
+    .bg-glow-blue { width: 700px; height: 700px; top: -200px; right: -200px; background: radial-gradient(circle, rgba(0,102,255,0.04) 0%, transparent 65%); }
 
     /* ── App Shell ── */
     #app { height: 100vh; display: flex; flex-direction: column; position: relative; z-index: 1; }
 
     /* ── Auth Screen ── */
-    #auth-screen {
-      flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px;
-      position: relative; overflow: hidden;
-    }
-    .auth-bg-logo {
-      position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      width: min(70vh, 70vw);
-      height: min(70vh, 70vw);
-      object-fit: contain;
-      opacity: 0.06;
-      pointer-events: none;
-      z-index: 0;
-      filter: grayscale(1) brightness(1.2);
-    }
-    .auth-box {
-      width: 100%; max-width: 420px;
-      background: rgba(4,6,14,0.35);
-      backdrop-filter: blur(22px) saturate(2);
-      -webkit-backdrop-filter: blur(22px) saturate(2);
-      border: 1px solid rgba(255,255,255,0.12);
-      border-top: 1px solid rgba(255,255,255,0.22);
-      border-radius: 28px;
-      padding: 40px 36px;
-      box-shadow: 0 40px 100px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.16);
-      position: relative; z-index: 2;
-      animation: authEntrance .7s cubic-bezier(.34,1.56,.64,1);
-    }
-    @keyframes authEntrance {
-      from { opacity: 0; transform: translateY(28px) scale(.96); }
-      to { opacity: 1; transform: translateY(0) scale(1); }
-    }
+    #auth-screen { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; position: relative; overflow: hidden; }
+    .auth-bg-logo { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: min(70vh,70vw); height: min(70vh,70vw); object-fit: contain; opacity: 0.05; pointer-events: none; z-index: 0; filter: grayscale(1) brightness(1.2); }
+    .auth-box { width: 100%; max-width: 420px; background: rgba(4,6,14,0.4); backdrop-filter: blur(28px) saturate(2); -webkit-backdrop-filter: blur(28px) saturate(2); border: 1px solid rgba(255,255,255,0.10); border-top: 1px solid rgba(255,255,255,0.20); border-radius: 28px; padding: 40px 36px; box-shadow: 0 40px 100px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.14); position: relative; z-index: 2; animation: authEntrance .7s cubic-bezier(.34,1.56,.64,1); }
+    @keyframes authEntrance { from{opacity:0;transform:translateY(28px) scale(.96)} to{opacity:1;transform:translateY(0) scale(1)} }
     .auth-logo { text-align: center; margin-bottom: 32px; }
-    .auth-logo-icon {
-      width: 72px; height: 72px; border-radius: 20px;
-      background: rgba(4,6,14,0.6);
-      display: flex; align-items: center; justify-content: center;
-      margin: 0 auto 14px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1);
-      overflow: hidden;
-    }
-    .auth-logo h1 { font-size: 26px; font-weight: 900; letter-spacing: -.5px; }
-    .auth-logo p { color: var(--muted); font-size: 13px; margin-top: 4px; }
-    .auth-tabs {
-      display: flex; background: rgba(255,255,255,0.05); border: 1px solid var(--border);
-      border-radius: 14px; padding: 4px; margin-bottom: 28px;
-    }
-    .auth-tab {
-      flex: 1; padding: 11px; border-radius: 10px; font-size: 14px; font-weight: 700;
-      cursor: pointer; border: none; background: transparent; color: var(--muted);
-      font-family: inherit; transition: all .25s;
-    }
-    .auth-tab.active {
-      background: rgba(192,192,192,0.06); color: #D8D8D8;
-      box-shadow: none;
-    }
+    .auth-tabs { display: flex; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 14px; padding: 4px; margin-bottom: 28px; }
+    .auth-tab { flex: 1; padding: 11px; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; border: none; background: transparent; color: var(--muted); font-family: inherit; transition: all .25s; }
+    .auth-tab.active { background: rgba(0,102,255,0.12); color: #60A5FA; box-shadow: none; }
     .role-picker { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 22px; }
-    .role-card {
-      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
-      border-radius: 16px; padding: 18px 12px; text-align: center; cursor: pointer;
-      transition: all .25s;
-    }
-    .role-card:hover { border-color: rgba(192,192,192,0.25); background: rgba(255,255,255,0.06); transform: translateY(-2px); }
-    .role-card.selected { border-color: rgba(192,192,192,0.06); background: rgba(192,192,192,0.06); box-shadow: 0 0 20px rgba(192,192,192,0.06); }
+    .role-card { background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 16px; padding: 18px 12px; text-align: center; cursor: pointer; transition: all .25s; }
+    .role-card:hover { border-color: rgba(0,102,255,0.3); background: rgba(0,102,255,0.06); transform: translateY(-2px); }
+    .role-card.selected { border-color: rgba(0,102,255,0.5); background: rgba(0,102,255,0.1); box-shadow: 0 0 20px rgba(0,102,255,0.1); }
     .role-card .role-icon { font-size: 30px; margin-bottom: 8px; }
     .role-card .role-name { font-size: 13px; font-weight: 800; }
     .role-card .role-desc { font-size: 11px; color: var(--muted); margin-top: 3px; }
-    .field label {
-      display: block; font-size: 11px; font-weight: 700; color: var(--muted);
-      margin-bottom: 7px; letter-spacing: .7px; text-transform: uppercase;
-    }
-    .field input {
-      width: 100%; padding: 13px 16px;
-      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
-      border-radius: 12px; color: var(--text); font-size: 14px; outline: none;
-      font-family: inherit; transition: all .2s;
-    }
-    .field input:focus { border-color: rgba(192,192,192,0.06); box-shadow: 0 0 0 3px rgba(192,192,192,0.06); background: rgba(255,255,255,0.06); }
+    .field label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 7px; letter-spacing: .7px; text-transform: uppercase; }
+    .field input { width: 100%; padding: 13px 16px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-size: 14px; outline: none; font-family: inherit; transition: all .2s; }
+    .field input:focus { border-color: rgba(0,102,255,0.5); box-shadow: 0 0 0 3px rgba(0,102,255,0.08); }
     .field { margin-bottom: 16px; }
-    .btn {
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-      width: 100%; padding: 14px; border-radius: 14px;
-      font-size: 15px; font-weight: 800; cursor: pointer; border: none;
-      font-family: inherit; transition: all .2s; position: relative; overflow: hidden;
-    }
+
+    /* ── Buttons ── */
+    .btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px; border-radius: 14px; font-size: 15px; font-weight: 800; cursor: pointer; border: none; font-family: inherit; transition: all .2s; position: relative; overflow: hidden; }
     .btn::after { content:''; position:absolute; inset:0; background: rgba(255,255,255,0); transition: background .2s; }
     .btn:hover::after { background: rgba(255,255,255,0.08); }
     .btn:active { transform: scale(.98); }
     .btn:disabled { opacity: .4; cursor: not-allowed; }
-    .btn-cyan { background: linear-gradient(135deg, #e8e8e8 0%, #b0b0b0 50%, #d8d8d8 100%); color: #000; border: none; box-shadow: 0 6px 24px rgba(255,255,255,0.1), inset 0 1px 0 rgba(255,255,255,0.6); font-weight: 800; letter-spacing: .3px; }
-    .btn-cyan:hover { box-shadow: 0 10px 32px rgba(255,255,255,0.18), inset 0 1px 0 rgba(255,255,255,0.6); }
-    .btn-coral { background: linear-gradient(135deg, #ffffff 0%, #C0C0C0 50%, #e8e8e8 100%); color: #000; box-shadow: 0 6px 24px rgba(255,255,255,0.1), inset 0 1px 0 rgba(255,255,255,0.7); font-weight: 800; }
-    .btn-coral:hover { box-shadow: 0 8px 32px rgba(255,255,255,0.18); }
-    .btn-ghost {
-      background: rgba(255,255,255,0.06); color: var(--text);
-      border: 1px solid var(--border);
-    }
+    .btn-blue { background: linear-gradient(135deg, #0077FF, #0055D4); color: #fff; box-shadow: 0 6px 24px rgba(0,102,255,0.25), inset 0 1px 0 rgba(255,255,255,0.2); font-weight: 800; letter-spacing: .3px; }
+    .btn-blue:hover { box-shadow: 0 10px 32px rgba(0,102,255,0.35), inset 0 1px 0 rgba(255,255,255,0.2); }
+    .btn-red { background: linear-gradient(135deg, #E53535, #B01C1C); color: #fff; box-shadow: 0 6px 24px rgba(217,34,34,0.25), inset 0 1px 0 rgba(255,255,255,0.18); font-weight: 800; }
+    .btn-red:hover { box-shadow: 0 10px 32px rgba(217,34,34,0.35); }
+    .btn-cyan { background: linear-gradient(135deg, #0077FF, #0055D4); color: #fff; box-shadow: 0 6px 24px rgba(0,102,255,0.25), inset 0 1px 0 rgba(255,255,255,0.2); font-weight: 800; letter-spacing: .3px; }
+    .btn-cyan:hover { box-shadow: 0 10px 32px rgba(0,102,255,0.35); }
+    .btn-coral { background: linear-gradient(135deg, #E53535, #B01C1C); color: #fff; box-shadow: 0 6px 24px rgba(217,34,34,0.25); font-weight: 800; }
+    .btn-ghost { background: rgba(255,255,255,0.06); color: var(--text); border: 1px solid var(--border); }
     .btn-ghost:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.15); }
     .btn-sm { padding: 9px 16px; font-size: 13px; border-radius: 10px; width: auto; }
+    .btn-success { background: linear-gradient(135deg, #22c55e, #16a34a); color: #fff; box-shadow: 0 6px 24px rgba(34,197,94,0.25); font-weight: 800; }
     .auth-error { color: var(--danger); font-size: 13px; text-align: center; margin-top: 14px; }
 
     /* ── App Bar ── */
-    #app-bar {
-      display: none; background: rgba(0,0,0,0.85); backdrop-filter: blur(20px);
-      border-bottom: 1px solid var(--border); padding: 12px 20px;
-      align-items: center; justify-content: space-between; gap: 12px; flex-shrink: 0;
-      box-shadow: 0 1px 0 rgba(255,255,255,0.04);
-    }
+    #app-bar { display: none; background: rgba(0,0,0,0.88); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); padding: 10px 20px; align-items: center; justify-content: space-between; gap: 12px; flex-shrink: 0; box-shadow: 0 1px 0 rgba(255,255,255,0.04); }
     .app-bar-left { display: flex; align-items: center; gap: 12px; }
-    .app-bar-logo {
-      font-size: 17px; font-weight: 900; letter-spacing: -.3px;
-    }
     .app-bar-sep { width: 1px; height: 16px; background: var(--border); }
     .app-bar-user { font-size: 13px; color: var(--muted); }
     .app-bar-right { display: flex; gap: 10px; align-items: center; }
-    .mode-chip {
-      padding: 5px 14px; border-radius: 100px; font-size: 11px; font-weight: 800; letter-spacing: .3px;
-      background: rgba(192,192,192,0.06); color: #D8D8D8; border: 1px solid rgba(192,192,192,0.06);
-    }
-    .mode-chip.provider { background: rgba(192,192,192,0.05); color: var(--coral); border-color: rgba(192,192,192,0.05); }
-    .live-dot {
-      display: inline-flex; align-items: center; gap: 5px;
-      font-size: 11px; font-weight: 700; color: var(--success);
-    }
-    .live-dot::before {
-      content: ''; width: 7px; height: 7px; border-radius: 50%;
-      background: var(--success); display: block;
-      box-shadow: 0 0 8px var(--success);
-      animation: pulse 2s ease-in-out infinite;
-    }
+    .mode-chip { padding: 5px 14px; border-radius: 100px; font-size: 11px; font-weight: 800; letter-spacing: .3px; background: rgba(0,102,255,0.12); color: #60A5FA; border: 1px solid rgba(0,102,255,0.2); }
+    .mode-chip.provider { background: rgba(217,34,34,0.1); color: #F87171; border-color: rgba(217,34,34,0.2); }
+    .live-dot { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; color: var(--success); }
+    .live-dot::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--success); display: block; box-shadow: 0 0 8px var(--success); animation: pulse 2s ease-in-out infinite; }
     @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(.85)} }
 
     /* ── Main App ── */
@@ -231,62 +137,28 @@
     .app-layout { display: flex; height: 100%; }
 
     /* ── Sidebar ── */
-    .app-sidebar {
-      width: 230px; flex-shrink: 0;
-      background: rgba(8,8,8,0.92); backdrop-filter: blur(20px);
-      border-right: 1px solid var(--border); display: flex; flex-direction: column;
-    }
-    .sidebar-logo-area {
-      padding: 20px 16px 8px; display: flex; align-items: center; gap: 10px;
-    }
-    .sidebar-logo-icon {
-      width: 32px; height: 32px; border-radius: 10px;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.10);
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-      overflow: hidden;
-    }
-    .sidebar-logo-text { font-size: 15px; font-weight: 900; color: var(--text); }
-    .sidebar-section {
-      padding: 20px 16px 6px; font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.3);
-      letter-spacing: 1.2px; text-transform: uppercase;
-    }
-    .sidebar-item {
-      display: flex; align-items: center; gap: 12px; padding: 11px 14px;
-      border-radius: 12px; cursor: pointer; color: var(--muted);
-      font-size: 13px; font-weight: 600; margin: 1px 8px;
-      transition: all .2s; position: relative;
-    }
+    .app-sidebar { width: 240px; flex-shrink: 0; background: rgba(8,8,12,0.94); backdrop-filter: blur(20px); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+    .sidebar-logo-area { padding: 18px 16px 10px; }
+    .sidebar-type-badge { margin: 0 12px 4px; padding: 9px 14px; border-radius: 12px; font-size: 12px; font-weight: 800; letter-spacing: .3px; display: flex; align-items: center; gap: 8px; }
+    .sidebar-type-badge.independent { background: rgba(0,102,255,0.1); color: #60A5FA; border: 1px solid rgba(0,102,255,0.15); }
+    .sidebar-type-badge.shop { background: rgba(245,158,11,0.1); color: #FCD34D; border: 1px solid rgba(245,158,11,0.15); }
+    .sidebar-type-badge.driver-badge { background: rgba(34,197,94,0.1); color: #4ADE80; border: 1px solid rgba(34,197,94,0.15); }
+    .sidebar-section { padding: 16px 16px 6px; font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.3); letter-spacing: 1.2px; text-transform: uppercase; }
+    .sidebar-item { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 12px; cursor: pointer; color: var(--muted); font-size: 13px; font-weight: 600; margin: 1px 8px; transition: all .2s; position: relative; }
     .sidebar-item:hover { background: rgba(255,255,255,0.06); color: var(--text); }
-    .sidebar-item.active { background: rgba(192,192,192,0.08); color: #C0C0C0; }
-    .sidebar-item.active.provider-mode { background: rgba(192,192,192,0.05); color: #E06060; }
-    .sidebar-item.active::before {
-      content: ''; position: absolute; left: -8px; top: 50%; transform: translateY(-50%);
-      width: 3px; height: 18px; border-radius: 0 2px 2px 0;
-      background: #C0C0C0;
-    }
-    .sidebar-item.active.provider-mode::before { background: #C0C0C0; }
-    .sidebar-icon {
-      width: 32px; height: 32px; border-radius: 9px; display: flex;
-      align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0;
-      background: rgba(255,255,255,0.05);
-      transition: all .2s;
-    }
-    .sidebar-item.active .sidebar-icon { background: rgba(192,192,192,0.12); }
-    .sidebar-item.active.provider-mode .sidebar-icon { background: rgba(192,192,192,0.05); }
+    .sidebar-item.active { background: rgba(0,102,255,0.1); color: #93C5FD; }
+    .sidebar-item.active.provider-mode { background: rgba(217,34,34,0.1); color: #FCA5A5; }
+    .sidebar-item.active::before { content: ''; position: absolute; left: -8px; top: 50%; transform: translateY(-50%); width: 3px; height: 18px; border-radius: 0 2px 2px 0; background: var(--blue); }
+    .sidebar-item.active.provider-mode::before { background: var(--red); }
+    .sidebar-icon { width: 32px; height: 32px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; background: rgba(255,255,255,0.05); transition: all .2s; }
+    .sidebar-item.active .sidebar-icon { background: rgba(0,102,255,0.15); }
+    .sidebar-item.active.provider-mode .sidebar-icon { background: rgba(217,34,34,0.15); }
     .sidebar-label { flex: 1; }
+    .sidebar-badge { font-size: 10px; font-weight: 800; background: var(--blue); color: #fff; padding: 2px 7px; border-radius: 100px; }
     .sidebar-footer { margin-top: auto; padding: 12px 8px 16px; border-top: 1px solid var(--border); }
-    .sidebar-user-area {
-      display: flex; align-items: center; gap: 10px; padding: 10px 10px; margin-bottom: 8px;
-    }
-    .sidebar-avatar {
-      width: 34px; height: 34px; border-radius: 10px;
-      background: rgba(192,192,192,0.15);
-      border: 1px solid rgba(192,192,192,0.20);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 14px; font-weight: 900; flex-shrink: 0;
-    }
+    .sidebar-user-area { display: flex; align-items: center; gap: 10px; padding: 10px; margin-bottom: 8px; }
+    .sidebar-avatar { width: 36px; height: 36px; border-radius: 11px; background: rgba(0,102,255,0.2); border: 1px solid rgba(0,102,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 900; flex-shrink: 0; }
+    .sidebar-avatar.provider-av { background: rgba(217,34,34,0.2); border-color: rgba(217,34,34,0.3); }
     .sidebar-user-info { flex:1; overflow:hidden; }
     .sidebar-user-name { font-size: 13px; font-weight: 700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .sidebar-user-role { font-size: 11px; color: var(--muted); margin-top: 1px; }
@@ -295,297 +167,195 @@
     .app-content { flex: 1; overflow-y: auto; padding: 28px 32px; }
     .app-content::-webkit-scrollbar { width: 4px; }
     .app-content::-webkit-scrollbar-track { background: transparent; }
-    .app-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+    .app-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
     .view { display: none; animation: viewFadeIn .3s ease; }
     .view.active { display: block; }
     @keyframes viewFadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
-    .view-header { margin-bottom: 28px; }
+    .view-header { margin-bottom: 28px; display: flex; align-items: flex-start; justify-content: space-between; }
     .view-title { font-size: 26px; font-weight: 900; letter-spacing: -.5px; }
     .view-sub { font-size: 14px; color: var(--muted); margin-top: 5px; }
 
     /* ── Glass Cards ── */
-    .glass-card {
-      background: var(--card); backdrop-filter: blur(20px);
-      border: 1px solid var(--border); border-radius: 20px;
-      padding: 22px; margin-bottom: 16px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.2);
-      transition: border-color .2s, box-shadow .2s;
-    }
-    .glass-card:hover { border-color: rgba(255,255,255,0.12); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+    .glass-card { background: var(--card); backdrop-filter: blur(20px); border: 1px solid var(--border); border-radius: 20px; padding: 22px; margin-bottom: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.2); transition: border-color .2s, box-shadow .2s; }
+    .glass-card:hover { border-color: rgba(0,102,255,0.12); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
     .glass-card h3 { font-size: 16px; font-weight: 800; margin-bottom: 10px; }
     .glass-card p { font-size: 13px; color: var(--muted); line-height: 1.65; }
     .card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 22px; margin-bottom: 16px; }
     .card h3 { font-size: 15px; font-weight: 800; margin-bottom: 10px; }
     .card p { font-size: 13px; color: var(--muted); line-height: 1.65; }
 
+    /* ── Stats Row ── */
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; margin-bottom: 20px; }
+    .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 18px 20px; text-align: center; }
+    .stat-value { font-size: 28px; font-weight: 900; letter-spacing: -1px; }
+    .stat-label { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: .5px; text-transform: uppercase; margin-top: 4px; }
+
     /* ── Section Label ── */
-    .section-label {
-      font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: 1px;
-      text-transform: uppercase; margin-bottom: 14px; margin-top: 4px;
-      display: flex; align-items: center; gap: 10px;
-    }
+    .section-label { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 14px; margin-top: 4px; display: flex; align-items: center; gap: 10px; }
     .section-label::after { content:''; flex:1; height:1px; background: var(--border); }
 
     /* ── Service Grid ── */
-    .service-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); gap: 14px; margin-bottom: 24px; }
-    .service-btn {
-      background: var(--card); backdrop-filter: blur(12px);
-      border: 1px solid var(--border); border-radius: 18px;
-      padding: 22px 14px; text-align: center; cursor: pointer;
-      transition: all .25s;
-    }
-    .service-btn:hover { border-color: rgba(192,192,192,0.25); background: rgba(255,255,255,0.06); transform: translateY(-3px); box-shadow: 0 8px 28px rgba(0,0,0,0.25); }
-    .service-btn.selected { border-color: rgba(192,192,192,0.40); background: rgba(192,192,192,0.08); box-shadow: none; transform: translateY(-2px); }
-    .svc-icon-wrap {
-      width: 52px; height: 52px; border-radius: 16px; margin: 0 auto 12px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 26px;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.08);
-      transition: all .25s;
-    }
-    .service-btn.selected .svc-icon-wrap, .service-btn:hover .svc-icon-wrap {
-      background: rgba(255,255,255,0.10);
-      border-color: rgba(192,192,192,0.25);
-      transform: scale(1.05);
-    }
+    .service-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; margin-bottom: 24px; }
+    .service-btn { background: var(--card); backdrop-filter: blur(12px); border: 1px solid var(--border); border-radius: 18px; padding: 22px 14px; text-align: center; cursor: pointer; transition: all .25s; }
+    .service-btn:hover { border-color: rgba(0,102,255,0.3); background: rgba(0,102,255,0.06); transform: translateY(-3px); box-shadow: 0 8px 28px rgba(0,0,0,0.25); }
+    .service-btn.selected { border-color: rgba(0,102,255,0.5); background: rgba(0,102,255,0.1); transform: translateY(-2px); }
+    .svc-icon-wrap { width: 54px; height: 54px; border-radius: 16px; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; font-size: 26px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); transition: all .25s; }
+    .service-btn.selected .svc-icon-wrap, .service-btn:hover .svc-icon-wrap { background: rgba(0,102,255,0.12); border-color: rgba(0,102,255,0.25); transform: scale(1.05); }
     .svc-name { font-size: 13px; font-weight: 800; }
-    .svc-est { font-size: 11px; color: var(--cyan); margin-top: 4px; font-weight: 700; }
+    .svc-est { font-size: 11px; color: #60A5FA; margin-top: 4px; font-weight: 700; }
+
+    /* ── Sub-Service Picker ── */
+    .sub-svc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .sub-svc-card { background: var(--card); border: 2px solid var(--border); border-radius: 16px; padding: 18px; cursor: pointer; transition: all .25s; position: relative; }
+    .sub-svc-card:hover { border-color: rgba(0,102,255,0.35); background: rgba(0,102,255,0.05); transform: translateY(-2px); }
+    .sub-svc-card.selected { border-color: rgba(0,102,255,0.6); background: rgba(0,102,255,0.1); }
+    .sub-svc-icon { font-size: 28px; margin-bottom: 10px; }
+    .sub-svc-name { font-size: 14px; font-weight: 800; margin-bottom: 4px; }
+    .sub-svc-price { font-size: 18px; font-weight: 900; color: #60A5FA; }
+    .sub-svc-desc { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+    .sub-svc-badge { position: absolute; top: 10px; right: 10px; background: rgba(0,102,255,0.2); color: #60A5FA; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 100px; }
+
+    /* ── Step Breadcrumb ── */
+    .step-breadcrumb { display: flex; align-items: center; gap: 6px; margin-bottom: 20px; font-size: 12px; color: var(--muted); }
+    .step-crumb { cursor: pointer; transition: color .2s; font-weight: 700; }
+    .step-crumb:hover { color: var(--text); }
+    .step-crumb.active { color: var(--text); }
+    .step-sep { opacity: .4; }
 
     /* ── Request Form ── */
-    .request-form {
-      background: var(--card); backdrop-filter: blur(20px);
-      border: 1px solid var(--border-glow); border-radius: 20px; padding: 26px;
-      animation: slideUp .3s cubic-bezier(.34,1.56,.64,1);
-    }
+    .request-form { background: var(--card); backdrop-filter: blur(20px); border: 1px solid var(--border-glow); border-radius: 20px; padding: 26px; animation: slideUp .3s cubic-bezier(.34,1.56,.64,1); }
     @keyframes slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
     .request-form h3 { font-size: 18px; font-weight: 900; margin-bottom: 16px; }
-    .price-preview {
-      display: flex; align-items: center; justify-content: space-between;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(192,192,192,0.15); border-radius: 16px;
-      padding: 18px 20px; margin-bottom: 18px;
-    }
-    .price-label { font-size: 12px; color: var(--muted); font-weight: 700; letter-spacing: .5px; text-transform: uppercase; }
-    .price-value { font-size: 28px; font-weight: 900; color: var(--cyan); margin-top: 4px; }
+    .price-preview { display: flex; align-items: center; justify-content: space-between; background: rgba(0,102,255,0.06); border: 1px solid rgba(0,102,255,0.15); border-radius: 16px; padding: 18px 20px; margin-bottom: 18px; }
+    .price-label { font-size: 11px; color: var(--muted); font-weight: 700; letter-spacing: .5px; text-transform: uppercase; }
+    .price-value { font-size: 28px; font-weight: 900; color: #60A5FA; margin-top: 4px; }
     .price-eta { font-size: 20px; font-weight: 900; text-align: right; }
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .web-input {
-      width: 100%; padding: 13px 16px;
-      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
-      border-radius: 12px; color: var(--text); font-size: 14px; outline: none;
-      font-family: inherit; transition: all .2s;
-    }
-    .web-input:focus { border-color: rgba(192,192,192,0.35); box-shadow: none; background: rgba(255,255,255,0.06); }
+    .web-input { width: 100%; padding: 13px 16px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-size: 14px; outline: none; font-family: inherit; transition: all .2s; }
+    .web-input:focus { border-color: rgba(0,102,255,0.5); background: rgba(0,102,255,0.04); }
     .web-input::placeholder { color: var(--muted); }
     .input-label { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: .5px; text-transform: uppercase; margin-bottom: 7px; display: block; }
     .input-group { margin-bottom: 0; }
 
+    /* ── Add-on Card ── */
+    .addon-card { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 16px; border: 2px solid var(--border); background: var(--card); cursor: pointer; transition: all .2s; }
+    .addon-card.checked { border-color: rgba(0,102,255,0.5); background: rgba(0,102,255,0.08); }
+    .addon-icon { font-size: 24px; flex-shrink: 0; }
+    .addon-body { flex: 1; min-width: 0; }
+    .addon-title { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+    .addon-price { color: #60A5FA; }
+    .addon-desc { font-size: 12px; color: var(--muted); }
+    .addon-checkbox { width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--border); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all .2s; }
+    .addon-card.checked .addon-checkbox { background: var(--blue); border-color: var(--blue); }
+    .addon-checkbox::after { content: ''; display: none; width: 6px; height: 10px; border: 2px solid #fff; border-top: none; border-left: none; transform: rotate(45deg) translate(-1px,-1px); }
+    .addon-card.checked .addon-checkbox::after { display: block; }
+
     /* ── SOS Banner ── */
-    .sos-banner {
-      background: linear-gradient(135deg, rgba(239,68,68,0.12), rgba(239,68,68,0.04));
-      border: 1px solid rgba(239,68,68,0.2); border-radius: 16px;
-      padding: 16px 20px; display: flex; align-items: center; gap: 16px; margin-bottom: 24px;
-    }
+    .sos-banner { background: linear-gradient(135deg, rgba(217,34,34,0.1), rgba(217,34,34,0.04)); border: 1px solid rgba(217,34,34,0.2); border-radius: 16px; padding: 16px 20px; display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
     .sos-icon { font-size: 30px; }
-    .sos-text h4 { font-size: 14px; font-weight: 800; color: var(--danger); }
+    .sos-text h4 { font-size: 14px; font-weight: 800; color: #F87171; }
     .sos-text p { font-size: 12px; color: var(--muted); margin-top: 3px; line-height: 1.5; }
 
     /* ── Success State ── */
-    .success-card {
-      background: linear-gradient(135deg, rgba(34,197,94,0.12), rgba(34,197,94,0.04));
-      border: 1px solid rgba(34,197,94,0.2); border-radius: 20px;
-      padding: 48px 32px; text-align: center;
-      animation: slideUp .4s cubic-bezier(.34,1.56,.64,1);
-    }
-    .success-check {
-      width: 72px; height: 72px; border-radius: 50%;
-      background: linear-gradient(135deg, rgba(34,197,94,0.2), rgba(34,197,94,0.08));
-      border: 2px solid rgba(34,197,94,0.3); display: flex; align-items: center;
-      justify-content: center; font-size: 32px; margin: 0 auto 20px;
-      box-shadow: 0 0 40px rgba(34,197,94,0.2);
-    }
+    .success-card { background: linear-gradient(135deg, rgba(34,197,94,0.12), rgba(34,197,94,0.04)); border: 1px solid rgba(34,197,94,0.2); border-radius: 20px; padding: 48px 32px; text-align: center; animation: slideUp .4s cubic-bezier(.34,1.56,.64,1); }
+    .success-check { width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg, rgba(34,197,94,0.2), rgba(34,197,94,0.08)); border: 2px solid rgba(34,197,94,0.3); display: flex; align-items: center; justify-content: center; font-size: 32px; margin: 0 auto 20px; box-shadow: 0 0 40px rgba(34,197,94,0.2); }
     .success-title { font-size: 22px; font-weight: 900; color: var(--success); margin-bottom: 10px; }
     .success-sub { font-size: 14px; color: var(--muted); line-height: 1.6; max-width: 380px; margin: 0 auto; }
+    .tracking-banner { background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(245,158,11,0.04)); border: 1px solid rgba(245,158,11,0.22); border-radius: 18px; padding: 22px 24px; margin-bottom: 20px; animation: slideUp .35s cubic-bezier(.34,1.56,.64,1); }
+    .tracking-banner h3 { font-size: 15px; font-weight: 800; color: var(--warning); margin-bottom: 6px; }
+    .tracking-banner p { font-size: 13px; color: var(--muted); line-height: 1.55; margin: 0; }
+    .tracking-pulse { display: inline-flex; align-items: center; gap: 7px; margin-bottom: 10px; font-size: 12px; font-weight: 800; color: var(--warning); letter-spacing: .5px; text-transform: uppercase; }
+    .tracking-pulse::before { content:''; width:9px; height:9px; border-radius:50%; background:var(--warning); display:block; box-shadow:0 0 10px var(--warning); animation: pulse 1.5s ease-in-out infinite; }
 
     /* ── Job Cards ── */
-    .job-card {
-      background: var(--card); backdrop-filter: blur(16px);
-      border: 1px solid var(--border); border-radius: 20px;
-      padding: 22px; margin-bottom: 14px;
-      transition: all .25s;
-      animation: viewFadeIn .3s ease;
-    }
-    .job-card:hover { border-color: rgba(255,107,107,0.3); box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,107,107,0.08); transform: translateY(-2px); }
+    .job-card { background: var(--card); backdrop-filter: blur(16px); border: 1px solid var(--border); border-radius: 20px; padding: 22px; margin-bottom: 14px; transition: all .25s; animation: viewFadeIn .3s ease; }
+    .job-card:hover { border-color: rgba(217,34,34,0.25); box-shadow: 0 8px 32px rgba(0,0,0,0.3); transform: translateY(-2px); }
     .job-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
     .job-type-wrap { display: flex; align-items: center; gap: 12px; }
-    .job-type-icon {
-      width: 42px; height: 42px; border-radius: 13px;
-      background: linear-gradient(135deg, rgba(255,107,107,0.2), rgba(255,107,107,0.08));
-      border: 1px solid rgba(255,107,107,0.2);
-      display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;
-    }
+    .job-type-icon { width: 46px; height: 46px; border-radius: 14px; background: linear-gradient(135deg, rgba(217,34,34,0.18), rgba(217,34,34,0.06)); border: 1px solid rgba(217,34,34,0.2); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
     .job-type { font-size: 16px; font-weight: 900; text-transform: capitalize; }
     .job-driver { font-size: 12px; color: var(--muted); margin-top: 3px; }
-    .job-price { font-size: 24px; font-weight: 900; color: var(--coral); }
-    .job-detail {
-      display: flex; align-items: center; gap: 6px;
-      font-size: 12px; color: var(--muted); margin-bottom: 5px;
-    }
-    .job-detail::before { content: ''; width: 4px; height: 4px; border-radius: 50%; background: rgba(255,255,255,0.3); flex-shrink: 0; }
+    .job-price { font-size: 26px; font-weight: 900; color: #F87171; }
+    .job-detail { display: flex; align-items: flex-start; gap: 6px; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+    .job-detail::before { content: ''; width: 4px; height: 4px; border-radius: 50%; background: rgba(255,255,255,0.3); flex-shrink: 0; margin-top: 5px; }
     .job-actions { display: flex; gap: 10px; margin-top: 16px; }
 
-    /* ── Earnings View ── */
-    .earnings-hero {
-      background: linear-gradient(135deg, rgba(34,197,94,0.12), rgba(34,197,94,0.04));
-      border: 1px solid rgba(34,197,94,0.2); border-radius: 24px;
-      padding: 36px; text-align: center; margin-bottom: 20px;
-      box-shadow: 0 0 60px rgba(34,197,94,0.1);
-    }
+    /* ── Provider Status Toggle ── */
+    .provider-status-bar { display: flex; align-items: center; justify-content: space-between; background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 14px 18px; margin-bottom: 20px; }
+    .status-info { display: flex; align-items: center; gap: 10px; }
+    .status-dot-wrap { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .status-dot-wrap.online { background: var(--success); box-shadow: 0 0 10px var(--success); }
+    .status-dot-wrap.offline { background: rgba(255,255,255,0.25); }
+    .status-text { font-size: 14px; font-weight: 800; }
+    .status-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .toggle-switch { position: relative; width: 50px; height: 28px; cursor: pointer; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .toggle-track { position: absolute; inset: 0; border-radius: 100px; background: rgba(255,255,255,0.1); border: 1px solid var(--border); transition: all .3s; }
+    .toggle-switch input:checked + .toggle-track { background: var(--success); border-color: var(--success); }
+    .toggle-thumb { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.3); transition: transform .3s; }
+    .toggle-switch input:checked ~ .toggle-thumb { transform: translateX(22px); }
+
+    /* ── Provider Type Header ── */
+    .provider-hero { border-radius: 20px; padding: 24px; margin-bottom: 20px; position: relative; overflow: hidden; }
+    .provider-hero.independent { background: linear-gradient(135deg, rgba(0,102,255,0.12), rgba(0,102,255,0.04)); border: 1px solid rgba(0,102,255,0.2); }
+    .provider-hero.shop { background: linear-gradient(135deg, rgba(245,158,11,0.12), rgba(245,158,11,0.04)); border: 1px solid rgba(245,158,11,0.2); }
+    .provider-hero h2 { font-size: 18px; font-weight: 900; margin-bottom: 5px; }
+    .provider-hero p { font-size: 13px; color: var(--muted); line-height: 1.55; }
+    .provider-hero-icon { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); font-size: 52px; opacity: .15; }
+
+    /* ── Earnings ── */
+    .earnings-hero { background: linear-gradient(135deg, rgba(34,197,94,0.12), rgba(34,197,94,0.04)); border: 1px solid rgba(34,197,94,0.2); border-radius: 24px; padding: 36px; text-align: center; margin-bottom: 20px; box-shadow: 0 0 60px rgba(34,197,94,0.08); }
     .earnings-label { font-size: 11px; font-weight: 800; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px; }
     .earnings-amount { font-size: 56px; font-weight: 900; color: var(--success); line-height: 1; letter-spacing: -2px; }
     .earnings-sub { font-size: 13px; color: var(--muted); margin-top: 10px; }
 
     /* ── History ── */
-    .history-item {
-      display: flex; align-items: center; gap: 16px;
-      background: var(--card); border: 1px solid var(--border); border-radius: 16px;
-      padding: 16px 18px; margin-bottom: 10px; transition: all .2s;
-    }
-    .history-item:hover { border-color: rgba(255,255,255,0.12); transform: translateX(3px); }
-    .history-icon-wrap {
-      width: 44px; height: 44px; border-radius: 13px;
-      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
-      display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;
-    }
+    .history-item { display: flex; align-items: center; gap: 16px; background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 16px 18px; margin-bottom: 10px; transition: all .2s; }
+    .history-item:hover { border-color: rgba(0,102,255,0.15); transform: translateX(3px); }
+    .history-icon-wrap { width: 44px; height: 44px; border-radius: 13px; background: rgba(0,102,255,0.1); border: 1px solid rgba(0,102,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
     .history-info { flex: 1; }
     .history-name { font-size: 14px; font-weight: 700; }
     .history-date { font-size: 12px; color: var(--muted); margin-top: 3px; }
-    .history-amount { font-size: 16px; font-weight: 900; }
+    .history-amount { font-size: 16px; font-weight: 900; color: #60A5FA; }
 
     /* ── Profile ── */
-    .profile-hero {
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(192,192,192,0.12); border-radius: 24px;
-      padding: 32px; margin-bottom: 20px;
-      display: flex; align-items: center; gap: 22px;
-      position: relative; overflow: hidden;
-    }
-    .profile-hero::before {
-      content: ''; position: absolute; top: -40px; right: -40px;
-      width: 180px; height: 180px; border-radius: 50%;
-      background: radial-gradient(circle, rgba(192,192,192,0.06) 0%, transparent 70%);
-    }
-    .profile-avatar {
-      width: 80px; height: 80px; border-radius: 24px;
-      background: rgba(192,192,192,0.15);
-      border: 1px solid rgba(192,192,192,0.25);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 32px; font-weight: 900; flex-shrink: 0;
-    }
+    .profile-hero { background: rgba(0,102,255,0.06); border: 1px solid rgba(0,102,255,0.15); border-radius: 24px; padding: 32px; margin-bottom: 20px; display: flex; align-items: center; gap: 22px; position: relative; overflow: hidden; }
+    .profile-hero::before { content: ''; position: absolute; top: -40px; right: -40px; width: 180px; height: 180px; border-radius: 50%; background: radial-gradient(circle, rgba(0,102,255,0.08) 0%, transparent 70%); }
+    .profile-avatar { width: 80px; height: 80px; border-radius: 24px; background: rgba(0,102,255,0.15); border: 1px solid rgba(0,102,255,0.25); display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 900; flex-shrink: 0; }
     .profile-info { flex: 1; min-width: 0; }
     .profile-name { font-size: 22px; font-weight: 900; letter-spacing: -.3px; }
     .profile-email { font-size: 13px; color: var(--muted); margin-top: 4px; }
-    .profile-badge {
-      display: inline-flex; align-items: center; gap: 5px; margin-top: 10px;
-      background: rgba(192,192,192,0.10); border: 1px solid rgba(192,192,192,0.20);
-      color: var(--cyan); padding: 5px 14px; border-radius: 100px;
-      font-size: 11px; font-weight: 700; letter-spacing: .3px;
-    }
-
-    /* ── Edit Profile ── */
+    .profile-badge { display: inline-flex; align-items: center; gap: 5px; margin-top: 10px; background: rgba(0,102,255,0.10); border: 1px solid rgba(0,102,255,0.20); color: #60A5FA; padding: 5px 14px; border-radius: 100px; font-size: 11px; font-weight: 700; letter-spacing: .3px; }
     .edit-field { margin-bottom: 16px; }
     .edit-field label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 7px; letter-spacing: .5px; text-transform: uppercase; }
     .edit-actions { display: flex; gap: 10px; margin-top: 6px; }
 
     /* ── Payment Methods ── */
     .pm-list { display: flex; flex-direction: column; gap: 10px; }
-    .pm-item {
-      display: flex; align-items: center; gap: 16px;
-      background: rgba(255,255,255,0.03); border: 1px solid var(--border);
-      border-radius: 14px; padding: 14px 18px; transition: all .2s;
-    }
-    .pm-item:hover { border-color: rgba(255,255,255,0.12); background: rgba(255,255,255,0.05); }
-    .pm-brand {
-      width: 48px; height: 32px; border-radius: 8px; display: flex; align-items: center;
-      justify-content: center; font-size: 11px; font-weight: 900;
-      background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06));
-      border: 1px solid rgba(255,255,255,0.1);
-      color: var(--text); flex-shrink: 0; letter-spacing: .3px;
-    }
+    .pm-item { display: flex; align-items: center; gap: 16px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 14px; padding: 14px 18px; transition: all .2s; }
+    .pm-item:hover { border-color: rgba(0,102,255,0.15); }
+    .pm-brand { width: 48px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 900; background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06)); border: 1px solid rgba(255,255,255,0.1); color: var(--text); flex-shrink: 0; letter-spacing: .3px; }
     .pm-info { flex: 1; }
     .pm-number { font-size: 14px; font-weight: 700; letter-spacing: .5px; }
     .pm-exp { font-size: 12px; color: var(--muted); margin-top: 3px; }
-    .pm-remove {
-      background: transparent; border: 1px solid rgba(239,68,68,0.2); color: rgba(239,68,68,0.8);
-      padding: 6px 14px; border-radius: 9px; font-size: 12px; font-weight: 700;
-      cursor: pointer; font-family: inherit; transition: all .2s;
-    }
+    .pm-remove { background: transparent; border: 1px solid rgba(239,68,68,0.2); color: rgba(239,68,68,0.8); padding: 6px 14px; border-radius: 9px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; transition: all .2s; }
     .pm-remove:hover { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.4); color: var(--danger); }
     .pm-empty { text-align: center; padding: 28px 0; color: var(--muted); font-size: 13px; }
 
-    /* ── EV Cards ── */
-    .ev-service-btn {
-      background: var(--card); border: 1px solid var(--border); border-radius: 18px;
-      padding: 22px 14px; text-align: center; cursor: pointer; transition: all .25s;
-    }
-    .ev-service-btn:hover { border-color: rgba(167,139,250,0.4); background: rgba(167,139,250,0.06); transform: translateY(-3px); box-shadow: 0 8px 28px rgba(0,0,0,0.25); }
-    .ev-svc-icon-wrap {
-      width: 52px; height: 52px; border-radius: 16px; margin: 0 auto 12px;
-      display: flex; align-items: center; justify-content: center; font-size: 26px;
-      background: linear-gradient(135deg, rgba(167,139,250,0.15), rgba(167,139,250,0.05));
-      border: 1px solid rgba(167,139,250,0.15);
-    }
-    .ev-svc-name { font-size: 13px; font-weight: 800; }
-    .ev-svc-est { font-size: 11px; color: var(--purple); margin-top: 4px; font-weight: 700; }
-
     /* ── Fuel Picker ── */
     .fuel-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
-    .fuel-tab {
-      flex: 1; padding: 9px 0; border-radius: 12px; border: 1.5px solid var(--border);
-      background: var(--card); color: var(--muted); font-size: 13px; font-weight: 700;
-      cursor: pointer; transition: all .2s; font-family: inherit;
-    }
-    .fuel-tab.active { background: rgba(192,192,192,0.08); border-color: rgba(192,192,192,0.35); color: var(--cyan); }
+    .fuel-tab { flex: 1; padding: 9px 0; border-radius: 12px; border: 1.5px solid var(--border); background: var(--card); color: var(--muted); font-size: 13px; font-weight: 700; cursor: pointer; transition: all .2s; font-family: inherit; }
+    .fuel-tab.active { background: rgba(0,102,255,0.1); border-color: rgba(0,102,255,0.4); color: #60A5FA; }
     .fuel-grid { display: flex; flex-direction: column; gap: 8px; }
-    .fuel-pill {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 12px 16px; border-radius: 14px; border: 1.5px solid var(--border);
-      background: var(--card); cursor: pointer; transition: all .2s;
-    }
-    .fuel-pill.selected { border-color: rgba(192,192,192,0.40); background: rgba(192,192,192,0.07); }
+    .fuel-pill { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-radius: 14px; border: 1.5px solid var(--border); background: var(--card); cursor: pointer; transition: all .2s; }
+    .fuel-pill.selected { border-color: rgba(0,102,255,0.5); background: rgba(0,102,255,0.08); }
     .fuel-pill-label { font-size: 15px; font-weight: 800; color: var(--text); }
-    .fuel-pill.selected .fuel-pill-label { color: var(--cyan); }
+    .fuel-pill.selected .fuel-pill-label { color: #60A5FA; }
     .fuel-pill-desc { font-size: 12px; color: var(--muted); }
 
-    /* ── Add-on Card ── */
-    .addon-card {
-      display: flex; align-items: center; gap: 14px;
-      padding: 14px 16px; border-radius: 16px; border: 2px solid var(--border);
-      background: var(--card); cursor: pointer; transition: all .2s;
-    }
-    .addon-card.checked { border-color: var(--coral); background: rgba(255,83,65,0.07); }
-    .addon-icon { font-size: 24px; flex-shrink: 0; }
-    .addon-body { flex: 1; min-width: 0; }
-    .addon-title { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
-    .addon-price { color: var(--coral); }
-    .addon-desc { font-size: 12px; color: var(--muted); }
-    .addon-checkbox {
-      width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--border);
-      flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-      transition: all .2s;
-    }
-    .addon-card.checked .addon-checkbox { background: var(--coral); border-color: var(--coral); }
-    .addon-checkbox::after { content: ''; display: none; width: 6px; height: 10px; border: 2px solid #fff; border-top: none; border-left: none; transform: rotate(45deg) translate(-1px,-1px); }
-    .addon-card.checked .addon-checkbox::after { display: block; }
-
-    /* ── EV Charge Level Cards ── */
+    /* ── EV Charge Cards ── */
     .ev-charge-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
-    .ev-charge-card {
-      display: flex; align-items: center; justify-content: space-between; gap: 12px;
-      padding: 16px 18px; border-radius: 16px; border: 2px solid var(--border);
-      background: var(--card); cursor: pointer; transition: all .2s;
-    }
+    .ev-charge-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px; border-radius: 16px; border: 2px solid var(--border); background: var(--card); cursor: pointer; transition: all .2s; }
     .ev-charge-card.selected { border-color: rgba(167,139,250,0.7); background: rgba(167,139,250,0.1); }
     .ev-charge-left { flex: 1; min-width: 0; }
     .ev-charge-label { font-size: 15px; font-weight: 800; }
@@ -594,126 +364,64 @@
     .ev-charge-desc { font-size: 12px; color: var(--muted); margin-top: 4px; }
     .ev-charge-price { font-size: 18px; font-weight: 900; color: #a78bfa; flex-shrink: 0; }
 
-    /* ── EV Tow Options ── */
-    .ev-tow-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
-    .ev-tow-card {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 14px 16px; border-radius: 16px; border: 2px solid var(--border);
-      background: var(--card); cursor: pointer; transition: all .2s;
-    }
+    /* ── EV Tow ── */
+    .ev-tow-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+    .ev-tow-card { display: flex; align-items: flex-start; justify-content: space-between; padding: 16px 18px; border-radius: 16px; border: 2px solid var(--border); background: var(--card); cursor: pointer; transition: all .2s; }
     .ev-tow-card.selected { border-color: rgba(167,139,250,0.7); background: rgba(167,139,250,0.1); }
-    .ev-tow-label { font-size: 14px; font-weight: 800; }
+    .ev-tow-card-body { flex: 1; }
+    .ev-tow-label { font-size: 15px; font-weight: 800; }
     .ev-tow-card.selected .ev-tow-label { color: #a78bfa; }
-    .ev-tow-desc { font-size: 12px; color: var(--muted); margin-top: 3px; }
-    .ev-tow-price { font-size: 16px; font-weight: 900; color: #a78bfa; }
+    .ev-tow-desc { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+    .ev-tow-hookup { font-size: 13px; color: var(--muted); margin-top: 6px; font-weight: 700; }
+    .ev-tow-price { font-size: 22px; font-weight: 900; color: #a78bfa; flex-shrink: 0; margin-left: 12px; }
     .ev-dest-grid { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
-    .ev-dest-pill {
-      padding: 10px 14px; border-radius: 12px; border: 1.5px solid var(--border);
-      background: var(--card); cursor: pointer; font-size: 13px; font-weight: 700; transition: all .2s;
-    }
+    .ev-dest-pill { padding: 12px 16px; border-radius: 12px; border: 1.5px solid var(--border); background: var(--card); cursor: pointer; font-size: 13px; font-weight: 700; transition: all .2s; }
     .ev-dest-pill.selected { border-color: rgba(167,139,250,0.6); background: rgba(167,139,250,0.1); color: #a78bfa; }
+    .ev-tow-calc { background: rgba(167,139,250,0.06); border: 1px solid rgba(167,139,250,0.2); border-radius: 14px; padding: 16px 18px; margin-bottom: 16px; }
+    .ev-tow-calc-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 13px; color: var(--muted); font-weight: 600; }
+    .ev-tow-calc-row span:last-child { color: var(--text); font-weight: 800; }
+    .ev-tow-total { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; border-top: 1px solid rgba(167,139,250,0.15); font-size: 15px; font-weight: 800; }
+    .ev-tow-total span:last-child { color: #a78bfa; font-size: 22px; font-weight: 900; }
 
-    /* ── Toast ── */
-    #toast {
-      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(0);
-      background: rgba(20,20,20,0.95); backdrop-filter: blur(20px);
-      border: 1px solid rgba(255,255,255,0.12); color: var(--text);
-      padding: 12px 24px; border-radius: 100px; font-size: 13px; font-weight: 700;
-      z-index: 999; opacity: 0; transition: opacity .3s, transform .3s; pointer-events: none;
-      max-width: 90vw; text-align: center;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-    }
-    #toast.show { opacity: 1; }
-
-    /* ── Badge ── */
-    .badge {
-      display: inline-flex; align-items: center; gap: 4px;
-      padding: 4px 10px; border-radius: 100px; font-size: 11px; font-weight: 700;
-    }
+    /* ── Badges ── */
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 100px; font-size: 11px; font-weight: 700; }
     .badge.completed { background: rgba(34,197,94,.15); color: var(--success); border: 1px solid rgba(34,197,94,.2); }
     .badge.pending { background: rgba(245,158,11,.12); color: var(--warning); border: 1px solid rgba(245,158,11,.2); }
     .badge.cancelled { background: rgba(239,68,68,.1); color: var(--danger); border: 1px solid rgba(239,68,68,.15); }
 
     /* ── Card Modal ── */
-    .modal-backdrop {
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.65); backdrop-filter: blur(12px);
-      z-index: 100; display: flex; align-items: center; justify-content: center; padding: 24px;
-      animation: fadeIn .2s ease;
-    }
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.65); backdrop-filter: blur(12px); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 24px; animation: fadeIn .2s ease; }
     @keyframes fadeIn { from{opacity:0} to{opacity:1} }
-    .modal-box {
-      background: rgba(12,12,12,0.96); backdrop-filter: blur(40px);
-      border: 1px solid rgba(255,255,255,0.10); border-radius: 24px;
-      padding: 32px; width: 100%; max-width: 440px;
-      box-shadow: 0 32px 80px rgba(0,0,0,0.6);
-      animation: slideUp .3s cubic-bezier(.34,1.56,.64,1);
-    }
+    .modal-box { background: rgba(12,12,16,0.97); backdrop-filter: blur(40px); border: 1px solid rgba(255,255,255,0.10); border-radius: 24px; padding: 32px; width: 100%; max-width: 440px; box-shadow: 0 32px 80px rgba(0,0,0,0.6); animation: slideUp .3s cubic-bezier(.34,1.56,.64,1); }
     .modal-title { font-size: 20px; font-weight: 900; letter-spacing: -.3px; margin-bottom: 5px; }
     .modal-sub { font-size: 13px; color: var(--muted); margin-bottom: 26px; }
     .modal-actions { display: flex; gap: 10px; margin-top: 22px; }
-    #stripe-card-element {
-      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
-      border-radius: 12px; padding: 16px; transition: all .2s;
-    }
-    #stripe-card-element.focused { border-color: rgba(192,192,192,0.35); box-shadow: none; }
+    #stripe-card-element { background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 12px; padding: 16px; transition: all .2s; }
+    #stripe-card-element.focused { border-color: rgba(0,102,255,0.5); }
     #card-modal-error { color: var(--danger); font-size: 13px; margin-top: 10px; min-height: 18px; }
 
     /* ── App Store Buttons ── */
-    .store-btn {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 10px 18px; border-radius: 12px; font-size: 13px; font-weight: 700;
-      background: rgba(255,255,255,0.06); border: 1px solid var(--border);
-      color: var(--text); text-decoration: none; transition: all .2s;
-    }
-    .store-btn:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.15); transform: translateY(-1px); }
+    .store-btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; font-size: 13px; font-weight: 700; background: rgba(0,102,255,0.08); border: 1px solid rgba(0,102,255,0.15); color: var(--text); text-decoration: none; transition: all .2s; }
+    .store-btn:hover { background: rgba(0,102,255,0.15); border-color: rgba(0,102,255,0.3); transform: translateY(-1px); }
 
-    /* ── Bottom Nav (mobile) ── */
-    .bottom-nav {
-      display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
-      background: rgba(8,8,8,0.96); backdrop-filter: blur(24px);
-      border-top: 1px solid var(--border);
-      padding: 8px 0 max(8px, env(safe-area-inset-bottom));
-      flex-direction: row;
-    }
-    html[data-theme="light"] .bottom-nav { background: rgba(232,232,232,0.97); }
-    .bottom-nav-item {
-      flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
-      cursor: pointer; padding: 4px 0; color: var(--muted);
-      font-size: 10px; font-weight: 700; letter-spacing: .3px; text-transform: uppercase;
-      transition: color .2s;
-    }
-    .bottom-nav-item.active { color: #C0C0C0; }
-    .bottom-nav-item.active.provider-mode { color: var(--coral); }
-    .bottom-nav-icon { font-size: 22px; line-height: 1; }
+    /* ── Toast ── */
+    #toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); background: rgba(12,12,20,0.97); backdrop-filter: blur(20px); border: 1px solid rgba(0,102,255,0.2); color: var(--text); padding: 12px 24px; border-radius: 100px; font-size: 13px; font-weight: 700; z-index: 999; opacity: 0; transition: opacity .3s; pointer-events: none; max-width: 90vw; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+    #toast.show { opacity: 1; }
 
     /* ── Forgot Password ── */
-    .forgot-link {
-      text-align: right; font-size: 12px; color: var(--muted); margin-top: -8px;
-      margin-bottom: 16px; cursor: pointer; transition: color .2s;
-    }
+    .forgot-link { text-align: right; font-size: 12px; color: var(--muted); margin-top: -8px; margin-bottom: 16px; cursor: pointer; transition: color .2s; }
     .forgot-link:hover { color: var(--text); }
     #auth-forgot { display: none; }
     .reset-step { display: none; }
     .reset-step.active { display: block; }
 
-    /* ── Tracking Banner ── */
-    .tracking-banner {
-      background: linear-gradient(135deg, rgba(245,158,11,0.12), rgba(245,158,11,0.04));
-      border: 1px solid rgba(245,158,11,0.25); border-radius: 18px;
-      padding: 22px 24px; margin-bottom: 20px;
-      animation: slideUp .35s cubic-bezier(.34,1.56,.64,1);
-    }
-    .tracking-banner h3 { font-size: 15px; font-weight: 800; color: var(--warning); margin-bottom: 6px; }
-    .tracking-banner p { font-size: 13px; color: var(--muted); line-height: 1.55; margin: 0; }
-    .tracking-pulse {
-      display: inline-flex; align-items: center; gap: 7px; margin-bottom: 10px;
-      font-size: 12px; font-weight: 800; color: var(--warning); letter-spacing: .5px; text-transform: uppercase;
-    }
-    .tracking-pulse::before {
-      content:''; width:9px; height:9px; border-radius:50%; background:var(--warning); display:block;
-      box-shadow:0 0 10px var(--warning); animation: pulse 1.5s ease-in-out infinite;
-    }
+    /* ── Bottom Nav ── */
+    .bottom-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; background: rgba(8,8,14,0.97); backdrop-filter: blur(24px); border-top: 1px solid var(--border); padding: 8px 0 max(8px, env(safe-area-inset-bottom)); flex-direction: row; }
+    html[data-theme="light"] .bottom-nav { background: rgba(232,237,255,0.98); }
+    .bottom-nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; padding: 4px 0; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .3px; text-transform: uppercase; transition: color .2s; }
+    .bottom-nav-item.active { color: #60A5FA; }
+    .bottom-nav-item.active.provider-mode { color: #F87171; }
+    .bottom-nav-icon { font-size: 22px; line-height: 1; }
 
     /* ── Responsive ── */
     @media (max-width: 720px) {
@@ -722,6 +430,7 @@
       .form-row { grid-template-columns: 1fr; }
       .app-content { padding: 20px; padding-bottom: 90px; }
       .app-bar-user { display: none; }
+      .sub-svc-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -735,15 +444,15 @@
   <!-- Auth Screen -->
   <div id="auth-screen">
     <img class="auth-bg-logo logo-dark" src="/assets/images/resqride-logo-dark.png" alt="" />
-    <img class="auth-bg-logo logo-light" src="/assets/images/resqride-logo-light.png" alt="" style="opacity:0.08;filter:grayscale(1) brightness(0.3);" />
+    <img class="auth-bg-logo logo-light" src="/assets/images/resqride-logo-light.png" alt="" style="opacity:0.07;filter:grayscale(1) brightness(0.3);" />
     <div style="position:absolute;top:16px;right:16px;z-index:10;">
-      <button class="theme-btn" id="theme-toggle-auth" onclick="toggleTheme()" title="Toggle light/dark mode"><span class="theme-icon-el">☀</span></button>
+      <button class="theme-btn" onclick="toggleTheme()"><span class="theme-icon-el">&#9728;</span></button>
     </div>
     <div class="auth-box">
       <div class="auth-logo">
-        <img class="logo-dark" src="/assets/images/resqride-logo-dark.png" alt="ResqRide" style="width:240px;height:auto;object-fit:contain;display:block;margin:0 auto 12px;" />
-        <img class="logo-light" src="/assets/images/resqride-logo-light.png" alt="ResqRide" style="width:240px;height:auto;object-fit:contain;display:block;margin:0 auto 12px;" />
-        <p>On-demand roadside assistance</p>
+        <img class="logo-dark" src="/assets/images/resqride-logo-dark.png" alt="ResqRide" style="width:220px;height:auto;object-fit:contain;display:block;margin:0 auto 12px;" />
+        <img class="logo-light" src="/assets/images/resqride-logo-light.png" alt="ResqRide" style="width:220px;height:auto;object-fit:contain;display:block;margin:0 auto 12px;" />
+        <p style="font-size:13px;color:var(--muted)">On-demand roadside assistance</p>
       </div>
 
       <div class="auth-tabs">
@@ -751,7 +460,6 @@
         <button class="auth-tab" onclick="switchAuthTab('signup')" id="tab-signup">Sign Up</button>
       </div>
 
-      <!-- Sign In -->
       <form id="auth-signin" onsubmit="event.preventDefault();signIn()">
         <div class="field"><label>Email</label><input type="email" id="si-email" placeholder="you@example.com" autocomplete="email" required /></div>
         <div class="field"><label>Password</label><input type="password" id="si-password" placeholder="Your password" autocomplete="current-password" required /></div>
@@ -759,7 +467,6 @@
         <button class="btn btn-cyan" type="submit" id="si-btn">Sign In</button>
       </form>
 
-      <!-- Sign Up -->
       <form id="auth-signup" style="display:none" onsubmit="event.preventDefault();signUp()">
         <div class="role-picker">
           <div class="role-card selected" id="role-driver" onclick="selectRole('driver')">
@@ -776,11 +483,10 @@
         <div class="field"><label>Full Name</label><input type="text" id="su-name" placeholder="John Smith" autocomplete="name" required /></div>
         <div class="field"><label>Email</label><input type="email" id="su-email" placeholder="you@example.com" autocomplete="email" required /></div>
         <div class="field"><label>Password</label><input type="password" id="su-password" placeholder="Create a password (min 6 chars)" autocomplete="new-password" required /></div>
-        <p style="font-size:11px;color:var(--muted);margin-bottom:14px;line-height:1.5">By creating an account you agree to our <a href="/terms" target="_blank" style="color:var(--text)">Terms of Service</a> and <a href="/privacy" target="_blank" style="color:var(--text)">Privacy Policy</a>.</p>
+        <p style="font-size:11px;color:var(--muted);margin-bottom:14px;line-height:1.5">By creating an account you agree to our <a href="/terms" target="_blank" style="color:#60A5FA">Terms of Service</a> and <a href="/privacy" target="_blank" style="color:#60A5FA">Privacy Policy</a>.</p>
         <button class="btn btn-cyan" type="submit" id="su-btn">Create Account</button>
       </form>
 
-      <!-- Forgot Password -->
       <div id="auth-forgot">
         <div class="reset-step active" id="forgot-step-email">
           <p style="font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.55">Enter your email and we'll send you a reset code.</p>
@@ -804,15 +510,15 @@
   <!-- App Bar -->
   <div id="app-bar">
     <div class="app-bar-left">
-      <img class="logo-dark" src="/assets/images/resqride-logo-dark.png" alt="ResqRide" style="height:52px;width:auto;object-fit:contain;" />
-      <img class="logo-light" src="/assets/images/resqride-logo-light.png" alt="ResqRide" style="height:52px;width:auto;object-fit:contain;" />
+      <img class="logo-dark" src="/assets/images/resqride-logo-dark.png" alt="ResqRide" style="height:48px;width:auto;object-fit:contain;" />
+      <img class="logo-light" src="/assets/images/resqride-logo-light.png" alt="ResqRide" style="height:48px;width:auto;object-fit:contain;" />
       <div class="app-bar-sep"></div>
       <span class="live-dot">Live</span>
     </div>
     <div class="app-bar-right">
       <span class="mode-chip" id="bar-mode-chip">Driver Mode</span>
       <span class="app-bar-user" id="bar-user-name"></span>
-      <button class="theme-btn" id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode"><span id="theme-icon">☀</span></button>
+      <button class="theme-btn" onclick="toggleTheme()"><span id="theme-icon">&#9728;</span></button>
       <button class="btn btn-ghost btn-sm" onclick="logout()" style="width:auto">Sign Out</button>
     </div>
   </div>
@@ -824,12 +530,13 @@
       <!-- Sidebar -->
       <div class="app-sidebar" id="app-sidebar">
         <div class="sidebar-logo-area">
-          <img class="logo-dark" src="/assets/images/resqride-logo-dark.png" alt="ResqRide" style="height:62px;width:auto;object-fit:contain;" />
-          <img class="logo-light" src="/assets/images/resqride-logo-light.png" alt="ResqRide" style="height:62px;width:auto;object-fit:contain;" />
+          <img class="logo-dark" src="/assets/images/resqride-logo-dark.png" alt="ResqRide" style="height:56px;width:auto;object-fit:contain;" />
+          <img class="logo-light" src="/assets/images/resqride-logo-light.png" alt="ResqRide" style="height:56px;width:auto;object-fit:contain;" />
         </div>
 
         <!-- Driver nav -->
         <div id="driver-nav">
+          <div class="sidebar-type-badge driver-badge" style="display:none" id="driver-type-badge">&#128664; Driver</div>
           <div class="sidebar-section">Driver</div>
           <div class="sidebar-item active" onclick="showView('request')" id="nav-request">
             <div class="sidebar-icon">&#128205;</div><span class="sidebar-label">Request Help</span>
@@ -847,9 +554,11 @@
 
         <!-- Provider nav -->
         <div id="provider-nav" style="display:none">
-          <div class="sidebar-section">Provider</div>
+          <div id="provider-type-badge" class="sidebar-type-badge independent">&#128736; Independent</div>
+          <div class="sidebar-section" id="provider-nav-label">Provider</div>
           <div class="sidebar-item provider-mode active" onclick="showView('jobs')" id="nav-jobs">
             <div class="sidebar-icon">&#128188;</div><span class="sidebar-label">Available Jobs</span>
+            <span class="sidebar-badge" id="job-count-badge" style="display:none">0</span>
           </div>
           <div class="sidebar-item" onclick="showView('earnings-view')" id="nav-earnings-view">
             <div class="sidebar-icon">&#128176;</div><span class="sidebar-label">Earnings</span>
@@ -874,11 +583,15 @@
       <!-- Content -->
       <div class="app-content">
 
-        <!-- Request Help (Driver) -->
+        <!-- ══ DRIVER VIEWS ══ -->
+
+        <!-- Request Help -->
         <div class="view active" id="view-request">
           <div class="view-header">
-            <div class="view-title">Request Help</div>
-            <div class="view-sub">Select a service and we'll connect you with a nearby provider</div>
+            <div>
+              <div class="view-title">Request Help</div>
+              <div class="view-sub">Select a service — we'll connect you with a nearby provider</div>
+            </div>
           </div>
 
           <div class="sos-banner">
@@ -889,117 +602,159 @@
             </div>
           </div>
 
-          <div class="section-label">Choose Your Service</div>
-          <div class="service-grid" id="service-grid"></div>
+          <!-- Step 1: Service Grid -->
+          <div id="step-service-select">
+            <div class="section-label">Choose Your Service</div>
+            <div class="service-grid" id="service-grid"></div>
+          </div>
 
-          <div class="request-form" id="request-form" style="display:none">
-            <h3 id="request-title">Flat Tire</h3>
+          <!-- Step 2: Sub-service picker (shown for Flat Tire, etc.) -->
+          <div id="step-subservice" style="display:none">
+            <div class="step-breadcrumb">
+              <span class="step-crumb" onclick="backToServices()">Services</span>
+              <span class="step-sep">›</span>
+              <span class="step-crumb active" id="sub-svc-crumb-label">Flat Tire</span>
+            </div>
+            <div class="section-label" id="sub-svc-section-label">Choose Option</div>
+            <div class="sub-svc-grid" id="sub-svc-grid"></div>
 
-            <!-- Jump Start: Battery Health Check add-on -->
-            <div id="addon-battery-panel" style="display:none;margin-bottom:16px">
+            <!-- Tire Inspection add-on (flat tire only) -->
+            <div id="tire-inspection-panel" style="display:none;margin-bottom:16px">
               <div class="section-label" style="margin-top:0;margin-bottom:10px">Optional Add-On</div>
-              <label class="addon-card" id="battery-addon-card" onclick="toggleBatteryCheckUI()">
-                <div class="addon-icon">&#9889;</div>
+              <label class="addon-card" id="tire-inspection-card" onclick="toggleTireInspection()">
+                <div class="addon-icon">&#128270;</div>
                 <div class="addon-body">
-                  <div class="addon-title">Battery Health Check <span class="addon-price">+$8.00</span></div>
-                  <div class="addon-desc">Technician tests battery health, cold-cranking amps, and charging system</div>
+                  <div class="addon-title">Tire Inspection <span class="addon-price">+$12.00</span></div>
+                  <div class="addon-desc">Full tread depth check, pressure test, and sidewall inspection on all four tires</div>
                 </div>
-                <input type="checkbox" id="battery-check-toggle" style="display:none" onchange="toggleBatteryCheck(this.checked)" />
-                <div class="addon-checkbox" id="battery-check-box"></div>
+                <input type="checkbox" id="tire-inspection-toggle" style="display:none" />
+                <div class="addon-checkbox" id="tire-inspection-box"></div>
               </label>
             </div>
 
-            <!-- Towing: Distance calculator -->
-            <div id="tow-distance-panel" style="display:none;margin-bottom:16px">
-              <div class="section-label" style="margin-top:0;margin-bottom:10px">Estimated Distance</div>
-              <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:10px">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-                  <span style="font-size:13px;color:var(--muted);font-weight:700">Hookup Fee</span>
-                  <span style="font-size:15px;font-weight:800">$65.00</span>
-                </div>
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-                  <span style="font-size:13px;color:var(--muted);font-weight:700">Per Mile</span>
-                  <span style="font-size:15px;font-weight:800">$3.50 / mi</span>
-                </div>
-                <label class="input-label" style="margin-bottom:7px">Miles to destination</label>
-                <div style="display:flex;align-items:center;gap:10px">
-                  <input class="web-input" type="number" id="tow-miles-input" value="5" min="1" max="200" style="flex:1" oninput="onTowMilesInput(this.value)" />
-                  <span style="font-size:13px;color:var(--muted);font-weight:700;white-space:nowrap">mi</span>
-                </div>
-                <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:space-between">
-                  <span style="font-size:12px;color:var(--muted)">Estimated total</span>
-                  <span style="font-size:17px;font-weight:900;color:var(--cyan)" id="tow-price-preview">$82.50</span>
-                </div>
-              </div>
+            <button class="btn btn-cyan" id="sub-svc-confirm-btn" onclick="confirmSubService()" style="display:none">Continue</button>
+          </div>
+
+          <!-- Step 3: Request Form -->
+          <div id="request-form-wrap" style="display:none">
+            <div class="step-breadcrumb">
+              <span class="step-crumb" onclick="backToServices()">Services</span>
+              <span class="step-sep">›</span>
+              <span class="step-crumb" id="form-crumb-svc" onclick="backToSubservice()">—</span>
+              <span class="step-sep" id="form-crumb-sep2" style="display:none">›</span>
+              <span class="step-crumb active" id="form-crumb-sub" style="display:none">—</span>
             </div>
 
-            <!-- Fuel Delivery: Amount picker -->
-            <div id="fuel-picker-panel" style="display:none;margin-bottom:16px">
-              <div class="section-label" style="margin-top:0;margin-bottom:10px">How much fuel do you need?</div>
-              <div class="fuel-tabs">
-                <button id="fuel-tab-preset" class="fuel-tab active" onclick="switchFuelTab('preset')">Choose Amount</button>
-                <button id="fuel-tab-custom" class="fuel-tab" onclick="switchFuelTab('custom')">Enter Custom</button>
+            <div class="request-form" id="request-form">
+              <h3 id="request-title">Flat Tire</h3>
+
+              <!-- Jump Start: Battery add-on -->
+              <div id="addon-battery-panel" style="display:none;margin-bottom:16px">
+                <div class="section-label" style="margin-top:0;margin-bottom:10px">Optional Add-On</div>
+                <label class="addon-card" id="battery-addon-card" onclick="toggleBatteryCheckUI()">
+                  <div class="addon-icon">&#9889;</div>
+                  <div class="addon-body">
+                    <div class="addon-title">Battery Health Check <span class="addon-price">+$8.00</span></div>
+                    <div class="addon-desc">Tests battery health, cold-cranking amps, and charging system</div>
+                  </div>
+                  <input type="checkbox" id="battery-check-toggle" style="display:none" onchange="toggleBatteryCheck(this.checked)" />
+                  <div class="addon-checkbox" id="battery-check-box"></div>
+                </label>
               </div>
-              <div id="fuel-amount-grid" class="fuel-grid"></div>
-              <div id="fuel-custom-section" style="display:none;margin-top:10px">
-                <div style="display:flex;align-items:center;gap:8px">
-                  <span style="font-size:22px;font-weight:700;color:var(--cyan)">$</span>
-                  <input class="web-input" type="number" id="fuel-custom-input" placeholder="Enter amount" min="1" max="999" style="flex:1" oninput="onCustomFuelInput(this.value)" />
+
+              <!-- Towing: Distance calculator -->
+              <div id="tow-distance-panel" style="display:none;margin-bottom:16px">
+                <div class="section-label" style="margin-top:0;margin-bottom:10px">Estimated Distance</div>
+                <div style="background:rgba(0,102,255,0.05);border:1px solid rgba(0,102,255,0.15);border-radius:14px;padding:16px 18px;margin-bottom:10px">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                    <span style="font-size:13px;color:var(--muted);font-weight:700">Hookup Fee</span>
+                    <span style="font-size:15px;font-weight:800">$65.00</span>
+                  </div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+                    <span style="font-size:13px;color:var(--muted);font-weight:700">Per Mile (after 5 free)</span>
+                    <span style="font-size:15px;font-weight:800">$3.50 / mi</span>
+                  </div>
+                  <label class="input-label">Miles to destination</label>
+                  <div style="display:flex;align-items:center;gap:10px;margin-top:7px">
+                    <input class="web-input" type="number" id="tow-miles-input" value="5" min="1" max="200" style="flex:1" oninput="onTowMilesInput(this.value)" />
+                    <span style="font-size:13px;color:var(--muted);font-weight:700;white-space:nowrap">mi</span>
+                  </div>
+                  <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:space-between">
+                    <span style="font-size:12px;color:var(--muted)">Estimated total</span>
+                    <span style="font-size:17px;font-weight:900;color:#60A5FA" id="tow-price-preview">$65.00</span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <!-- Price summary -->
-            <div class="price-preview" style="margin-bottom:16px">
-              <div>
-                <div class="price-label">Service</div>
-                <div class="price-value" id="request-price">$0</div>
+              <!-- Fuel Delivery: Amount picker -->
+              <div id="fuel-picker-panel" style="display:none;margin-bottom:16px">
+                <div class="section-label" style="margin-top:0;margin-bottom:10px">How much fuel do you need?</div>
+                <div class="fuel-tabs">
+                  <button id="fuel-tab-preset" class="fuel-tab active" onclick="switchFuelTab('preset')">Choose Amount</button>
+                  <button id="fuel-tab-custom" class="fuel-tab" onclick="switchFuelTab('custom')">Enter Custom</button>
+                </div>
+                <div id="fuel-amount-grid" class="fuel-grid"></div>
+                <div id="fuel-custom-section" style="display:none;margin-top:10px">
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <span style="font-size:22px;font-weight:700;color:#60A5FA">$</span>
+                    <input class="web-input" type="number" id="fuel-custom-input" placeholder="Enter amount" min="1" max="999" style="flex:1" oninput="onCustomFuelInput(this.value)" />
+                  </div>
+                </div>
               </div>
-              <div style="text-align:center">
-                <div class="price-label">Service Fee</div>
-                <div style="font-size:15px;font-weight:600;color:var(--text-muted)">$2.99</div>
-              </div>
-              <div style="text-align:right">
-                <div class="price-label">ETA</div>
-                <div class="price-eta" id="request-eta">~15 min</div>
-              </div>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-top:1px solid rgba(255,255,255,0.07);margin-bottom:16px">
-              <span style="font-size:14px;font-weight:600;opacity:0.7">Total</span>
-              <span style="font-size:18px;font-weight:700;color:var(--cyan)" id="request-total">$0.00</span>
-            </div>
 
-            <div class="form-row" style="margin-bottom:16px">
-              <div class="input-group">
-                <label class="input-label">Your Location / Address</label>
-                <input class="web-input" type="text" id="req-location" placeholder="123 Main St, City, State" />
+              <!-- Price Summary -->
+              <div class="price-preview" style="margin-bottom:16px">
+                <div>
+                  <div class="price-label">Service Cost</div>
+                  <div class="price-value" id="request-price">$0</div>
+                </div>
+                <div style="text-align:center">
+                  <div class="price-label">Service Fee</div>
+                  <div style="font-size:15px;font-weight:700;color:var(--muted)">$3.99</div>
+                </div>
+                <div style="text-align:right">
+                  <div class="price-label">Est. Arrival</div>
+                  <div class="price-eta" id="request-eta">~15 min</div>
+                </div>
               </div>
-              <div class="input-group">
-                <label class="input-label">Additional Notes</label>
-                <input class="web-input" type="text" id="req-notes" placeholder="e.g. Silver Toyota, right lane" />
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-top:1px solid rgba(255,255,255,0.07);margin-bottom:16px">
+                <span style="font-size:14px;font-weight:600;opacity:0.7">Total Estimated</span>
+                <span style="font-size:18px;font-weight:700;color:#60A5FA" id="request-total">$3.99</span>
               </div>
-            </div>
-            <div style="display:flex;gap:10px;flex-wrap:wrap">
-              <button class="btn btn-cyan" style="flex:1;min-width:160px" onclick="submitRequest()">Request Service</button>
-              <button class="btn btn-ghost btn-sm" onclick="cancelRequest()">Cancel</button>
+
+              <div class="form-row" style="margin-bottom:16px">
+                <div class="input-group">
+                  <label class="input-label">Your Location / Address</label>
+                  <input class="web-input" type="text" id="req-location" placeholder="123 Main St, City, State" />
+                </div>
+                <div class="input-group">
+                  <label class="input-label">Additional Notes</label>
+                  <input class="web-input" type="text" id="req-notes" placeholder="e.g. Silver Toyota, right lane" />
+                </div>
+              </div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <button class="btn btn-cyan" style="flex:1;min-width:160px" onclick="submitRequest()" id="submit-request-btn">&#128205; Request Now</button>
+                <button class="btn btn-ghost btn-sm" onclick="backToServices()">Cancel</button>
+              </div>
             </div>
           </div>
 
+          <!-- Success / Tracking State -->
           <div id="request-success" style="display:none">
             <div class="tracking-banner">
-              <div class="tracking-pulse">Finding your provider</div>
-              <h3 id="tracking-status-title">Request Submitted — Searching nearby providers</h3>
-              <p id="tracking-status-sub">Hang tight. We're matching you with the closest available provider. This usually takes less than 2 minutes.</p>
+              <div class="tracking-pulse">Searching nearby providers</div>
+              <h3 id="tracking-status-title">Request Submitted — Finding a provider</h3>
+              <p id="tracking-status-sub">Hang tight. We're matching you with the closest available provider.</p>
             </div>
-            <div class="glass-card" style="text-align:center;padding:32px 24px">
-              <div style="font-size:40px;margin-bottom:14px">&#128241;</div>
-              <h3 style="margin-bottom:10px">Get real-time updates</h3>
-              <p style="margin-bottom:20px">Download the ResqRide app to track your provider live on the map, chat with them directly, and get push notifications at every step.</p>
-              <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:24px">
-                <a href="#" class="store-btn">&#xF8FF; App Store</a>
-                <a href="#" class="store-btn">&#9654; Google Play</a>
+            <div class="success-card">
+              <div class="success-check">&#128664;</div>
+              <div class="success-title">Request Sent!</div>
+              <div class="success-sub">Your request is live. A nearby provider will accept it shortly. Download the app for real-time GPS tracking and in-app chat.</div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:24px">
+                <a href="https://apps.apple.com" class="store-btn" style="text-decoration:none">&#xF8FF; App Store</a>
+                <a href="https://play.google.com" class="store-btn" style="text-decoration:none">&#9654; Google Play</a>
               </div>
-              <button class="btn btn-ghost btn-sm" onclick="resetRequest()" style="display:inline-flex">Submit another request</button>
+              <button class="btn btn-ghost btn-sm" onclick="resetRequest()" style="display:inline-flex;margin-top:16px">New Request</button>
             </div>
           </div>
         </div>
@@ -1007,14 +762,16 @@
         <!-- History (Driver) -->
         <div class="view" id="view-history">
           <div class="view-header">
-            <div class="view-title">Service History</div>
-            <div class="view-sub">Your past roadside assistance requests</div>
+            <div>
+              <div class="view-title">Service History</div>
+              <div class="view-sub">Your past roadside assistance requests</div>
+            </div>
           </div>
           <div id="history-list">
             <div class="glass-card" style="text-align:center;padding:56px 24px">
               <div style="font-size:44px;margin-bottom:16px">&#128203;</div>
               <h3 style="margin-bottom:8px">No history yet</h3>
-              <p>Your service history will appear here. Download the app for the full experience with real-time tracking.</p>
+              <p>Your completed service requests will appear here. Download the app for full history with receipts.</p>
             </div>
           </div>
         </div>
@@ -1022,13 +779,15 @@
         <!-- EV Services -->
         <div class="view" id="view-ev">
           <div class="view-header">
-            <div class="view-title">EV Services</div>
-            <div class="view-sub">Specialized roadside assistance for electric vehicles</div>
+            <div>
+              <div class="view-title">EV Services</div>
+              <div class="view-sub">Specialized roadside assistance for electric vehicles</div>
+            </div>
           </div>
 
           <!-- Mobile EV Charging -->
           <div class="section-label">Mobile EV Charging</div>
-          <div class="ev-charge-grid" id="ev-charge-grid">
+          <div class="ev-charge-grid">
             <div class="ev-charge-card selected" onclick="selectChargeLevel(0)" id="ev-charge-0">
               <div class="ev-charge-left">
                 <div class="ev-charge-label">Quick Boost</div>
@@ -1054,49 +813,72 @@
               <div class="ev-charge-price">$44</div>
             </div>
           </div>
-          <button class="btn btn-cyan" style="margin-bottom:24px" onclick="submitEvCharge()">&#128268; Request Mobile Charging</button>
+          <button class="btn btn-cyan" style="margin-bottom:28px" onclick="submitEvCharge()">&#128268; Request Mobile Charging</button>
 
           <!-- EV-Safe Tow -->
           <div class="section-label">EV-Safe Tow</div>
-          <div class="ev-tow-grid" id="ev-tow-grid">
-            <div class="ev-tow-card" onclick="selectTowType(0)" id="ev-tow-0">
-              <div>
-                <div class="ev-tow-label">Flatbed Transport</div>
-                <div class="ev-tow-desc">All four wheels off the ground. Safest option for all EVs.</div>
+          <div class="ev-tow-grid">
+            <div class="ev-tow-card selected" onclick="selectTowType(0)" id="ev-tow-0">
+              <div class="ev-tow-card-body">
+                <div class="ev-tow-label">&#9733; Flatbed Transport</div>
+                <div class="ev-tow-desc">All four wheels off the ground — the safest option for all EVs. Prevents drivetrain damage.</div>
+                <div class="ev-tow-hookup">$85 hookup &bull; $3.50/mi (first 5 mi free)</div>
               </div>
-              <div class="ev-tow-price">$127</div>
+              <div class="ev-tow-price">$85</div>
             </div>
-            <div class="ev-tow-card selected" onclick="selectTowType(1)" id="ev-tow-1">
-              <div>
+            <div class="ev-tow-card" onclick="selectTowType(1)" id="ev-tow-1">
+              <div class="ev-tow-card-body">
                 <div class="ev-tow-label">Wheel-Lift Tow</div>
-                <div class="ev-tow-desc">Front or rear wheels lifted. For short-distance tows.</div>
+                <div class="ev-tow-desc">Front or rear wheels lifted. Suitable for short-distance tows to a nearby charging station.</div>
+                <div class="ev-tow-hookup">$65 hookup &bull; $3.50/mi (first 5 mi free)</div>
               </div>
-              <div class="ev-tow-price">$84</div>
+              <div class="ev-tow-price">$65</div>
             </div>
           </div>
+
+          <!-- Mileage Calculator -->
+          <div class="ev-tow-calc">
+            <label class="input-label" style="margin-bottom:10px">Estimated miles to destination</label>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+              <input class="web-input" type="number" id="ev-tow-miles" value="5" min="1" max="200" style="flex:1" oninput="updateEvTowCalc()" />
+              <span style="font-size:13px;color:var(--muted);font-weight:700;white-space:nowrap">miles</span>
+            </div>
+            <div class="ev-tow-calc-row"><span>Hookup fee</span><span id="ev-tow-hookup-display">$85.00</span></div>
+            <div class="ev-tow-calc-row"><span>Mileage (<span id="ev-tow-billable-miles">0</span> billable mi × $3.50)</span><span id="ev-tow-mile-cost">$0.00</span></div>
+            <div class="ev-tow-calc-row" style="font-size:12px;color:rgba(167,139,250,0.7)"><span>First 5 miles are always free</span><span></span></div>
+            <div class="ev-tow-total"><span>Estimated Total</span><span id="ev-tow-total-display">$85.00</span></div>
+          </div>
+
           <div class="section-label">Destination</div>
-          <div class="ev-dest-grid" id="ev-dest-grid">
+          <div class="ev-dest-grid">
             <div class="ev-dest-pill selected" onclick="selectTowDest(0)" id="ev-dest-0">&#128267; Nearest Charging Station</div>
             <div class="ev-dest-pill" onclick="selectTowDest(1)" id="ev-dest-1">&#128295; Nearest EV Service Center</div>
             <div class="ev-dest-pill" onclick="selectTowDest(2)" id="ev-dest-2">&#127968; My Home Address</div>
             <div class="ev-dest-pill" onclick="selectTowDest(3)" id="ev-dest-3">&#128205; Custom Destination</div>
           </div>
-          <button class="btn btn-cyan" style="margin-bottom:24px" onclick="submitEvTow()">&#128690; Request EV Tow</button>
+
+          <div style="margin-bottom:6px">
+            <label class="input-label">Your current location</label>
+            <input class="web-input" type="text" id="ev-location" placeholder="123 Main St — where are you now?" style="margin-bottom:14px" />
+          </div>
+          <button class="btn btn-cyan" style="margin-bottom:28px" onclick="submitEvTow()">&#128690; Request EV Tow</button>
 
           <div class="glass-card" style="background:linear-gradient(135deg,rgba(167,139,250,0.08),rgba(167,139,250,0.03));border-color:rgba(167,139,250,0.2)">
-            <h3 style="color:var(--purple)">&#9889; EV Owner Benefits</h3>
-            <p>ResqRide providers are EV-certified and use non-conductive towing equipment. We support all major EV brands including Tesla, Rivian, Ford, and GM.</p>
+            <h3 style="color:#a78bfa">&#9889; EV Owner Benefits</h3>
+            <p>ResqRide providers are EV-certified and use non-conductive towing equipment. All EV tows include battery protection protocols. We support Tesla, Rivian, Ford, GM, Hyundai, and more.</p>
           </div>
         </div>
 
-        <!-- Profile -->
+        <!-- Profile (Driver) -->
         <div class="view" id="view-profile">
           <div class="view-header">
-            <div class="view-title">Profile</div>
-            <div class="view-sub">Manage your account and payment methods</div>
+            <div>
+              <div class="view-title">Profile</div>
+              <div class="view-sub">Manage your account and payment methods</div>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="toggleEditProfile()" id="edit-profile-btn" style="width:auto;margin-top:4px">Edit</button>
           </div>
 
-          <!-- Profile Hero -->
           <div class="profile-hero" id="profile-header">
             <div class="profile-avatar" id="profile-initial">?</div>
             <div class="profile-info">
@@ -1104,12 +886,10 @@
               <div class="profile-email" id="profile-email"></div>
               <div class="profile-badge" id="profile-role-badge">Driver</div>
             </div>
-            <button class="btn btn-ghost btn-sm" onclick="toggleEditProfile()" id="edit-profile-btn" style="width:auto;flex-shrink:0;align-self:flex-start">Edit</button>
           </div>
 
-          <!-- Edit Profile Form -->
           <div id="edit-profile-section" style="display:none">
-            <div class="glass-card" style="border-color:rgba(192,192,192,0.15)">
+            <div class="glass-card" style="border-color:rgba(0,102,255,0.15)">
               <div class="section-label" style="margin-top:0">Edit Profile</div>
               <div class="edit-field"><label>Full Name</label><input class="web-input" type="text" id="edit-name" placeholder="Your name" /></div>
               <div class="edit-field"><label>Email</label><input class="web-input" type="email" id="edit-email" placeholder="you@example.com" /></div>
@@ -1122,7 +902,6 @@
             </div>
           </div>
 
-          <!-- Payment Methods -->
           <div class="glass-card">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
               <div>
@@ -1134,8 +913,7 @@
             <div id="payment-methods-list"><div class="pm-empty">Loading...</div></div>
           </div>
 
-          <!-- App Promo -->
-          <div class="glass-card" style="background:rgba(255,255,255,0.03);border-color:rgba(192,192,192,0.10)">
+          <div class="glass-card" style="background:rgba(0,102,255,0.04);border-color:rgba(0,102,255,0.12)">
             <h3>Get the Full Experience</h3>
             <p style="margin-bottom:16px">Download the mobile app for real-time GPS tracking, push notifications, emergency SOS, in-app chat, and vehicle profile management.</p>
             <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -1145,20 +923,49 @@
           </div>
         </div>
 
-        <!-- Available Jobs (Provider) -->
+        <!-- ══ PROVIDER VIEWS ══ -->
+
+        <!-- Available Jobs -->
         <div class="view" id="view-jobs">
-          <div class="view-header" style="display:flex;align-items:flex-start;justify-content:space-between">
+
+          <!-- Provider type hero (independent vs shop) -->
+          <div id="provider-jobs-hero" class="provider-hero independent" style="display:none">
+            <div>
+              <h2 id="provider-hero-title">Help Stranded Drivers Near You</h2>
+              <p id="provider-hero-sub">Accept jobs, head to the driver, and earn. Work whenever you want — no schedule required.</p>
+            </div>
+            <div class="provider-hero-icon" id="provider-hero-icon">&#128736;</div>
+          </div>
+
+          <!-- Status toggle -->
+          <div class="provider-status-bar">
+            <div class="status-info">
+              <div class="status-dot-wrap online" id="status-dot"></div>
+              <div>
+                <div class="status-text" id="status-text">Available</div>
+                <div class="status-sub" id="status-sub">You can receive job requests</div>
+              </div>
+            </div>
+            <label class="toggle-switch" title="Toggle availability">
+              <input type="checkbox" id="availability-toggle" checked onchange="toggleAvailability(this.checked)" />
+              <div class="toggle-track"></div>
+              <div class="toggle-thumb"></div>
+            </label>
+          </div>
+
+          <div class="view-header">
             <div>
               <div class="view-title">Available Jobs</div>
-              <div class="view-sub">Nearby service requests waiting for you</div>
+              <div class="view-sub">Nearby requests waiting for a provider</div>
             </div>
             <button class="btn btn-ghost btn-sm" onclick="loadProviderJobs()" style="width:auto;margin-top:4px">&#8635; Refresh</button>
           </div>
+
           <div id="jobs-list">
             <div class="glass-card" style="text-align:center;padding:48px 24px">
               <div style="font-size:44px;margin-bottom:14px">&#128188;</div>
               <h3 style="margin-bottom:8px">No jobs right now</h3>
-              <p>New service requests will appear here automatically. Stay online to receive jobs.</p>
+              <p>New service requests will appear here. Make sure you're set to Available above.</p>
               <button class="btn btn-ghost btn-sm" style="margin-top:20px;display:inline-flex" onclick="loadProviderJobs()">Refresh</button>
             </div>
           </div>
@@ -1167,30 +974,57 @@
         <!-- Earnings (Provider) -->
         <div class="view" id="view-earnings-view">
           <div class="view-header">
-            <div class="view-title">Earnings</div>
-            <div class="view-sub">Your balance and payout information</div>
+            <div>
+              <div class="view-title">Earnings</div>
+              <div class="view-sub" id="earnings-view-sub">Your balance and payout history</div>
+            </div>
           </div>
+
+          <!-- Shop-specific stats (hidden for independent) -->
+          <div class="stats-row" id="shop-stats" style="display:none">
+            <div class="stat-card"><div class="stat-value" id="stat-jobs-today" style="color:#60A5FA">0</div><div class="stat-label">Jobs Today</div></div>
+            <div class="stat-card"><div class="stat-value" id="stat-jobs-week" style="color:#a78bfa">0</div><div class="stat-label">This Week</div></div>
+            <div class="stat-card"><div class="stat-value" id="stat-rating" style="color:#FCD34D">—</div><div class="stat-label">Rating</div></div>
+          </div>
+
           <div class="earnings-hero">
             <div class="earnings-label">Available Balance</div>
             <div class="earnings-amount" id="earnings-amount">$0.00</div>
-            <div class="earnings-sub">Cash out through the ResqRide mobile app</div>
+            <div class="earnings-sub" id="earnings-hero-sub">Earnings from completed jobs</div>
           </div>
+
           <div class="glass-card">
-            <h3>&#128176; Get Paid Faster</h3>
-            <p style="margin-bottom:18px">Connect your bank account via Stripe in the mobile app. Cash out anytime — standard (free, 1-2 days) or instant (~30 min, small fee).</p>
+            <h3>&#128176; Cash Out Your Earnings</h3>
+            <p style="margin-bottom:16px">Connect a bank account in the mobile app to cash out anytime. Two options available:</p>
+            <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px">
+              <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.12);border-radius:12px">
+                <div style="font-size:22px">&#127968;</div>
+                <div><div style="font-size:13px;font-weight:800">Standard Payout</div><div style="font-size:12px;color:var(--muted)">1–2 business days &bull; Free</div></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.12);border-radius:12px">
+                <div style="font-size:22px">&#9889;</div>
+                <div><div style="font-size:13px;font-weight:800">Instant Payout</div><div style="font-size:12px;color:var(--muted)">~30 minutes &bull; 1.5% fee (min $0.50)</div></div>
+              </div>
+            </div>
             <div style="display:flex;gap:10px;flex-wrap:wrap">
               <a href="https://apps.apple.com" class="store-btn" style="text-decoration:none">&#xF8FF; App Store</a>
               <a href="https://play.google.com" class="store-btn" style="text-decoration:none">&#9654; Google Play</a>
             </div>
+          </div>
+
+          <div class="glass-card" id="platform-fee-card">
+            <h3>&#128200; How Earnings Work</h3>
+            <p id="platform-fee-text">You keep 85% of every job. Platform fee is 15%. Priority jobs by verified providers earn 90% (10% fee). Tips are 100% yours.</p>
           </div>
         </div>
 
       </div>
     </div>
   </div>
+
 </div>
 
-<!-- Bottom Nav (mobile) -->
+<!-- Bottom Nav -->
 <div class="bottom-nav" id="bottom-nav" style="display:none">
   <div id="bnav-driver" style="display:contents">
     <div class="bottom-nav-item active" onclick="showView('request')" id="bnav-request">
@@ -1242,74 +1076,89 @@
   const BASE = window.location.origin;
   let userToken = localStorage.getItem("sm_web_token") || "";
   let currentUser = null;
+  let providerProfile = null;
   let selectedRole = "driver";
   let selectedService = null;
+  let selectedSubType = null;   // flat_tire sub: "tire_change" | "mobile_inflation"
+  let addTireInspection = false;
   let addBatteryCheck = false;
   let selectedFuelIndex = 2;
   let useCustomFuel = false;
   let customFuelAmount = "";
   let towMiles = 5;
+  let isProviderOnline = true;
 
-  const SERVICE_FEE = 2.99;
+  const SERVICE_FEE = 3.99;
 
+  // 9 top-level services — Mobile Inflation is a sub-option of Flat Tire, not standalone
   const SERVICES = [
-    { name: "Flat Tire",        type: "flat_tire",        price: 40,  display: "$40",       eta: 15, emoji: "&#128739;" },
-    { name: "Jump Start",       type: "jump_start",       price: 25,  display: "$25",       eta: 12, emoji: "&#9889;" },
-    { name: "Towing",           type: "tow",              price: 65,  display: "From $65",  eta: 25, emoji: "&#128664;" },
-    { name: "Fuel Delivery",    type: "fuel",             price: 0,   display: "From $10",  eta: 18, emoji: "&#9981;" },
-    { name: "Lockout",          type: "lockout",          price: 55,  display: "$55",       eta: 15, emoji: "&#128273;" },
-    { name: "OBD Diagnostic",   type: "obd_diagnostic",   price: 21,  display: "$21",       eta: 25, emoji: "&#128187;" },
-    { name: "Mobile Inflation", type: "mobile_inflation", price: 18,  display: "$18",       eta: 12, emoji: "&#128161;" },
-    { name: "Tire Check",       type: "tire_check",       price: 15,  display: "$15",       eta: 10, emoji: "&#128270;" },
-    { name: "Tire Replacement", type: "tire_replacement", price: 75,  display: "$75",       eta: 35, emoji: "&#128735;" },
-    { name: "Battery Check",    type: "battery_check",    price: 29,  display: "$29",       eta: 15, emoji: "&#9889;" },
+    { name: "Flat Tire",        type: "flat_tire",        price: 40,  display: "$40",      eta: 18, emoji: "&#128739;",  hasSub: true  },
+    { name: "Jump Start",       type: "jump_start",       price: 25,  display: "$25",      eta: 12, emoji: "&#9889;",    hasSub: false },
+    { name: "Towing",           type: "tow",              price: 65,  display: "From $65", eta: 28, emoji: "&#128664;",  hasSub: false },
+    { name: "Fuel Delivery",    type: "fuel",             price: 0,   display: "From $10", eta: 18, emoji: "&#9981;",    hasSub: false },
+    { name: "Lockout",          type: "lockout",          price: 55,  display: "$55",      eta: 15, emoji: "&#128273;",  hasSub: false },
+    { name: "OBD Diagnostic",   type: "obd_diagnostic",   price: 21,  display: "$21",      eta: 25, emoji: "&#128187;",  hasSub: false },
+    { name: "Tire Check",       type: "tire_check",       price: 15,  display: "$15",      eta: 10, emoji: "&#128270;",  hasSub: false },
+    { name: "Tire Replacement", type: "tire_replacement", price: 75,  display: "$75",      eta: 35, emoji: "&#128735;",  hasSub: false },
+    { name: "Battery Check",    type: "battery_check",    price: 29,  display: "$29",      eta: 15, emoji: "&#9889;",    hasSub: false },
+  ];
+
+  const FLAT_TIRE_SUBS = [
+    { key: "tire_change",       name: "Tire Change",        price: 40, emoji: "&#128739;", desc: "Using your spare tire or our backup spare. Includes lug nut torque check.", badge: "" },
+    { key: "mobile_inflation",  name: "Mobile Inflation",   price: 28, emoji: "&#128161;", desc: "Inflate your tire at the roadside. Best for slow leaks or after removing a nail.", badge: "Quick" },
   ];
 
   const FUEL_AMOUNTS = [
-    { label: "$10", desc: "Just enough to reach a station",  price: 10 },
-    { label: "$15", desc: "Short trip covered",              price: 15 },
-    { label: "$20", desc: "About 60–90 miles of range",      price: 20 },
-    { label: "$25", desc: "A solid fill for most cars",      price: 25 },
-    { label: "$30", desc: "Comfortable fill for most cars",  price: 30 },
-    { label: "$35", desc: "More than enough for the day",    price: 35 },
-    { label: "$40", desc: "Half tank for most vehicles",     price: 40 },
-    { label: "$45", desc: "Nearly a full tank",              price: 45 },
-    { label: "$50", desc: "Get back on the road worry-free", price: 50 },
+    { label: "$10", desc: "Just enough to reach a station",   price: 10 },
+    { label: "$15", desc: "Short trip covered",               price: 15 },
+    { label: "$20", desc: "About 60–90 miles of range",       price: 20 },
+    { label: "$25", desc: "A solid fill for most cars",       price: 25 },
+    { label: "$30", desc: "Comfortable fill for most cars",   price: 30 },
+    { label: "$35", desc: "More than enough for the day",     price: 35 },
+    { label: "$40", desc: "Half tank for most vehicles",      price: 40 },
+    { label: "$45", desc: "Nearly a full tank",               price: 45 },
+    { label: "$50", desc: "Get back on the road worry-free",  price: 50 },
   ];
 
-  const SVC_ICONS = { "Flat Tire":"&#128739;","Jump Start":"&#9889;","Towing":"&#128664;","Fuel Delivery":"&#9981;","Lockout":"&#128273;","OBD Diagnostic":"&#128187;","Mobile Inflation":"&#128161;","Tire Check":"&#128270;","Tire Replacement":"&#128735;","Battery Check":"&#9889;" };
+  const JOB_ICONS = { flat_tire:"&#128739;", jump_start:"&#9889;", tow:"&#128664;", towing:"&#128664;", fuel:"&#9981;", fuel_delivery:"&#9981;", lockout:"&#128273;", obd_diagnostic:"&#128187;", mobile_inflation:"&#128161;", tire_check:"&#128270;", tire_replacement:"&#128735;", battery_check:"&#9889;", mobile_ev_charging:"&#128268;", ev_safe_tow:"&#128690;" };
 
-  function getTowPrice() {
-    const miles = parseFloat(towMiles) || 0;
-    return 65 + (miles * 3.50);
-  }
+  // EV tow state
+  const EV_CHARGE_LEVELS = [
+    { label: "Quick Boost",  kwh: "10 kWh", time: "~15 min", price: 10, desc: "Get enough charge to reach the nearest station" },
+    { label: "Half Charge",  kwh: "25 kWh", time: "~35 min", price: 24, desc: "Enough for about 80 miles of range" },
+    { label: "Full Charge",  kwh: "50 kWh", time: "~60 min", price: 44, desc: "Top off your battery to near full capacity" },
+  ];
+  const EV_TOW_TYPES = [
+    { label: "Flatbed Transport", hookup: 85 },
+    { label: "Wheel-Lift Tow",   hookup: 65 },
+  ];
+  const EV_DEST_LABELS = ["Nearest Charging Station", "Nearest EV Service Center", "My Home Address", "Custom Destination"];
+  let selectedChargeLevel = 0;
+  let selectedEvTowType = 0;
+  let selectedTowDest = 0;
+  const EV_SVC_FEE = 3.99;
 
-  function getEffectivePrice() {
-    if (!selectedService) return 0;
-    if (selectedService.type === "fuel") {
-      if (useCustomFuel) return parseFloat(customFuelAmount) || 0;
-      return FUEL_AMOUNTS[selectedFuelIndex].price;
-    }
-    if (selectedService.type === "tow") return getTowPrice();
-    let p = selectedService.price;
-    if (selectedService.type === "jump_start" && addBatteryCheck) p += 8;
-    return p;
-  }
-
-  function updatePriceDisplay() {
-    const base = getEffectivePrice();
-    const total = base + SERVICE_FEE;
-    const priceEl = document.getElementById("request-price");
-    const totalEl = document.getElementById("request-total");
-    if (priceEl) priceEl.textContent = `$${base.toFixed(0)}`;
-    if (totalEl) totalEl.textContent = `$${total.toFixed(2)}`;
-  }
-
+  // ── Utility ──
   function toast(msg, duration) {
     const el = document.getElementById("toast");
     el.textContent = msg; el.classList.add("show");
     setTimeout(() => el.classList.remove("show"), duration || 3000);
   }
+
+  function toggleTheme() {
+    const html = document.documentElement;
+    const isLight = html.getAttribute("data-theme") === "light";
+    html.setAttribute("data-theme", isLight ? "dark" : "light");
+    localStorage.setItem("resqride-theme", isLight ? "dark" : "light");
+    const icon = isLight ? "&#9728;" : "&#9790;";
+    document.querySelectorAll(".theme-icon-el, #theme-icon").forEach(el => el.innerHTML = icon);
+  }
+  (function() {
+    const saved = localStorage.getItem("resqride-theme") || "dark";
+    document.documentElement.setAttribute("data-theme", saved);
+    const icon = saved === "light" ? "&#9790;" : "&#9728;";
+    document.querySelectorAll(".theme-icon-el, #theme-icon").forEach(el => el.innerHTML = icon);
+  })();
 
   // ── Auth ──
   function switchAuthTab(tab) {
@@ -1339,16 +1188,12 @@
     if (!email) { err.textContent = "Please enter your email address."; return; }
     btn.disabled = true; btn.textContent = "Sending...";
     try {
-      const res = await fetch(`${BASE}/api/auth/forgot-password`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
+      const res = await fetch(`${BASE}/api/auth/forgot-password`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }) });
       const data = await res.json();
       if (!res.ok) { err.textContent = data.error || "Failed to send code."; return; }
-      // Move to code entry step
       document.getElementById("forgot-step-email").classList.remove("active");
       document.getElementById("forgot-step-code").classList.add("active");
-      toast("Reset code sent! Check your email (or server logs in dev mode).");
+      toast("Reset code sent! Check your email.");
       if (data.debug_code) toast(`DEV: code is ${data.debug_code}`, 8000);
     } catch { err.textContent = "Could not connect. Try again."; }
     finally { btn.disabled = false; btn.textContent = "Send Reset Code"; }
@@ -1365,10 +1210,7 @@
     if (newPassword.length < 8) { err.textContent = "Password must be at least 8 characters."; return; }
     btn.disabled = true; btn.textContent = "Resetting...";
     try {
-      const res = await fetch(`${BASE}/api/auth/reset-password`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, code, newPassword }),
-      });
+      const res = await fetch(`${BASE}/api/auth/reset-password`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, code, newPassword }) });
       const data = await res.json();
       if (!res.ok) { err.textContent = data.error || "Reset failed. Try again."; return; }
       toast("Password reset! Please sign in with your new password.");
@@ -1392,10 +1234,7 @@
     if (!email || !password) { err.textContent = "Please enter your email and password."; return; }
     btn.disabled = true; btn.textContent = "Signing in...";
     try {
-      const res = await fetch(`${BASE}/api/auth/signin`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+      const res = await fetch(`${BASE}/api/auth/signin`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, password }) });
       const data = await res.json();
       if (!res.ok) { err.textContent = data.error || "Invalid credentials."; return; }
       userToken = data.token;
@@ -1417,10 +1256,7 @@
     if (password.length < 6) { err.textContent = "Password must be at least 6 characters."; return; }
     btn.disabled = true; btn.textContent = "Creating account...";
     try {
-      const res = await fetch(`${BASE}/api/auth/signup`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, role: selectedRole }),
-      });
+      const res = await fetch(`${BASE}/api/auth/signup`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, email, password, role: selectedRole }) });
       const data = await res.json();
       if (!res.ok) { err.textContent = data.error || "Failed to create account."; return; }
       userToken = data.token;
@@ -1431,7 +1267,7 @@
     finally { btn.disabled = false; btn.textContent = "Create Account"; }
   }
 
-  function enterApp() {
+  async function enterApp() {
     document.getElementById("auth-screen").style.display = "none";
     document.getElementById("app-bar").style.display = "flex";
     document.getElementById("main-app").style.display = "flex";
@@ -1446,9 +1282,11 @@
     document.getElementById("bnav-driver").style.display = role === "driver" ? "contents" : "none";
     document.getElementById("bnav-provider").style.display = role === "provider" ? "contents" : "none";
     if (role === "provider") {
+      await loadProviderProfile();
       showView("jobs");
       loadProviderJobs();
       loadProviderEarnings();
+      startJobPolling();
     } else {
       showView("request");
       buildServiceGrid();
@@ -1456,15 +1294,78 @@
     updateProfile();
   }
 
-  function logout() {
-    stopTrackingPoll();
-    userToken = ""; localStorage.removeItem("sm_web_token"); currentUser = null;
-    document.getElementById("auth-screen").style.display = "flex";
-    document.getElementById("app-bar").style.display = "none";
-    document.getElementById("main-app").style.display = "none";
-    document.getElementById("bottom-nav").style.display = "none";
-    document.getElementById("si-email").value = "";
-    document.getElementById("si-password").value = "";
+  // ── Provider Profile & Duality ──
+  async function loadProviderProfile() {
+    if (!userToken || !currentUser) return;
+    try {
+      const res = await fetch(`${BASE}/api/providers`, { headers: { Authorization: `Bearer ${userToken}` } });
+      if (res.ok) {
+        const list = await res.json();
+        const found = list.find(p => p.email === currentUser.email || p.id === currentUser.id);
+        if (found) providerProfile = found;
+      }
+    } catch {}
+    applyProviderDuality();
+  }
+
+  function applyProviderDuality() {
+    const pType = providerProfile?.providerType || "independent";
+    const isShop = pType === "shop";
+    const heroEl = document.getElementById("provider-jobs-hero");
+    const badgeEl = document.getElementById("provider-type-badge");
+    const titleEl = document.getElementById("provider-hero-title");
+    const subEl = document.getElementById("provider-hero-sub");
+    const iconEl = document.getElementById("provider-hero-icon");
+    const shopName = providerProfile?.name || currentUser?.name || "Your Shop";
+
+    if (heroEl) heroEl.style.display = "block";
+
+    if (isShop) {
+      if (heroEl) heroEl.className = "provider-hero shop";
+      if (badgeEl) { badgeEl.className = "sidebar-type-badge shop"; badgeEl.textContent = "&#127981; " + (providerProfile?.name || "Shop"); }
+      if (titleEl) titleEl.textContent = shopName + " — Service Queue";
+      if (subEl) subEl.textContent = "Manage incoming service jobs for your roadside shop. Accept, dispatch, and track from one place.";
+      if (iconEl) iconEl.textContent = "&#127981;";
+      const navLabel = document.getElementById("provider-nav-label");
+      if (navLabel) navLabel.textContent = "Shop";
+      // Show shop stats
+      const shopStats = document.getElementById("shop-stats");
+      if (shopStats) shopStats.style.display = "grid";
+      const earningsSub = document.getElementById("earnings-view-sub");
+      if (earningsSub) earningsSub.textContent = "Shop balance, completed jobs, and payout history";
+      const earningsHeroSub = document.getElementById("earnings-hero-sub");
+      if (earningsHeroSub) earningsHeroSub.textContent = "Available shop balance — cash out anytime";
+      const platformText = document.getElementById("platform-fee-text");
+      if (platformText) platformText.textContent = "Your shop keeps 85% of every job. Platform fee is 15%. All jobs that come through your shop's verified profile earn the standard split. Tips are always 100% yours.";
+    } else {
+      if (heroEl) heroEl.className = "provider-hero independent";
+      if (badgeEl) { badgeEl.className = "sidebar-type-badge independent"; badgeEl.innerHTML = "&#128736; Independent"; }
+      if (titleEl) titleEl.textContent = "Help Stranded Drivers Near You";
+      if (subEl) subEl.textContent = "Accept jobs on your own schedule, head to the driver, and earn. No commitments — work when you want.";
+      if (iconEl) iconEl.textContent = "&#128736;";
+    }
+
+    // Sidebar avatar color
+    const av = document.getElementById("sidebar-avatar-initial");
+    if (av) av.className = isShop ? "sidebar-avatar provider-av" : "sidebar-avatar provider-av";
+  }
+
+  // ── Provider Status Toggle ──
+  function toggleAvailability(online) {
+    isProviderOnline = online;
+    const dot = document.getElementById("status-dot");
+    const text = document.getElementById("status-text");
+    const sub = document.getElementById("status-sub");
+    if (dot) { dot.className = "status-dot-wrap " + (online ? "online" : "offline"); }
+    if (text) text.textContent = online ? "Available" : "Offline";
+    if (sub) sub.textContent = online ? "You can receive job requests" : "You are not receiving job requests";
+    if (online) loadProviderJobs();
+    if (providerProfile?.id) {
+      fetch(`${BASE}/api/providers/${providerProfile.id}/status`, {
+        method: "PATCH", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${userToken}` },
+        body: JSON.stringify({ isAvailable: online }),
+      }).catch(() => {});
+    }
   }
 
   // ── Navigation ──
@@ -1479,9 +1380,25 @@
     const bnav = document.getElementById(`bnav-${id}`);
     if (bnav) bnav.classList.add("active");
     if (id === "profile") loadPaymentMethods();
+    if (id === "ev") { updateEvTowCalc(); }
+    if (id === "earnings-view") loadProviderEarnings();
+    if (id === "jobs") loadProviderJobs();
+    if (id === "history") loadHistory();
   }
 
-  // ── Services ──
+  function logout() {
+    stopTrackingPoll();
+    stopJobPolling();
+    userToken = ""; localStorage.removeItem("sm_web_token"); currentUser = null; providerProfile = null;
+    document.getElementById("auth-screen").style.display = "flex";
+    document.getElementById("app-bar").style.display = "none";
+    document.getElementById("main-app").style.display = "none";
+    document.getElementById("bottom-nav").style.display = "none";
+    document.getElementById("si-email").value = "";
+    document.getElementById("si-password").value = "";
+  }
+
+  // ── Service Grid ──
   function buildServiceGrid() {
     const grid = document.getElementById("service-grid");
     grid.innerHTML = SERVICES.map((s, i) =>
@@ -1496,41 +1413,177 @@
   function selectServiceItem(i) {
     document.querySelectorAll(".service-btn").forEach(b => b.classList.remove("selected"));
     document.getElementById(`svc-${i}`)?.classList.add("selected");
-    selectServiceAndRequest(SERVICES[i]);
+    const svc = SERVICES[i];
+    if (svc.hasSub) {
+      showSubServicePicker(svc);
+    } else {
+      selectedService = svc;
+      selectedSubType = null;
+      addTireInspection = false;
+      showRequestForm(svc);
+    }
   }
 
-  function selectServiceAndRequest(svc) {
+  // ── Sub-Service Flow ──
+  function showSubServicePicker(svc) {
     selectedService = svc;
-    addBatteryCheck = false;
-    selectedFuelIndex = 2;
-    useCustomFuel = false;
-    customFuelAmount = "";
-    towMiles = 5;
-    document.getElementById("request-form").style.display = "block";
-    document.getElementById("request-title").textContent = svc.name;
-    document.getElementById("request-eta").textContent = `~${svc.eta} min`;
+    selectedSubType = null;
+    addTireInspection = false;
+    document.getElementById("step-service-select").style.display = "none";
+    document.getElementById("step-subservice").style.display = "block";
+    document.getElementById("request-form-wrap").style.display = "none";
+    document.getElementById("request-success").style.display = "none";
+    document.getElementById("sub-svc-crumb-label").textContent = svc.name;
+    document.getElementById("sub-svc-section-label").textContent = "Choose Your Option";
+
+    // Render sub-options (flat tire specific for now)
+    const grid = document.getElementById("sub-svc-grid");
+    grid.innerHTML = FLAT_TIRE_SUBS.map(sub =>
+      `<div class="sub-svc-card" onclick="selectSubType('${sub.key}')" id="sub-${sub.key}">
+        ${sub.badge ? `<div class="sub-svc-badge">${sub.badge}</div>` : ""}
+        <div class="sub-svc-icon">${sub.emoji}</div>
+        <div class="sub-svc-name">${sub.name}</div>
+        <div class="sub-svc-price">$${sub.price}</div>
+        <div class="sub-svc-desc">${sub.desc}</div>
+      </div>`
+    ).join("");
+
+    // Tire Inspection add-on
+    const tiPanel = document.getElementById("tire-inspection-panel");
+    tiPanel.style.display = "block";
+    const tiCard = document.getElementById("tire-inspection-card");
+    tiCard.classList.remove("checked");
+    const tiBox = document.getElementById("tire-inspection-box");
+    const tiChk = document.getElementById("tire-inspection-toggle");
+    if (tiChk) tiChk.checked = false;
+    addTireInspection = false;
+
+    document.getElementById("sub-svc-confirm-btn").style.display = "none";
+    setTimeout(() => document.getElementById("step-subservice").scrollIntoView({ behavior: "smooth" }), 50);
+  }
+
+  function selectSubType(key) {
+    selectedSubType = key;
+    document.querySelectorAll(".sub-svc-card").forEach(c => c.classList.remove("selected"));
+    document.getElementById(`sub-${key}`)?.classList.add("selected");
+    document.getElementById("sub-svc-confirm-btn").style.display = "flex";
+  }
+
+  function confirmSubService() {
+    if (!selectedSubType) { toast("Please select an option first."); return; }
+    document.getElementById("step-subservice").style.display = "none";
+    const sub = FLAT_TIRE_SUBS.find(s => s.key === selectedSubType);
+    if (sub) showRequestForm(selectedService, sub);
+  }
+
+  function toggleTireInspection() {
+    const chk = document.getElementById("tire-inspection-toggle");
+    const card = document.getElementById("tire-inspection-card");
+    chk.checked = !chk.checked;
+    addTireInspection = chk.checked;
+    card.classList.toggle("checked", addTireInspection);
+    updatePriceDisplay();
+  }
+
+  function backToServices() {
+    selectedService = null; selectedSubType = null; addTireInspection = false; addBatteryCheck = false;
+    document.getElementById("step-service-select").style.display = "block";
+    document.getElementById("step-subservice").style.display = "none";
+    document.getElementById("request-form-wrap").style.display = "none";
+    document.getElementById("request-success").style.display = "none";
+    document.querySelectorAll(".service-btn").forEach(b => b.classList.remove("selected"));
+  }
+
+  function backToSubservice() {
+    if (selectedService?.hasSub) {
+      showSubServicePicker(selectedService);
+    } else {
+      backToServices();
+    }
+  }
+
+  // ── Request Form ──
+  function showRequestForm(svc, sub) {
+    document.getElementById("step-service-select").style.display = sub ? "none" : "block";
+    document.getElementById("step-subservice").style.display = "none";
+    document.getElementById("request-form-wrap").style.display = "block";
     document.getElementById("request-success").style.display = "none";
 
-    // Jump Start add-on panel
-    const addOnPanel = document.getElementById("addon-battery-panel");
-    addOnPanel.style.display = svc.type === "jump_start" ? "block" : "none";
+    const titleParts = sub ? `${svc.name} — ${sub.name}` : svc.name;
+    document.getElementById("request-title").textContent = titleParts;
+    document.getElementById("request-eta").textContent = `~${svc.eta} min`;
+
+    // Breadcrumb
+    document.getElementById("form-crumb-svc").textContent = svc.name;
+    if (sub) {
+      document.getElementById("form-crumb-sep2").style.display = "inline";
+      document.getElementById("form-crumb-sub").style.display = "inline";
+      document.getElementById("form-crumb-sub").textContent = sub.name;
+    } else {
+      document.getElementById("form-crumb-sep2").style.display = "none";
+      document.getElementById("form-crumb-sub").style.display = "none";
+    }
+
+    // Reset all panels
+    document.getElementById("addon-battery-panel").style.display = "none";
+    document.getElementById("tow-distance-panel").style.display = "none";
+    document.getElementById("fuel-picker-panel").style.display = "none";
+    addBatteryCheck = false;
     const battChk = document.getElementById("battery-check-toggle");
     if (battChk) { battChk.checked = false; }
+    document.getElementById("battery-addon-card")?.classList.remove("checked");
+    towMiles = 5;
+    selectedFuelIndex = 2; useCustomFuel = false; customFuelAmount = "";
 
-    // Tow distance panel
-    const towPanel = document.getElementById("tow-distance-panel");
-    towPanel.style.display = svc.type === "tow" ? "block" : "none";
-    const towInput = document.getElementById("tow-miles-input");
-    if (towInput) towInput.value = "5";
-
-    // Fuel picker panel
-    const fuelPanel = document.getElementById("fuel-picker-panel");
-    fuelPanel.style.display = svc.type === "fuel" ? "block" : "none";
-    renderFuelPicker();
+    // Show service-specific panels
+    if (svc.type === "jump_start") {
+      document.getElementById("addon-battery-panel").style.display = "block";
+    } else if (svc.type === "tow") {
+      document.getElementById("tow-distance-panel").style.display = "block";
+      const inp = document.getElementById("tow-miles-input");
+      if (inp) inp.value = "5";
+      const prev = document.getElementById("tow-price-preview");
+      if (prev) prev.textContent = `$65.00`;
+    } else if (svc.type === "fuel") {
+      document.getElementById("fuel-picker-panel").style.display = "block";
+      renderFuelPicker();
+    }
 
     updatePriceDisplay();
-    if (document.getElementById("view-ev").classList.contains("active")) showView("request");
-    setTimeout(() => document.getElementById("request-form").scrollIntoView({ behavior: "smooth" }), 50);
+    setTimeout(() => document.getElementById("request-form-wrap").scrollIntoView({ behavior: "smooth" }), 50);
+  }
+
+  function getTowPrice() {
+    const miles = parseFloat(towMiles) || 0;
+    const billable = Math.max(0, miles - 5);
+    return 65 + (billable * 3.50);
+  }
+
+  function getEffectivePrice() {
+    if (!selectedService) return 0;
+    if (selectedService.type === "fuel") {
+      if (useCustomFuel) return parseFloat(customFuelAmount) || 0;
+      return FUEL_AMOUNTS[selectedFuelIndex].price;
+    }
+    if (selectedService.type === "tow") return getTowPrice();
+    if (selectedService.type === "flat_tire") {
+      const sub = FLAT_TIRE_SUBS.find(s => s.key === selectedSubType);
+      let p = sub ? sub.price : selectedService.price;
+      if (addTireInspection) p += 12;
+      return p;
+    }
+    let p = selectedService.price;
+    if (selectedService.type === "jump_start" && addBatteryCheck) p += 8;
+    return p;
+  }
+
+  function updatePriceDisplay() {
+    const base = getEffectivePrice();
+    const total = base + SERVICE_FEE;
+    const priceEl = document.getElementById("request-price");
+    const totalEl = document.getElementById("request-total");
+    if (priceEl) priceEl.textContent = `$${base.toFixed(0)}`;
+    if (totalEl) totalEl.textContent = `$${total.toFixed(2)}`;
   }
 
   function renderFuelPicker() {
@@ -1543,7 +1596,6 @@
       </div>`
     ).join("");
     const customSection = document.getElementById("fuel-custom-section");
-    const customInput = document.getElementById("fuel-custom-input");
     if (customSection) customSection.style.display = useCustomFuel ? "block" : "none";
     const customTab = document.getElementById("fuel-tab-custom");
     const presetTab = document.getElementById("fuel-tab-preset");
@@ -1551,32 +1603,10 @@
     if (presetTab) presetTab.classList.toggle("active", !useCustomFuel);
   }
 
-  function selectFuelAmount(i) {
-    selectedFuelIndex = i;
-    useCustomFuel = false;
-    customFuelAmount = "";
-    renderFuelPicker();
-    updatePriceDisplay();
-  }
+  function selectFuelAmount(i) { selectedFuelIndex = i; useCustomFuel = false; customFuelAmount = ""; renderFuelPicker(); updatePriceDisplay(); }
+  function switchFuelTab(mode) { useCustomFuel = mode === "custom"; if (!useCustomFuel) customFuelAmount = ""; renderFuelPicker(); updatePriceDisplay(); }
+  function onCustomFuelInput(val) { customFuelAmount = val; updatePriceDisplay(); }
 
-  function switchFuelTab(mode) {
-    useCustomFuel = mode === "custom";
-    if (!useCustomFuel) customFuelAmount = "";
-    renderFuelPicker();
-    updatePriceDisplay();
-  }
-
-  function onCustomFuelInput(val) {
-    customFuelAmount = val;
-    updatePriceDisplay();
-  }
-
-  function toggleBatteryCheck(checked) {
-    addBatteryCheck = checked;
-    updatePriceDisplay();
-  }
-
-  // ── Battery Check toggle UI ──
   function toggleBatteryCheckUI() {
     const chk = document.getElementById("battery-check-toggle");
     const card = document.getElementById("battery-addon-card");
@@ -1585,44 +1615,128 @@
     card.classList.toggle("checked", addBatteryCheck);
     updatePriceDisplay();
   }
+  function toggleBatteryCheck(checked) { addBatteryCheck = checked; updatePriceDisplay(); }
 
-  // ── EV Section ──
-  const EV_CHARGE_LEVELS = [
-    { label: "Quick Boost",  kwh: "10 kWh", time: "~15 min", price: 10, desc: "Get enough charge to reach the nearest station" },
-    { label: "Half Charge",  kwh: "25 kWh", time: "~35 min", price: 24, desc: "Enough for about 80 miles of range" },
-    { label: "Full Charge",  kwh: "50 kWh", time: "~60 min", price: 44, desc: "Top off your battery to near full capacity" },
-  ];
-  const EV_TOW_TYPES = [
-    { label: "Flatbed Transport", desc: "All four wheels off the ground. Safest option for all EVs.", price: 127 },
-    { label: "Wheel-Lift Tow",   desc: "Front or rear wheels lifted. For short-distance tows.",     price: 84  },
-  ];
-  const EV_DEST_LABELS = [
-    "Nearest Charging Station", "Nearest EV Service Center", "My Home Address", "Custom Destination"
-  ];
-  let selectedChargeLevel = 0;
-  let selectedTowType = 1;
-  let selectedTowDest = 0;
-  const EV_SVC_FEE = 2.99;
+  function onTowMilesInput(val) {
+    towMiles = val;
+    const miles = parseFloat(val) || 0;
+    const billable = Math.max(0, miles - 5);
+    const price = 65 + billable * 3.50;
+    const preview = document.getElementById("tow-price-preview");
+    if (preview) preview.textContent = `$${price.toFixed(2)}`;
+    updatePriceDisplay();
+  }
 
+  // ── Submit Request ──
+  async function submitRequest() {
+    if (!selectedService) { toast("Please select a service first."); return; }
+    if (selectedService.type === "flat_tire" && !selectedSubType) { toast("Please choose Tire Change or Mobile Inflation."); return; }
+    const location = document.getElementById("req-location").value.trim();
+    const notes = document.getElementById("req-notes").value.trim();
+    if (!location) { toast("Please enter your location."); return; }
+    const price = getEffectivePrice();
+    if (selectedService.type === "fuel" && price <= 0) { toast("Please select or enter a fuel amount."); return; }
+
+    let extraNotes = notes;
+    if (selectedService.type === "jump_start" && addBatteryCheck) extraNotes = (notes ? notes + " " : "") + "[+Battery Health Check]";
+    if (selectedService.type === "flat_tire" && selectedSubType) {
+      const sub = FLAT_TIRE_SUBS.find(s => s.key === selectedSubType);
+      extraNotes = (sub ? sub.name : "") + (addTireInspection ? " + Tire Inspection" : "") + (notes ? " | " + notes : "");
+    }
+
+    const btn = document.getElementById("submit-request-btn");
+    btn.disabled = true; btn.textContent = "Submitting...";
+    try {
+      const res = await fetch(`${BASE}/api/jobs`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${userToken}` },
+        body: JSON.stringify({
+          serviceType: selectedService.type,
+          location: { address: location, latitude: 0, longitude: 0 },
+          notes: extraNotes,
+          estimatedCost: price,
+          driver: currentUser ? { id: currentUser.id, name: currentUser.name, email: currentUser.email } : {},
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        document.getElementById("request-form-wrap").style.display = "none";
+        document.getElementById("step-service-select").style.display = "none";
+        document.getElementById("request-success").style.display = "block";
+        document.getElementById("request-success").scrollIntoView({ behavior: "smooth" });
+        startTrackingPoll(data.id || null);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast(data.error || "Failed to submit. Try again.");
+      }
+    } catch { toast("Network error. Check your connection."); }
+    finally { btn.disabled = false; btn.textContent = "&#128205; Request Now"; }
+  }
+
+  // ── Tracking ──
+  const TRACKING_PHASES = [
+    { delay: 0,     title: "Request Submitted — Searching nearby providers",   sub: "Hang tight. We're matching you with the closest available provider." },
+    { delay: 12000, title: "Provider Found — Getting ready to head your way",  sub: "A verified provider nearby has accepted your request." },
+    { delay: 30000, title: "Provider En Route — On the way to you",            sub: "Your provider is heading to your location. Estimated arrival soon." },
+    { delay: 90000, title: "Provider Arriving — Almost there",                 sub: "Your provider is very close. Have your hazard lights on if you can." },
+  ];
+  let _trackingPhaseTimers = [];
+
+  function startTrackingPoll(jobId) {
+    _trackingPhaseTimers.forEach(clearTimeout);
+    _trackingPhaseTimers = [];
+    TRACKING_PHASES.forEach((phase) => {
+      const t = setTimeout(() => {
+        const title = document.getElementById("tracking-status-title");
+        const sub = document.getElementById("tracking-status-sub");
+        if (title) title.textContent = phase.title;
+        if (sub) sub.textContent = phase.sub;
+      }, phase.delay);
+      _trackingPhaseTimers.push(t);
+    });
+  }
+
+  function stopTrackingPoll() { _trackingPhaseTimers.forEach(clearTimeout); _trackingPhaseTimers = []; }
+
+  function resetRequest() {
+    stopTrackingPoll();
+    backToServices();
+    document.getElementById("step-service-select").style.display = "block";
+    document.getElementById("request-success").style.display = "none";
+    buildServiceGrid();
+  }
+
+  // ── EV Services ──
   function selectChargeLevel(i) {
     selectedChargeLevel = i;
-    for (let j = 0; j < 3; j++) {
-      document.getElementById(`ev-charge-${j}`)?.classList.toggle("selected", j === i);
-    }
+    for (let j = 0; j < 3; j++) document.getElementById(`ev-charge-${j}`)?.classList.toggle("selected", j === i);
   }
 
   function selectTowType(i) {
-    selectedTowType = i;
-    for (let j = 0; j < 2; j++) {
-      document.getElementById(`ev-tow-${j}`)?.classList.toggle("selected", j === i);
-    }
+    selectedEvTowType = i;
+    for (let j = 0; j < 2; j++) document.getElementById(`ev-tow-${j}`)?.classList.toggle("selected", j === i);
+    updateEvTowCalc();
   }
 
   function selectTowDest(i) {
     selectedTowDest = i;
-    for (let j = 0; j < 4; j++) {
-      document.getElementById(`ev-dest-${j}`)?.classList.toggle("selected", j === i);
-    }
+    for (let j = 0; j < 4; j++) document.getElementById(`ev-dest-${j}`)?.classList.toggle("selected", j === i);
+  }
+
+  function updateEvTowCalc() {
+    const miles = parseFloat(document.getElementById("ev-tow-miles")?.value) || 5;
+    const hookup = EV_TOW_TYPES[selectedEvTowType].hookup;
+    const billable = Math.max(0, miles - 5);
+    const mileCost = billable * 3.50;
+    const total = hookup + mileCost;
+    const hookupEl = document.getElementById("ev-tow-hookup-display");
+    const billableEl = document.getElementById("ev-tow-billable-miles");
+    const mileCostEl = document.getElementById("ev-tow-mile-cost");
+    const totalEl = document.getElementById("ev-tow-total-display");
+    if (hookupEl) hookupEl.textContent = `$${hookup.toFixed(2)}`;
+    if (billableEl) billableEl.textContent = billable;
+    if (mileCostEl) mileCostEl.textContent = `$${mileCost.toFixed(2)}`;
+    if (totalEl) totalEl.textContent = `$${total.toFixed(2)}`;
   }
 
   async function submitEvCharge() {
@@ -1638,186 +1752,129 @@
           notes: `EV Mobile Charging — ${level.label} (${level.kwh}, ${level.time})`,
           estimatedCost: level.price,
           driver: currentUser ? { id: currentUser.id, name: currentUser.name, email: currentUser.email } : {},
+          isEV: true,
         }),
       });
-      if (res.ok) { toast(`EV Charging request sent! ${level.label} — $${level.price + EV_SVC_FEE} total`); }
+      if (res.ok) { toast(`EV Charging request sent! ${level.label} — $${(level.price + EV_SVC_FEE).toFixed(2)} total`); }
       else { const d = await res.json().catch(() => ({})); toast(d.error || "Failed to submit."); }
     } catch { toast("Network error. Check your connection."); }
   }
 
   async function submitEvTow() {
     if (!userToken) { toast("Please sign in first."); return; }
-    const tow = EV_TOW_TYPES[selectedTowType];
+    const tow = EV_TOW_TYPES[selectedEvTowType];
     const dest = EV_DEST_LABELS[selectedTowDest];
+    const miles = parseFloat(document.getElementById("ev-tow-miles")?.value) || 5;
+    const location = document.getElementById("ev-location")?.value.trim() || "Current Location";
+    const billable = Math.max(0, miles - 5);
+    const total = tow.hookup + billable * 3.50;
     try {
       const res = await fetch(`${BASE}/api/jobs`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${userToken}` },
         body: JSON.stringify({
           serviceType: "tow",
-          location: { address: "Current Location", latitude: 0, longitude: 0 },
-          notes: `EV Tow — ${tow.label} to ${dest}`,
-          estimatedCost: tow.price,
+          location: { address: location, latitude: 0, longitude: 0 },
+          notes: `EV-Safe Tow — ${tow.label} to ${dest} (${miles} mi est.)`,
+          estimatedCost: total,
           driver: currentUser ? { id: currentUser.id, name: currentUser.name, email: currentUser.email } : {},
+          isEV: true,
         }),
       });
-      if (res.ok) { toast(`EV Tow request sent! ${tow.label} — $${tow.price + EV_SVC_FEE} total`); }
+      if (res.ok) { toast(`EV Tow request sent! ${tow.label} — $${(total + EV_SVC_FEE).toFixed(2)} est. total`); }
       else { const d = await res.json().catch(() => ({})); toast(d.error || "Failed to submit."); }
     } catch { toast("Network error. Check your connection."); }
   }
 
-  function onTowMilesInput(val) {
-    towMiles = val;
-    const preview = document.getElementById("tow-price-preview");
-    const price = getTowPrice();
-    if (preview) preview.textContent = `$${price.toFixed(2)}`;
-    updatePriceDisplay();
-  }
-
-  function cancelRequest() {
-    document.getElementById("request-form").style.display = "none";
-    document.querySelectorAll(".service-btn").forEach(b => b.classList.remove("selected"));
-    document.querySelectorAll(".ev-service-btn").forEach(b => b.classList.remove("selected"));
-    selectedService = null;
-    addBatteryCheck = false;
-    selectedFuelIndex = 2;
-    useCustomFuel = false;
-    customFuelAmount = "";
-    towMiles = 5;
-  }
-
-  // ── Job tracking poll ──
-  let _trackingJobId = null;
-  let _trackingInterval = null;
-  const TRACKING_PHASES = [
-    { delay: 0,    title: "Request Submitted — Searching nearby providers",         sub: "Hang tight. We're matching you with the closest available provider." },
-    { delay: 12000, title: "Provider Found — Getting ready to head your way",        sub: "A verified provider nearby has seen your request." },
-    { delay: 30000, title: "Provider En Route — On the way to you",                  sub: "Your provider is heading to your location. Estimated arrival soon." },
-    { delay: 90000, title: "Provider Arriving — Almost there",                       sub: "Your provider is very close. Have your hazard lights on if you can." },
-  ];
-  let _trackingPhaseIdx = 0;
-  let _trackingPhaseTimers = [];
-
-  function startTrackingPoll(jobId) {
-    _trackingJobId = jobId;
-    _trackingPhaseIdx = 0;
-    _trackingPhaseTimers.forEach(clearTimeout);
-    _trackingPhaseTimers = [];
-    TRACKING_PHASES.forEach((phase, i) => {
-      const t = setTimeout(() => {
-        _trackingPhaseIdx = i;
-        const title = document.getElementById("tracking-status-title");
-        const sub = document.getElementById("tracking-status-sub");
-        if (title) title.textContent = phase.title;
-        if (sub) sub.textContent = phase.sub;
-      }, phase.delay);
-      _trackingPhaseTimers.push(t);
-    });
-  }
-
-  function stopTrackingPoll() {
-    _trackingPhaseTimers.forEach(clearTimeout);
-    _trackingPhaseTimers = [];
-    if (_trackingInterval) { clearInterval(_trackingInterval); _trackingInterval = null; }
-    _trackingJobId = null;
-  }
-
-  function resetRequest() {
-    stopTrackingPoll();
-    cancelRequest();
-    document.getElementById("request-success").style.display = "none";
-  }
-
-  async function submitRequest() {
-    if (!selectedService) { toast("Please select a service first."); return; }
-    const location = document.getElementById("req-location").value.trim();
-    const notes = document.getElementById("req-notes").value.trim();
-    if (!location) { toast("Please enter your location."); return; }
-    const price = getEffectivePrice();
-    if (selectedService.type === "fuel" && price <= 0) { toast("Please select or enter a fuel amount."); return; }
-    const extraNotes = (selectedService.type === "jump_start" && addBatteryCheck)
-      ? (notes ? notes + "\n[Battery Health Check included]" : "[Battery Health Check included]")
-      : notes;
-    try {
-      const res = await fetch(`${BASE}/api/jobs`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${userToken}` },
-        body: JSON.stringify({
-          serviceType: selectedService.type,
-          location: { address: location, latitude: 0, longitude: 0 },
-          notes: extraNotes,
-          estimatedCost: price,
-          driver: currentUser ? { id: currentUser.id, name: currentUser.name, email: currentUser.email } : {},
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json().catch(() => ({}));
-        document.getElementById("request-form").style.display = "none";
-        document.getElementById("request-success").style.display = "block";
-        document.getElementById("request-success").scrollIntoView({ behavior: "smooth" });
-        startTrackingPoll(data.id || null);
-      } else {
-        const data = await res.json().catch(() => ({}));
-        toast(data.error || "Failed to submit. Try again.");
-      }
-    } catch { toast("Network error. Check your connection."); }
-  }
-
   // ── Provider Jobs ──
-  const JOB_ICONS = { flat_tire:"&#128739;", jump_start:"&#9889;", tow:"&#128664;", towing:"&#128664;", fuel:"&#9981;", fuel_delivery:"&#9981;", lockout:"&#128273;", obd_diagnostic:"&#128187;", mobile_inflation:"&#128161;", tire_check:"&#128270;", tire_replacement:"&#128735;", battery_check:"&#9889;", mobile_ev_charging:"&#128268;", ev_safe_tow:"&#128690;" };
+  let _jobPollInterval = null;
+
+  function startJobPolling() {
+    stopJobPolling();
+    _jobPollInterval = setInterval(() => { if (isProviderOnline) loadProviderJobs(); }, 8000);
+  }
+
+  function stopJobPolling() {
+    if (_jobPollInterval) { clearInterval(_jobPollInterval); _jobPollInterval = null; }
+  }
 
   async function loadProviderJobs() {
+    if (!isProviderOnline) return;
     try {
       const res = await fetch(`${BASE}/api/jobs/pending`, { headers: { Authorization: `Bearer ${userToken}` } });
       const jobs = await res.json();
       const list = document.getElementById("jobs-list");
+      const badge = document.getElementById("job-count-badge");
       if (!jobs.length) {
-        list.innerHTML = `<div class="glass-card" style="text-align:center;padding:48px 24px"><div style="font-size:44px;margin-bottom:14px">&#128188;</div><h3 style="margin-bottom:8px">No jobs right now</h3><p>New service requests will appear here automatically. Stay online to receive jobs.</p><button class="btn btn-ghost btn-sm" style="margin-top:20px;display:inline-flex" onclick="loadProviderJobs()">Refresh</button></div>`;
+        if (badge) badge.style.display = "none";
+        list.innerHTML = `<div class="glass-card" style="text-align:center;padding:48px 24px">
+          <div style="font-size:44px;margin-bottom:14px">&#128188;</div>
+          <h3 style="margin-bottom:8px">No jobs right now</h3>
+          <p>New service requests will appear here automatically. Make sure you're set to Available.</p>
+          <button class="btn btn-ghost btn-sm" style="margin-top:20px;display:inline-flex" onclick="loadProviderJobs()">Check Again</button>
+        </div>`;
         return;
       }
+      if (badge) { badge.style.display = "inline"; badge.textContent = jobs.length; }
       list.innerHTML = jobs.slice(0, 10).map(j => {
         const type = (j.serviceType || j.service_type || "").replace(/_/g," ");
         const icon = JOB_ICONS[(j.serviceType || j.service_type || "").toLowerCase()] || "&#128736;";
+        const cost = Number(j.estimatedCost || j.estimated_cost || 0);
+        const earning = (cost * 0.85).toFixed(2);
+        const isEv = j.isEV || j.is_ev;
         return `<div class="job-card">
           <div class="job-header">
             <div class="job-type-wrap">
               <div class="job-type-icon">${icon}</div>
               <div>
-                <div class="job-type">${type}</div>
-                <div class="job-driver">${j.driver?.name ? "&#128100; " + j.driver.name : "Driver request"}</div>
+                <div class="job-type">${type}${isEv ? ' <span style="color:#a78bfa;font-size:12px">EV</span>' : ''}</div>
+                <div class="job-driver">&#128100; ${j.driver?.name ? j.driver.name : "Driver request"}</div>
               </div>
             </div>
-            <div class="job-price">$${j.estimatedCost || j.estimated_cost || 0}</div>
+            <div>
+              <div class="job-price">$${cost.toFixed(0)}</div>
+              <div style="font-size:11px;color:var(--success);text-align:right;font-weight:700;margin-top:2px">+$${earning} yours</div>
+            </div>
           </div>
           <div class="job-detail">&#128205; ${j.location?.address || "Location not specified"}</div>
-          ${j.notes ? `<div class="job-detail">&#128172; ${j.notes}</div>` : ""}
+          ${j.notes ? `<div class="job-detail">&#128172; ${j.notes.slice(0, 80)}${j.notes.length > 80 ? "..." : ""}</div>` : ""}
+          <div class="job-detail" style="color:var(--muted)">Posted ${j.createdAt ? new Date(j.createdAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : "just now"}</div>
           <div class="job-actions">
-            <button class="btn btn-coral btn-sm" style="flex:1" onclick="acceptJob('${j.id}')">Accept Job</button>
-            <button class="btn btn-ghost btn-sm" onclick="toast('Job skipped')">Skip</button>
+            <button class="btn btn-coral" style="flex:1" onclick="acceptJob('${j.id}', this)">Accept Job — $${earning}</button>
+            <button class="btn btn-ghost btn-sm" onclick="skipJob(this)">Skip</button>
           </div>
         </div>`;
       }).join("");
-    } catch { toast("Could not load jobs."); }
+    } catch { /* silently fail */ }
   }
 
-  async function acceptJob(id) {
+  async function acceptJob(id, btn) {
+    if (btn) { btn.disabled = true; btn.textContent = "Accepting..."; }
     try {
       const res = await fetch(`${BASE}/api/jobs/${id}/accept`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${userToken}` },
-        body: JSON.stringify({ provider: currentUser }),
+        body: JSON.stringify({ provider: providerProfile || currentUser }),
       });
-      if (res.ok) { toast("Job accepted! Download the app to communicate with the driver."); loadProviderJobs(); }
-      else { toast("Could not accept — job may have been taken."); }
-    } catch { toast("Network error."); }
+      if (res.ok) {
+        toast("Job accepted! Download the app to navigate and chat with the driver.");
+        loadProviderJobs();
+        loadProviderEarnings();
+      } else { toast("Could not accept — job may have been taken."); if (btn) { btn.disabled = false; btn.textContent = "Accept Job"; } }
+    } catch { toast("Network error."); if (btn) { btn.disabled = false; btn.textContent = "Accept Job"; } }
+  }
+
+  function skipJob(btn) {
+    const card = btn.closest(".job-card");
+    if (card) { card.style.opacity = "0"; card.style.transform = "translateX(20px)"; card.style.transition = "all .3s"; setTimeout(() => card.remove(), 300); }
   }
 
   // ── Provider Earnings ──
   async function loadProviderEarnings() {
     if (!currentUser) return;
     try {
-      const providerId = currentUser.providerId || currentUser.id;
-      const res = await fetch(`${BASE}/api/providers/${providerId}/earnings`, { headers: { Authorization: `Bearer ${userToken}` } });
+      const pid = providerProfile?.id || currentUser.providerId || currentUser.id;
+      const res = await fetch(`${BASE}/api/providers/${pid}/earnings`, { headers: { Authorization: `Bearer ${userToken}` } });
       if (res.ok) {
         const data = await res.json();
         const balance = data.earningsBalance ?? data.earnings_balance ?? 0;
@@ -1838,10 +1895,18 @@
     document.getElementById("sidebar-user-name").textContent = currentUser.name || "—";
     document.getElementById("sidebar-user-role").textContent = role === "provider" ? "Service Provider" : "Driver";
     const badge = document.getElementById("profile-role-badge");
-    badge.textContent = role === "provider" ? "Service Provider" : "Driver";
-    badge.style.background = role === "provider" ? "rgba(255,107,107,0.12)" : "";
-    badge.style.color = role === "provider" ? "var(--coral)" : "";
-    badge.style.borderColor = role === "provider" ? "rgba(255,107,107,0.25)" : "";
+    if (role === "provider") {
+      const pType = providerProfile?.providerType || "independent";
+      badge.textContent = pType === "shop" ? "Shop / Business" : "Independent Provider";
+      badge.style.background = "rgba(217,34,34,0.1)";
+      badge.style.color = "#F87171";
+      badge.style.borderColor = "rgba(217,34,34,0.2)";
+    } else {
+      badge.textContent = "Driver";
+      badge.style.background = "";
+      badge.style.color = "";
+      badge.style.borderColor = "";
+    }
   }
 
   function toggleEditProfile() {
@@ -1871,11 +1936,7 @@
     if (!name || !email) { errEl.textContent = "Name and email are required."; errEl.style.display = "block"; return; }
     btn.disabled = true; btn.textContent = "Saving...";
     try {
-      const res = await fetch(`${BASE}/api/auth/profile`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${userToken}` },
-        body: JSON.stringify({ name, email, phone }),
-      });
+      const res = await fetch(`${BASE}/api/auth/profile`, { method: "PATCH", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${userToken}` }, body: JSON.stringify({ name, email, phone }) });
       const data = await res.json();
       if (!res.ok) { errEl.textContent = data.error || "Failed to save."; errEl.style.display = "block"; return; }
       currentUser = { ...currentUser, ...data.user };
@@ -1890,7 +1951,7 @@
   // ── Payment Methods ──
   async function loadPaymentMethods() {
     const list = document.getElementById("payment-methods-list");
-    if (!list || !userToken) return;
+    if (!list || !userToken || currentUser?.role === "provider") return;
     list.innerHTML = '<div class="pm-empty">Loading...</div>';
     try {
       const res = await fetch(`${BASE}/api/stripe/payment-methods`, { headers: { Authorization: `Bearer ${userToken}` } });
@@ -1906,7 +1967,7 @@
         return `<div class="pm-item">
           <div class="pm-brand">${brand}</div>
           <div class="pm-info">
-            <div class="pm-number">•••• •••• •••• ${last4}</div>
+            <div class="pm-number">&bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; ${last4}</div>
             <div class="pm-exp">Expires ${expM}/${expY}</div>
           </div>
           <button class="pm-remove" onclick="removeCard('${pm.id}',this)">Remove</button>
@@ -1921,11 +1982,11 @@
     try {
       const res = await fetch(`${BASE}/api/stripe/payment-methods/${pmId}`, { method: "DELETE", headers: { Authorization: `Bearer ${userToken}` } });
       if (res.ok) { toast("Card removed."); loadPaymentMethods(); }
-      else { toast("Could not remove card. Try again."); btn.textContent = orig; btn.disabled = false; }
+      else { toast("Could not remove card."); btn.textContent = orig; btn.disabled = false; }
     } catch { toast("Network error."); btn.textContent = orig; btn.disabled = false; }
   }
 
-  // ── Add Card (Stripe Elements) ──
+  // ── Add Card (Stripe) ──
   let _stripe = null, _cardElement = null, _setupClientSecret = null;
 
   async function showAddCardModal() {
@@ -1937,113 +1998,101 @@
       const pkRes = await fetch(`${BASE}/api/stripe/publishable-key`);
       const { publishableKey } = await pkRes.json();
       if (!publishableKey) throw new Error("No key");
-      const siRes = await fetch(`${BASE}/api/stripe/setup-intent`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${userToken}` },
-      });
+      const siRes = await fetch(`${BASE}/api/stripe/setup-intent`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${userToken}` } });
       const { clientSecret } = await siRes.json();
       _setupClientSecret = clientSecret;
       if (!_stripe) _stripe = Stripe(publishableKey);
       const elements = _stripe.elements();
       if (_cardElement) _cardElement.destroy();
       _cardElement = elements.create("card", {
-        style: {
-          base: { color: "#ffffff", fontFamily: "-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif", fontSize: "15px", "::placeholder": { color: "rgba(255,255,255,0.35)" } },
-          invalid: { color: "#ef4444" },
-        },
+        style: { base: { color: "#ffffff", fontFamily: "-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif", fontSize: "15px", "::placeholder": { color: "rgba(255,255,255,0.35)" } }, invalid: { color: "#ef4444" } },
       });
       _cardElement.mount("#stripe-card-element");
       _cardElement.on("focus", () => document.getElementById("stripe-card-element").classList.add("focused"));
       _cardElement.on("blur", () => document.getElementById("stripe-card-element").classList.remove("focused"));
-      _cardElement.on("change", e => { document.getElementById("card-modal-error").textContent = e.error ? e.error.message : ""; });
-    } catch {
-      document.getElementById("card-modal-error").textContent = "Could not load card form. Try again.";
-    }
+    } catch { document.getElementById("card-modal-error").textContent = "Could not load card form. Check your connection."; }
   }
 
   function hideAddCardModal() {
     document.getElementById("card-modal").style.display = "none";
     if (_cardElement) { _cardElement.destroy(); _cardElement = null; }
-    _setupClientSecret = null;
   }
 
   async function confirmAddCard() {
-    if (!_stripe || !_cardElement || !_setupClientSecret) return;
+    if (!_stripe || !_cardElement || !_setupClientSecret) { toast("Card form not ready."); return; }
     const btn = document.getElementById("add-card-btn");
     const errEl = document.getElementById("card-modal-error");
-    btn.disabled = true; btn.textContent = "Saving...";
+    btn.disabled = true; btn.textContent = "Saving..."; errEl.textContent = "";
     try {
-      const { setupIntent, error } = await _stripe.confirmCardSetup(_setupClientSecret, { payment_method: { card: _cardElement } });
-      if (error) { errEl.textContent = error.message; btn.disabled = false; btn.textContent = "Save Card"; return; }
-      if (setupIntent?.status === "succeeded") { hideAddCardModal(); toast("Card saved!"); loadPaymentMethods(); }
-    } catch { errEl.textContent = "Something went wrong. Try again."; btn.disabled = false; btn.textContent = "Save Card"; }
+      const { error } = await _stripe.confirmCardSetup(_setupClientSecret, { payment_method: { card: _cardElement } });
+      if (error) { errEl.textContent = error.message || "Card setup failed."; btn.disabled = false; btn.textContent = "Save Card"; return; }
+      hideAddCardModal();
+      toast("Card saved!");
+      loadPaymentMethods();
+    } catch { errEl.textContent = "Network error."; btn.disabled = false; btn.textContent = "Save Card"; }
+  }
+
+  // ── History ──
+  async function loadHistory() {
+    if (!userToken || !currentUser) return;
+    const list = document.getElementById("history-list");
+    if (!list) return;
+    list.innerHTML = '<div class="glass-card" style="text-align:center;padding:28px"><p style="color:var(--muted)">Loading history...</p></div>';
+    try {
+      const res = await fetch(`${BASE}/api/jobs?driverId=${encodeURIComponent(currentUser.id)}&status=completed`, {
+        headers: { Authorization: `Bearer ${userToken}` }
+      });
+      if (!res.ok) { list.innerHTML = ''; return; }
+      const jobs = await res.json();
+      const completed = Array.isArray(jobs) ? jobs.filter(j => j.status === "completed" || j.driver?.id === currentUser.id) : [];
+      if (!completed.length) {
+        list.innerHTML = `<div class="glass-card" style="text-align:center;padding:56px 24px">
+          <div style="font-size:44px;margin-bottom:16px">&#128203;</div>
+          <h3 style="margin-bottom:8px">No history yet</h3>
+          <p>Your completed service requests will appear here. Download the app for full history with receipts.</p>
+        </div>`;
+        return;
+      }
+      list.innerHTML = completed.slice(0, 20).map(j => {
+        const type = (j.serviceType || j.service_type || "").replace(/_/g, " ");
+        const icon = JOB_ICONS[(j.serviceType || j.service_type || "").toLowerCase()] || "&#128736;";
+        const cost = Number(j.totalCost || j.estimatedCost || j.estimated_cost || 0);
+        const date = j.createdAt ? new Date(j.createdAt).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" }) : "";
+        return `<div class="history-item">
+          <div class="history-icon-wrap">${icon}</div>
+          <div class="history-info">
+            <div class="history-name">${type || "Service"}</div>
+            <div class="history-date">${date} &bull; ${j.location?.address || "Location"}</div>
+          </div>
+          <div style="text-align:right">
+            <div class="history-amount">$${cost.toFixed(2)}</div>
+            <div style="margin-top:4px"><span class="badge completed">Completed</span></div>
+          </div>
+        </div>`;
+      }).join("");
+    } catch {
+      list.innerHTML = `<div class="glass-card" style="text-align:center;padding:40px 24px">
+        <h3 style="margin-bottom:8px">Could not load history</h3>
+        <p>Check your connection and try again.</p>
+      </div>`;
+    }
   }
 
   // ── Auto-login ──
-  async function tryAutoLogin() {
-    if (!userToken) return;
-    try {
-      const res = await fetch(`${BASE}/api/auth/me`, { headers: { Authorization: `Bearer ${userToken}` } });
-      if (res.ok) { const data = await res.json(); currentUser = data.user || data; enterApp(); }
-      else { userToken = ""; localStorage.removeItem("sm_web_token"); }
-    } catch {}
-  }
-
-  buildServiceGrid();
-  tryAutoLogin();
-
-  function toggleTheme() {
-    const html = document.documentElement;
-    const isLight = html.getAttribute('data-theme') === 'light';
-    html.setAttribute('data-theme', isLight ? 'dark' : 'light');
-    document.querySelectorAll('.theme-icon-el, #theme-icon').forEach(el => {
-      el.textContent = isLight ? '☀' : '☾';
-    });
-    localStorage.setItem('resqride-theme', isLight ? 'dark' : 'light');
-  }
-  (function(){
-    const saved = localStorage.getItem('resqride-theme') || 'dark';
-    document.documentElement.setAttribute('data-theme', saved);
-    document.querySelectorAll('.theme-icon-el, #theme-icon').forEach(el => {
-      el.textContent = saved === 'light' ? '☾' : '☀';
-    });
-  })();
-</script>
-<script>
-(function(){
-  var c=document.createElement('canvas');
-  c.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;';
-  document.body.insertBefore(c,document.body.firstChild);
-  var x=c.getContext('2d'),w,h,pts;
-  function isLight(){return document.documentElement.getAttribute('data-theme')==='light';}
-  function resize(){c.width=w=window.innerWidth;c.height=h=window.innerHeight;}
-  function init(){
-    pts=Array.from({length:80},function(_, i){
-      return{x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-.5)*.2,vy:(Math.random()-.5)*.2,r:Math.random()*1.3+.35,a:Math.random()*.4+.10,s:i%4===0};
-    });
-  }
-  function draw(){
-    x.clearRect(0,0,w,h);
-    var lt=isLight();
-    var dmax=lt?.18:.08,dstr=lt?'rgba(45,45,45,':'rgba(192,192,192,',dlw=lt?.6:.45,ddist=155;
-    for(var i=0;i<pts.length;i++){
-      for(var j=i+1;j<pts.length;j++){
-        var d=Math.hypot(pts[i].x-pts[j].x,pts[i].y-pts[j].y);
-        if(d<ddist){x.beginPath();x.strokeStyle=dstr+(dmax*(1-d/ddist)).toFixed(3)+')';x.lineWidth=dlw;x.moveTo(pts[i].x,pts[i].y);x.lineTo(pts[j].x,pts[j].y);x.stroke();}
-      }
-      var col=lt?(pts[i].s?'rgba(90,90,90,':'rgba(30,30,30,'):(pts[i].s?'rgba(200,200,200,':'rgba(255,255,255,');
-      var aa=lt?pts[i].a*1.6:pts[i].a;
-      x.beginPath();x.arc(pts[i].x,pts[i].y,pts[i].r,0,Math.PI*2);
-      x.fillStyle=col+aa.toFixed(3)+')';x.fill();
-      pts[i].x+=pts[i].vx;pts[i].y+=pts[i].vy;
-      if(pts[i].x<-5)pts[i].x=w+5;if(pts[i].x>w+5)pts[i].x=-5;
-      if(pts[i].y<-5)pts[i].y=h+5;if(pts[i].y>h+5)pts[i].y=-5;
+  (async function init() {
+    if (userToken) {
+      try {
+        const res = await fetch(`${BASE}/api/auth/me`, { headers: { Authorization: `Bearer ${userToken}` } });
+        if (res.ok) {
+          currentUser = await res.json();
+          enterApp();
+          return;
+        }
+      } catch {}
+      userToken = ""; localStorage.removeItem("sm_web_token");
     }
-    requestAnimationFrame(draw);
-  }
-  resize();init();draw();
-  window.addEventListener('resize',function(){resize();init();});
-})();
+  })();
+
 </script>
 </body>
 </html>
