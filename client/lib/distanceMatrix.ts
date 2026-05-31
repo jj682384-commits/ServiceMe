@@ -1,24 +1,20 @@
-const GMAPS_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || "";
+import { getApiUrl } from "@/lib/query-client";
 
 export async function fetchDrivingMiles(
   originLat: number,
   originLng: number,
   destinationAddress: string
 ): Promise<number | null> {
-  if (!GMAPS_KEY || !destinationAddress) return null;
+  if (!destinationAddress) return null;
   try {
-    const url =
-      `https://maps.googleapis.com/maps/api/distancematrix/json` +
-      `?origins=${originLat},${originLng}` +
-      `&destinations=${encodeURIComponent(destinationAddress)}` +
-      `&key=${GMAPS_KEY}` +
-      `&units=imperial`;
-    const res = await fetch(url);
+    const base = getApiUrl();
+    const url = new URL("/api/places/distance", base);
+    url.searchParams.set("originLat", String(originLat));
+    url.searchParams.set("originLng", String(originLng));
+    url.searchParams.set("destination", destinationAddress);
+    const res = await fetch(url.toString());
     const data = await res.json();
-    const el = data?.rows?.[0]?.elements?.[0];
-    if (!el || el.status !== "OK") return null;
-    const meters: number = el.distance?.value ?? 0;
-    return Math.round((meters / 1609.34) * 10) / 10;
+    return typeof data.miles === "number" ? data.miles : null;
   } catch {
     return null;
   }

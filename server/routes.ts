@@ -1916,6 +1916,62 @@ Be concise, accurate, and reassuring. Base serviceType on what service would act
 
   // ── Providers: nearby & register ─────────────────────────────────────────────
 
+  // ── Google Places proxy (keeps API key server-side, avoids CORS) ─────────────
+  app.get("/api/places/autocomplete", async (req: Request, res: Response) => {
+    const { input, sessiontoken } = req.query as Record<string, string>;
+    const key = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || "";
+    if (!key || !input || input.trim().length < 2) {
+      return res.json([]);
+    }
+    try {
+      const url = new URL("https://maps.googleapis.com/maps/api/place/autocomplete/json");
+      url.searchParams.set("input", input.trim());
+      url.searchParams.set("key", key);
+      url.searchParams.set("types", "geocode|establishment");
+      if (sessiontoken) url.searchParams.set("sessiontoken", sessiontoken);
+      const r = await fetch(url.toString());
+      const data = await r.json() as { status: string; predictions?: Array<{ description: string; structured_formatting?: { main_text: string; secondary_text: string } }> };
+      if (data.status === "OK" && Array.isArray(data.predictions)) {
+        res.json(
+          data.predictions.map((p) => ({
+            description: p.description,
+            mainText: p.structured_formatting?.main_text || p.description,
+            secondaryText: p.structured_formatting?.secondary_text || "",
+          }))
+        );
+      } else {
+        res.json([]);
+      }
+    } catch (err) {
+      console.error("[places/autocomplete]", err);
+      res.json([]);
+    }
+  });
+
+  app.get("/api/places/distance", async (req: Request, res: Response) => {
+    const { originLat, originLng, destination } = req.query as Record<string, string>;
+    const key = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || "";
+    if (!key || !originLat || !originLng || !destination) {
+      return res.json({ miles: null });
+    }
+    try {
+      const url = new URL("https://maps.googleapis.com/maps/api/distancematrix/json");
+      url.searchParams.set("origins", `${originLat},${originLng}`);
+      url.searchParams.set("destinations", destination);
+      url.searchParams.set("units", "imperial");
+      url.searchParams.set("key", key);
+      const r = await fetch(url.toString());
+      const data = await r.json() as { rows?: Array<{ elements: Array<{ status: string; distance?: { value: number } }> }> };
+      const el = data?.rows?.[0]?.elements?.[0];
+      if (!el || el.status !== "OK") return res.json({ miles: null });
+      const miles = Math.round((el.distance!.value / 1609.34) * 10) / 10;
+      res.json({ miles });
+    } catch (err) {
+      console.error("[places/distance]", err);
+      res.json({ miles: null });
+    }
+  });
+
   app.get("/api/providers/nearby", async (req: Request, res: Response) => {
     const { lat, lng, radius } = req.query as Record<string, string>;
     const maxRadius = parseFloat(radius || "25");

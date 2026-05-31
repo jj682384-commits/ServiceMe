@@ -2245,7 +2245,6 @@
   }
 
   // ── Address Autocomplete ──
-  const GMAPS_KEY = "__GOOGLE_MAPS_API_KEY__";
   const acTimers = {};
   const acTokens = {};
 
@@ -2256,24 +2255,22 @@
   function acResetToken(id) { acTokens[id] = Math.random().toString(36).slice(2); }
 
   async function acFetch(id, input) {
-    if (!GMAPS_KEY || input.length < 3) { acHide(id); return; }
+    if (input.length < 3) { acHide(id); return; }
     const list = document.getElementById(`${id}-list`);
     if (!list) return;
     list.innerHTML = `<li class="ac-loading">Searching...</li>`;
     list.style.display = "block";
     try {
-      const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(input)}&key=${GMAPS_KEY}&sessiontoken=${acGetToken(id)}&types=geocode`;
+      const url = `${BASE}/api/places/autocomplete?input=${encodeURIComponent(input)}&sessiontoken=${acGetToken(id)}`;
       const r = await fetch(url);
-      const d = await r.json();
-      if (d.status === "OK" && d.predictions?.length) {
-        list.innerHTML = d.predictions.map(p => {
-          const main = p.structured_formatting?.main_text || p.description;
-          const sub  = p.structured_formatting?.secondary_text || "";
+      const predictions = await r.json();
+      if (Array.isArray(predictions) && predictions.length) {
+        list.innerHTML = predictions.map(p => {
           return `<li onclick="acSelect('${id}',${JSON.stringify(p.description)})">
             <div class="ac-icon">&#128205;</div>
             <div style="overflow:hidden;min-width:0">
-              <div class="ac-main">${main}</div>
-              ${sub ? `<div class="ac-sub">${sub}</div>` : ""}
+              <div class="ac-main">${p.mainText || p.description}</div>
+              ${p.secondaryText ? `<div class="ac-sub">${p.secondaryText}</div>` : ""}
             </div>
           </li>`;
         }).join("");
@@ -2299,14 +2296,13 @@
     const clearBtn = document.getElementById(`${id}-clear`);
     if (clearBtn) clearBtn.style.display = "inline-flex";
     acHide(id);
-    if (id === "tow-dropoff" && address && GMAPS_KEY) {
+    if (id === "tow-dropoff" && address) {
       autoFillTowMiles(address);
     }
   }
 
   async function autoFillTowMiles(destinationAddress) {
     const milesInput = document.getElementById("tow-miles-input");
-    const preview    = document.getElementById("tow-price-preview");
     if (!milesInput) return;
     milesInput.placeholder = "Calculating...";
     milesInput.value = "";
@@ -2317,16 +2313,13 @@
       });
       const pos = await getPos();
       const { latitude, longitude } = pos.coords;
-      const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${latitude},${longitude}&destinations=${encodeURIComponent(destinationAddress)}&key=${GMAPS_KEY}&units=imperial`;
+      const url = `${BASE}/api/places/distance?originLat=${latitude}&originLng=${longitude}&destination=${encodeURIComponent(destinationAddress)}`;
       const r = await fetch(url);
       const d = await r.json();
-      const el = d?.rows?.[0]?.elements?.[0];
-      if (el?.status === "OK") {
-        const meters = el.distance?.value ?? 0;
-        const miles  = Math.round((meters / 1609.34) * 10) / 10;
-        milesInput.value = String(miles);
+      if (typeof d.miles === "number") {
+        milesInput.value = String(d.miles);
         milesInput.placeholder = "0";
-        onTowMilesInput(String(miles));
+        onTowMilesInput(String(d.miles));
       } else {
         milesInput.placeholder = "Enter miles";
       }

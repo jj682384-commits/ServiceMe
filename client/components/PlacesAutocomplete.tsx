@@ -14,15 +14,12 @@ import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing, BorderRadius } from "@/constants/theme";
 
-const GOOGLE_PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || "";
+import { getApiUrl } from "@/lib/query-client";
 
 interface Prediction {
-  place_id: string;
   description: string;
-  structured_formatting?: {
-    main_text: string;
-    secondary_text: string;
-  };
+  mainText: string;
+  secondaryText: string;
 }
 
 interface PlacesAutocompleteProps {
@@ -57,16 +54,17 @@ export default function PlacesAutocomplete({
       setShowDropdown(false);
       return;
     }
-    if (!GOOGLE_PLACES_KEY) {
-      return;
-    }
     setLoading(true);
     try {
-      const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(input)}&key=${GOOGLE_PLACES_KEY}&sessiontoken=${sessionToken.current}&types=geocode`;
-      const res = await fetch(url);
-      const data = await res.json();
-      if (data.status === "OK" && data.predictions) {
-        setPredictions(data.predictions);
+      const base = getApiUrl();
+      const url = new URL("/api/places/autocomplete", base);
+      url.searchParams.set("input", input.trim());
+      url.searchParams.set("sessiontoken", sessionToken.current);
+      const res = await fetch(url.toString());
+      if (!res.ok) { setPredictions([]); setShowDropdown(false); return; }
+      const data: Prediction[] = await res.json();
+      if (data.length > 0) {
+        setPredictions(data);
         setShowDropdown(true);
       } else {
         setPredictions([]);
@@ -170,42 +168,38 @@ export default function PlacesAutocomplete({
         >
           <FlatList
             data={predictions}
-            keyExtractor={(item) => item.place_id}
+            keyExtractor={(item) => item.description}
             keyboardShouldPersistTaps="always"
             scrollEnabled={predictions.length > 4}
-            renderItem={({ item, index }) => {
-              const main = item.structured_formatting?.main_text || item.description;
-              const secondary = item.structured_formatting?.secondary_text || "";
-              return (
-                <>
-                  {index > 0 ? (
-                    <View style={[styles.divider, { backgroundColor: theme.border }]} />
-                  ) : null}
-                  <Pressable
-                    onPress={() => handleSelect(item)}
-                    style={({ pressed }) => [
-                      styles.suggestionRow,
-                      pressed ? { backgroundColor: theme.primary + "12" } : null,
-                    ]}
-                  >
-                    <View style={[styles.suggestionIcon, { backgroundColor: theme.primary + "15" }]}>
-                      <Feather name="map-pin" size={14} color={theme.primary} />
-                    </View>
-                    <View style={styles.suggestionText}>
-                      <ThemedText type="body" numberOfLines={1} style={{ fontWeight: "600", fontSize: 14 }}>
-                        {main}
+            renderItem={({ item, index }) => (
+              <>
+                {index > 0 ? (
+                  <View style={[styles.divider, { backgroundColor: theme.border }]} />
+                ) : null}
+                <Pressable
+                  onPress={() => handleSelect(item)}
+                  style={({ pressed }) => [
+                    styles.suggestionRow,
+                    pressed ? { backgroundColor: theme.primary + "12" } : null,
+                  ]}
+                >
+                  <View style={[styles.suggestionIcon, { backgroundColor: theme.primary + "15" }]}>
+                    <Feather name="map-pin" size={14} color={theme.primary} />
+                  </View>
+                  <View style={styles.suggestionText}>
+                    <ThemedText type="body" numberOfLines={1} style={{ fontWeight: "600", fontSize: 14 }}>
+                      {item.mainText}
+                    </ThemedText>
+                    {item.secondaryText ? (
+                      <ThemedText type="small" numberOfLines={1} style={{ color: theme.textSecondary }}>
+                        {item.secondaryText}
                       </ThemedText>
-                      {secondary ? (
-                        <ThemedText type="small" numberOfLines={1} style={{ color: theme.textSecondary }}>
-                          {secondary}
-                        </ThemedText>
-                      ) : null}
-                    </View>
-                    <Feather name="arrow-up-left" size={14} color={theme.textSecondary} />
-                  </Pressable>
-                </>
-              );
-            }}
+                    ) : null}
+                  </View>
+                  <Feather name="arrow-up-left" size={14} color={theme.textSecondary} />
+                </Pressable>
+              </>
+            )}
           />
         </View>
       ) : null}
