@@ -564,6 +564,8 @@ export default function ProviderSignUpScreen() {
     }
     if (step === 2) {
       const requiredDocs = isIndependent ? ["photoId", "selfie"] : ["businessLicense", "ownerId", "insurance"];
+      if (selectedServices.includes("tow")) requiredDocs.push("towLicense");
+      if (selectedServices.includes("lockout")) requiredDocs.push("locksmithLicense");
       if (!requiredDocs.every((doc) => uploadedDocs[doc])) {
         Alert.alert("Documents Required", "Please upload all required documents for identity verification."); return false;
       }
@@ -942,6 +944,29 @@ export default function ProviderSignUpScreen() {
             <ThemedText type="small" style={{ color: uploadHintColor, fontSize: 12, marginLeft: 62, marginBottom: 8 }}>General liability insurance certificate (min $1M recommended)</ThemedText>
           </>
         )}
+
+        {(selectedServices.includes("tow") || selectedServices.includes("lockout")) ? (
+          <View style={{ marginTop: 8 }}>
+            <View style={[styles.verificationInfo, { backgroundColor: isDark ? "rgba(245,158,11,0.08)" : "rgba(245,158,11,0.06)", borderColor: isDark ? "rgba(245,158,11,0.25)" : "rgba(245,158,11,0.2)", marginBottom: 12 }]}>
+              <Feather name="alert-triangle" size={15} color="#F59E0B" />
+              <ThemedText type="small" style={{ flex: 1, color: isDark ? "rgba(255,255,255,0.6)" : theme.textSecondary, lineHeight: 17, marginLeft: 10 }}>
+                Towing and lockout services may require a state-issued license. Upload your credential to keep your account compliant and build driver trust.
+              </ThemedText>
+            </View>
+            {selectedServices.includes("tow") ? (
+              <>
+                <UploadArea label="Tow Operator License / Wrecker Permit" isUploaded={!!uploadedDocs.towLicense} onPress={() => handleUpload("towLicense")} icon="file-text" />
+                <ThemedText type="small" style={{ color: uploadHintColor, fontSize: 12, marginLeft: 62, marginBottom: 8 }}>State wrecker permit or tow operator license</ThemedText>
+              </>
+            ) : null}
+            {selectedServices.includes("lockout") ? (
+              <>
+                <UploadArea label="Locksmith License" isUploaded={!!uploadedDocs.locksmithLicense} onPress={() => handleUpload("locksmithLicense")} icon="key" />
+                <ThemedText type="small" style={{ color: uploadHintColor, fontSize: 12, marginLeft: 62, marginBottom: 8 }}>State locksmith license (required in MD, VA, TX, CA and others)</ThemedText>
+              </>
+            ) : null}
+          </View>
+        ) : null}
       </View>
       <View style={styles.verificationStatus}>
         <View style={styles.verificationBadge}>

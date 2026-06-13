@@ -168,7 +168,22 @@ export default function ProviderVerificationScreen() {
 
   const status = currentProvider?.verificationStatus ?? "not_started";
   const isIndependent = currentProvider?.providerType === "independent";
-  const requiredDocs = isIndependent ? INDEPENDENT_DOCS : SHOP_DOCS;
+  const services = (currentProvider?.servicesOffered ?? []) as string[];
+  const licenseDocs: typeof INDEPENDENT_DOCS = [
+    ...(services.includes("tow") ? [{
+      key: "towLicense",
+      label: "Tow Operator License / Wrecker Permit",
+      description: "State wrecker permit or tow operator license",
+      icon: "file-text" as const,
+    }] : []),
+    ...(services.includes("lockout") ? [{
+      key: "locksmithLicense",
+      label: "Locksmith License",
+      description: "State locksmith license (required in MD, VA, TX, CA and others)",
+      icon: "key" as const,
+    }] : []),
+  ];
+  const requiredDocs = [...(isIndependent ? INDEPENDENT_DOCS : SHOP_DOCS), ...licenseDocs];
   const isVerified = status === "verified";
 
   const [docs, setDocs] = useState<Record<string, DocValue>>(
@@ -389,7 +404,7 @@ export default function ProviderVerificationScreen() {
             <ThemedText type="small" style={[styles.cardTitle, { color: theme.textSecondary }]}>
               {isIndependent ? "REQUIRED DOCUMENTS" : "REQUIRED BUSINESS DOCUMENTS"}
             </ThemedText>
-            {requiredDocs.map((doc) => (
+            {(isIndependent ? INDEPENDENT_DOCS : SHOP_DOCS).map((doc) => (
               <DocRow
                 key={doc.key}
                 label={doc.label}
@@ -400,6 +415,30 @@ export default function ProviderVerificationScreen() {
                 locked={status === "pending" || isVerified}
               />
             ))}
+            {licenseDocs.length > 0 ? (
+              <>
+                <View style={[styles.stepDivider, { backgroundColor: theme.border, marginVertical: Spacing.md }]} />
+                <View style={{ flexDirection: "row", alignItems: "center", gap: Spacing.sm, marginBottom: Spacing.sm }}>
+                  <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: theme.warning + "20", alignItems: "center", justifyContent: "center" }}>
+                    <Feather name="alert-triangle" size={14} color={theme.warning} />
+                  </View>
+                  <ThemedText type="small" style={{ color: theme.textSecondary, fontWeight: "600", letterSpacing: 0.5, flex: 1 }}>
+                    STATE LICENSE REQUIREMENTS
+                  </ThemedText>
+                </View>
+                {licenseDocs.map((doc) => (
+                  <DocRow
+                    key={doc.key}
+                    label={doc.label}
+                    description={uploadingKey === doc.key ? "Uploading..." : doc.description}
+                    icon={uploadingKey === doc.key ? "loader" : doc.icon}
+                    docValue={docs[doc.key]}
+                    onUpload={() => handleUpload(doc.key)}
+                    locked={status === "pending" || isVerified}
+                  />
+                ))}
+              </>
+            ) : null}
             {status !== "pending" ? (
               <Pressable
                 onPress={handleSubmit}
