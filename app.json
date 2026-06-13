@@ -11,6 +11,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.resqride.app",
+      "buildNumber": "2",
       "usesAppleSignIn": true,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "ResqRide needs your location to find nearby mechanics and service providers.",
