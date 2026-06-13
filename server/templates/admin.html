@@ -2081,6 +2081,7 @@
       <div class="drawer-section">
         <div class="drawer-section-title">Account Info</div>
         <div class="info-grid">
+          <div class="info-item"><div class="info-label">Email</div><div class="info-val">${esc(p.email || "—")}</div></div>
           <div class="info-item"><div class="info-label">Phone</div><div class="info-val">${esc(p.phone || "Not provided")}</div></div>
           <div class="info-item"><div class="info-label">Provider Type</div><div class="info-val">${p.providerType === "shop" ? "Business / Shop" : "Independent"}</div></div>
           <div class="info-item"><div class="info-label">Member Since</div><div class="info-val">${fmtDate(p.createdAt)}</div></div>
@@ -2224,6 +2225,8 @@
       <div class="drawer-section">
         <div class="drawer-section-title">Account Info</div>
         <div class="info-grid">
+          <div class="info-item"><div class="info-label">Email</div><div class="info-val">${esc(u.email || "—")}</div></div>
+          <div class="info-item"><div class="info-label">Phone</div><div class="info-val">${esc(u.phone || "Not provided")}</div></div>
           <div class="info-item"><div class="info-label">Member Since</div><div class="info-val">${fmtDate(u.created_at)}</div></div>
           <div class="info-item"><div class="info-label">Push Notifications</div><div class="info-val" style="color:${u.push_token ? "var(--success)" : "var(--muted)"}">${u.push_token ? "&#10003; Registered" : "Not registered"}</div></div>
           <div class="info-item"><div class="info-label">Stripe Customer</div><div class="info-val" style="color:${u.stripe_customer_id ? "var(--success)" : "var(--muted)"}">${u.stripe_customer_id ? "&#10003; Linked" : "Not linked"}</div></div>

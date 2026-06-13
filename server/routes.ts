@@ -1456,7 +1456,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/users", adminAuth, async (_req: Request, res: Response) => {
     try {
       const { rows } = await pool.query(
-        `SELECT u.id, u.name, u.email, u.role, u.stripe_customer_id, u.push_token, u.suspended, u.created_at,
+        `SELECT u.id, u.name, u.email, u.phone, u.role, u.stripe_customer_id, u.push_token, u.suspended, u.created_at,
                 CASE WHEN p.id IS NOT NULL THEN TRUE ELSE FALSE END AS has_provider_profile,
                 p.verification_status AS provider_verification_status
          FROM auth_users u
