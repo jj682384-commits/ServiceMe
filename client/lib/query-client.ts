@@ -7,14 +7,8 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
  * Do NOT strip the port — without it, requests go to Metro (port 80) instead of Express.
  */
 export function getApiUrl(): string {
-  const host = process.env.EXPO_PUBLIC_DOMAIN;
-
-  if (!host) {
-    throw new Error("EXPO_PUBLIC_DOMAIN is not set");
-  }
-
+  const host = process.env.EXPO_PUBLIC_DOMAIN || "resqride.co";
   const url = new URL(`https://${host}`);
-
   return url.href;
 }
 
