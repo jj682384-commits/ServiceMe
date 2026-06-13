@@ -204,8 +204,8 @@
     .hero {
       min-height: 100vh; display: flex; flex-direction: column;
       align-items: center; justify-content: center;
-      padding: 120px 24px 80px;
-      position: relative; overflow: hidden; text-align: center;
+      padding: 80px 24px 0;
+      position: relative; overflow: visible; text-align: center;
     }
     .hero-bg {
       position: absolute; inset: 0; z-index: 0;
@@ -240,7 +240,7 @@
     }
     .hero-buttons {
       display: flex; flex-wrap: wrap; gap: 16px;
-      justify-content: center; position: relative; z-index: 1; margin-bottom: 48px;
+      justify-content: center; position: relative; z-index: 1; margin-bottom: 28px;
     }
     .btn-store {
       display: flex; align-items: center; gap: 10px;
@@ -259,52 +259,43 @@
 
     /* floating phone mockup */
     .hero-visual {
-      position: relative; z-index: 1; margin-top: 60px;
-      display: flex; align-items: flex-end; justify-content: center; gap: 24px;
+      position: relative; z-index: 1; margin-top: 36px;
+      display: flex; align-items: flex-end; justify-content: center; gap: 14px;
     }
     .hero-visual::before {
       content: "";
-      position: absolute; width: 800px; height: 500px;
+      position: absolute; width: 1000px; height: 600px;
       top: 50%; left: 50%; transform: translate(-50%, -40%);
-      background: radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.06) 0%, transparent 65%);
-      filter: blur(60px); pointer-events: none; z-index: -1;
+      background: radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.07) 0%, transparent 65%);
+      filter: blur(80px); pointer-events: none; z-index: -1;
     }
     .phone {
-      width: 200px; border-radius: 36px; overflow: hidden;
-      box-shadow: 0 40px 100px rgba(0,0,0,0.8),
-                  0 0 50px rgba(192,192,192,0.15),
+      width: var(--ph-w, 172px);
+      border-radius: 30px; overflow: hidden;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.8),
+                  0 0 40px rgba(192,192,192,0.1),
                   0 0 0 1px rgba(255,255,255,0.12),
-                  0 0 0 2px rgba(192,192,192,0.06),
-                  inset 0 1px 0 rgba(255,255,255,0.18);
-      background: #080808;
-      animation: float 4s ease-in-out infinite;
-      position: relative;
-    }
-    .phone:nth-child(2) {
-      width: 232px; animation-delay: -.5s; margin-bottom: 0;
-      box-shadow: 0 60px 140px rgba(0,0,0,0.9),
-                  0 0 80px rgba(255,255,255,0.12),
-                  0 0 0 1px rgba(255,255,255,0.2),
-                  0 0 0 2px rgba(192,192,192,0.1),
-                  inset 0 1px 0 rgba(255,255,255,0.25);
+                  inset 0 1px 0 rgba(255,255,255,0.16);
       background: #060606;
+      animation: float 4s ease-in-out infinite;
+      animation-delay: var(--ph-delay, 0s);
+      position: relative;
+      margin-bottom: var(--ph-mb, 0px);
+      opacity: var(--ph-op, 1);
+      flex-shrink: 0;
     }
-    .phone:nth-child(3) {
-      box-shadow: 0 40px 100px rgba(0,0,0,0.8),
-                  0 0 50px rgba(192,192,192,0.12),
-                  0 0 0 1px rgba(255,255,255,0.1),
-                  0 0 0 2px rgba(192,192,192,0.05),
-                  inset 0 1px 0 rgba(255,255,255,0.15);
-      background: #080808;
-    }
-    .phone:nth-child(1), .phone:nth-child(3) { margin-bottom: -40px; opacity: .8; }
-    .phone:nth-child(3) { animation-delay: -1s; }
-    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-14px)} }
+    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
     .phone-screen {
       width: 100%; aspect-ratio: 9/19;
       background: #000;
-      display: flex; flex-direction: column; align-items: center;
-      padding: 0; overflow: hidden; position: relative;
+      overflow: hidden; position: relative;
+    }
+    .phone-shot {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      object-position: var(--shot-pos, right top);
+      display: block;
     }
     /* constellation star field */
     .phone-stars {
@@ -1226,216 +1217,45 @@
 
   <div class="hero-visual">
 
-    <!-- Phone 1: Sign In Screen -->
-    <div class="phone">
+    <!-- Phone 1: Sign In — far left, small, lowered -->
+    <div class="phone" style="--ph-w:140px;--ph-delay:-3.1s;--ph-mb:-65px;--ph-op:.6;">
       <div class="phone-screen">
-        <!-- constellation stars -->
-        <div class="phone-stars">
-          <div class="phone-star" style="width:2px;height:2px;top:8%;left:12%;opacity:.7;"></div>
-          <div class="phone-star" style="width:1px;height:1px;top:15%;left:78%;opacity:.5;"></div>
-          <div class="phone-star" style="width:2px;height:2px;top:22%;left:55%;opacity:.6;"></div>
-          <div class="phone-star" style="width:1px;height:1px;top:35%;left:20%;opacity:.4;"></div>
-          <div class="phone-star" style="width:2px;height:2px;top:60%;left:88%;opacity:.6;"></div>
-          <div class="phone-star" style="width:1px;height:1px;top:72%;left:40%;opacity:.5;"></div>
-          <div class="phone-star" style="width:3px;height:3px;top:82%;left:15%;opacity:.35;"></div>
-          <div class="phone-star" style="width:1px;height:1px;top:90%;left:65%;opacity:.5;"></div>
-          <div class="phone-star" style="width:2px;height:2px;top:45%;left:92%;opacity:.4;"></div>
-        </div>
-        <div class="phone-island"></div>
-        <div class="phone-status">
-          <span class="phone-time">9:41</span>
-          <div class="phone-status-right">
-            <div class="phone-signal"><span></span><span></span><span></span></div>
-            <div class="phone-battery"></div>
-          </div>
-        </div>
-        <!-- logo + card area -->
-        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px;gap:12px;position:relative;z-index:1;">
-          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
-            <img src="/assets/images/resqride-logo-dark.png" alt="ResqRide" style="width:70px;height:auto;object-fit:contain;" />
-            <div style="font-size:7px;color:rgba(255,255,255,0.35);letter-spacing:.08em;">On-demand roadside assistance</div>
-          </div>
-          <!-- auth card -->
-          <div style="width:100%;background:rgba(10,10,10,0.92);border:1px solid rgba(255,255,255,0.09);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:8px;backdrop-filter:blur(10px);">
-            <div class="phone-tab-row">
-              <div class="phone-tab active">Sign In</div>
-              <div class="phone-tab">Sign Up</div>
-            </div>
-            <div>
-              <div class="phone-input-label">Email</div>
-              <div class="phone-input">you@example.com</div>
-            </div>
-            <div>
-              <div class="phone-input-label">Password</div>
-              <div class="phone-input" style="letter-spacing:3px;color:rgba(255,255,255,0.2);">••••••••</div>
-            </div>
-            <div class="phone-service-btn">Sign In</div>
-          </div>
-        </div>
-        <div class="phone-ekg">
-          <svg viewBox="0 0 400 18" preserveAspectRatio="none" fill="none">
-            <polyline points="0,9 40,9 55,9 65,2 72,16 79,2 86,16 93,9 140,9 155,9 165,2 172,16 179,2 186,16 193,9 240,9 255,9 265,2 272,16 279,2 286,16 293,9 340,9 355,9 365,2 372,16 379,2 386,16 393,9 400,9" stroke="#CC1B1B" stroke-width="1.2" fill="none"/>
-          </svg>
-        </div>
+        <img class="phone-shot" src="/assets/images/screenshots/screen-auth.jpg" alt="Sign In" style="--shot-pos:center top;" />
       </div>
     </div>
 
-    <!-- Phone 2: Service Request Screen (center, larger) -->
-    <div class="phone">
+    <!-- Phone 2: Request Help — left-center, medium -->
+    <div class="phone" style="--ph-w:162px;--ph-delay:-0.7s;--ph-mb:-30px;--ph-op:.82;">
       <div class="phone-screen">
-        <!-- constellation stars -->
-        <div class="phone-stars">
-          <div class="phone-star" style="width:2px;height:2px;top:5%;left:8%;opacity:.8;"></div>
-          <div class="phone-star" style="width:1px;height:1px;top:10%;left:88%;opacity:.6;"></div>
-          <div class="phone-star" style="width:3px;height:3px;top:18%;left:70%;opacity:.4;"></div>
-          <div class="phone-star" style="width:1px;height:1px;top:30%;left:5%;opacity:.5;"></div>
-          <div class="phone-star" style="width:2px;height:2px;top:55%;left:92%;opacity:.55;"></div>
-          <div class="phone-star" style="width:1px;height:1px;top:65%;left:30%;opacity:.4;"></div>
-          <div class="phone-star" style="width:2px;height:2px;top:78%;left:78%;opacity:.5;"></div>
-          <div class="phone-star" style="width:1px;height:1px;top:88%;left:12%;opacity:.6;"></div>
-          <div class="phone-star" style="width:2px;height:2px;top:42%;left:50%;opacity:.3;"></div>
-          <div class="phone-star" style="width:1px;height:1px;top:95%;left:58%;opacity:.45;"></div>
-        </div>
-        <div class="phone-island"></div>
-        <div class="phone-status">
-          <span class="phone-time">9:41</span>
-          <div class="phone-status-right">
-            <div class="phone-signal"><span></span><span></span><span></span></div>
-            <div class="phone-battery"></div>
-          </div>
-        </div>
-        <div class="phone-map">
-          <div class="phone-map-bg" style="height:110px;">
-            <div class="phone-map-pulse"></div>
-            <div class="phone-map-pin"></div>
-            <!-- provider dots on map -->
-            <div style="position:absolute;left:28%;top:32%;width:9px;height:9px;border-radius:50%;background:#fff;box-shadow:0 0 6px rgba(255,255,255,0.7);border:1.5px solid rgba(0,0,0,0.5);"></div>
-            <div style="position:absolute;left:68%;top:62%;width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 5px rgba(255,255,255,0.5);border:1.5px solid rgba(0,0,0,0.4);"></div>
-          </div>
-        </div>
-        <div class="phone-content">
-          <div class="phone-header">
-            <div>
-              <div class="phone-title" style="font-size:13px;background:linear-gradient(135deg,#fff 0%,#C0C0C0 40%,#888 70%,#D8D8D8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">ResqRide</div>
-              <div class="phone-subtitle">What do you need?</div>
-            </div>
-            <div class="phone-avatar">SOS</div>
-          </div>
-          <!-- service type grid matching actual app -->
-          <div class="phone-svc-grid">
-            <div class="phone-svc-item">
-              <div class="phone-svc-icon">&#128739;</div>
-              <div class="phone-svc-label">Flat Tire</div>
-              <div class="phone-svc-price">$40</div>
-            </div>
-            <div class="phone-svc-item">
-              <div class="phone-svc-icon">&#9889;</div>
-              <div class="phone-svc-label">Jump Start</div>
-              <div class="phone-svc-price">$25</div>
-            </div>
-            <div class="phone-svc-item">
-              <div class="phone-svc-icon">&#128167;</div>
-              <div class="phone-svc-label">Fuel Delivery</div>
-              <div class="phone-svc-price">From $10</div>
-            </div>
-            <div class="phone-svc-item">
-              <div class="phone-svc-icon">&#128273;</div>
-              <div class="phone-svc-label">Lockout</div>
-              <div class="phone-svc-price">$55</div>
-            </div>
-            <div class="phone-svc-item">
-              <div class="phone-svc-icon">&#128296;</div>
-              <div class="phone-svc-label">OBD Scan</div>
-              <div class="phone-svc-price">$21</div>
-            </div>
-            <div class="phone-svc-item" style="border-color:rgba(74,222,128,0.2);">
-              <div class="phone-svc-icon">&#128268;</div>
-              <div class="phone-svc-label" style="color:#4ADE80;">EV Services</div>
-              <div class="phone-svc-price" style="color:rgba(74,222,128,0.6);">From $10</div>
-            </div>
-          </div>
-          <div class="phone-divider"></div>
-          <div class="phone-card" style="border-color:rgba(204,27,27,0.25);background:rgba(204,27,27,0.06);">
-            <div class="phone-card-icon" style="background:rgba(204,27,27,0.15);border-color:rgba(204,27,27,0.3);">&#128680;</div>
-            <div class="phone-card-body">
-              <div class="phone-card-label">Emergency SOS</div>
-              <div class="phone-card-sub">One tap · GPS shared</div>
-            </div>
-          </div>
-        </div>
-        <div class="phone-ekg">
-          <svg viewBox="0 0 400 18" preserveAspectRatio="none" fill="none">
-            <polyline points="0,9 40,9 55,9 65,2 72,16 79,2 86,16 93,9 140,9 155,9 165,2 172,16 179,2 186,16 193,9 240,9 255,9 265,2 272,16 279,2 286,16 293,9 340,9 355,9 365,2 372,16 379,2 386,16 393,9 400,9" stroke="#CC1B1B" stroke-width="1.5" fill="none"/>
-          </svg>
-        </div>
+        <img class="phone-shot" src="/assets/images/screenshots/screen-driver-home.jpg" alt="Request Help" style="--shot-pos:87% top;" />
       </div>
     </div>
 
-    <!-- Phone 3: Provider Jobs Screen -->
-    <div class="phone">
+    <!-- Phone 3: EV Services — center-left, large -->
+    <div class="phone" style="--ph-w:186px;--ph-delay:0s;--ph-mb:0px;--ph-op:1;box-shadow:0 50px 120px rgba(0,0,0,0.9),0 0 70px rgba(255,255,255,0.1),0 0 0 1px rgba(255,255,255,0.18),inset 0 1px 0 rgba(255,255,255,0.22);">
       <div class="phone-screen">
-        <!-- constellation stars -->
-        <div class="phone-stars">
-          <div class="phone-star" style="width:2px;height:2px;top:7%;left:18%;opacity:.65;"></div>
-          <div class="phone-star" style="width:1px;height:1px;top:14%;left:80%;opacity:.5;"></div>
-          <div class="phone-star" style="width:2px;height:2px;top:25%;left:60%;opacity:.55;"></div>
-          <div class="phone-star" style="width:1px;height:1px;top:50%;left:10%;opacity:.4;"></div>
-          <div class="phone-star" style="width:2px;height:2px;top:70%;left:85%;opacity:.5;"></div>
-          <div class="phone-star" style="width:1px;height:1px;top:85%;left:35%;opacity:.45;"></div>
-          <div class="phone-star" style="width:3px;height:3px;top:92%;left:72%;opacity:.35;"></div>
-        </div>
-        <div class="phone-island"></div>
-        <div class="phone-status">
-          <span class="phone-time">9:41</span>
-          <div class="phone-status-right">
-            <div class="phone-signal"><span></span><span></span><span></span></div>
-            <div class="phone-battery"></div>
-          </div>
-        </div>
-        <div class="phone-map">
-          <div class="phone-map-bg">
-            <div class="phone-map-pulse"></div>
-            <div class="phone-map-pin"></div>
-            <!-- driver needing help (red dot) -->
-            <div style="position:absolute;left:35%;top:38%;width:8px;height:8px;border-radius:50%;background:#CC1B1B;box-shadow:0 0 8px rgba(204,27,27,0.9);border:1.5px solid rgba(255,255,255,0.5);"></div>
-          </div>
-        </div>
-        <div class="phone-content">
-          <div class="phone-header">
-            <div>
-              <div class="phone-title">Available Jobs</div>
-              <div class="phone-subtitle">You're online · Earning</div>
-            </div>
-            <div style="display:flex;align-items:center;gap:3px;">
-              <div style="width:5px;height:5px;border-radius:50%;background:#4ADE80;box-shadow:0 0 5px #4ADE80;"></div>
-              <span style="font-size:7px;font-weight:700;color:#4ADE80;">LIVE</span>
-            </div>
-          </div>
-          <!-- highlighted job card -->
-          <div class="phone-card" style="border-color:rgba(204,27,27,0.3);background:rgba(204,27,27,0.07);border-left:2px solid #CC1B1B;">
-            <div class="phone-card-icon" style="background:rgba(204,27,27,0.15);border-color:rgba(204,27,27,0.3);">&#128739;</div>
-            <div class="phone-card-body">
-              <div class="phone-card-label">Flat Tire — Spare Swap</div>
-              <div class="phone-card-sub">2.1 mi from your location</div>
-            </div>
-            <div class="phone-card-badge" style="background:rgba(204,27,27,0.15);color:#FF6B6B;border:1px solid rgba(204,27,27,0.3);">New</div>
-          </div>
-          <!-- second job card (dimmed) -->
-          <div class="phone-card" style="opacity:0.55;">
-            <div class="phone-card-icon">&#128273;</div>
-            <div class="phone-card-body">
-              <div class="phone-card-label">Lockout</div>
-              <div class="phone-card-sub">0.4 mi · Downtown</div>
-            </div>
-          </div>
-          <div class="phone-service-btn">Accept Job · $43</div>
-          <div class="phone-earn">+ Earn $43.00 today</div>
-        </div>
-        <div class="phone-ekg">
-          <svg viewBox="0 0 400 18" preserveAspectRatio="none" fill="none">
-            <polyline points="0,9 40,9 55,9 65,2 72,16 79,2 86,16 93,9 140,9 155,9 165,2 172,16 179,2 186,16 193,9 240,9 255,9 265,2 272,16 279,2 286,16 293,9 340,9 355,9 365,2 372,16 379,2 386,16 393,9 400,9" stroke="#CC1B1B" stroke-width="1.2" fill="none"/>
-          </svg>
-        </div>
+        <img class="phone-shot" src="/assets/images/screenshots/screen-ev.jpg" alt="EV Services" style="--shot-pos:87% top;" />
+      </div>
+    </div>
+
+    <!-- Phone 4: Provider Jobs — center-right, large -->
+    <div class="phone" style="--ph-w:186px;--ph-delay:-2.1s;--ph-mb:0px;--ph-op:1;box-shadow:0 50px 120px rgba(0,0,0,0.9),0 0 70px rgba(255,255,255,0.1),0 0 0 1px rgba(255,255,255,0.18),inset 0 1px 0 rgba(255,255,255,0.22);">
+      <div class="phone-screen">
+        <img class="phone-shot" src="/assets/images/screenshots/screen-provider-jobs.jpg" alt="Available Jobs" style="--shot-pos:87% top;" />
+      </div>
+    </div>
+
+    <!-- Phone 5: Driver Profile — right-center, medium -->
+    <div class="phone" style="--ph-w:162px;--ph-delay:-1.4s;--ph-mb:-30px;--ph-op:.82;">
+      <div class="phone-screen">
+        <img class="phone-shot" src="/assets/images/screenshots/screen-profile.jpg" alt="Profile" style="--shot-pos:87% top;" />
+      </div>
+    </div>
+
+    <!-- Phone 6: Service History — far right, small, lowered -->
+    <div class="phone" style="--ph-w:140px;--ph-delay:-2.6s;--ph-mb:-65px;--ph-op:.6;">
+      <div class="phone-screen">
+        <img class="phone-shot" src="/assets/images/screenshots/screen-history.jpg" alt="Service History" style="--shot-pos:87% top;" />
       </div>
     </div>
 
