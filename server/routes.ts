@@ -709,12 +709,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         _resetCodes.set(normalizedEmail, { code, expiry });
         console.log(`[FORGOT PASSWORD] Reset code for ${normalizedEmail}: ${code}`);
       }
-      // Always return same response to prevent email enumeration
-      const isDev = process.env.NODE_ENV !== "production";
+      // No email service configured — return the code directly in the response.
+      // The app displays it on-screen so users can reset their password.
+      // TODO: replace with email delivery (SendGrid/Resend) once configured.
       res.json({
         success: true,
-        message: "If an account with that email exists, a 6-digit reset code has been sent.",
-        ...(isDev ? { debug_code: rows.length ? code : null } : {}),
+        message: "If an account with that email exists, a reset code has been generated.",
+        reset_code: rows.length ? code : null,
       });
     } catch (err) {
       console.error("[auth/forgot-password]", err);
@@ -3151,22 +3152,12 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
       return 3959 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
 
-    try {
-      // --- Reverse geocode to get zip code ---
-      const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`;
-      const geoRes = await fetch(nominatimUrl, {
-        headers: { "User-Agent": "ResqRide/1.0" },
-        signal: AbortSignal.timeout(8000),
-      });
-      if (!geoRes.ok) throw new Error(`Nominatim ${geoRes.status}`);
-      const geoJson = await geoRes.json() as { address?: { postcode?: string } };
-      const zipCode = geoJson.address?.postcode?.split("-")[0];
-      if (!zipCode) throw new Error("Could not determine zip code from coordinates");
+    const cacheKey = `${Math.round(latNum * 10) / 10},${Math.round(lonNum * 10) / 10}`;
 
+    try {
       // --- Return cached result if still fresh ---
-      const cached = evChargerCache.get(zipCode);
+      const cached = evChargerCache.get(cacheKey);
       if (cached && Date.now() - cached.ts < EV_CACHE_TTL_MS) {
-        // Re-sort by distance from the current position (may differ within same zip)
         const sorted = [...cached.data].map((s: any) => ({
           ...s,
           distanceMi: haversineMi(latNum, lonNum, s.latitude, s.longitude),
@@ -3175,90 +3166,95 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
             return d < 0.1 ? "< 0.1 mi" : `${d.toFixed(1)} mi`;
           })(),
         })).sort((a: any, b: any) => a.distanceMi - b.distanceMi);
-        console.log(`[ev/chargers] cache hit zip=${zipCode} → ${sorted.length} stations`);
+        console.log(`[ev/chargers] cache hit → ${sorted.length} stations`);
         return res.json(sorted);
       }
 
-      // --- Fetch EV stations from NREL by zip ---
-      const nrelUrl = new URL("https://developer.nrel.gov/api/alt-fuel-stations/v1.json");
-      nrelUrl.searchParams.set("api_key", "DEMO_KEY");
-      nrelUrl.searchParams.set("fuel_type", "ELEC");
-      nrelUrl.searchParams.set("zip", zipCode);
-      nrelUrl.searchParams.set("radius", "20.0");
-      nrelUrl.searchParams.set("limit", "50");
-      nrelUrl.searchParams.set("status", "E");
+      // --- Fetch from OpenChargeMap (free, no API key required) ---
+      const ocmUrl = new URL("https://api.openchargemap.io/v3/poi/");
+      ocmUrl.searchParams.set("output", "json");
+      ocmUrl.searchParams.set("latitude", lat);
+      ocmUrl.searchParams.set("longitude", lon);
+      ocmUrl.searchParams.set("distance", "20");
+      ocmUrl.searchParams.set("distanceunit", "Miles");
+      ocmUrl.searchParams.set("maxresults", "50");
+      ocmUrl.searchParams.set("compact", "true");
+      ocmUrl.searchParams.set("verbose", "false");
+      ocmUrl.searchParams.set("statustypeid", "50"); // Operational only
 
-      const nrelRes = await fetch(nrelUrl.toString(), {
+      const ocmRes = await fetch(ocmUrl.toString(), {
         headers: { "User-Agent": "ResqRide/1.0" },
         signal: AbortSignal.timeout(12000),
       });
 
-      if (!nrelRes.ok) {
-        // If rate-limited but we have stale cache, serve it rather than failing
+      if (!ocmRes.ok) {
+        const cached = evChargerCache.get(cacheKey);
         if (cached) {
-          console.log(`[ev/chargers] NREL rate-limited, serving stale cache for zip=${zipCode}`);
+          console.log(`[ev/chargers] OCM ${ocmRes.status}, serving stale cache`);
           return res.json(cached.data);
         }
-        throw new Error(`NREL ${nrelRes.status}`);
+        throw new Error(`OpenChargeMap ${ocmRes.status}`);
       }
 
-      const nrelJson = await nrelRes.json() as {
-        error?: { code: string; message: string };
-        fuel_stations: Array<{
-          id: number;
-          station_name: string;
-          street_address: string;
-          city: string;
-          state: string;
-          latitude: number;
-          longitude: number;
-          ev_level2_evse_num: number | null;
-          ev_dc_fast_num: number | null;
-          ev_network: string | null;
+      const ocmJson = await ocmRes.json() as Array<{
+        ID: number;
+        AddressInfo: {
+          Title: string;
+          AddressLine1?: string;
+          Town?: string;
+          StateOrProvince?: string;
+          Latitude: number;
+          Longitude: number;
+        };
+        Connections?: Array<{
+          PowerKW?: number;
+          Level?: { IsFastChargeCapable?: boolean };
         }>;
-      };
+        UsageCost?: string;
+        OperatorInfo?: { Title?: string };
+        NumberOfPoints?: number;
+      }>;
 
-      // Handle API-level errors (e.g. OVER_RATE_LIMIT)
-      if (nrelJson.error) {
-        if (cached) {
-          console.log(`[ev/chargers] NREL error "${nrelJson.error.code}", serving stale cache for zip=${zipCode}`);
-          return res.json(cached.data);
-        }
-        throw new Error(`NREL error: ${nrelJson.error.code}`);
-      }
-
-      const chargers = (nrelJson.fuel_stations ?? [])
+      const chargers = (Array.isArray(ocmJson) ? ocmJson : [])
         .map((s) => {
-          const distMi = haversineMi(latNum, lonNum, s.latitude, s.longitude);
-          const l2 = s.ev_level2_evse_num ?? 0;
-          const dcFast = s.ev_dc_fast_num ?? 0;
-          const total = Math.max(l2 + dcFast, 1);
-          const isFast = dcFast > 0;
-          const address = [s.street_address, s.city, s.state].filter(Boolean).join(", ");
+          const sLat = s.AddressInfo?.Latitude;
+          const sLon = s.AddressInfo?.Longitude;
+          if (!sLat || !sLon) return null;
+          const distMi = haversineMi(latNum, lonNum, sLat, sLon);
+          const connections = s.Connections ?? [];
+          const isFast = connections.some((c) => c.Level?.IsFastChargeCapable);
+          const maxKw = connections.reduce((max, c) => Math.max(max, c.PowerKW ?? 0), 0);
+          const total = s.NumberOfPoints ?? Math.max(connections.length, 1);
+          const address = [s.AddressInfo.AddressLine1, s.AddressInfo.Town, s.AddressInfo.StateOrProvince]
+            .filter(Boolean).join(", ");
           return {
-            id: String(s.id),
-            name: s.station_name || "Charging Station",
+            id: String(s.ID),
+            name: s.AddressInfo.Title || "Charging Station",
             address,
-            latitude: s.latitude,
-            longitude: s.longitude,
+            latitude: sLat,
+            longitude: sLon,
             distanceMi: distMi,
             distance: distMi < 0.1 ? "< 0.1 mi" : `${distMi.toFixed(1)} mi`,
             chargerCount: total,
             available: total,
-            speed: isFast ? "DC Fast" : "Level 2",
-            network: s.ev_network || "Unknown",
-            pricePerKwh: "Varies",
+            speed: isFast ? (maxKw >= 100 ? "DC Fast (100+ kW)" : "DC Fast") : "Level 2",
+            network: s.OperatorInfo?.Title || "Unknown",
+            pricePerKwh: s.UsageCost || "Varies",
           };
         })
-        .filter((s) => s.distanceMi <= 20)
+        .filter((s): s is NonNullable<typeof s> => s !== null && s.distanceMi <= 20)
         .sort((a, b) => a.distanceMi - b.distanceMi);
 
-      // Store in cache (store without distanceMi so it can be recalculated per request)
-      evChargerCache.set(zipCode, { ts: Date.now(), data: chargers });
-      console.log(`[ev/chargers] zip=${zipCode} lat=${lat} lon=${lon} → ${chargers.length} stations (cached)`);
+      evChargerCache.set(cacheKey, { ts: Date.now(), data: chargers });
+      console.log(`[ev/chargers] lat=${lat} lon=${lon} → ${chargers.length} stations (cached)`);
       res.json(chargers);
     } catch (err) {
       console.error("[ev/chargers]", err);
+      const cached = evChargerCache.get(cacheKey);
+      if (cached) {
+        console.log(`[ev/chargers] error, serving stale cache`);
+        return res.json(cached.data);
+      }
       res.status(502).json({ error: "Failed to fetch charger data" });
     }
   });

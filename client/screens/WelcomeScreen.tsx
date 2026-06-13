@@ -166,7 +166,7 @@ export default function WelcomeScreen() {
           style={styles.logoClip}
         >
           <Image
-            source={require("../../assets/images/resqride-logo-dark.png")}
+            source={require("../../assets/images/icon.png")}
             style={[styles.logoImage, { opacity: isDark ? 1 : 0 }]}
             resizeMode="contain"
           />

@@ -4,8 +4,8 @@ import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing } from "@/constants/theme";
 
-const LOGO_DARK = require("../../assets/images/resqride-logo-dark.png");
-const LOGO_LIGHT = require("../../assets/images/resqride-logo-light.png");
+const LOGO_DARK = require("../../assets/images/icon.png");
+const LOGO_LIGHT = require("../../assets/images/icon.png");
 
 interface HeaderTitleProps {
   title?: string;

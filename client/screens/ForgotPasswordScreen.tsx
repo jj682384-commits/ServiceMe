@@ -45,12 +45,13 @@ export default function ForgotPasswordScreen() {
     setIsLoading(true);
     try {
       const res = await apiRequest("POST", "/api/auth/forgot-password", { email: email.trim() });
-      const data = await res.json() as { success: boolean; debug_code?: string };
+      const data = await res.json() as { success: boolean; reset_code?: string | null };
       if (data.success) {
-        if (data.debug_code) {
+        if (data.reset_code) {
+          setCode(data.reset_code);
           Alert.alert(
-            "Code Ready",
-            `Your reset code is: ${data.debug_code}\n\n(In production this will arrive by email.)`,
+            "Your Reset Code",
+            `Your 6-digit code is:\n\n${data.reset_code}\n\nWe've filled it in for you — just set your new password below.`,
             [{ text: "Continue", onPress: () => setStep("code") }]
           );
         } else {
@@ -121,8 +122,8 @@ export default function ForgotPasswordScreen() {
           </ThemedText>
           <ThemedText type="body" style={{ color: hintColor, textAlign: "center" }}>
             {step === "email"
-              ? "Enter your email and we'll send you a 6-digit reset code."
-              : `Enter the code sent to ${email} and choose a new password.`}
+              ? "Enter your email and we'll generate a 6-digit reset code for you."
+              : `Enter the code we provided and choose a new password.`}
           </ThemedText>
         </View>
 
