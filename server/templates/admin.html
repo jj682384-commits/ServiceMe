@@ -443,10 +443,10 @@
   .ov-orbs { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; display: none; }
   .ov-orbs.visible { display: block; }
   .ov-orb { position: absolute; border-radius: 50%; filter: blur(90px); animation: orbFloat linear infinite; }
-  .ov-orb:nth-child(1) { width: 420px; height: 420px; background: rgba(0,102,255,0.18); top: -80px; left: 15%; animation-duration: 20s; }
-  .ov-orb:nth-child(2) { width: 320px; height: 320px; background: rgba(217,34,34,0.14); top: 25%; right: 3%; animation-duration: 26s; animation-delay: -8s; }
-  .ov-orb:nth-child(3) { width: 280px; height: 280px; background: rgba(0,170,255,0.16); bottom: 5%; left: 3%; animation-duration: 22s; animation-delay: -12s; }
-  .ov-orb:nth-child(4) { width: 220px; height: 220px; background: rgba(34,197,94,0.12); bottom: 30%; right: 20%; animation-duration: 30s; animation-delay: -5s; }
+  .ov-orb:nth-child(1) { width: 420px; height: 420px; background: rgba(220,220,220,0.07); top: -80px; left: 15%; animation-duration: 20s; }
+  .ov-orb:nth-child(2) { width: 320px; height: 320px; background: rgba(160,160,160,0.06); top: 25%; right: 3%; animation-duration: 26s; animation-delay: -8s; }
+  .ov-orb:nth-child(3) { width: 280px; height: 280px; background: rgba(255,255,255,0.05); bottom: 5%; left: 3%; animation-duration: 22s; animation-delay: -12s; }
+  .ov-orb:nth-child(4) { width: 220px; height: 220px; background: rgba(192,192,192,0.05); bottom: 30%; right: 20%; animation-duration: 30s; animation-delay: -5s; }
   @keyframes orbFloat {
     0%   { transform: translate(0,0) scale(1); }
     25%  { transform: translate(28px,-38px) scale(1.06); }
@@ -491,22 +491,22 @@
     0%,100% { opacity: .18; transform: scale(1); }
     50%      { opacity: .32; transform: scale(1.12); }
   }
-  .ov-hero-card.hc-green { background: linear-gradient(135deg,rgba(34,197,94,.14),rgba(34,197,94,.04)); box-shadow: 0 0 0 1px rgba(34,197,94,.22), 0 10px 36px rgba(34,197,94,.09); }
-  .ov-hero-card.hc-green .ov-glow { background: #22c55e; }
-  .ov-hero-card.hc-green:hover { box-shadow: 0 0 0 1px rgba(34,197,94,.45), 0 16px 48px rgba(34,197,94,.16); }
-  .ov-hero-card.hc-blue { background: linear-gradient(135deg,rgba(0,102,255,.14),rgba(0,102,255,.04)); box-shadow: 0 0 0 1px rgba(0,102,255,.22), 0 10px 36px rgba(0,102,255,.09); }
-  .ov-hero-card.hc-blue .ov-glow { background: #0066FF; }
-  .ov-hero-card.hc-blue:hover { box-shadow: 0 0 0 1px rgba(0,102,255,.45), 0 16px 48px rgba(0,102,255,.16); }
-  .ov-hero-card.hc-cyan { background: linear-gradient(135deg,rgba(0,170,255,.14),rgba(0,170,255,.04)); box-shadow: 0 0 0 1px rgba(0,170,255,.22), 0 10px 36px rgba(0,170,255,.09); }
-  .ov-hero-card.hc-cyan .ov-glow { background: #00AAFF; }
-  .ov-hero-card.hc-cyan:hover { box-shadow: 0 0 0 1px rgba(0,170,255,.45), 0 16px 48px rgba(0,170,255,.16); }
-  .ov-hero-label { font-size: 11px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: rgba(255,255,255,.5); margin-bottom: 10px; }
+  .ov-hero-card.hc-green { background: linear-gradient(135deg,rgba(255,255,255,.08),rgba(255,255,255,.02)); box-shadow: 0 0 0 1px rgba(255,255,255,.12), 0 10px 36px rgba(0,0,0,.4); }
+  .ov-hero-card.hc-green .ov-glow { background: #d0d0d0; }
+  .ov-hero-card.hc-green:hover { box-shadow: 0 0 0 1px rgba(255,255,255,.25), 0 16px 48px rgba(255,255,255,.07); }
+  .ov-hero-card.hc-blue { background: linear-gradient(135deg,rgba(200,200,200,.07),rgba(200,200,200,.02)); box-shadow: 0 0 0 1px rgba(255,255,255,.1), 0 10px 36px rgba(0,0,0,.4); }
+  .ov-hero-card.hc-blue .ov-glow { background: #b0b0b0; }
+  .ov-hero-card.hc-blue:hover { box-shadow: 0 0 0 1px rgba(255,255,255,.22), 0 16px 48px rgba(255,255,255,.06); }
+  .ov-hero-card.hc-cyan { background: linear-gradient(135deg,rgba(170,170,170,.07),rgba(170,170,170,.02)); box-shadow: 0 0 0 1px rgba(255,255,255,.09), 0 10px 36px rgba(0,0,0,.4); }
+  .ov-hero-card.hc-cyan .ov-glow { background: #909090; }
+  .ov-hero-card.hc-cyan:hover { box-shadow: 0 0 0 1px rgba(255,255,255,.2), 0 16px 48px rgba(255,255,255,.05); }
+  .ov-hero-label { font-size: 11px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: rgba(255,255,255,.4); margin-bottom: 10px; }
   .ov-hero-value { font-size: 46px; font-weight: 900; line-height: 1; letter-spacing: -1.5px; }
-  .hc-green .ov-hero-value { color: #22c55e; }
-  .hc-blue  .ov-hero-value { color: #5599ff; }
-  .hc-cyan  .ov-hero-value { color: #33bbff; }
-  .ov-hero-sub { font-size: 12px; color: rgba(255,255,255,.45); margin-top: 9px; display: flex; align-items: center; gap: 6px; }
-  .ov-hero-icon { font-size: 36px; position: absolute; right: 22px; bottom: 20px; opacity: .12; line-height: 1; }
+  .hc-green .ov-hero-value { color: #ffffff; }
+  .hc-blue  .ov-hero-value { color: #d8d8d8; }
+  .hc-cyan  .ov-hero-value { color: #b0b0b0; }
+  .ov-hero-sub { font-size: 12px; color: rgba(255,255,255,.4); margin-top: 9px; display: flex; align-items: center; gap: 6px; }
+  .ov-hero-icon { font-size: 36px; position: absolute; right: 22px; bottom: 20px; opacity: .08; line-height: 1; }
 
   /* KPI grid */
   .ov-kpi-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(148px,1fr)); gap: 12px; margin-bottom: 16px; }
@@ -542,7 +542,7 @@
   .svc-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 11px; }
   .svc-bar-label { font-size: 12px; min-width: 108px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .svc-bar-track { flex: 1; height: 8px; background: rgba(255,255,255,.07); border-radius: 100px; overflow: hidden; }
-  .svc-bar-fill { height: 100%; border-radius: 100px; background: linear-gradient(90deg,#0066FF,#00AAFF); width: 0%; transition: width .85s cubic-bezier(.22,.68,0,1.2); }
+  .svc-bar-fill { height: 100%; border-radius: 100px; background: linear-gradient(90deg,#888888,#d0d0d0); width: 0%; transition: width .85s cubic-bezier(.22,.68,0,1.2); }
   .svc-bar-count { font-size: 11px; color: var(--muted); min-width: 24px; text-align: right; font-weight: 700; }
 
   /* Activity feed */
@@ -552,10 +552,10 @@
   .ov-act-dot.completed { background: #22c55e; }
   .ov-act-dot.cancelled { background: #ef4444; }
   .ov-act-dot.pending   { background: #f59e0b; animation: livePulse 1.8s ease-in-out infinite; }
-  .ov-act-dot.accepted,.ov-act-dot.en_route,.ov-act-dot.in_progress,.ov-act-dot.arrived { background: #0066FF; animation: livePulseBlue 1.8s ease-in-out infinite; }
-  @keyframes livePulseBlue {
-    0%,100% { box-shadow: 0 0 0 0 rgba(0,102,255,.7); }
-    60%     { box-shadow: 0 0 0 7px rgba(0,102,255,0); }
+  .ov-act-dot.accepted,.ov-act-dot.en_route,.ov-act-dot.in_progress,.ov-act-dot.arrived { background: #c0c0c0; animation: livePulseSilver 1.8s ease-in-out infinite; }
+  @keyframes livePulseSilver {
+    0%,100% { box-shadow: 0 0 0 0 rgba(192,192,192,.7); }
+    60%     { box-shadow: 0 0 0 7px rgba(192,192,192,0); }
   }
   .ov-act-info { flex: 1; min-width: 0; }
   .ov-act-type { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -717,72 +717,72 @@
         <div class="ov-kpi-grid">
           <div class="ov-kpi-card ov-card">
             <div class="ov-kpi-label">Drivers</div>
-            <div class="ov-kpi-value" style="color:#5599ff" id="ov-drivers">—</div>
+            <div class="ov-kpi-value" style="color:#e0e0e0" id="ov-drivers">—</div>
             <div class="ov-kpi-sub">Registered accounts</div>
           </div>
           <div class="ov-kpi-card ov-card">
             <div class="ov-kpi-label">Providers</div>
-            <div class="ov-kpi-value" style="color:#a78bfa" id="ov-providers">—</div>
+            <div class="ov-kpi-value" style="color:#e0e0e0" id="ov-providers">—</div>
             <div class="ov-kpi-sub">All registered</div>
           </div>
           <div class="ov-kpi-card ov-card">
             <div class="ov-kpi-label">Verified Providers</div>
-            <div class="ov-kpi-value" style="color:#22c55e" id="ov-verified">—</div>
+            <div class="ov-kpi-value" style="color:#c8c8c8" id="ov-verified">—</div>
             <div class="ov-kpi-sub">Background approved</div>
           </div>
           <div class="ov-kpi-card ov-card">
             <div class="ov-kpi-label">Available Now</div>
-            <div class="ov-kpi-value" style="color:#22c55e" id="ov-available">—</div>
+            <div class="ov-kpi-value" style="color:#ffffff" id="ov-available">—</div>
             <div class="ov-kpi-sub"><span class="ov-live-dot" style="width:6px;height:6px;margin-right:2px"></span>Online &amp; ready</div>
           </div>
           <div class="ov-kpi-card ov-card">
             <div class="ov-kpi-label">Pending Verify</div>
-            <div class="ov-kpi-value" style="color:#f59e0b" id="ov-pending">—</div>
+            <div class="ov-kpi-value" style="color:var(--warning)" id="ov-pending">—</div>
             <div class="ov-kpi-sub">Awaiting review</div>
           </div>
           <div class="ov-kpi-card ov-card">
             <div class="ov-kpi-label">Total Jobs</div>
-            <div class="ov-kpi-value" id="ov-jobs">—</div>
+            <div class="ov-kpi-value" style="color:#e0e0e0" id="ov-jobs">—</div>
             <div class="ov-kpi-sub">All time</div>
           </div>
           <div class="ov-kpi-card ov-card">
             <div class="ov-kpi-label">Active Jobs</div>
-            <div class="ov-kpi-value" style="color:#0066FF" id="ov-active-jobs">—</div>
+            <div class="ov-kpi-value" style="color:#ffffff" id="ov-active-jobs">—</div>
             <div class="ov-kpi-sub"><span class="ov-live-dot" style="width:6px;height:6px;margin-right:2px"></span>In progress now</div>
           </div>
           <div class="ov-kpi-card ov-card">
             <div class="ov-kpi-label">Completed</div>
-            <div class="ov-kpi-value" style="color:#22c55e" id="ov-completed">—</div>
+            <div class="ov-kpi-value" style="color:var(--success)" id="ov-completed">—</div>
             <div class="ov-kpi-sub">Successfully finished</div>
           </div>
           <div class="ov-kpi-card ov-card">
             <div class="ov-kpi-label">Cancelled</div>
-            <div class="ov-kpi-value" style="color:#ef4444" id="ov-cancelled">—</div>
+            <div class="ov-kpi-value" style="color:var(--danger)" id="ov-cancelled">—</div>
             <div class="ov-kpi-sub">Not completed</div>
           </div>
           <div class="ov-kpi-card ov-card">
             <div class="ov-kpi-label">EV Jobs</div>
-            <div class="ov-kpi-value" style="color:#a78bfa" id="ov-ev-jobs">—</div>
+            <div class="ov-kpi-value" style="color:#c0c0c0" id="ov-ev-jobs">—</div>
             <div class="ov-kpi-sub">Electric vehicle</div>
           </div>
           <div class="ov-kpi-card ov-card">
             <div class="ov-kpi-label">Emergency / SOS</div>
-            <div class="ov-kpi-value" style="color:#ef4444" id="ov-emergency-jobs">—</div>
+            <div class="ov-kpi-value" style="color:var(--danger)" id="ov-emergency-jobs">—</div>
             <div class="ov-kpi-sub">SOS activations</div>
           </div>
           <div class="ov-kpi-card ov-card">
             <div class="ov-kpi-label">Direct Requests</div>
-            <div class="ov-kpi-value" style="color:#c084fc" id="ov-direct">—</div>
+            <div class="ov-kpi-value" style="color:#c0c0c0" id="ov-direct">—</div>
             <div class="ov-kpi-sub">Provider-specific</div>
           </div>
           <div class="ov-kpi-card ov-card">
             <div class="ov-kpi-label">Avg Job Value</div>
-            <div class="ov-kpi-value" style="color:#33bbff" id="ov-avg-value">—</div>
+            <div class="ov-kpi-value" style="color:#e8e8e8" id="ov-avg-value">—</div>
             <div class="ov-kpi-sub">Per completed job</div>
           </div>
           <div class="ov-kpi-card ov-card">
             <div class="ov-kpi-label">Waitlist</div>
-            <div class="ov-kpi-value" style="color:#a78bfa" id="ov-waitlist">—</div>
+            <div class="ov-kpi-value" style="color:#c0c0c0" id="ov-waitlist">—</div>
             <div class="ov-kpi-sub">Email signups</div>
           </div>
         </div>
