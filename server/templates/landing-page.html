@@ -1219,28 +1219,50 @@
 
     <!-- Phone 1: Sign In — far left, small, lowered -->
     <div class="phone" style="--ph-w:140px;--ph-delay:-3.1s;--ph-mb:-65px;--ph-op:.6;">
-      <div class="phone-screen" style="background:#04060E;display:flex;flex-direction:column;">
-        <div style="width:50px;height:9px;background:#000;border-radius:100px;margin:8px auto 0;flex-shrink:0;"></div>
-        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px;gap:7px;">
-          <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#0055CC,#B81C1C);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 16px rgba(0,85,204,0.5);">
-            <span style="color:#fff;font-size:13px;font-weight:900;line-height:1;">R</span>
+      <div class="phone-screen" style="background:#04060E;display:flex;flex-direction:column;position:relative;overflow:hidden;">
+        <!-- Ambient glows matching actual app -->
+        <div style="position:absolute;width:120px;height:120px;top:-40px;left:-40px;background:radial-gradient(circle,rgba(217,34,34,0.12) 0%,transparent 70%);pointer-events:none;"></div>
+        <div style="position:absolute;width:120px;height:120px;top:-40px;right:-40px;background:radial-gradient(circle,rgba(0,102,255,0.1) 0%,transparent 70%);pointer-events:none;"></div>
+        <!-- Constellation dots -->
+        <div style="position:absolute;inset:0;pointer-events:none;">
+          <div style="position:absolute;width:1.5px;height:1.5px;border-radius:50%;background:rgba(255,255,255,0.5);top:18%;left:12%;"></div>
+          <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:rgba(255,255,255,0.4);top:32%;left:78%;"></div>
+          <div style="position:absolute;width:1.5px;height:1.5px;border-radius:50%;background:rgba(255,255,255,0.45);top:62%;left:88%;"></div>
+          <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:rgba(255,255,255,0.35);top:75%;left:22%;"></div>
+          <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:rgba(255,255,255,0.3);top:48%;left:6%;"></div>
+        </div>
+        <div style="width:50px;height:9px;background:#000;border-radius:100px;margin:8px auto 0;flex-shrink:0;position:relative;z-index:1;"></div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 10px;gap:0;position:relative;z-index:1;">
+          <!-- Actual app logo -->
+          <img src="/assets/images/resqride-logo-dark.png" alt="ResqRide" style="width:100%;max-width:110px;height:auto;object-fit:contain;display:block;margin:0 auto 4px;flex-shrink:0;" />
+          <div style="color:rgba(255,255,255,0.35);font-size:5.5px;margin-bottom:8px;letter-spacing:.3px;">On-demand roadside assistance</div>
+          <!-- Auth tabs — matching actual app -->
+          <div style="display:flex;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:2px;width:100%;margin-bottom:7px;">
+            <div style="flex:1;background:rgba(0,102,255,0.12);border-radius:6px;text-align:center;padding:4px;font-size:6px;font-weight:700;color:#60A5FA;">Sign In</div>
+            <div style="flex:1;text-align:center;padding:4px;font-size:6px;color:rgba(255,255,255,0.35);">Sign Up</div>
           </div>
-          <div style="color:#fff;font-size:9px;font-weight:800;letter-spacing:1.5px;">RESQRIDE</div>
-          <div style="color:rgba(255,255,255,0.3);font-size:5.5px;text-align:center;">On-demand roadside assistance</div>
-          <div style="display:flex;background:rgba(255,255,255,0.06);border-radius:7px;padding:2px;width:100%;gap:1px;">
-            <div style="flex:1;background:#0066FF;border-radius:5px;text-align:center;padding:3.5px;font-size:7px;font-weight:700;color:#fff;">Sign In</div>
-            <div style="flex:1;text-align:center;padding:3.5px;font-size:7px;color:rgba(255,255,255,0.4);">Sign Up</div>
+          <!-- Email field -->
+          <div style="width:100%;margin-bottom:5px;">
+            <div style="font-size:5px;font-weight:700;color:rgba(255,255,255,0.35);margin-bottom:3px;letter-spacing:.6px;text-transform:uppercase;">Email</div>
+            <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:5px;padding:5px 7px;display:flex;align-items:center;gap:4px;">
+              <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              <span style="font-size:6px;color:rgba(255,255,255,0.3);">you@example.com</span>
+            </div>
           </div>
-          <div style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:5px 7px;">
-            <div style="font-size:5px;color:rgba(255,255,255,0.3);margin-bottom:2px;letter-spacing:.5px;">EMAIL</div>
-            <div style="font-size:7px;color:rgba(255,255,255,0.5);">you@example.com</div>
+          <!-- Password field -->
+          <div style="width:100%;margin-bottom:7px;">
+            <div style="font-size:5px;font-weight:700;color:rgba(255,255,255,0.35);margin-bottom:3px;letter-spacing:.6px;text-transform:uppercase;">Password</div>
+            <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:5px;padding:5px 7px;display:flex;align-items:center;justify-content:space-between;">
+              <div style="display:flex;align-items:center;gap:4px;">
+                <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <span style="font-size:6px;color:rgba(255,255,255,0.25);letter-spacing:1.5px;">&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;</span>
+              </div>
+              <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </div>
           </div>
-          <div style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:5px 7px;">
-            <div style="font-size:5px;color:rgba(255,255,255,0.3);margin-bottom:2px;letter-spacing:.5px;">PASSWORD</div>
-            <div style="font-size:7px;color:rgba(255,255,255,0.25);">&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;</div>
-          </div>
-          <div style="width:100%;background:linear-gradient(135deg,#0066FF,#0044CC);border-radius:6px;padding:7px;text-align:center;font-size:7.5px;font-weight:700;color:#fff;box-shadow:0 4px 12px rgba(0,102,255,0.4);">Sign In</div>
-          <div style="font-size:5.5px;color:rgba(255,255,255,0.2);">Forgot password?</div>
+          <!-- Sign In button — matching exact btn-cyan from app -->
+          <div style="width:100%;background:linear-gradient(135deg,#0077FF,#0055D4);border-radius:6px;padding:7px;text-align:center;font-size:7px;font-weight:800;color:#fff;box-shadow:0 4px 14px rgba(0,119,255,0.3),inset 0 1px 0 rgba(255,255,255,0.18);letter-spacing:.3px;">Sign In</div>
+          <div style="font-size:5px;color:rgba(255,255,255,0.2);margin-top:6px;">Forgot password?</div>
         </div>
       </div>
     </div>
@@ -1249,40 +1271,58 @@
     <div class="phone" style="--ph-w:162px;--ph-delay:-0.7s;--ph-mb:-30px;--ph-op:.82;">
       <div class="phone-screen" style="background:#04060E;display:flex;flex-direction:column;">
         <div style="width:56px;height:9px;background:#000;border-radius:100px;margin:8px auto 0;flex-shrink:0;"></div>
-        <div style="padding:10px 12px 6px;flex-shrink:0;">
-          <div style="color:rgba(255,255,255,0.4);font-size:6.5px;letter-spacing:.5px;">WHAT DO YOU NEED?</div>
-          <div style="color:#fff;font-size:12px;font-weight:800;">Request Help</div>
+        <div style="padding:9px 11px 6px;flex-shrink:0;">
+          <div style="color:rgba(255,255,255,0.35);font-size:6px;letter-spacing:.6px;text-transform:uppercase;">What do you need?</div>
+          <div style="color:#F0F0F0;font-size:12px;font-weight:800;margin-top:1px;">Request Help</div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:0 10px;flex:1;">
-          <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:9px;padding:8px 6px;display:flex;flex-direction:column;align-items:center;gap:3px;">
-            <div style="font-size:17px;">&#128295;</div>
-            <div style="color:#fff;font-size:6.5px;font-weight:700;text-align:center;">Flat Tire</div>
-            <div style="color:rgba(255,255,255,0.35);font-size:5.5px;">From $28</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:0 10px;flex:1;">
+          <!-- Flat Tire -->
+          <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:8px 6px;display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <div style="width:22px;height:22px;border-radius:7px;background:rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:center;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
+            </div>
+            <div style="color:#F0F0F0;font-size:6px;font-weight:700;text-align:center;">Flat Tire</div>
+            <div style="color:rgba(255,255,255,0.3);font-size:5px;">From $28</div>
           </div>
-          <div style="background:rgba(0,102,255,0.18);border:1px solid rgba(0,102,255,0.4);border-radius:9px;padding:8px 6px;display:flex;flex-direction:column;align-items:center;gap:3px;">
-            <div style="font-size:17px;">&#9889;</div>
-            <div style="color:#fff;font-size:6.5px;font-weight:700;text-align:center;">Jump Start</div>
-            <div style="color:rgba(255,255,255,0.35);font-size:5.5px;">From $35</div>
+          <!-- Jump Start — selected/active -->
+          <div style="background:rgba(0,102,255,0.12);border:1px solid rgba(0,119,255,0.3);border-radius:10px;padding:8px 6px;display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <div style="width:22px;height:22px;border-radius:7px;background:rgba(0,119,255,0.18);display:flex;align-items:center;justify-content:center;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="#60A5FA" stroke="#60A5FA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            </div>
+            <div style="color:#60A5FA;font-size:6px;font-weight:700;text-align:center;">Jump Start</div>
+            <div style="color:rgba(96,165,250,0.6);font-size:5px;">From $35</div>
           </div>
-          <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:9px;padding:8px 6px;display:flex;flex-direction:column;align-items:center;gap:3px;">
-            <div style="font-size:17px;">&#128665;</div>
-            <div style="color:#fff;font-size:6.5px;font-weight:700;text-align:center;">Towing</div>
-            <div style="color:rgba(255,255,255,0.35);font-size:5.5px;">From $75</div>
+          <!-- Towing -->
+          <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:8px 6px;display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <div style="width:22px;height:22px;border-radius:7px;background:rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:center;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+            </div>
+            <div style="color:#F0F0F0;font-size:6px;font-weight:700;text-align:center;">Towing</div>
+            <div style="color:rgba(255,255,255,0.3);font-size:5px;">From $75</div>
           </div>
-          <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:9px;padding:8px 6px;display:flex;flex-direction:column;align-items:center;gap:3px;">
-            <div style="font-size:17px;">&#9981;</div>
-            <div style="color:#fff;font-size:6.5px;font-weight:700;text-align:center;">Fuel Delivery</div>
-            <div style="color:rgba(255,255,255,0.35);font-size:5.5px;">From $45</div>
+          <!-- Fuel -->
+          <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:8px 6px;display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <div style="width:22px;height:22px;border-radius:7px;background:rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:center;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+            </div>
+            <div style="color:#F0F0F0;font-size:6px;font-weight:700;text-align:center;">Fuel Delivery</div>
+            <div style="color:rgba(255,255,255,0.3);font-size:5px;">From $45</div>
           </div>
-          <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:9px;padding:8px 6px;display:flex;flex-direction:column;align-items:center;gap:3px;">
-            <div style="font-size:17px;">&#128273;</div>
-            <div style="color:#fff;font-size:6.5px;font-weight:700;text-align:center;">Lockout</div>
-            <div style="color:rgba(255,255,255,0.35);font-size:5.5px;">From $55</div>
+          <!-- Lockout -->
+          <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:8px 6px;display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <div style="width:22px;height:22px;border-radius:7px;background:rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:center;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+            <div style="color:#F0F0F0;font-size:6px;font-weight:700;text-align:center;">Lockout</div>
+            <div style="color:rgba(255,255,255,0.3);font-size:5px;">From $55</div>
           </div>
-          <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:9px;padding:8px 6px;display:flex;flex-direction:column;align-items:center;gap:3px;">
-            <div style="font-size:17px;">&#128302;</div>
-            <div style="color:#fff;font-size:6.5px;font-weight:700;text-align:center;">OBD Scan</div>
-            <div style="color:rgba(255,255,255,0.35);font-size:5.5px;">From $25</div>
+          <!-- OBD Scan -->
+          <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:8px 6px;display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <div style="width:22px;height:22px;border-radius:7px;background:rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:center;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
+            <div style="color:#F0F0F0;font-size:6px;font-weight:700;text-align:center;">OBD Scan</div>
+            <div style="color:rgba(255,255,255,0.3);font-size:5px;">From $25</div>
           </div>
         </div>
         <div style="height:8px;flex-shrink:0;"></div>
@@ -1293,65 +1333,63 @@
     <div class="phone" style="--ph-w:186px;--ph-delay:0s;--ph-mb:0px;--ph-op:1;box-shadow:0 50px 120px rgba(0,0,0,0.9),0 0 70px rgba(255,255,255,0.1),0 0 0 1px rgba(255,255,255,0.18),inset 0 1px 0 rgba(255,255,255,0.22);">
       <div class="phone-screen" style="background:#04060E;display:flex;flex-direction:column;">
         <div style="width:60px;height:10px;background:#000;border-radius:100px;margin:9px auto 0;flex-shrink:0;"></div>
-        <div style="background:linear-gradient(135deg,rgba(0,102,255,0.25),rgba(0,170,255,0.15));border-bottom:1px solid rgba(0,102,255,0.25);padding:7px 12px;flex-shrink:0;">
-          <div style="display:flex;align-items:center;gap:5px;">
-            <div style="width:6px;height:6px;border-radius:50%;background:#00AAFF;box-shadow:0 0 6px #00AAFF;"></div>
-            <div style="color:#00AAFF;font-size:7px;font-weight:700;letter-spacing:.5px;">PROVIDER EN ROUTE</div>
-            <div style="margin-left:auto;color:#fff;font-size:8px;font-weight:800;">4 min</div>
-          </div>
+        <!-- Status banner -->
+        <div style="background:rgba(0,100,255,0.1);border-bottom:1px solid rgba(0,102,255,0.2);padding:6px 12px;flex-shrink:0;display:flex;align-items:center;gap:5px;">
+          <div style="width:5px;height:5px;border-radius:50%;background:#3B82F6;"></div>
+          <div style="color:#93C5FD;font-size:6.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;">Provider En Route</div>
+          <div style="margin-left:auto;color:#F0F0F0;font-size:8px;font-weight:800;">4 min</div>
         </div>
-        <!-- Map area -->
-        <div style="flex:1;background:#080C14;position:relative;overflow:hidden;">
-          <!-- Road grid -->
-          <div style="position:absolute;left:32%;top:0;bottom:0;width:1.5px;background:rgba(255,255,255,0.12);"></div>
-          <div style="position:absolute;left:58%;top:0;bottom:0;width:2px;background:rgba(255,255,255,0.18);"></div>
-          <div style="position:absolute;left:78%;top:0;bottom:0;width:1px;background:rgba(255,255,255,0.08);"></div>
-          <div style="position:absolute;top:22%;left:0;right:0;height:2px;background:rgba(255,255,255,0.18);"></div>
-          <div style="position:absolute;top:52%;left:0;right:0;height:1.5px;background:rgba(255,255,255,0.12);"></div>
-          <div style="position:absolute;top:74%;left:0;right:0;height:1px;background:rgba(255,255,255,0.08);"></div>
-          <!-- Route line SVG -->
+        <!-- Map area — dark navy grid -->
+        <div style="flex:1;background:#060A10;position:relative;overflow:hidden;">
+          <!-- Block fills for map feel -->
+          <div style="position:absolute;left:0;top:0;width:32%;height:100%;background:rgba(255,255,255,0.012);"></div>
+          <div style="position:absolute;left:60%;top:0;width:22%;height:100%;background:rgba(255,255,255,0.012);"></div>
+          <div style="position:absolute;top:0;left:0;right:0;height:24%;background:rgba(255,255,255,0.01);"></div>
+          <div style="position:absolute;top:56%;left:0;right:0;height:20%;background:rgba(255,255,255,0.01);"></div>
+          <!-- Roads -->
+          <div style="position:absolute;left:32%;top:0;bottom:0;width:1px;background:rgba(255,255,255,0.1);"></div>
+          <div style="position:absolute;left:58%;top:0;bottom:0;width:1.5px;background:rgba(255,255,255,0.14);"></div>
+          <div style="position:absolute;top:24%;left:0;right:0;height:1.5px;background:rgba(255,255,255,0.14);"></div>
+          <div style="position:absolute;top:56%;left:0;right:0;height:1px;background:rgba(255,255,255,0.1);"></div>
+          <!-- Route line -->
           <svg style="position:absolute;inset:0;width:100%;height:100%;overflow:visible;" viewBox="0 0 186 200" preserveAspectRatio="none">
-            <path d="M55,180 C60,155 68,135 80,115 C90,98 100,82 115,62" stroke="#0066FF" stroke-width="3" fill="none" stroke-dasharray="5,3.5" opacity="0.85" stroke-linecap="round"/>
-            <circle cx="55" cy="180" r="6" fill="#0066FF" opacity="0.3"/>
+            <path d="M52,182 C56,158 65,138 78,118 C88,102 100,84 116,60" stroke="#3B82F6" stroke-width="2.5" fill="none" stroke-dasharray="5,3" opacity="0.9" stroke-linecap="round"/>
           </svg>
-          <!-- Driver dot -->
-          <div style="position:absolute;left:29%;bottom:12%;width:18px;height:18px;background:#0066FF;border-radius:50%;border:2.5px solid #fff;transform:translate(-50%,50%);display:flex;align-items:center;justify-content:center;box-shadow:0 0 14px rgba(0,102,255,0.6);">
-            <span style="font-size:8px;">&#128663;</span>
-          </div>
-          <!-- Provider dot -->
-          <div style="position:absolute;left:62%;top:28%;width:20px;height:20px;background:#D92222;border-radius:50%;border:2.5px solid #fff;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;box-shadow:0 0 14px rgba(217,34,34,0.6);">
-            <span style="font-size:8px;">&#128295;</span>
-          </div>
-          <!-- Pulse ring -->
-          <div style="position:absolute;left:29%;bottom:12%;width:36px;height:36px;border-radius:50%;background:rgba(0,102,255,0.12);border:1px solid rgba(0,102,255,0.3);transform:translate(-50%,50%);"></div>
+          <!-- Pulse ring (driver location) -->
+          <div style="position:absolute;left:28%;bottom:9%;width:34px;height:34px;border-radius:50%;background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.25);transform:translate(-50%,50%);"></div>
+          <!-- Driver pin -->
+          <div style="position:absolute;left:28%;bottom:9%;width:14px;height:14px;background:#3B82F6;border-radius:50%;border:2px solid #fff;transform:translate(-50%,50%);box-shadow:0 0 10px rgba(59,130,246,0.7);"></div>
+          <!-- Provider pin (red accent) -->
+          <div style="position:absolute;left:62%;top:26%;width:16px;height:16px;background:#DC2626;border-radius:50%;border:2px solid #fff;transform:translate(-50%,-50%);box-shadow:0 0 10px rgba(220,38,38,0.6);"></div>
         </div>
-        <!-- Provider card -->
-        <div style="background:rgba(10,14,28,0.95);border-top:1px solid rgba(255,255,255,0.08);padding:8px 10px;flex-shrink:0;">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#1a3a6a,#0055CC);flex-shrink:0;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,85,204,0.4);">
-              <span style="font-size:13px;">&#128119;</span>
+        <!-- Provider card — glassmorphic, matching actual app -->
+        <div style="background:rgba(6,10,20,0.97);border-top:1px solid rgba(255,255,255,0.07);padding:8px 10px 9px;flex-shrink:0;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            <!-- Avatar with initials -->
+            <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#1E3A5F,#1D4ED8);flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+              <span style="color:#93C5FD;font-size:8px;font-weight:800;">MR</span>
             </div>
             <div style="flex:1;min-width:0;">
-              <div style="color:#fff;font-size:8.5px;font-weight:700;">Mike Rodriguez</div>
+              <div style="color:#F0F0F0;font-size:8px;font-weight:700;">Mike Rodriguez</div>
               <div style="display:flex;align-items:center;gap:3px;margin-top:1px;">
-                <span style="color:#FFB800;font-size:7.5px;">&#9733;</span>
-                <span style="color:rgba(255,255,255,0.5);font-size:6.5px;">4.92 &middot; Verified</span>
+                <svg width="7" height="7" viewBox="0 0 24 24" fill="#FBBF24" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                <span style="color:rgba(255,255,255,0.45);font-size:6px;">4.92 &middot; Verified</span>
               </div>
             </div>
-            <div style="background:#0066FF;border-radius:6px;padding:4px 8px;font-size:7px;font-weight:700;color:#fff;">Chat</div>
+            <div style="background:rgba(0,119,255,0.15);border:1px solid rgba(0,119,255,0.3);border-radius:5px;padding:3px 7px;font-size:6.5px;font-weight:700;color:#60A5FA;">Chat</div>
           </div>
-          <div style="margin-top:6px;display:flex;gap:4px;">
-            <div style="flex:1;background:rgba(0,170,255,0.1);border:1px solid rgba(0,170,255,0.2);border-radius:6px;padding:4px;text-align:center;">
-              <div style="font-size:10px;font-weight:800;color:#00AAFF;">4 min</div>
-              <div style="font-size:5.5px;color:rgba(255,255,255,0.3);">ETA</div>
+          <div style="display:flex;gap:4px;">
+            <div style="flex:1;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.18);border-radius:6px;padding:4px;text-align:center;">
+              <div style="font-size:9px;font-weight:800;color:#60A5FA;">4 min</div>
+              <div style="font-size:5px;color:rgba(255,255,255,0.3);letter-spacing:.3px;">ETA</div>
             </div>
-            <div style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:4px;text-align:center;">
-              <div style="font-size:10px;font-weight:800;color:#fff;">1.2 mi</div>
-              <div style="font-size:5.5px;color:rgba(255,255,255,0.3);">Away</div>
+            <div style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:6px;padding:4px;text-align:center;">
+              <div style="font-size:9px;font-weight:800;color:#F0F0F0;">1.2 mi</div>
+              <div style="font-size:5px;color:rgba(255,255,255,0.3);letter-spacing:.3px;">Away</div>
             </div>
-            <div style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:4px;text-align:center;">
-              <div style="font-size:10px;font-weight:800;color:#fff;">$35</div>
-              <div style="font-size:5.5px;color:rgba(255,255,255,0.3);">Total</div>
+            <div style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:6px;padding:4px;text-align:center;">
+              <div style="font-size:9px;font-weight:800;color:#F0F0F0;">$35</div>
+              <div style="font-size:5px;color:rgba(255,255,255,0.3);letter-spacing:.3px;">Total</div>
             </div>
           </div>
         </div>
@@ -1362,65 +1400,73 @@
     <div class="phone" style="--ph-w:186px;--ph-delay:-2.1s;--ph-mb:0px;--ph-op:1;box-shadow:0 50px 120px rgba(0,0,0,0.9),0 0 70px rgba(255,255,255,0.1),0 0 0 1px rgba(255,255,255,0.18),inset 0 1px 0 rgba(255,255,255,0.22);">
       <div class="phone-screen" style="background:#04060E;display:flex;flex-direction:column;">
         <div style="width:60px;height:10px;background:#000;border-radius:100px;margin:9px auto 0;flex-shrink:0;"></div>
-        <div style="padding:10px 12px 6px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">
+        <div style="padding:9px 12px 5px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">
           <div>
-            <div style="color:rgba(255,255,255,0.35);font-size:6.5px;letter-spacing:.4px;">PROVIDER MODE</div>
-            <div style="color:#fff;font-size:13px;font-weight:800;">Available Jobs</div>
+            <div style="color:rgba(255,255,255,0.35);font-size:6px;letter-spacing:.5px;text-transform:uppercase;">Provider Mode</div>
+            <div style="color:#F0F0F0;font-size:13px;font-weight:800;margin-top:1px;">Available Jobs</div>
           </div>
-          <div style="background:rgba(0,200,100,0.12);border:1px solid rgba(0,200,100,0.3);border-radius:100px;padding:3px 8px;display:flex;align-items:center;gap:4px;">
-            <div style="width:5px;height:5px;border-radius:50%;background:#00C864;box-shadow:0 0 4px #00C864;"></div>
-            <div style="font-size:6px;color:#00C864;font-weight:700;">Online</div>
+          <div style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);border-radius:100px;padding:3px 7px;display:flex;align-items:center;gap:3px;">
+            <div style="width:4px;height:4px;border-radius:50%;background:#22C55E;"></div>
+            <div style="font-size:5.5px;color:#22C55E;font-weight:700;">Online</div>
           </div>
         </div>
-        <div style="margin:0 10px 6px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:6px 10px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
+        <!-- Earnings strip -->
+        <div style="margin:0 10px 6px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:5px 10px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
           <div>
-            <div style="font-size:5.5px;color:rgba(255,255,255,0.3);letter-spacing:.3px;">TODAY'S EARNINGS</div>
-            <div style="font-size:14px;font-weight:900;color:#fff;">$127.50</div>
+            <div style="font-size:5px;color:rgba(255,255,255,0.3);letter-spacing:.4px;text-transform:uppercase;">Today's Earnings</div>
+            <div style="font-size:14px;font-weight:900;color:#F0F0F0;line-height:1.2;">$127.50</div>
           </div>
           <div style="text-align:right;">
-            <div style="font-size:5.5px;color:rgba(255,255,255,0.3);">JOBS DONE</div>
-            <div style="font-size:14px;font-weight:900;color:#00AAFF;">3</div>
+            <div style="font-size:5px;color:rgba(255,255,255,0.3);letter-spacing:.4px;text-transform:uppercase;">Jobs Done</div>
+            <div style="font-size:14px;font-weight:900;color:#60A5FA;line-height:1.2;">3</div>
           </div>
         </div>
+        <!-- Job cards -->
         <div style="flex:1;overflow:hidden;padding:0 10px;display:flex;flex-direction:column;gap:5px;">
-          <!-- New job (highlighted) -->
-          <div style="background:rgba(0,102,255,0.12);border:1px solid rgba(0,102,255,0.35);border-radius:10px;padding:8px;flex-shrink:0;">
-            <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:5px;">
+          <!-- Job 1 — new/highlighted with accept button -->
+          <div style="background:rgba(0,100,255,0.1);border:1px solid rgba(0,119,255,0.28);border-radius:10px;padding:7px;flex-shrink:0;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">
               <div style="display:flex;align-items:center;gap:5px;">
-                <span style="font-size:13px;">&#9889;</span>
+                <div style="width:20px;height:20px;border-radius:6px;background:rgba(0,119,255,0.15);display:flex;align-items:center;justify-content:center;">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="#60A5FA" stroke="#60A5FA" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                </div>
                 <div>
-                  <div style="color:#fff;font-size:8px;font-weight:700;">Jump Start</div>
-                  <div style="color:rgba(255,255,255,0.4);font-size:6px;">0.8 mi &middot; ~15 min</div>
+                  <div style="color:#F0F0F0;font-size:7.5px;font-weight:700;">Jump Start</div>
+                  <div style="color:rgba(255,255,255,0.35);font-size:5.5px;">0.8 mi &middot; ~15 min</div>
                 </div>
               </div>
               <div style="text-align:right;">
-                <div style="color:#00AAFF;font-size:10px;font-weight:900;">$35</div>
-                <div style="background:rgba(0,102,255,0.3);border-radius:3px;padding:1px 4px;font-size:5px;color:#66AAFF;font-weight:600;margin-top:1px;">NEW</div>
+                <div style="color:#60A5FA;font-size:10px;font-weight:900;">$35</div>
+                <div style="background:rgba(0,119,255,0.25);border-radius:3px;padding:1px 4px;font-size:5px;color:#93C5FD;font-weight:700;letter-spacing:.3px;">NEW</div>
               </div>
             </div>
-            <div style="background:linear-gradient(135deg,#0066FF,#0044CC);border-radius:6px;padding:5px;text-align:center;font-size:7.5px;font-weight:700;color:#fff;box-shadow:0 3px 10px rgba(0,102,255,0.4);">Accept Job</div>
+            <div style="background:linear-gradient(135deg,#0077FF,#0055D4);border-radius:6px;padding:5px;text-align:center;font-size:7px;font-weight:800;color:#fff;box-shadow:0 3px 10px rgba(0,119,255,0.35);letter-spacing:.2px;">Accept Job</div>
           </div>
           <!-- Job 2 -->
-          <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:8px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">
+          <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:7px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">
             <div style="display:flex;align-items:center;gap:5px;">
-              <span style="font-size:13px;">&#128295;</span>
+              <div style="width:20px;height:20px;border-radius:6px;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+              </div>
               <div>
-                <div style="color:#fff;font-size:8px;font-weight:700;">Flat Tire Repair</div>
-                <div style="color:rgba(255,255,255,0.35);font-size:6px;">1.4 mi &middot; ~25 min</div>
+                <div style="color:#F0F0F0;font-size:7.5px;font-weight:700;">Flat Tire Repair</div>
+                <div style="color:rgba(255,255,255,0.3);font-size:5.5px;">1.4 mi &middot; ~25 min</div>
               </div>
             </div>
-            <div style="color:#fff;font-size:10px;font-weight:800;">$45</div>
+            <div style="color:#F0F0F0;font-size:10px;font-weight:800;">$45</div>
           </div>
           <!-- Job 3 -->
-          <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:8px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">
+          <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:7px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">
             <div style="display:flex;align-items:center;gap:5px;">
-              <span style="font-size:13px;">&#9981;</span>
+              <div style="width:20px;height:20px;border-radius:6px;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+              </div>
               <div>
-                <div style="color:#fff;font-size:8px;font-weight:700;">Fuel Delivery</div>
-                <div style="color:rgba(255,255,255,0.35);font-size:6px;">2.1 mi &middot; ~30 min</div>
+                <div style="color:#F0F0F0;font-size:7.5px;font-weight:700;">Fuel Delivery</div>
+                <div style="color:rgba(255,255,255,0.3);font-size:5.5px;">2.1 mi &middot; ~30 min</div>
               </div>
             </div>
-            <div style="color:#fff;font-size:10px;font-weight:800;">$55</div>
+            <div style="color:#F0F0F0;font-size:10px;font-weight:800;">$55</div>
           </div>
         </div>
         <div style="height:8px;flex-shrink:0;"></div>
@@ -1431,60 +1477,72 @@
     <div class="phone" style="--ph-w:162px;--ph-delay:-1.4s;--ph-mb:-30px;--ph-op:.82;">
       <div class="phone-screen" style="background:#04060E;display:flex;flex-direction:column;">
         <div style="width:56px;height:9px;background:#000;border-radius:100px;margin:8px auto 0;flex-shrink:0;"></div>
-        <div style="padding:10px 12px 6px;flex-shrink:0;display:flex;align-items:center;gap:6px;">
-          <div style="width:20px;height:20px;border-radius:6px;background:rgba(0,170,255,0.18);border:1px solid rgba(0,170,255,0.35);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;">&#9889;</div>
+        <div style="padding:9px 11px 5px;flex-shrink:0;display:flex;align-items:center;gap:6px;">
+          <div style="width:20px;height:20px;border-radius:6px;background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="#00D4FF" stroke="#00D4FF" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          </div>
           <div>
-            <div style="color:rgba(255,255,255,0.35);font-size:6.5px;letter-spacing:.4px;">EV MODE</div>
-            <div style="color:#fff;font-size:11px;font-weight:800;">EV Services</div>
+            <div style="color:rgba(255,255,255,0.35);font-size:6px;letter-spacing:.5px;text-transform:uppercase;">EV Mode</div>
+            <div style="color:#F0F0F0;font-size:11px;font-weight:800;margin-top:1px;">EV Services</div>
           </div>
         </div>
-        <div style="margin:0 10px 7px;background:rgba(217,34,34,0.1);border:1px solid rgba(217,34,34,0.28);border-radius:7px;padding:6px 8px;flex-shrink:0;display:flex;align-items:center;gap:5px;">
-          <span style="font-size:11px;">&#9888;</span>
+        <!-- Low battery alert -->
+        <div style="margin:0 10px 6px;background:rgba(185,28,28,0.1);border:1px solid rgba(185,28,28,0.25);border-radius:7px;padding:5px 8px;flex-shrink:0;display:flex;align-items:center;gap:5px;">
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#FCA5A5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
           <div>
-            <div style="font-size:6.5px;font-weight:700;color:#FF5555;">Low Battery — 18 mi range</div>
-            <div style="font-size:5.5px;color:rgba(255,255,255,0.35);">Charging services nearby</div>
+            <div style="font-size:6px;font-weight:700;color:#FCA5A5;">Low Battery — 18 mi range</div>
+            <div style="font-size:5px;color:rgba(255,255,255,0.3);">Mobile charging available nearby</div>
           </div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:5px;padding:0 10px;flex:1;">
-          <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:9px;padding:8px;display:flex;align-items:center;justify-content:space-between;">
+        <!-- EV service options -->
+        <div style="display:flex;flex-direction:column;gap:4px;padding:0 10px;flex:1;">
+          <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:9px;padding:7px;display:flex;align-items:center;justify-content:space-between;">
             <div style="display:flex;align-items:center;gap:6px;">
-              <span style="font-size:15px;">&#9889;</span>
+              <div style="width:18px;height:18px;border-radius:5px;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="#00D4FF" stroke="#00D4FF" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              </div>
               <div>
-                <div style="color:#fff;font-size:8px;font-weight:700;">Quick Boost</div>
-                <div style="color:rgba(255,255,255,0.3);font-size:5.5px;">~10 mi range added</div>
+                <div style="color:#F0F0F0;font-size:7.5px;font-weight:700;">Quick Boost</div>
+                <div style="color:rgba(255,255,255,0.3);font-size:5px;">~10 mi range added</div>
               </div>
             </div>
-            <div style="color:#00AAFF;font-size:11px;font-weight:800;">$25</div>
+            <div style="color:#00D4FF;font-size:10px;font-weight:800;">$25</div>
           </div>
-          <div style="background:rgba(0,170,255,0.12);border:1px solid rgba(0,170,255,0.32);border-radius:9px;padding:8px;display:flex;align-items:center;justify-content:space-between;">
+          <div style="background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.2);border-radius:9px;padding:7px;display:flex;align-items:center;justify-content:space-between;">
             <div style="display:flex;align-items:center;gap:6px;">
-              <span style="font-size:15px;">&#128267;</span>
+              <div style="width:18px;height:18px;border-radius:5px;background:rgba(0,212,255,0.12);display:flex;align-items:center;justify-content:center;">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#00D4FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="18" height="12" rx="2" ry="2"/><line x1="23" y1="13" x2="23" y2="11"/><line x1="5" y1="12" x2="12" y2="12"/></svg>
+              </div>
               <div>
-                <div style="color:#fff;font-size:8px;font-weight:700;">Half Charge</div>
-                <div style="color:rgba(255,255,255,0.3);font-size:5.5px;">~100 mi range added</div>
+                <div style="color:#F0F0F0;font-size:7.5px;font-weight:700;">Half Charge</div>
+                <div style="color:rgba(255,255,255,0.3);font-size:5px;">~100 mi range added</div>
               </div>
             </div>
-            <div style="color:#00AAFF;font-size:11px;font-weight:800;">$45</div>
+            <div style="color:#00D4FF;font-size:10px;font-weight:800;">$45</div>
           </div>
-          <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:9px;padding:8px;display:flex;align-items:center;justify-content:space-between;">
+          <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:9px;padding:7px;display:flex;align-items:center;justify-content:space-between;">
             <div style="display:flex;align-items:center;gap:6px;">
-              <span style="font-size:15px;">&#128268;</span>
+              <div style="width:18px;height:18px;border-radius:5px;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="18" height="12" rx="2" ry="2"/><line x1="23" y1="13" x2="23" y2="11"/><polyline points="7 6 10 2 14 6 10 12 14 12 10 18"/></svg>
+              </div>
               <div>
-                <div style="color:#fff;font-size:8px;font-weight:700;">Full Charge</div>
-                <div style="color:rgba(255,255,255,0.3);font-size:5.5px;">Full range restored</div>
+                <div style="color:#F0F0F0;font-size:7.5px;font-weight:700;">Full Charge</div>
+                <div style="color:rgba(255,255,255,0.3);font-size:5px;">Full range restored</div>
               </div>
             </div>
-            <div style="color:#00AAFF;font-size:11px;font-weight:800;">$85</div>
+            <div style="color:#F0F0F0;font-size:10px;font-weight:800;">$85</div>
           </div>
-          <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:9px;padding:8px;display:flex;align-items:center;justify-content:space-between;">
+          <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:9px;padding:7px;display:flex;align-items:center;justify-content:space-between;">
             <div style="display:flex;align-items:center;gap:6px;">
-              <span style="font-size:15px;">&#128665;</span>
+              <div style="width:18px;height:18px;border-radius:5px;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+              </div>
               <div>
-                <div style="color:#fff;font-size:8px;font-weight:700;">EV-Safe Tow</div>
-                <div style="color:rgba(255,255,255,0.3);font-size:5.5px;">Flatbed — no drivetrain stress</div>
+                <div style="color:#F0F0F0;font-size:7.5px;font-weight:700;">EV-Safe Tow</div>
+                <div style="color:rgba(255,255,255,0.3);font-size:5px;">Flatbed &mdash; EV certified</div>
               </div>
             </div>
-            <div style="color:#fff;font-size:11px;font-weight:800;">$95</div>
+            <div style="color:#F0F0F0;font-size:10px;font-weight:800;">$95</div>
           </div>
         </div>
         <div style="height:8px;flex-shrink:0;"></div>
@@ -1495,56 +1553,69 @@
     <div class="phone" style="--ph-w:140px;--ph-delay:-2.6s;--ph-mb:-65px;--ph-op:.6;">
       <div class="phone-screen" style="background:#04060E;display:flex;flex-direction:column;">
         <div style="width:50px;height:9px;background:#000;border-radius:100px;margin:8px auto 0;flex-shrink:0;"></div>
-        <div style="padding:8px 10px 4px;flex-shrink:0;">
-          <div style="color:rgba(255,255,255,0.35);font-size:6px;letter-spacing:.4px;">THIS MONTH</div>
-          <div style="color:#fff;font-size:10px;font-weight:800;">Earnings</div>
+        <div style="padding:8px 10px 3px;flex-shrink:0;">
+          <div style="color:rgba(255,255,255,0.3);font-size:5.5px;letter-spacing:.5px;text-transform:uppercase;">This Month</div>
+          <div style="color:#F0F0F0;font-size:10px;font-weight:800;margin-top:1px;">Earnings</div>
         </div>
-        <div style="margin:2px 10px 6px;background:linear-gradient(135deg,rgba(0,102,255,0.18),rgba(0,170,255,0.08));border:1px solid rgba(0,102,255,0.22);border-radius:8px;padding:8px 10px;flex-shrink:0;display:flex;justify-content:space-between;align-items:center;">
+        <!-- Total card -->
+        <div style="margin:3px 10px 5px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:7px 9px;flex-shrink:0;display:flex;justify-content:space-between;align-items:center;">
           <div>
-            <div style="font-size:19px;font-weight:900;color:#fff;line-height:1;">$641</div>
-            <div style="font-size:5.5px;color:rgba(255,255,255,0.35);margin-top:2px;">&#9650; 12% vs last month</div>
+            <div style="font-size:18px;font-weight:900;color:#F0F0F0;line-height:1;">$641</div>
+            <div style="display:flex;align-items:center;gap:2px;margin-top:2px;">
+              <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="#4ADE80" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+              <div style="font-size:5px;color:#4ADE80;">12% vs last month</div>
+            </div>
           </div>
           <div style="text-align:right;">
-            <div style="font-size:11px;font-weight:800;color:#00AAFF;line-height:1;">14</div>
-            <div style="font-size:5.5px;color:rgba(255,255,255,0.35);margin-top:2px;">jobs</div>
+            <div style="font-size:12px;font-weight:800;color:#60A5FA;line-height:1;">14</div>
+            <div style="font-size:5px;color:rgba(255,255,255,0.3);margin-top:2px;">jobs</div>
           </div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:1px;padding:0 10px;flex:1;overflow:hidden;">
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
-            <div style="display:flex;align-items:center;gap:4px;">
-              <span style="font-size:10px;">&#9889;</span>
+        <!-- History rows -->
+        <div style="display:flex;flex-direction:column;padding:0 10px;flex:1;overflow:hidden;">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:4.5px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+            <div style="display:flex;align-items:center;gap:5px;">
+              <div style="width:14px;height:14px;border-radius:4px;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;">
+                <svg width="8" height="8" viewBox="0 0 24 24" fill="#60A5FA" stroke="#60A5FA" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              </div>
               <div>
-                <div style="font-size:6.5px;color:#fff;font-weight:600;">Jump Start</div>
-                <div style="font-size:5px;color:rgba(255,255,255,0.3);">Today, 2:15 PM</div>
+                <div style="font-size:6px;color:#F0F0F0;font-weight:600;">Jump Start</div>
+                <div style="font-size:4.5px;color:rgba(255,255,255,0.28);">Today, 2:15 PM</div>
               </div>
             </div>
-            <div style="color:#00AAFF;font-size:8px;font-weight:700;">+$35</div>
+            <div style="color:#4ADE80;font-size:7.5px;font-weight:700;">+$35</div>
           </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
-            <div style="display:flex;align-items:center;gap:4px;">
-              <span style="font-size:10px;">&#128295;</span>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:4.5px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+            <div style="display:flex;align-items:center;gap:5px;">
+              <div style="width:14px;height:14px;border-radius:4px;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;">
+                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+              </div>
               <div>
-                <div style="font-size:6.5px;color:#fff;font-weight:600;">Flat Tire</div>
-                <div style="font-size:5px;color:rgba(255,255,255,0.3);">Today, 10:44 AM</div>
+                <div style="font-size:6px;color:#F0F0F0;font-weight:600;">Flat Tire</div>
+                <div style="font-size:4.5px;color:rgba(255,255,255,0.28);">Today, 10:44 AM</div>
               </div>
             </div>
-            <div style="color:#00AAFF;font-size:8px;font-weight:700;">+$45</div>
+            <div style="color:#4ADE80;font-size:7.5px;font-weight:700;">+$45</div>
           </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
-            <div style="display:flex;align-items:center;gap:4px;">
-              <span style="font-size:10px;">&#9981;</span>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:4.5px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+            <div style="display:flex;align-items:center;gap:5px;">
+              <div style="width:14px;height:14px;border-radius:4px;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;">
+                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+              </div>
               <div>
-                <div style="font-size:6.5px;color:#fff;font-weight:600;">Fuel Delivery</div>
-                <div style="font-size:5px;color:rgba(255,255,255,0.3);">Yesterday</div>
+                <div style="font-size:6px;color:#F0F0F0;font-weight:600;">Fuel Delivery</div>
+                <div style="font-size:4.5px;color:rgba(255,255,255,0.28);">Yesterday</div>
               </div>
             </div>
-            <div style="color:#00AAFF;font-size:8px;font-weight:700;">+$55</div>
+            <div style="color:#4ADE80;font-size:7.5px;font-weight:700;">+$55</div>
           </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;">
-            <div style="display:flex;align-items:center;gap:4px;">
-              <span style="font-size:10px;">&#128665;</span>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:4.5px 0;">
+            <div style="display:flex;align-items:center;gap:5px;">
+              <div style="width:14px;height:14px;border-radius:4px;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;">
+                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+              </div>
               <div>
-                <div style="font-size:6.5px;color:#fff;font-weight:600;">Towing</div>
+                <div style="font-size:6px;color:#F0F0F0;font-weight:600;">Towing</div>
                 <div style="font-size:5px;color:rgba(255,255,255,0.3);">Yesterday</div>
               </div>
             </div>
