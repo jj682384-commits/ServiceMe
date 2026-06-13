@@ -435,6 +435,138 @@
       animation: livepulse 2s infinite;
     }
     .leaflet-container { background: #111 !important; }
+
+  /* ── Animated Overview Dashboard ── */
+  #page-overview { position: relative; }
+
+  /* Floating orb particles — only visible on overview */
+  .ov-orbs { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; display: none; }
+  .ov-orbs.visible { display: block; }
+  .ov-orb { position: absolute; border-radius: 50%; filter: blur(90px); animation: orbFloat linear infinite; }
+  .ov-orb:nth-child(1) { width: 420px; height: 420px; background: rgba(0,102,255,0.18); top: -80px; left: 15%; animation-duration: 20s; }
+  .ov-orb:nth-child(2) { width: 320px; height: 320px; background: rgba(217,34,34,0.14); top: 25%; right: 3%; animation-duration: 26s; animation-delay: -8s; }
+  .ov-orb:nth-child(3) { width: 280px; height: 280px; background: rgba(0,170,255,0.16); bottom: 5%; left: 3%; animation-duration: 22s; animation-delay: -12s; }
+  .ov-orb:nth-child(4) { width: 220px; height: 220px; background: rgba(34,197,94,0.12); bottom: 30%; right: 20%; animation-duration: 30s; animation-delay: -5s; }
+  @keyframes orbFloat {
+    0%   { transform: translate(0,0) scale(1); }
+    25%  { transform: translate(28px,-38px) scale(1.06); }
+    50%  { transform: translate(-18px,28px) scale(0.94); }
+    75%  { transform: translate(38px,18px) scale(1.04); }
+    100% { transform: translate(0,0) scale(1); }
+  }
+
+  /* Card entrance animation */
+  @keyframes ovCardIn {
+    from { opacity: 0; transform: translateY(22px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .ov-card { animation: ovCardIn .55s cubic-bezier(.22,.68,0,1.18) both; }
+  .ov-card:nth-child(1)  { animation-delay: .04s; }
+  .ov-card:nth-child(2)  { animation-delay: .09s; }
+  .ov-card:nth-child(3)  { animation-delay: .14s; }
+  .ov-card:nth-child(4)  { animation-delay: .19s; }
+  .ov-card:nth-child(5)  { animation-delay: .24s; }
+  .ov-card:nth-child(6)  { animation-delay: .29s; }
+  .ov-card:nth-child(7)  { animation-delay: .34s; }
+  .ov-card:nth-child(8)  { animation-delay: .39s; }
+  .ov-card:nth-child(9)  { animation-delay: .44s; }
+  .ov-card:nth-child(10) { animation-delay: .49s; }
+  .ov-card:nth-child(11) { animation-delay: .54s; }
+  .ov-card:nth-child(12) { animation-delay: .59s; }
+
+  /* Hero cards */
+  .ov-hero-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 16px; }
+  .ov-hero-card {
+    position: relative; border-radius: 18px; padding: 28px 24px; overflow: hidden;
+    transition: transform .2s ease, box-shadow .2s ease;
+    cursor: default;
+  }
+  .ov-hero-card:hover { transform: translateY(-4px); }
+  .ov-hero-card .ov-glow {
+    position: absolute; width: 220px; height: 220px; border-radius: 50%;
+    filter: blur(65px); top: -60px; right: -40px; pointer-events: none;
+    animation: glowBreathe 4s ease-in-out infinite;
+  }
+  @keyframes glowBreathe {
+    0%,100% { opacity: .18; transform: scale(1); }
+    50%      { opacity: .32; transform: scale(1.12); }
+  }
+  .ov-hero-card.hc-green { background: linear-gradient(135deg,rgba(34,197,94,.14),rgba(34,197,94,.04)); box-shadow: 0 0 0 1px rgba(34,197,94,.22), 0 10px 36px rgba(34,197,94,.09); }
+  .ov-hero-card.hc-green .ov-glow { background: #22c55e; }
+  .ov-hero-card.hc-green:hover { box-shadow: 0 0 0 1px rgba(34,197,94,.45), 0 16px 48px rgba(34,197,94,.16); }
+  .ov-hero-card.hc-blue { background: linear-gradient(135deg,rgba(0,102,255,.14),rgba(0,102,255,.04)); box-shadow: 0 0 0 1px rgba(0,102,255,.22), 0 10px 36px rgba(0,102,255,.09); }
+  .ov-hero-card.hc-blue .ov-glow { background: #0066FF; }
+  .ov-hero-card.hc-blue:hover { box-shadow: 0 0 0 1px rgba(0,102,255,.45), 0 16px 48px rgba(0,102,255,.16); }
+  .ov-hero-card.hc-cyan { background: linear-gradient(135deg,rgba(0,170,255,.14),rgba(0,170,255,.04)); box-shadow: 0 0 0 1px rgba(0,170,255,.22), 0 10px 36px rgba(0,170,255,.09); }
+  .ov-hero-card.hc-cyan .ov-glow { background: #00AAFF; }
+  .ov-hero-card.hc-cyan:hover { box-shadow: 0 0 0 1px rgba(0,170,255,.45), 0 16px 48px rgba(0,170,255,.16); }
+  .ov-hero-label { font-size: 11px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: rgba(255,255,255,.5); margin-bottom: 10px; }
+  .ov-hero-value { font-size: 46px; font-weight: 900; line-height: 1; letter-spacing: -1.5px; }
+  .hc-green .ov-hero-value { color: #22c55e; }
+  .hc-blue  .ov-hero-value { color: #5599ff; }
+  .hc-cyan  .ov-hero-value { color: #33bbff; }
+  .ov-hero-sub { font-size: 12px; color: rgba(255,255,255,.45); margin-top: 9px; display: flex; align-items: center; gap: 6px; }
+  .ov-hero-icon { font-size: 36px; position: absolute; right: 22px; bottom: 20px; opacity: .12; line-height: 1; }
+
+  /* KPI grid */
+  .ov-kpi-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(148px,1fr)); gap: 12px; margin-bottom: 16px; }
+  .ov-kpi-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px 16px;
+    transition: border-color .2s, background .2s, transform .2s;
+    position: relative; overflow: hidden;
+  }
+  .ov-kpi-card:hover { border-color: rgba(255,255,255,.2); background: var(--surface2); transform: translateY(-2px); }
+  .ov-kpi-label { font-size: 10px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .ov-kpi-value { font-size: 30px; font-weight: 900; line-height: 1; }
+  .ov-kpi-sub { font-size: 11px; color: var(--muted); margin-top: 4px; display: flex; align-items: center; gap: 5px; }
+
+  /* Live pulse dot */
+  .ov-live-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #22c55e; flex-shrink: 0; animation: livePulse 1.8s ease-in-out infinite; }
+  @keyframes livePulse {
+    0%,100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34,197,94,.7); }
+    60%      { box-shadow: 0 0 0 7px rgba(34,197,94,0); }
+  }
+  .ov-live-dot.red { background: #ef4444; animation: livePulseRed 1.8s ease-in-out infinite; }
+  @keyframes livePulseRed {
+    0%,100% { opacity: 1; box-shadow: 0 0 0 0 rgba(239,68,68,.7); }
+    60%      { box-shadow: 0 0 0 7px rgba(239,68,68,0); }
+  }
+
+  /* Split panels */
+  .ov-split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .ov-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
+  .ov-panel-title { font-size: 14px; font-weight: 700; }
+  .ov-panel-sub   { font-size: 11px; color: var(--muted); margin-top: 3px; margin-bottom: 16px; }
+
+  /* Service bar chart */
+  .svc-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 11px; }
+  .svc-bar-label { font-size: 12px; min-width: 108px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .svc-bar-track { flex: 1; height: 8px; background: rgba(255,255,255,.07); border-radius: 100px; overflow: hidden; }
+  .svc-bar-fill { height: 100%; border-radius: 100px; background: linear-gradient(90deg,#0066FF,#00AAFF); width: 0%; transition: width .85s cubic-bezier(.22,.68,0,1.2); }
+  .svc-bar-count { font-size: 11px; color: var(--muted); min-width: 24px; text-align: right; font-weight: 700; }
+
+  /* Activity feed */
+  .ov-act-item { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+  .ov-act-item:last-child { border-bottom: none; }
+  .ov-act-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .ov-act-dot.completed { background: #22c55e; }
+  .ov-act-dot.cancelled { background: #ef4444; }
+  .ov-act-dot.pending   { background: #f59e0b; animation: livePulse 1.8s ease-in-out infinite; }
+  .ov-act-dot.accepted,.ov-act-dot.en_route,.ov-act-dot.in_progress,.ov-act-dot.arrived { background: #0066FF; animation: livePulseBlue 1.8s ease-in-out infinite; }
+  @keyframes livePulseBlue {
+    0%,100% { box-shadow: 0 0 0 0 rgba(0,102,255,.7); }
+    60%     { box-shadow: 0 0 0 7px rgba(0,102,255,0); }
+  }
+  .ov-act-info { flex: 1; min-width: 0; }
+  .ov-act-type { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ov-act-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .ov-act-amt { font-size: 13px; font-weight: 700; flex-shrink: 0; }
+
+  @media (max-width: 940px) {
+    .ov-hero-grid { grid-template-columns: 1fr; }
+    .ov-split { grid-template-columns: 1fr; }
+    .ov-kpi-grid { grid-template-columns: repeat(auto-fit,minmax(130px,1fr)); }
+  }
   </style>
 </head>
 <body>
@@ -534,37 +666,154 @@
   <div class="main-content">
 
     <!-- Overview -->
+    <!-- Animated orb background — only visible on overview -->
+    <div class="ov-orbs visible" id="ov-orbs">
+      <div class="ov-orb"></div>
+      <div class="ov-orb"></div>
+      <div class="ov-orb"></div>
+      <div class="ov-orb"></div>
+    </div>
+
     <div class="page active" id="page-overview">
-      <div class="page-header">
-        <div>
-          <div class="page-title">Dashboard</div>
-          <div class="page-sub" id="overview-time">Loading...</div>
-        </div>
-        <button class="btn btn-ghost btn-sm" onclick="loadAll()">&#8635; Refresh</button>
-      </div>
-      <div class="stats-row" id="overview-stats">
-        <div class="stat-card"><div class="stat-label">Total Drivers</div><div class="stat-value cyan" id="ov-drivers">—</div></div>
-        <div class="stat-card"><div class="stat-label">Total Providers</div><div class="stat-value cyan" id="ov-providers">—</div></div>
-        <div class="stat-card"><div class="stat-label">Pending Verification</div><div class="stat-value warning" id="ov-pending">—</div></div>
-        <div class="stat-card"><div class="stat-label">Total Jobs</div><div class="stat-value" id="ov-jobs">—</div></div>
-        <div class="stat-card"><div class="stat-label">Completed Jobs</div><div class="stat-value success" id="ov-completed">—</div></div>
-        <div class="stat-card"><div class="stat-label">Platform Revenue</div><div class="stat-value coral" id="ov-revenue">—</div></div>
-        <div class="stat-card"><div class="stat-label">Total Volume</div><div class="stat-value" id="ov-volume">—</div></div>
-        <div class="stat-card"><div class="stat-label">Direct Requests</div><div class="stat-value" style="color:#c084fc" id="ov-direct">—</div><div class="stat-sub" style="font-size:11px;color:var(--muted);margin-top:2px">Provider-specific jobs</div></div>
-        <div class="stat-card"><div class="stat-label">Waitlist Signups</div><div class="stat-value purple" style="color:var(--purple)" id="ov-waitlist">—</div></div>
-      </div>
-      <!-- Revenue Chart -->
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-top:20px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div style="position:relative;z-index:1">
+        <div class="page-header">
           <div>
-            <div style="font-weight:700;font-size:15px">Revenue — Last 30 Days</div>
-            <div style="font-size:12px;color:var(--muted);margin-top:2px">Daily platform fees from completed jobs</div>
+            <div class="page-title">Dashboard</div>
+            <div class="page-sub" id="overview-time">Loading...</div>
           </div>
-          <button class="btn btn-ghost btn-sm" onclick="loadRevenueChart()">&#8635; Refresh</button>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span class="ov-live-dot"></span>
+            <span style="font-size:12px;color:var(--muted)">Live</span>
+            <button class="btn btn-ghost btn-sm" onclick="loadAll()">&#8635; Refresh</button>
+          </div>
         </div>
-        <div id="revenue-chart-wrap" style="position:relative;height:180px">
-          <canvas id="revenue-chart" style="width:100%;height:180px"></canvas>
-          <div id="revenue-chart-empty" style="display:none;position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px">No job data yet</div>
+
+        <!-- Hero KPIs -->
+        <div class="ov-hero-grid">
+          <div class="ov-hero-card hc-green ov-card">
+            <div class="ov-glow"></div>
+            <div class="ov-hero-icon">&#128176;</div>
+            <div class="ov-hero-label">Platform Revenue</div>
+            <div class="ov-hero-value" id="ov-revenue">—</div>
+            <div class="ov-hero-sub">Total service fees collected</div>
+          </div>
+          <div class="ov-hero-card hc-blue ov-card">
+            <div class="ov-glow"></div>
+            <div class="ov-hero-icon">&#128200;</div>
+            <div class="ov-hero-label">Total Volume</div>
+            <div class="ov-hero-value" id="ov-volume">—</div>
+            <div class="ov-hero-sub">Gross across all completed jobs</div>
+          </div>
+          <div class="ov-hero-card hc-cyan ov-card">
+            <div class="ov-glow"></div>
+            <div class="ov-hero-icon">&#9989;</div>
+            <div class="ov-hero-label">Completion Rate</div>
+            <div class="ov-hero-value" id="ov-completion-rate">—</div>
+            <div class="ov-hero-sub"><span id="ov-completed-count">0</span> of <span id="ov-total-count">0</span> jobs completed</div>
+          </div>
+        </div>
+
+        <!-- Core KPI grid -->
+        <div class="ov-kpi-grid">
+          <div class="ov-kpi-card ov-card">
+            <div class="ov-kpi-label">Drivers</div>
+            <div class="ov-kpi-value" style="color:#5599ff" id="ov-drivers">—</div>
+            <div class="ov-kpi-sub">Registered accounts</div>
+          </div>
+          <div class="ov-kpi-card ov-card">
+            <div class="ov-kpi-label">Providers</div>
+            <div class="ov-kpi-value" style="color:#a78bfa" id="ov-providers">—</div>
+            <div class="ov-kpi-sub">All registered</div>
+          </div>
+          <div class="ov-kpi-card ov-card">
+            <div class="ov-kpi-label">Verified Providers</div>
+            <div class="ov-kpi-value" style="color:#22c55e" id="ov-verified">—</div>
+            <div class="ov-kpi-sub">Background approved</div>
+          </div>
+          <div class="ov-kpi-card ov-card">
+            <div class="ov-kpi-label">Available Now</div>
+            <div class="ov-kpi-value" style="color:#22c55e" id="ov-available">—</div>
+            <div class="ov-kpi-sub"><span class="ov-live-dot" style="width:6px;height:6px;margin-right:2px"></span>Online &amp; ready</div>
+          </div>
+          <div class="ov-kpi-card ov-card">
+            <div class="ov-kpi-label">Pending Verify</div>
+            <div class="ov-kpi-value" style="color:#f59e0b" id="ov-pending">—</div>
+            <div class="ov-kpi-sub">Awaiting review</div>
+          </div>
+          <div class="ov-kpi-card ov-card">
+            <div class="ov-kpi-label">Total Jobs</div>
+            <div class="ov-kpi-value" id="ov-jobs">—</div>
+            <div class="ov-kpi-sub">All time</div>
+          </div>
+          <div class="ov-kpi-card ov-card">
+            <div class="ov-kpi-label">Active Jobs</div>
+            <div class="ov-kpi-value" style="color:#0066FF" id="ov-active-jobs">—</div>
+            <div class="ov-kpi-sub"><span class="ov-live-dot" style="width:6px;height:6px;margin-right:2px"></span>In progress now</div>
+          </div>
+          <div class="ov-kpi-card ov-card">
+            <div class="ov-kpi-label">Completed</div>
+            <div class="ov-kpi-value" style="color:#22c55e" id="ov-completed">—</div>
+            <div class="ov-kpi-sub">Successfully finished</div>
+          </div>
+          <div class="ov-kpi-card ov-card">
+            <div class="ov-kpi-label">Cancelled</div>
+            <div class="ov-kpi-value" style="color:#ef4444" id="ov-cancelled">—</div>
+            <div class="ov-kpi-sub">Not completed</div>
+          </div>
+          <div class="ov-kpi-card ov-card">
+            <div class="ov-kpi-label">EV Jobs</div>
+            <div class="ov-kpi-value" style="color:#a78bfa" id="ov-ev-jobs">—</div>
+            <div class="ov-kpi-sub">Electric vehicle</div>
+          </div>
+          <div class="ov-kpi-card ov-card">
+            <div class="ov-kpi-label">Emergency / SOS</div>
+            <div class="ov-kpi-value" style="color:#ef4444" id="ov-emergency-jobs">—</div>
+            <div class="ov-kpi-sub">SOS activations</div>
+          </div>
+          <div class="ov-kpi-card ov-card">
+            <div class="ov-kpi-label">Direct Requests</div>
+            <div class="ov-kpi-value" style="color:#c084fc" id="ov-direct">—</div>
+            <div class="ov-kpi-sub">Provider-specific</div>
+          </div>
+          <div class="ov-kpi-card ov-card">
+            <div class="ov-kpi-label">Avg Job Value</div>
+            <div class="ov-kpi-value" style="color:#33bbff" id="ov-avg-value">—</div>
+            <div class="ov-kpi-sub">Per completed job</div>
+          </div>
+          <div class="ov-kpi-card ov-card">
+            <div class="ov-kpi-label">Waitlist</div>
+            <div class="ov-kpi-value" style="color:#a78bfa" id="ov-waitlist">—</div>
+            <div class="ov-kpi-sub">Email signups</div>
+          </div>
+        </div>
+
+        <!-- Service Breakdown + Recent Activity -->
+        <div class="ov-split">
+          <div class="ov-panel ov-card">
+            <div class="ov-panel-title">Top Services</div>
+            <div class="ov-panel-sub">Job volume by service type</div>
+            <div id="ov-service-bars"><div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0">No job data yet</div></div>
+          </div>
+          <div class="ov-panel ov-card">
+            <div class="ov-panel-title">Recent Activity</div>
+            <div class="ov-panel-sub">Latest jobs across the platform</div>
+            <div id="ov-activity-feed"><div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0">No jobs yet</div></div>
+          </div>
+        </div>
+
+        <!-- Revenue Chart -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:8px" class="ov-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <div>
+              <div style="font-weight:700;font-size:15px">Revenue — Last 30 Days</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:2px">Daily platform fees from completed jobs</div>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="loadRevenueChart()">&#8635; Refresh</button>
+          </div>
+          <div id="revenue-chart-wrap" style="position:relative;height:180px">
+            <canvas id="revenue-chart" style="width:100%;height:180px"></canvas>
+            <div id="revenue-chart-empty" style="display:none;position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px">No job data yet</div>
+          </div>
         </div>
       </div>
     </div>
@@ -997,6 +1246,8 @@
     document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
     document.getElementById(`page-${id}`).classList.add("active");
     document.getElementById(`nav-${id}`).classList.add("active");
+    const orbs = document.getElementById("ov-orbs");
+    if (orbs) orbs.classList.toggle("visible", id === "overview");
     if (id === "providers") loadProviders();
     if (id === "users") loadUsers();
     if (id === "earnings") loadEarnings();
@@ -1041,17 +1292,107 @@
     loadRevenueChart();
   }
 
+  function ovCountUp(id, target) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const n = Number(target);
+    if (isNaN(n)) { el.textContent = target; return; }
+    const duration = 900, startTime = performance.now(), from = 0;
+    function tick(now) {
+      const p = Math.min((now - startTime) / duration, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = Math.round(from + (n - from) * eased);
+      if (p < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function formatTimeAgo(d) {
+    if (!d) return "—";
+    const s = Math.floor((Date.now() - new Date(d)) / 1000);
+    if (s < 60) return s + "s ago";
+    if (s < 3600) return Math.floor(s/60) + "m ago";
+    if (s < 86400) return Math.floor(s/3600) + "h ago";
+    return Math.floor(s/86400) + "d ago";
+  }
+
   function updateOverview() {
-    const pending = allProviders.filter(p => p.verificationStatus === "pending").length;
-    document.getElementById("ov-drivers").textContent = allUsers.length;
-    document.getElementById("ov-providers").textContent = allProviders.length;
-    document.getElementById("ov-pending").textContent = pending;
-    document.getElementById("ov-jobs").textContent = allJobs.length;
-    document.getElementById("ov-completed").textContent = allJobs.filter(j => j.status === "completed").length;
-    document.getElementById("ov-direct").textContent = allJobs.filter(j => j.requested_provider_id).length;
-    document.getElementById("ov-waitlist").textContent = allWaitlist.length;
+    const pending    = allProviders.filter(p => p.verificationStatus === "pending").length;
+    const verified   = allProviders.filter(p => p.verificationStatus === "verified").length;
+    const available  = allProviders.filter(p => p.isAvailable).length;
+    const completed  = allJobs.filter(j => j.status === "completed");
+    const cancelled  = allJobs.filter(j => j.status === "cancelled");
+    const active     = allJobs.filter(j => ["pending","accepted","en_route","arrived","in_progress"].includes(j.status));
+    const evJobs     = allJobs.filter(j => j.is_ev);
+    const emgJobs    = allJobs.filter(j => j.is_emergency);
+    const direct     = allJobs.filter(j => j.requested_provider_id);
+    const rate       = allJobs.length > 0 ? Math.round((completed.length / allJobs.length) * 100) : 0;
+    const totalCost  = completed.reduce((s,j) => s + Number(j.total_cost || j.estimated_cost || 0), 0);
+    const avg        = completed.length > 0 ? (totalCost / completed.length) : 0;
+
+    ovCountUp("ov-drivers", allUsers.length);
+    ovCountUp("ov-providers", allProviders.length);
+    ovCountUp("ov-verified", verified);
+    ovCountUp("ov-available", available);
+    ovCountUp("ov-pending", pending);
+    ovCountUp("ov-jobs", allJobs.length);
+    ovCountUp("ov-active-jobs", active.length);
+    ovCountUp("ov-completed", completed.length);
+    ovCountUp("ov-cancelled", cancelled.length);
+    ovCountUp("ov-ev-jobs", evJobs.length);
+    ovCountUp("ov-emergency-jobs", emgJobs.length);
+    ovCountUp("ov-direct", direct.length);
+    ovCountUp("ov-waitlist", allWaitlist.length);
+
+    const rateEl = document.getElementById("ov-completion-rate");
+    if (rateEl) rateEl.textContent = rate + "%";
+    const ccEl = document.getElementById("ov-completed-count"); if (ccEl) ccEl.textContent = completed.length;
+    const tcEl = document.getElementById("ov-total-count");     if (tcEl) tcEl.textContent = allJobs.length;
+    const avgEl = document.getElementById("ov-avg-value");      if (avgEl) avgEl.textContent = avg > 0 ? "$" + avg.toFixed(0) : "—";
+
     if (pending > 0) { document.getElementById("badge-pending").style.display = "inline"; document.getElementById("badge-pending").textContent = pending; }
     if (allReports.length > 0) { document.getElementById("badge-reports").style.display = "inline"; document.getElementById("badge-reports").textContent = allReports.length; }
+
+    // Service breakdown bars
+    const svcCount = {};
+    allJobs.forEach(j => { const k = j.service_type || "other"; svcCount[k] = (svcCount[k]||0) + 1; });
+    const sorted = Object.entries(svcCount).sort((a,b) => b[1]-a[1]).slice(0,8);
+    const maxCnt = sorted[0]?.[1] || 1;
+    const svcEl = document.getElementById("ov-service-bars");
+    if (svcEl) {
+      if (!sorted.length) { svcEl.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0">No job data yet</div>'; }
+      else {
+        svcEl.innerHTML = sorted.map(([k,cnt]) => `
+          <div class="svc-bar-row">
+            <div class="svc-bar-label">${svcLabel(k)}</div>
+            <div class="svc-bar-track"><div class="svc-bar-fill" data-pct="${Math.round((cnt/maxCnt)*100)}"></div></div>
+            <div class="svc-bar-count">${cnt}</div>
+          </div>`).join("");
+        setTimeout(() => {
+          svcEl.querySelectorAll(".svc-bar-fill").forEach(b => { b.style.width = b.dataset.pct + "%"; });
+        }, 60);
+      }
+    }
+
+    // Recent activity feed
+    const actEl = document.getElementById("ov-activity-feed");
+    if (actEl) {
+      const recent = allJobs.slice().sort((a,b) => new Date(b.created_at)-new Date(a.created_at)).slice(0,9);
+      if (!recent.length) { actEl.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0">No jobs yet</div>'; }
+      else {
+        actEl.innerHTML = recent.map(j => {
+          const amt = Number(j.total_cost || j.estimated_cost || 0);
+          return `<div class="ov-act-item">
+            <div class="ov-act-dot ${j.status}"></div>
+            <div class="ov-act-info">
+              <div class="ov-act-type">${esc(svcLabel(j.service_type))}${j.is_ev?' <span style="color:#a78bfa;font-size:10px;font-weight:700">EV</span>':""}${j.is_emergency?' <span style="color:#ef4444;font-size:10px;font-weight:700">SOS</span>':""}</div>
+              <div class="ov-act-meta">${esc(j.driver?.name||"Driver")} &bull; ${formatTimeAgo(j.created_at)} &bull; <span class="badge ${j.status}" style="font-size:10px;padding:1px 6px">${j.status}</span></div>
+            </div>
+            <div class="ov-act-amt" style="color:${amt>0?"var(--success)":"var(--muted)"}">${amt>0?"$"+amt.toFixed(2):"—"}</div>
+          </div>`;
+        }).join("");
+      }
+    }
   }
 
   // ── Providers ──
