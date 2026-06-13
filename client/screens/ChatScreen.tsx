@@ -13,7 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Feather } from "@expo/vector-icons";
-import { RouteProp, useRoute } from "@react-navigation/native";
+import { RouteProp, useRoute, useNavigation } from "@react-navigation/native";
 
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -82,20 +82,29 @@ export default function ChatScreen() {
   const headerHeight = useHeaderHeight();
   const { theme } = useTheme();
   const route = useRoute<ChatRouteProp>();
+  const navigation = useNavigation();
   const { userRole, currentDriver, currentProvider, updateHistoryEntry } = useApp();
   const flatListRef = useRef<FlatList>(null);
   const [inputText, setInputText] = useState("");
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  const conversationId = route.params?.conversationId ?? "";
 
   const senderId = userRole === "driver"
     ? (currentDriver?.id || `d-${Date.now()}`)
     : (currentProvider?.id || `p-${Date.now()}`);
 
   const { messages, status, sendMessage } = useChat({
-    conversationId: route.params.conversationId,
+    conversationId,
     senderId,
     senderRole: userRole,
   });
+
+  useEffect(() => {
+    if (!route.params?.conversationId) {
+      navigation.goBack();
+    }
+  }, []);
 
   useEffect(() => {
     const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
@@ -121,7 +130,7 @@ export default function ChatScreen() {
     setInputText("");
     Keyboard.dismiss();
     // Stamp the conversation so the Messages list knows real messages exist
-    updateHistoryEntry(route.params.conversationId, {
+    updateHistoryEntry(conversationId, {
       lastChatMessage: text,
       lastChatMessageAt: new Date(),
     });

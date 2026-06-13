@@ -127,7 +127,10 @@ export default function ProviderProfileScreen() {
 
   const handleNotificationsToggle = (enabled: boolean) => {
     setNotificationsEnabled(enabled);
-    apiRequest("PATCH", "/api/auth/preferences", { notificationsEnabled: enabled }).catch(() => {});
+    apiRequest("PATCH", "/api/auth/preferences", { notificationsEnabled: enabled }).catch(() => {
+      setNotificationsEnabled(!enabled);
+      Alert.alert("Update Failed", "Could not update notification preference. Please try again.");
+    });
   };
 
   const handlePriorityToggle = async (value: boolean) => {
@@ -136,7 +139,11 @@ export default function ProviderProfileScreen() {
       setCurrentProvider({ ...currentProvider, acceptsPriorityJobs: value });
       try {
         await apiRequest("PATCH", `/api/providers/${currentProvider.id}/settings`, { acceptsPriorityJobs: value });
-      } catch {}
+      } catch {
+        setPriorityOptIn(!value);
+        setCurrentProvider({ ...currentProvider, acceptsPriorityJobs: !value });
+        Alert.alert("Update Failed", "Could not update priority job preference. Please try again.");
+      }
     }
   };
 
