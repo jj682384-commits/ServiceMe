@@ -736,9 +736,7 @@ process.on("unhandledRejection", (reason) => {
 </body></html>`);
   });
 
-  configureExpoAndLanding(app);
-
-  // Temporary project download route
+  // Temporary project download route — must be BEFORE configureExpoAndLanding
   app.get("/download-source", (req: Request, res: Response) => {
     const { spawn } = require("child_process");
     const root = path.join(__dirname, "..");
@@ -753,6 +751,8 @@ process.on("unhandledRejection", (reason) => {
     tar.stderr.on("data", (d: Buffer) => console.error("tar:", d.toString()));
     tar.on("close", (code: number) => { if (code !== 0) res.end(); });
   });
+
+  configureExpoAndLanding(app);
 
   const server = await registerRoutes(app);
 
