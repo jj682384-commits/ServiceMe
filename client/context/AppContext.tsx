@@ -386,6 +386,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!_persisted) return;
     AsyncStorage.setItem("vehicles", JSON.stringify(vehicles)).catch(() => {});
+    if (isAuthenticated) {
+      apiRequest("PATCH", "/api/auth/preferences", { vehicles }).catch(() => {});
+    }
   }, [vehicles, _persisted]);
 
   useEffect(() => {
@@ -425,6 +428,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           searchRadius?: number;
           notificationsEnabled?: boolean;
           emergencyContacts?: EmergencyContact[];
+          vehicles?: Vehicle[];
           membership?: MembershipTier;
           billingCycle?: BillingCycle;
           freeServicesUsed?: number;
@@ -436,6 +440,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (me.notificationsEnabled !== undefined) setNotificationsEnabled(me.notificationsEnabled);
         if (Array.isArray(me.emergencyContacts) && me.emergencyContacts.length > 0) {
           setEmergencyContacts(me.emergencyContacts);
+        }
+        if (Array.isArray(me.vehicles) && me.vehicles.length > 0) {
+          setVehicles(me.vehicles);
         }
         // Sync membership & free service counter from server (authoritative source)
         if (me.membership) {

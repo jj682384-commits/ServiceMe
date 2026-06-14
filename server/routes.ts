@@ -482,6 +482,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS search_radius INT DEFAULT 10`).catch(() => {});
   await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS notifications_enabled BOOLEAN DEFAULT TRUE`).catch(() => {});
   await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS emergency_contacts JSONB DEFAULT '[]'`).catch(() => {});
+  await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS vehicles JSONB DEFAULT '[]'`).catch(() => {});
   await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS suspended BOOLEAN DEFAULT FALSE`).catch(() => {});
   await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS membership TEXT NOT NULL DEFAULT 'free'`).catch(() => {});
   await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS billing_cycle TEXT NOT NULL DEFAULT 'monthly'`).catch(() => {});
@@ -661,7 +662,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await getUserByToken(token);
       if (!user) return res.status(401).json({ error: "Invalid or expired session" });
       const { rows } = await pool.query(
-        `SELECT search_radius, notifications_enabled, emergency_contacts,
+        `SELECT search_radius, notifications_enabled, emergency_contacts, vehicles,
                 membership, billing_cycle, free_services_used, free_services_reset,
                 free_services_banked, free_express_this_period
          FROM auth_users WHERE id = $1`,
@@ -673,6 +674,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         searchRadius: prefs.search_radius ?? 10,
         notificationsEnabled: prefs.notifications_enabled ?? true,
         emergencyContacts: Array.isArray(prefs.emergency_contacts) ? prefs.emergency_contacts : [],
+        vehicles: Array.isArray(prefs.vehicles) ? prefs.vehicles : [],
         membership: prefs.membership ?? "free",
         billingCycle: prefs.billing_cycle ?? "monthly",
         freeServicesUsed: prefs.free_services_used ?? 0,
@@ -896,16 +898,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = await getUserByToken(token);
       if (!user) return res.status(401).json({ error: "Unauthorized" });
-      const { searchRadius, notificationsEnabled, emergencyContacts } = req.body as {
+      const { searchRadius, notificationsEnabled, emergencyContacts, vehicles } = req.body as {
         searchRadius?: number;
         notificationsEnabled?: boolean;
         emergencyContacts?: unknown[];
+        vehicles?: unknown[];
       };
       await pool.query(
         `UPDATE auth_users SET
            search_radius        = COALESCE($2, search_radius),
            notifications_enabled = COALESCE($3, notifications_enabled),
            emergency_contacts   = COALESCE($4::jsonb, emergency_contacts),
+           vehicles             = COALESCE($5::jsonb, vehicles),
            updated_at           = NOW()
          WHERE id = $1`,
         [
@@ -913,6 +917,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           searchRadius !== undefined ? searchRadius : null,
           notificationsEnabled !== undefined ? notificationsEnabled : null,
           emergencyContacts !== undefined ? JSON.stringify(emergencyContacts) : null,
+          vehicles !== undefined ? JSON.stringify(vehicles) : null,
         ]
       );
       res.json({ success: true });
