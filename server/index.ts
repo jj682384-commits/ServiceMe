@@ -738,6 +738,22 @@ process.on("unhandledRejection", (reason) => {
 
   configureExpoAndLanding(app);
 
+  // Temporary project download route
+  app.get("/download-source", (req: Request, res: Response) => {
+    const { spawn } = require("child_process");
+    const root = path.join(__dirname, "..");
+    const items = ["client", "server", "shared", "assets", "app.json", "eas.json", "package.json", "tsconfig.json", "babel.config.js"];
+    const existing = items.filter(i => {
+      try { fs.accessSync(path.join(root, i)); return true; } catch { return false; }
+    });
+    res.setHeader("Content-Disposition", 'attachment; filename="resqride-source.tar.gz"');
+    res.setHeader("Content-Type", "application/gzip");
+    const tar = spawn("tar", ["-czf", "-", ...existing], { cwd: root });
+    tar.stdout.pipe(res);
+    tar.stderr.on("data", (d: Buffer) => console.error("tar:", d.toString()));
+    tar.on("close", (code: number) => { if (code !== 0) res.end(); });
+  });
+
   const server = await registerRoutes(app);
 
   setupErrorHandler(app);
