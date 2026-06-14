@@ -736,8 +736,8 @@ process.on("unhandledRejection", (reason) => {
 </body></html>`);
   });
 
-  // Temporary project download route — must be BEFORE configureExpoAndLanding
-  app.get("/download-source", (req: Request, res: Response) => {
+  // Temporary project download route
+  app.get("/api/download-source", (req: Request, res: Response) => {
     const { spawn } = require("child_process");
     const root = path.join(__dirname, "..");
     const items = ["client", "server", "shared", "assets", "app.json", "eas.json", "package.json", "tsconfig.json", "babel.config.js"];
