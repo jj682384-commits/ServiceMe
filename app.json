@@ -14,7 +14,14 @@
       "buildNumber": "4",
       "usesAppleSignIn": true,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "ResqRide needs your location to find nearby mechanics and service providers.",
+        "NSLocationWhenInUseUsageDescription": "ResqRide needs your location to find nearby service providers and track your active roadside assistance request.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "ResqRide uses your location in the background to share your position with your assigned provider during an active emergency or service request.",
+        "NSCameraUsageDescription": "ResqRide uses your camera to capture photos of your documents for provider identity verification.",
+        "NSPhotoLibraryUsageDescription": "ResqRide accesses your photo library so you can upload identity documents and vehicle photos for provider verification.",
+        "NSPhotoLibraryAddUsageDescription": "ResqRide may save service-related photos to your photo library.",
+        "NSContactsUsageDescription": "ResqRide can read your contacts so you can quickly add emergency contacts for SOS alerts.",
+        "NSMicrophoneUsageDescription": "ResqRide may use your microphone for voice messages during active service requests.",
+        "NSUserNotificationsUsageDescription": "ResqRide sends push notifications to keep you updated on your service request status, provider arrival, and important alerts.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
