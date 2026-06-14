@@ -24,6 +24,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceType, ServiceStatus } from "@/context/AppContext";
 import { useChatNotifier } from "@/hooks/useChatNotifier";
+import { useTabletLayout } from "@/hooks/useTabletLayout";
 import { ThemedText } from "@/components/ThemedText";
 import { Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
@@ -68,6 +69,7 @@ function ActiveJobBanner() {
   const { activeRequest } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
+  const { tabBarSideInset } = useTabletLayout();
 
   // Pulse animation for the live dot
   const pulse = useRef(new Animated.Value(1)).current;
@@ -108,6 +110,8 @@ function ActiveJobBanner() {
         styles.banner,
         {
           bottom: bannerBottom,
+          left: tabBarSideInset + Spacing.lg,
+          right: tabBarSideInset + Spacing.lg,
           backgroundColor: theme.backgroundDefault,
           borderLeftWidth: 4,
           borderLeftColor: config.color,
@@ -207,6 +211,7 @@ const Tab = createBottomTabNavigator<ProviderTabParamList>();
 export default function ProviderTabNavigator() {
   const { theme, isDark } = useTheme();
   const { activeRequest } = useApp();
+  const { sceneStyle, tabBarSideInset } = useTabletLayout();
 
   // Background chat watcher — notifies when driver sends a message while not on ChatScreen
   useChatNotifier({
@@ -232,8 +237,11 @@ export default function ProviderTabNavigator() {
         screenOptions={{
           tabBarActiveTintColor: theme.tabIconSelected,
           tabBarInactiveTintColor: theme.tabIconDefault,
+          sceneContainerStyle: sceneStyle,
           tabBarStyle: {
             position: "absolute",
+            left: tabBarSideInset,
+            right: tabBarSideInset,
             backgroundColor: Platform.select({
               ios: "transparent",
               android: theme.backgroundRoot,

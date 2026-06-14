@@ -2,6 +2,7 @@ import { Platform } from "react-native";
 import { NativeStackNavigationOptions } from "@react-navigation/native-stack";
 
 import { useTheme } from "@/hooks/useTheme";
+import { useTabletLayout } from "@/hooks/useTabletLayout";
 
 interface UseScreenOptionsParams {
   transparent?: boolean;
@@ -11,6 +12,7 @@ export function useScreenOptions({
   transparent = true,
 }: UseScreenOptionsParams = {}): NativeStackNavigationOptions {
   const { theme, isDark } = useTheme();
+  const { sceneStyle } = useTabletLayout();
 
   return {
     headerTitleAlign: "center",
@@ -28,6 +30,7 @@ export function useScreenOptions({
     fullScreenGestureEnabled: true,
     contentStyle: {
       backgroundColor: theme.backgroundRoot,
+      ...sceneStyle,
     },
   };
 }
