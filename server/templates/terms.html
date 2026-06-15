@@ -4,175 +4,319 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Terms of Service — ResqRide</title>
-  <meta name="description" content="ResqRide Terms of Service — the rules governing your use of our on-demand roadside assistance platform for drivers and independent service providers." />
+  <meta name="description" content="ResqRide Terms of Service — the rules governing your use of our on-demand roadside assistance platform." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #000;
+      --surface: rgba(255,255,255,0.03);
+      --border: rgba(255,255,255,0.08);
+      --text: rgba(255,255,255,0.75);
+      --muted: rgba(255,255,255,0.45);
+      --dim: rgba(255,255,255,0.25);
+      --nav-h: 72px;
+    }
+    html { scroll-behavior: smooth; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #0A0E27;
-      color: #c8d8f0;
-      line-height: 1.7;
+      font-family: 'Exo 2', system-ui, -apple-system, sans-serif;
+      background: var(--bg); color: var(--text); line-height: 1.75;
     }
-    .container {
-      max-width: 780px;
-      margin: 0 auto;
-      padding: 60px 24px 80px;
+
+    /* ── Nav ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 40px; height: var(--nav-h);
+      background: rgba(0,0,0,0.9); backdrop-filter: blur(24px);
+      border-bottom: 1px solid var(--border);
     }
-    .logo-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 48px;
+    .nav-logo { display: flex; align-items: center; text-decoration: none; }
+    .nav-logo img { height: 48px; width: auto; object-fit: contain; display: block; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-links a { color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 500; transition: color .2s; }
+    .nav-links a:hover, .nav-links a.active { color: #fff; }
+    .nav-cta {
+      background: linear-gradient(135deg, #e8e8e8 0%, #b0b0b0 50%, #d8d8d8 100%);
+      color: #000; padding: 8px 20px; border-radius: 100px;
+      font-size: 13px; font-weight: 800; text-decoration: none;
+      transition: all .2s;
+      box-shadow: 0 4px 20px rgba(255,255,255,0.1), inset 0 1px 0 rgba(255,255,255,0.5);
     }
-    .logo-text {
-      font-size: 22px;
-      font-weight: 800;
-      color: #ffffff;
-      letter-spacing: -0.3px;
-      text-decoration: none;
+    .nav-cta:hover { transform: translateY(-1px); }
+    @media (max-width: 680px) {
+      nav { padding: 0 20px; }
+      .nav-links a:not(.nav-cta) { display: none; }
     }
-    h1 {
-      font-size: 36px;
-      font-weight: 800;
-      color: #ffffff;
-      letter-spacing: -0.5px;
-      margin-bottom: 8px;
+
+    /* ── Layout ── */
+    .page-wrap {
+      max-width: 920px; margin: 0 auto;
+      padding: calc(var(--nav-h) + 56px) 40px 100px;
+      display: grid;
+      grid-template-columns: 190px 1fr;
+      gap: 56px; align-items: start;
     }
-    .updated {
-      font-size: 14px;
-      color: #6a7fa8;
-      margin-bottom: 48px;
+    @media (max-width: 740px) {
+      .page-wrap { grid-template-columns: 1fr; padding: calc(var(--nav-h) + 40px) 20px 80px; }
+      .toc { display: none; }
     }
-    h2 {
-      font-size: 20px;
-      font-weight: 700;
-      color: #ffffff;
-      margin-top: 40px;
-      margin-bottom: 12px;
+
+    /* ── Hero strip ── */
+    .hero-strip {
+      padding: calc(var(--nav-h) + 48px) 40px 0;
+      max-width: 920px; margin: 0 auto;
     }
-    p { margin-bottom: 16px; }
-    ul { padding-left: 22px; margin-bottom: 16px; }
-    li { margin-bottom: 6px; }
-    a { color: #60a5fa; }
-    .back-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      color: #6a7fa8;
-      text-decoration: none;
-      font-size: 14px;
-      margin-bottom: 40px;
-      transition: color .2s;
+    .page-tag {
+      display: inline-flex; align-items: center;
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.6); padding: 5px 14px; border-radius: 100px;
+      font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+      margin-bottom: 20px;
     }
-    .back-link:hover { color: #ffffff; }
-    .divider {
-      height: 1px;
-      background: rgba(255,255,255,0.07);
-      margin: 40px 0;
+    .hero-strip h1 {
+      font-size: clamp(30px, 4.5vw, 48px); font-weight: 900;
+      letter-spacing: -1.5px; color: #fff; line-height: 1.05; margin-bottom: 12px;
     }
-    .note-box {
-      background: rgba(96,165,250,0.08);
-      border: 1px solid rgba(96,165,250,0.18);
-      border-radius: 12px;
-      padding: 18px 22px;
-      margin-bottom: 28px;
-      font-size: 14px;
-      color: #93c5fd;
+    .hero-strip p { font-size: 14px; color: var(--muted); margin-bottom: 6px; }
+    .hero-strip .meta { font-size: 12px; color: var(--dim); }
+    .hero-divider { height: 1px; background: var(--border); margin: 40px 40px 0; max-width: 840px; margin-left: auto; margin-right: auto; }
+
+    /* ── TOC ── */
+    .toc { position: sticky; top: calc(var(--nav-h) + 24px); }
+    .toc-label { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--dim); margin-bottom: 12px; }
+    .toc a {
+      display: block; font-size: 13px; font-weight: 500;
+      color: var(--muted); text-decoration: none;
+      padding: 5px 0 5px 12px; border-left: 1px solid var(--border);
+      transition: all .15s;
     }
+    .toc a:hover { color: #fff; border-left-color: rgba(255,255,255,0.4); }
+
+    /* ── Content ── */
+    .content { min-width: 0; }
+
+    /* Summary box */
+    .summary-box {
+      background: var(--surface); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 14px; padding: 18px 22px; margin-bottom: 48px;
+      font-size: 14px; color: var(--muted); line-height: 1.7;
+    }
+    .summary-box strong { color: #fff; }
+
+    .section { margin-bottom: 48px; scroll-margin-top: calc(var(--nav-h) + 20px); }
+    .section-head {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--border);
+    }
+    .section-num {
+      width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
+      background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 800; color: rgba(255,255,255,0.4);
+    }
+    .section h2 { font-size: 17px; font-weight: 800; color: #fff; letter-spacing: -.3px; }
+    .section p { font-size: 14px; color: var(--text); margin-bottom: 12px; line-height: 1.75; }
+    .section ul { padding-left: 18px; margin-bottom: 12px; }
+    .section li { font-size: 14px; color: var(--text); margin-bottom: 7px; line-height: 1.65; }
+    .section a { color: rgba(255,255,255,0.6); }
+
+    .divider { height: 1px; background: var(--border); margin: 8px 0 48px; }
+
+    /* Contact card */
+    .contact-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 18px 20px;
+      display: flex; gap: 14px; align-items: center; margin-top: 16px;
+    }
+    .contact-icon {
+      width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+      background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .contact-icon svg { width: 16px; height: 16px; }
+    .contact-card strong { display: block; font-size: 14px; color: #fff; font-weight: 700; margin-bottom: 2px; }
+    .contact-card a { color: var(--muted); font-size: 13px; text-decoration: none; }
+    .contact-card a:hover { color: #fff; }
+
+    footer {
+      border-top: 1px solid var(--border); padding: 28px 40px; text-align: center;
+      font-size: 12px; color: var(--dim);
+    }
+    footer a { color: var(--muted); text-decoration: none; margin: 0 8px; }
+    footer a:hover { color: #fff; }
   </style>
 </head>
 <body>
-<div class="container">
-  <div class="logo-row">
-    <a href="/" class="logo-text">ResqRide</a>
+
+<nav>
+  <a class="nav-logo" href="/">
+    <img src="/assets/images/resqride-logo-dark.png" alt="ResqRide" />
+  </a>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="/privacy">Privacy</a>
+    <a href="/data-safety">Data Safety</a>
+    <a href="/terms" class="active">Terms</a>
+    <a href="/app" class="nav-cta">Open App</a>
   </div>
+</nav>
 
-  <a href="/" class="back-link">&#8592; Back to ResqRide</a>
-
+<div class="hero-strip">
+  <div class="page-tag">Terms of Service</div>
   <h1>Terms of Service</h1>
-  <div class="updated">Last updated: May 31, 2026</div>
-
-  <div class="note-box">
-    Please read these Terms carefully before using ResqRide. By creating an account or using our platform, you agree to be bound by these Terms.
-  </div>
-
-  <h2>1. About ResqRide</h2>
-  <p>ResqRide ("we", "us", "our") is an on-demand roadside assistance platform that connects drivers who need help ("Drivers") with independent service providers ("Providers"). ResqRide is a technology platform, not a roadside assistance company. We do not directly perform roadside services.</p>
-
-  <h2>2. Eligibility</h2>
-  <p>You must be at least 18 years old to use ResqRide. By creating an account, you represent that:</p>
-  <ul>
-    <li>You are at least 18 years of age.</li>
-    <li>You have the legal right and capacity to enter into these Terms.</li>
-    <li>All information you provide is accurate and complete.</li>
-    <li>You will comply with all applicable laws and regulations.</li>
-  </ul>
-
-  <div class="divider"></div>
-
-  <h2>3. Driver Terms</h2>
-  <p>As a Driver using the ResqRide platform:</p>
-  <ul>
-    <li>You agree to pay the quoted price for any service you request before a Provider is dispatched.</li>
-    <li>You are responsible for ensuring your vehicle information is accurate.</li>
-    <li>Cancellation of a confirmed request may result in a cancellation fee.</li>
-    <li>Tips are optional and go directly to the Provider.</li>
-    <li>ResqRide is not responsible for the quality of services performed by independent Providers, though we maintain a verification process and rating system.</li>
-  </ul>
-
-  <h2>4. Provider Terms</h2>
-  <p>As a Provider offering services through ResqRide:</p>
-  <ul>
-    <li>You must complete our identity and background verification process before accepting jobs.</li>
-    <li>You are an independent contractor, not an employee of ResqRide.</li>
-    <li>You are responsible for maintaining all required licenses, certifications, and insurance for the services you provide.</li>
-    <li>ResqRide retains a platform fee (15%, or 10% for priority jobs) from each completed job.</li>
-    <li>Earnings are credited to your ResqRide balance and can be cashed out via Stripe. Minimum payout is $5.</li>
-    <li>Accounts found to be fraudulent or misrepresenting qualifications will be permanently banned.</li>
-  </ul>
-
-  <div class="divider"></div>
-
-  <h2>5. Payments and Refunds</h2>
-  <p>All payments are processed securely through Stripe. By adding a payment method, you authorize ResqRide to charge the stated amount for services requested.</p>
-  <p>Refunds are available if a Provider fails to arrive or the service is not completed as described. Refund requests must be submitted through the app or by contacting support within 24 hours of the service window. ResqRide reviews all refund requests on a case-by-case basis.</p>
-
-  <h2>6. Premium Membership</h2>
-  <p>ResqRide Premium subscriptions are billed monthly or annually. You may cancel at any time. Cancellation takes effect at the end of the current billing period. We do not offer prorated refunds for unused subscription time unless required by law.</p>
-
-  <h2>7. Prohibited Conduct</h2>
-  <p>You agree not to:</p>
-  <ul>
-    <li>Use the platform for any unlawful purpose.</li>
-    <li>Harass, threaten, or harm other users or Providers.</li>
-    <li>Submit false service requests or fraudulent payment information.</li>
-    <li>Attempt to circumvent the platform's fee structure by transacting with Providers outside ResqRide.</li>
-    <li>Reverse engineer, scrape, or interfere with the ResqRide platform.</li>
-  </ul>
-
-  <h2>8. Limitation of Liability</h2>
-  <p>ResqRide is a marketplace technology platform. To the fullest extent permitted by law, ResqRide is not liable for:</p>
-  <ul>
-    <li>The quality, safety, or legality of services performed by Providers.</li>
-    <li>Personal injury or property damage arising from services rendered through the platform.</li>
-    <li>Any indirect, incidental, or consequential damages.</li>
-  </ul>
-  <p>Our total liability in connection with your use of the platform shall not exceed the amount you paid to ResqRide in the 90 days preceding the claim.</p>
-
-  <h2>9. Dispute Resolution</h2>
-  <p>Any disputes between Drivers and Providers should first be raised with ResqRide support. We will make a good-faith effort to mediate. Disputes that cannot be resolved through our internal process will be submitted to binding arbitration under the rules of the American Arbitration Association, conducted in English in the state of Delaware.</p>
-
-  <h2>10. Termination</h2>
-  <p>We may suspend or terminate your account at any time for violation of these Terms, fraudulent activity, or at our sole discretion with or without notice. You may delete your account by contacting support.</p>
-
-  <h2>11. Changes to These Terms</h2>
-  <p>We may update these Terms from time to time. We will notify you of material changes via the app or email. Continued use of ResqRide after the effective date constitutes acceptance of the updated Terms.</p>
-
-  <h2>12. Contact</h2>
-  <p>Questions about these Terms? Contact us at: <a href="mailto:legal@resqride.co">legal@resqride.co</a></p>
-
-  <div class="divider"></div>
-  <p style="font-size:13px;color:#6a7fa8">These Terms of Service apply to all users of the ResqRide platform, including the mobile app, web app, and any related services. &copy; 2026 ResqRide. All rights reserved.</p>
+  <p>The rules governing your use of the ResqRide platform.</p>
+  <p class="meta">Last updated: June 15, 2026 &nbsp;·&nbsp; Effective: June 15, 2026</p>
 </div>
+<div class="hero-divider"></div>
+
+<div class="page-wrap">
+  <aside class="toc">
+    <div class="toc-label">On this page</div>
+    <a href="#about">About ResqRide</a>
+    <a href="#eligibility">Eligibility</a>
+    <a href="#drivers">Driver Terms</a>
+    <a href="#providers">Provider Terms</a>
+    <a href="#payments">Payments</a>
+    <a href="#premium">Premium</a>
+    <a href="#conduct">Prohibited Conduct</a>
+    <a href="#liability">Liability</a>
+    <a href="#disputes">Disputes</a>
+    <a href="#termination">Termination</a>
+    <a href="#changes">Changes</a>
+    <a href="#contact">Contact</a>
+  </aside>
+
+  <main class="content">
+    <div class="summary-box">
+      Please read these Terms carefully before using ResqRide. By creating an account or using our platform, you agree to be bound by these Terms.
+    </div>
+
+    <section class="section" id="about">
+      <div class="section-head"><div class="section-num">1</div><h2>About ResqRide</h2></div>
+      <p>ResqRide ("we", "us", "our") is an on-demand roadside assistance platform that connects drivers who need help ("Drivers") with independent service providers ("Providers"). ResqRide is a technology platform, not a roadside assistance company. We do not directly perform roadside services.</p>
+    </section>
+
+    <section class="section" id="eligibility">
+      <div class="section-head"><div class="section-num">2</div><h2>Eligibility</h2></div>
+      <p>You must be at least 18 years old to use ResqRide. By creating an account, you represent that:</p>
+      <ul>
+        <li>You are at least 18 years of age</li>
+        <li>You have the legal right and capacity to enter into these Terms</li>
+        <li>All information you provide is accurate and complete</li>
+        <li>You will comply with all applicable laws and regulations</li>
+      </ul>
+    </section>
+
+    <div class="divider"></div>
+
+    <section class="section" id="drivers">
+      <div class="section-head"><div class="section-num">3</div><h2>Driver Terms</h2></div>
+      <p>As a Driver using the ResqRide platform:</p>
+      <ul>
+        <li>You agree to pay the quoted price for any service you request before a Provider is dispatched</li>
+        <li>You are responsible for ensuring your vehicle information is accurate</li>
+        <li>Cancellation of a confirmed request may result in a cancellation fee</li>
+        <li>Tips are optional and go directly to the Provider</li>
+        <li>ResqRide is not responsible for the quality of services performed by independent Providers, though we maintain a verification process and rating system</li>
+      </ul>
+    </section>
+
+    <section class="section" id="providers">
+      <div class="section-head"><div class="section-num">4</div><h2>Provider Terms</h2></div>
+      <p>As a Provider offering services through ResqRide:</p>
+      <ul>
+        <li>You must complete our identity and background verification process before accepting jobs</li>
+        <li>You are an independent contractor, not an employee of ResqRide</li>
+        <li>You are responsible for maintaining all required licenses, certifications, and insurance for the services you provide</li>
+        <li>ResqRide retains a platform fee (15%, or 10% for priority jobs) from each completed job</li>
+        <li>Earnings are credited to your ResqRide balance and can be cashed out via Stripe. Minimum payout is $5</li>
+        <li>Accounts found to be fraudulent or misrepresenting qualifications will be permanently banned</li>
+      </ul>
+    </section>
+
+    <div class="divider"></div>
+
+    <section class="section" id="payments">
+      <div class="section-head"><div class="section-num">5</div><h2>Payments and Refunds</h2></div>
+      <p>All payments are processed securely through Stripe. By adding a payment method, you authorize ResqRide to charge the stated amount for services requested.</p>
+      <p>Refunds are available if a Provider fails to arrive or the service is not completed as described. Refund requests must be submitted within 24 hours of the service window. ResqRide reviews all refund requests on a case-by-case basis.</p>
+    </section>
+
+    <section class="section" id="premium">
+      <div class="section-head"><div class="section-num">6</div><h2>Premium Membership</h2></div>
+      <p>ResqRide Premium subscriptions are billed monthly or annually. You may cancel at any time. Cancellation takes effect at the end of the current billing period. We do not offer prorated refunds for unused subscription time unless required by law.</p>
+    </section>
+
+    <section class="section" id="conduct">
+      <div class="section-head"><div class="section-num">7</div><h2>Prohibited Conduct</h2></div>
+      <p>You agree not to:</p>
+      <ul>
+        <li>Use the platform for any unlawful purpose</li>
+        <li>Harass, threaten, or harm other users or Providers</li>
+        <li>Submit false service requests or fraudulent payment information</li>
+        <li>Attempt to circumvent the platform's fee structure by transacting with Providers outside ResqRide</li>
+        <li>Reverse engineer, scrape, or interfere with the ResqRide platform</li>
+      </ul>
+    </section>
+
+    <div class="divider"></div>
+
+    <section class="section" id="liability">
+      <div class="section-head"><div class="section-num">8</div><h2>Limitation of Liability</h2></div>
+      <p>ResqRide is a marketplace technology platform. To the fullest extent permitted by law, ResqRide is not liable for:</p>
+      <ul>
+        <li>The quality, safety, or legality of services performed by Providers</li>
+        <li>Personal injury or property damage arising from services rendered through the platform</li>
+        <li>Any indirect, incidental, or consequential damages</li>
+      </ul>
+      <p>Our total liability shall not exceed the amount you paid to ResqRide in the 90 days preceding the claim.</p>
+    </section>
+
+    <section class="section" id="disputes">
+      <div class="section-head"><div class="section-num">9</div><h2>Dispute Resolution</h2></div>
+      <p>Any disputes between Drivers and Providers should first be raised with ResqRide support. We will make a good-faith effort to mediate. Disputes that cannot be resolved through our internal process will be submitted to binding arbitration under the rules of the American Arbitration Association, conducted in English in the state of Delaware.</p>
+    </section>
+
+    <section class="section" id="termination">
+      <div class="section-head"><div class="section-num">10</div><h2>Termination</h2></div>
+      <p>We may suspend or terminate your account at any time for violation of these Terms, fraudulent activity, or at our sole discretion with or without notice. You may delete your account by contacting support.</p>
+    </section>
+
+    <section class="section" id="changes">
+      <div class="section-head"><div class="section-num">11</div><h2>Changes to These Terms</h2></div>
+      <p>We may update these Terms from time to time. We will notify you of material changes via the app or email at least 14 days before the effective date. Continued use of ResqRide after the effective date constitutes acceptance of the updated Terms.</p>
+    </section>
+
+    <section class="section" id="contact">
+      <div class="section-head"><div class="section-num">12</div><h2>Contact</h2></div>
+      <p>Questions about these Terms? Reach our legal team directly.</p>
+      <div class="contact-card">
+        <div class="contact-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+          </svg>
+        </div>
+        <div>
+          <strong>ResqRide Legal</strong>
+          <a href="mailto:legal@resqride.co">legal@resqride.co</a>
+        </div>
+      </div>
+      <p style="margin-top:16px;font-size:12px;color:rgba(255,255,255,0.25);">These Terms apply to all users of the ResqRide platform, including the mobile app, web app, and related services. &copy; 2026 ResqRide. All rights reserved.</p>
+    </section>
+  </main>
+</div>
+
+<footer>
+  <a href="/">Home</a>
+  <a href="/privacy">Privacy Policy</a>
+  <a href="/data-safety">Data Safety</a>
+  <a href="/terms">Terms of Service</a>
+  <br><br>
+  &copy; 2026 ResqRide. All rights reserved.
+</footer>
+
 </body>
 </html>

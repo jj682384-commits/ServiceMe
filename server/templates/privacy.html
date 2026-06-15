@@ -4,400 +4,372 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Privacy Policy — ResqRide</title>
-  <meta name="description" content="ResqRide Privacy Policy — learn how we collect, use, and protect your personal information." />
+  <meta name="description" content="ResqRide Privacy Policy — how we collect, use, and protect your data." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg: #04060E;
-      --surface: #0D1117;
-      --border: rgba(255,255,255,0.07);
-      --text: #c8d8f0;
-      --text-dim: rgba(200,216,240,0.55);
-      --blue: #0066FF;
-      --red: #D92222;
-      --green: #16a34a;
+      --bg: #000;
+      --surface: rgba(255,255,255,0.03);
+      --border: rgba(255,255,255,0.08);
+      --text: rgba(255,255,255,0.85);
+      --muted: rgba(255,255,255,0.45);
+      --dim: rgba(255,255,255,0.25);
+      --nav-h: 72px;
     }
     html { scroll-behavior: smooth; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: 'Exo 2', system-ui, -apple-system, sans-serif;
       background: var(--bg);
       color: var(--text);
-      line-height: 1.75;
+      line-height: 1.7;
     }
 
-    /* ── Top bar ── */
-    .topbar {
-      position: sticky; top: 0; z-index: 100;
-      background: rgba(4,6,14,0.85);
-      backdrop-filter: blur(16px);
+    /* ── Nav ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 40px;
+      height: var(--nav-h);
+      background: rgba(0,0,0,0.9);
+      backdrop-filter: blur(24px);
       border-bottom: 1px solid var(--border);
-      padding: 14px 24px;
-      display: flex; align-items: center; gap: 10px;
     }
-    .topbar-logo-mark {
-      width: 32px; height: 32px;
-      background: linear-gradient(135deg, #D92222, #0066FF);
-      border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
+    .nav-logo { display: flex; align-items: center; text-decoration: none; }
+    .nav-logo img { height: 48px; width: auto; object-fit: contain; display: block; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-links a {
+      color: var(--muted); text-decoration: none;
+      font-size: 14px; font-weight: 500;
+      transition: color .2s;
     }
-    .topbar-logo-mark svg { width: 18px; height: 18px; }
-    .topbar-name { font-size: 18px; font-weight: 800; letter-spacing: -0.3px; }
-    .topbar-name span { color: var(--blue); }
-    .topbar-badge {
-      margin-left: auto;
-      background: rgba(0,102,255,0.12);
-      border: 1px solid rgba(0,102,255,0.25);
-      color: var(--blue);
-      font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
-      text-transform: uppercase;
-      padding: 3px 10px; border-radius: 20px;
+    .nav-links a:hover, .nav-links a.active { color: #fff; }
+    .nav-cta {
+      background: linear-gradient(135deg, #e8e8e8 0%, #b0b0b0 50%, #d8d8d8 100%);
+      color: #000; padding: 8px 20px;
+      border-radius: 100px; font-size: 13px; font-weight: 800;
+      text-decoration: none; letter-spacing: .3px;
+      transition: all .2s;
+      box-shadow: 0 4px 20px rgba(255,255,255,0.1), inset 0 1px 0 rgba(255,255,255,0.5);
+    }
+    .nav-cta:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(255,255,255,0.18); }
+    @media (max-width: 680px) {
+      nav { padding: 0 20px; }
+      .nav-links { gap: 14px; }
+      .nav-links a:not(.nav-cta) { display: none; }
     }
 
-    /* ── Layout ── */
-    .layout {
-      max-width: 960px; margin: 0 auto;
-      padding: 48px 24px 80px;
+    /* ── Page layout ── */
+    .page-wrap {
+      max-width: 1000px; margin: 0 auto;
+      padding: calc(var(--nav-h) + 56px) 40px 100px;
       display: grid;
-      grid-template-columns: 220px 1fr;
-      gap: 48px;
+      grid-template-columns: 200px 1fr;
+      gap: 56px;
       align-items: start;
     }
-    @media (max-width: 720px) {
-      .layout { grid-template-columns: 1fr; }
+    @media (max-width: 760px) {
+      .page-wrap { grid-template-columns: 1fr; gap: 40px; padding: calc(var(--nav-h) + 40px) 20px 80px; }
       .toc { display: none; }
     }
 
-    /* ── Table of Contents ── */
-    .toc {
-      position: sticky; top: 72px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 20px;
+    /* ── Hero ── */
+    .page-hero {
+      padding: calc(var(--nav-h) + 40px) 40px 0;
+      max-width: 1000px; margin: 0 auto;
     }
-    .toc-title {
-      font-size: 10px; font-weight: 700; letter-spacing: 1px;
-      text-transform: uppercase; color: var(--text-dim);
+    .page-tag {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.6); padding: 5px 14px; border-radius: 100px;
+      font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    .page-hero h1 {
+      font-size: clamp(32px, 5vw, 52px);
+      font-weight: 900; letter-spacing: -1.5px;
+      color: #fff; line-height: 1.05;
       margin-bottom: 14px;
     }
+    .page-hero p { font-size: 16px; color: var(--muted); max-width: 520px; margin-bottom: 8px; }
+    .page-hero .meta { font-size: 13px; color: var(--dim); }
+    .hero-divider { height: 1px; background: var(--border); margin: 40px 40px 0; max-width: 920px; }
+
+    /* ── TOC ── */
+    .toc { position: sticky; top: calc(var(--nav-h) + 24px); }
+    .toc-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+      text-transform: uppercase; color: var(--dim);
+      margin-bottom: 12px;
+    }
     .toc a {
-      display: block;
-      font-size: 13px; color: var(--text-dim);
-      text-decoration: none;
-      padding: 5px 0;
-      border-left: 2px solid transparent;
-      padding-left: 10px;
-      transition: color 0.15s, border-color 0.15s;
+      display: block; font-size: 13px; font-weight: 500;
+      color: var(--muted); text-decoration: none;
+      padding: 5px 0 5px 12px;
+      border-left: 1px solid var(--border);
+      transition: all .15s;
     }
-    .toc a:hover { color: var(--text); border-color: var(--blue); }
+    .toc a:hover { color: #fff; border-left-color: rgba(255,255,255,0.4); }
 
-    /* ── Content ── */
+    /* ── Sections ── */
     .content { min-width: 0; }
-    .page-header { margin-bottom: 40px; }
-    .page-header h1 { font-size: 36px; font-weight: 800; letter-spacing: -0.5px; color: #fff; margin-bottom: 8px; }
-    .page-header .meta { font-size: 13px; color: var(--text-dim); }
-
-    /* Highlight box */
-    .highlight-box {
-      background: rgba(0,102,255,0.07);
-      border: 1px solid rgba(0,102,255,0.2);
-      border-radius: 14px;
-      padding: 20px 24px;
-      margin-bottom: 40px;
-      display: flex; gap: 14px; align-items: flex-start;
-    }
-    .highlight-box .icon { font-size: 22px; flex-shrink: 0; margin-top: 1px; }
-    .highlight-box p { font-size: 15px; color: var(--text); line-height: 1.65; }
-    .highlight-box strong { color: #fff; }
-
-    /* Sections */
-    .section { margin-bottom: 48px; scroll-margin-top: 80px; }
-    .section h2 {
-      font-size: 20px; font-weight: 700; color: #fff;
-      margin-bottom: 16px;
-      padding-bottom: 10px;
+    .section { margin-bottom: 52px; scroll-margin-top: calc(var(--nav-h) + 20px); }
+    .section-head {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 20px; padding-bottom: 14px;
       border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; gap: 8px;
     }
-    .section h2 .num {
-      display: inline-flex; align-items: center; justify-content: center;
-      width: 26px; height: 26px; border-radius: 8px;
-      background: rgba(0,102,255,0.15);
-      color: var(--blue);
-      font-size: 12px; font-weight: 800;
-      flex-shrink: 0;
+    .section-num {
+      width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
+      background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 800; color: rgba(255,255,255,0.4);
     }
-    .section h3 { font-size: 15px; font-weight: 700; color: #fff; margin: 20px 0 8px; }
-    .section p { font-size: 15px; color: var(--text); margin-bottom: 12px; }
-    .section ul { padding-left: 20px; margin-bottom: 12px; }
-    .section li { font-size: 15px; color: var(--text); margin-bottom: 6px; }
+    .section h2 { font-size: 18px; font-weight: 800; color: #fff; letter-spacing: -.3px; }
+    .section h3 { font-size: 14px; font-weight: 700; color: #fff; margin: 20px 0 8px; }
+    .section p { font-size: 14px; color: var(--text); margin-bottom: 12px; line-height: 1.75; }
+    .section ul { padding-left: 18px; margin-bottom: 12px; }
+    .section li { font-size: 14px; color: var(--text); margin-bottom: 6px; line-height: 1.65; }
+    .section a { color: rgba(255,255,255,0.7); }
+
+    /* Summary box */
+    .summary-box {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 14px; padding: 20px 24px;
+      margin-bottom: 48px;
+      display: flex; gap: 16px; align-items: flex-start;
+    }
+    .summary-icon {
+      width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+      background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .summary-icon svg { width: 18px; height: 18px; }
+    .summary-box p { font-size: 14px; color: var(--muted); line-height: 1.7; margin: 0; }
+    .summary-box strong { color: #fff; }
 
     /* Data table */
-    .data-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 16px 0 24px;
-      font-size: 14px;
-    }
+    .data-table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; font-size: 13px; }
     .data-table th {
-      text-align: left;
-      padding: 10px 14px;
-      background: rgba(255,255,255,0.04);
-      color: var(--text-dim);
-      font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
+      text-align: left; padding: 10px 14px;
+      background: rgba(255,255,255,0.03); color: var(--dim);
+      font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
       border-bottom: 1px solid var(--border);
     }
     .data-table td {
-      padding: 12px 14px;
-      border-bottom: 1px solid rgba(255,255,255,0.04);
-      color: var(--text);
-      vertical-align: top;
+      padding: 11px 14px; border-bottom: 1px solid rgba(255,255,255,0.04);
+      color: var(--text); vertical-align: top; line-height: 1.55;
     }
     .data-table tr:last-child td { border-bottom: none; }
-    .data-table tr:hover td { background: rgba(255,255,255,0.02); }
+    .data-table tr:hover td { background: rgba(255,255,255,0.015); }
     .badge {
-      display: inline-flex; align-items: center; gap: 4px;
-      font-size: 11px; font-weight: 700;
-      padding: 2px 8px; border-radius: 20px;
+      display: inline-flex; align-items: center;
+      font-size: 10px; font-weight: 700; letter-spacing: .5px;
+      padding: 2px 8px; border-radius: 20px; text-transform: uppercase;
     }
-    .badge-green { background: rgba(22,163,74,0.12); color: #4ade80; border: 1px solid rgba(22,163,74,0.25); }
-    .badge-blue  { background: rgba(0,102,255,0.12); color: #60a5fa; border: 1px solid rgba(0,102,255,0.25); }
+    .badge-never { background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.35); border: 1px solid rgba(255,255,255,0.08); }
 
-    /* Location timeline */
+    /* Timeline */
     .timeline { margin: 16px 0 24px; }
-    .timeline-item {
-      display: flex; gap: 16px; margin-bottom: 0;
-      position: relative;
-    }
-    .timeline-item:not(:last-child)::before {
-      content: '';
-      position: absolute;
-      left: 17px; top: 36px; bottom: -1px;
-      width: 2px;
+    .tl-item { display: flex; gap: 14px; position: relative; }
+    .tl-item:not(:last-child)::before {
+      content: ''; position: absolute;
+      left: 15px; top: 32px; bottom: 0; width: 1px;
       background: var(--border);
     }
-    .timeline-dot {
-      width: 36px; height: 36px; border-radius: 50%;
+    .tl-dot {
+      width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
-      font-size: 16px; flex-shrink: 0;
       position: relative; z-index: 1;
     }
-    .dot-on  { background: rgba(0,102,255,0.15); }
-    .dot-off { background: rgba(255,255,255,0.06); }
-    .timeline-body { padding: 6px 0 28px; }
-    .timeline-body strong { display: block; font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 3px; }
-    .timeline-body span { font-size: 13px; color: var(--text-dim); line-height: 1.5; display: block; }
+    .tl-dot svg { width: 14px; height: 14px; }
+    .dot-active { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); }
+    .dot-off { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); }
+    .tl-body { padding: 4px 0 28px; }
+    .tl-body strong { display: block; font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 3px; }
+    .tl-body span { font-size: 13px; color: var(--muted); line-height: 1.6; display: block; }
+
+    /* Rights grid */
+    .rights-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 16px 0; }
+    @media (max-width: 540px) { .rights-grid { grid-template-columns: 1fr; } }
+    .right-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px 18px;
+    }
+    .right-card strong { display: block; font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+    .right-card span { font-size: 12px; color: var(--muted); line-height: 1.55; }
 
     /* Contact card */
     .contact-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 22px 24px;
-      display: flex; gap: 14px; align-items: center;
-      margin-top: 16px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px 22px;
+      display: flex; gap: 14px; align-items: center; margin-top: 16px;
     }
-    .contact-card .icon { font-size: 24px; }
-    .contact-card strong { display: block; font-size: 15px; color: #fff; margin-bottom: 2px; }
-    .contact-card a { color: var(--blue); text-decoration: none; font-size: 14px; }
-    .contact-card a:hover { text-decoration: underline; }
-
-    /* Rights list */
-    .rights-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin: 16px 0;
+    .contact-card .ci {
+      width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
+      background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
     }
-    @media (max-width: 540px) { .rights-grid { grid-template-columns: 1fr; } }
-    .right-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px 18px;
-    }
-    .right-card strong { display: block; font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 4px; }
-    .right-card span { font-size: 13px; color: var(--text-dim); line-height: 1.55; }
+    .contact-card .ci svg { width: 18px; height: 18px; }
+    .contact-card strong { display: block; font-size: 14px; color: #fff; margin-bottom: 2px; font-weight: 700; }
+    .contact-card a { color: rgba(255,255,255,0.5); text-decoration: none; font-size: 13px; }
+    .contact-card a:hover { color: #fff; }
 
     /* Footer */
     footer {
       border-top: 1px solid var(--border);
-      text-align: center;
-      padding: 32px 24px;
-      font-size: 13px; color: var(--text-dim);
+      padding: 28px 40px; text-align: center;
+      font-size: 12px; color: var(--dim);
     }
-    footer a { color: var(--blue); text-decoration: none; }
+    footer a { color: var(--muted); text-decoration: none; margin: 0 8px; }
+    footer a:hover { color: #fff; }
   </style>
 </head>
 <body>
 
-<nav class="topbar">
-  <div class="topbar-logo-mark">
-    <svg viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="12" r="10" fill="rgba(255,255,255,0.15)"/>
-      <path d="M8 12h8M12 8v8" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
-    </svg>
+<nav>
+  <a class="nav-logo" href="/">
+    <img src="/assets/images/resqride-logo-dark.png" alt="ResqRide" />
+  </a>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="/privacy" class="active">Privacy</a>
+    <a href="/data-safety">Data Safety</a>
+    <a href="/terms">Terms</a>
+    <a href="/app" class="nav-cta">Open App</a>
   </div>
-  <span class="topbar-name">Resq<span>Ride</span></span>
-  <span class="topbar-badge">Privacy Policy</span>
 </nav>
 
-<div class="layout">
+<div style="padding-top: var(--nav-h);">
+  <div style="max-width:1000px;margin:0 auto;padding:56px 40px 0;">
+    <div class="page-tag">Privacy Policy</div>
+    <h1 style="font-family:'Exo 2',system-ui;font-size:clamp(32px,5vw,52px);font-weight:900;letter-spacing:-1.5px;color:#fff;line-height:1.05;margin-bottom:14px;">Your Privacy,<br>Our Commitment</h1>
+    <p style="font-size:15px;color:rgba(255,255,255,0.45);max-width:500px;margin-bottom:8px;">Plain language. No fine print. Everything ResqRide does with your data.</p>
+    <p style="font-size:12px;color:rgba(255,255,255,0.25);">Last updated: June 15, 2026 &nbsp;·&nbsp; Effective: June 15, 2026</p>
+  </div>
+  <div style="height:1px;background:rgba(255,255,255,0.06);margin:40px 40px 0;max-width:920px;margin-left:auto;margin-right:auto;"></div>
+</div>
 
-  <!-- Table of contents -->
+<div class="page-wrap">
+  <!-- TOC -->
   <aside class="toc">
-    <div class="toc-title">Contents</div>
+    <div class="toc-label">On this page</div>
     <a href="#intro">Introduction</a>
     <a href="#collect">Data We Collect</a>
-    <a href="#location">Location Data</a>
-    <a href="#use">How We Use Data</a>
-    <a href="#sharing">Sharing &amp; Disclosure</a>
-    <a href="#payments">Payments &amp; Stripe</a>
-    <a href="#retention">Data Retention</a>
+    <a href="#location">Location</a>
+    <a href="#use">How We Use It</a>
+    <a href="#sharing">Sharing</a>
+    <a href="#payments">Payments</a>
+    <a href="#retention">Retention</a>
     <a href="#security">Security</a>
     <a href="#rights">Your Rights</a>
     <a href="#children">Children</a>
-    <a href="#changes">Policy Changes</a>
-    <a href="#contact">Contact Us</a>
+    <a href="#changes">Changes</a>
+    <a href="#contact">Contact</a>
   </aside>
 
-  <!-- Main content -->
   <main class="content">
-
-    <header class="page-header">
-      <h1>Privacy Policy</h1>
-      <p class="meta">Last updated: June 15, 2026 &nbsp;·&nbsp; Effective: June 15, 2026</p>
-    </header>
-
-    <div class="highlight-box">
-      <div class="icon">🛡️</div>
-      <p><strong>The short version:</strong> ResqRide only collects what it needs to connect you with roadside help. We never sell your data. Location is only active during a service request. Payments go directly to Stripe — we never see your card number. You can delete your account and all data at any time.</p>
+    <!-- Summary box -->
+    <div class="summary-box">
+      <div class="summary-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+      </div>
+      <p><strong>The short version:</strong> ResqRide only collects what it needs to connect you with roadside help. We never sell your data. Location is only active during a service. Payments go directly to Stripe — we never see your card number. You can delete your account and all data at any time.</p>
     </div>
 
-    <!-- 1 Introduction -->
+    <!-- 1 -->
     <section class="section" id="intro">
-      <h2><span class="num">1</span> Introduction</h2>
-      <p>ResqRide ("we," "our," or "us") operates the ResqRide mobile application and website (collectively, the "Service"). This Privacy Policy explains what information we collect, how we use it, who we share it with, and what choices you have.</p>
-      <p>By creating an account or using the Service, you agree to the practices described in this policy. If you do not agree, please do not use the Service.</p>
+      <div class="section-head">
+        <div class="section-num">1</div>
+        <h2>Introduction</h2>
+      </div>
+      <p>ResqRide ("we," "our," or "us") operates the ResqRide mobile application and website. This Privacy Policy explains what information we collect, how we use it, who we share it with, and what choices you have.</p>
+      <p>By creating an account or using the Service, you agree to the practices described here. If you do not agree, please do not use the Service.</p>
     </section>
 
-    <!-- 2 Data we collect -->
+    <!-- 2 -->
     <section class="section" id="collect">
-      <h2><span class="num">2</span> Data We Collect</h2>
-      <p>The table below lists every category of data we collect, why we collect it, and whether it is ever sold or shared with advertisers.</p>
-
+      <div class="section-head">
+        <div class="section-num">2</div>
+        <h2>Data We Collect</h2>
+      </div>
+      <p>Every category of data we collect, why we collect it, and whether it is ever sold.</p>
       <table class="data-table">
         <thead>
-          <tr>
-            <th>Data Type</th>
-            <th>Examples</th>
-            <th>Purpose</th>
-            <th>Sold?</th>
-          </tr>
+          <tr><th>Data Type</th><th>Examples</th><th>Purpose</th><th>Sold?</th></tr>
         </thead>
         <tbody>
-          <tr>
-            <td><strong>Account Info</strong></td>
-            <td>Name, email, phone, password (hashed)</td>
-            <td>Create and authenticate your account</td>
-            <td><span class="badge badge-green">Never</span></td>
-          </tr>
-          <tr>
-            <td><strong>Vehicle Info</strong></td>
-            <td>Make, model, year, license plate</td>
-            <td>Help providers identify your vehicle at the scene</td>
-            <td><span class="badge badge-green">Never</span></td>
-          </tr>
-          <tr>
-            <td><strong>Location</strong></td>
-            <td>GPS coordinates, address</td>
-            <td>Find nearby providers; share ETA with you</td>
-            <td><span class="badge badge-green">Never</span></td>
-          </tr>
-          <tr>
-            <td><strong>Service Records</strong></td>
-            <td>Service type, date, provider, cost</td>
-            <td>Show your service history; process billing</td>
-            <td><span class="badge badge-green">Never</span></td>
-          </tr>
-          <tr>
-            <td><strong>Payment Tokens</strong></td>
-            <td>Stripe customer ID, last 4 digits</td>
-            <td>Process payments securely via Stripe</td>
-            <td><span class="badge badge-green">Never</span></td>
-          </tr>
-          <tr>
-            <td><strong>Device Info</strong></td>
-            <td>OS version, push token, app version</td>
-            <td>Send push notifications; debug crashes</td>
-            <td><span class="badge badge-green">Never</span></td>
-          </tr>
-          <tr>
-            <td><strong>Emergency Contacts</strong></td>
-            <td>Names and phone numbers you add</td>
-            <td>Alert contacts if you activate SOS mode</td>
-            <td><span class="badge badge-green">Never</span></td>
-          </tr>
-          <tr>
-            <td><strong>Support Messages</strong></td>
-            <td>Chat messages with support or AI</td>
-            <td>Resolve your issue; improve responses</td>
-            <td><span class="badge badge-green">Never</span></td>
-          </tr>
-          <tr>
-            <td><strong>Subscription Status</strong></td>
-            <td>Plan tier, billing cycle</td>
-            <td>Unlock premium features</td>
-            <td><span class="badge badge-green">Never</span></td>
-          </tr>
+          <tr><td><strong>Account Info</strong></td><td>Name, email, phone, password (hashed)</td><td>Create and authenticate your account</td><td><span class="badge badge-never">Never</span></td></tr>
+          <tr><td><strong>Vehicle Info</strong></td><td>Make, model, year, license plate</td><td>Help providers identify your vehicle</td><td><span class="badge badge-never">Never</span></td></tr>
+          <tr><td><strong>Location</strong></td><td>GPS coordinates, address</td><td>Find nearby providers; share ETA</td><td><span class="badge badge-never">Never</span></td></tr>
+          <tr><td><strong>Service Records</strong></td><td>Service type, date, provider, cost</td><td>Billing history and receipts</td><td><span class="badge badge-never">Never</span></td></tr>
+          <tr><td><strong>Payment Tokens</strong></td><td>Stripe customer ID, last 4 digits</td><td>Process payments via Stripe</td><td><span class="badge badge-never">Never</span></td></tr>
+          <tr><td><strong>Device Info</strong></td><td>OS version, push token, app version</td><td>Push notifications; crash reporting</td><td><span class="badge badge-never">Never</span></td></tr>
+          <tr><td><strong>Emergency Contacts</strong></td><td>Names and phone numbers you add</td><td>Alert contacts during SOS mode only</td><td><span class="badge badge-never">Never</span></td></tr>
+          <tr><td><strong>Support Messages</strong></td><td>Chat messages with support or AI</td><td>Resolve your issue; improve responses</td><td><span class="badge badge-never">Never</span></td></tr>
         </tbody>
       </table>
-      <p>We do <strong>not</strong> collect: Social Security numbers, government-issued ID numbers, biometrics, camera roll, contacts (beyond emergency contacts you voluntarily add), or browsing history.</p>
+      <p>We do <strong>not</strong> collect: Social Security numbers, government-issued IDs, biometrics, camera roll, contacts (beyond emergency contacts you add), or browsing history.</p>
     </section>
 
-    <!-- 3 Location -->
+    <!-- 3 -->
     <section class="section" id="location">
-      <h2><span class="num">3</span> Location Data</h2>
+      <div class="section-head">
+        <div class="section-num">3</div>
+        <h2>Location Data</h2>
+      </div>
       <p>Location is the most sensitive data we handle. Here is the exact timeline of when it is active:</p>
-
       <div class="timeline">
-        <div class="timeline-item">
-          <div class="timeline-dot dot-on">📍</div>
-          <div class="timeline-body">
+        <div class="tl-item">
+          <div class="tl-dot dot-active">
+            <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 1 8 8c0 5.25-8 14-8 14S4 15.25 4 10a8 8 0 0 1 8-8z"/></svg>
+          </div>
+          <div class="tl-body">
             <strong>When you request a service</strong>
-            <span>Your GPS coordinates are captured once to find providers near you and show them on the map. You can also type an address manually instead.</span>
+            <span>Your GPS coordinates are captured once to find providers near you. You can also type an address manually.</span>
           </div>
         </div>
-        <div class="timeline-item">
-          <div class="timeline-dot dot-on">🗺️</div>
-          <div class="timeline-body">
+        <div class="tl-item">
+          <div class="tl-dot dot-active">
+            <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <div class="tl-body">
             <strong>While a service is active</strong>
-            <span>Your location is shared with your assigned provider so they can navigate to you. The provider's location is shared back with you so you can see their ETA on the map.</span>
+            <span>Your location is shared with your assigned provider so they can navigate to you. Their location is shared back so you can track their ETA.</span>
           </div>
         </div>
-        <div class="timeline-item">
-          <div class="timeline-dot dot-on">🆘</div>
-          <div class="timeline-body">
+        <div class="tl-item">
+          <div class="tl-dot dot-active">
+            <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </div>
+          <div class="tl-body">
             <strong>During SOS / Emergency Mode</strong>
-            <span>If you activate Emergency Mode, your coordinates and a Google Maps link are sent to the emergency contacts you have saved. This is the only time your location is sent to a third party (your own contacts).</span>
+            <span>If you activate Emergency Mode, your coordinates are sent to the emergency contacts you have saved. This is the only time your location reaches a third party (your own contacts).</span>
           </div>
         </div>
-        <div class="timeline-item">
-          <div class="timeline-dot dot-off">🚫</div>
-          <div class="timeline-body">
+        <div class="tl-item">
+          <div class="tl-dot dot-off">
+            <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </div>
+          <div class="tl-body">
             <strong>At all other times</strong>
-            <span>Location is not accessed. We do not track you in the background, we do not build location history, and we do not share your location with advertisers — ever.</span>
+            <span>Location is not accessed. No background tracking. No location history. No sharing with advertisers.</span>
           </div>
         </div>
       </div>
-
-      <p>Location data is stored as part of the service record (the address of where you requested help) but raw GPS coordinates are not retained beyond the active session.</p>
     </section>
 
-    <!-- 4 How we use data -->
+    <!-- 4 -->
     <section class="section" id="use">
-      <h2><span class="num">4</span> How We Use Your Data</h2>
+      <div class="section-head">
+        <div class="section-num">4</div>
+        <h2>How We Use Your Data</h2>
+      </div>
       <ul>
         <li>Provide, operate, and improve the Service</li>
         <li>Match you with available service providers</li>
@@ -411,145 +383,135 @@
       <p>We do <strong>not</strong> use your data for targeted advertising, behavioral profiling, or sale to third parties.</p>
     </section>
 
-    <!-- 5 Sharing -->
+    <!-- 5 -->
     <section class="section" id="sharing">
-      <h2><span class="num">5</span> Sharing &amp; Disclosure</h2>
+      <div class="section-head">
+        <div class="section-num">5</div>
+        <h2>Sharing &amp; Disclosure</h2>
+      </div>
       <h3>Service providers you are matched with</h3>
-      <p>When you accept a provider, they receive your first name, vehicle details, and service location so they can find you. They do not receive your email, phone number (unless you share it in chat), or payment information.</p>
-
-      <h3>Drivers that providers are matched with</h3>
-      <p>Providers see the driver's first name, service type, and general location. No financial information is disclosed to providers.</p>
-
-      <h3>Infrastructure and service partners</h3>
-      <p>We use a small number of trusted vendors to run the Service. Each receives only the minimum data required:</p>
+      <p>When you accept a provider, they receive your first name, vehicle details, and service location. They do not receive your email, phone number, or payment information.</p>
+      <h3>Infrastructure partners</h3>
       <table class="data-table">
-        <thead>
-          <tr><th>Partner</th><th>Purpose</th><th>Data Shared</th></tr>
-        </thead>
+        <thead><tr><th>Partner</th><th>Purpose</th><th>Data Shared</th></tr></thead>
         <tbody>
-          <tr><td><strong>Stripe</strong></td><td>Payment processing</td><td>Name, email, card token (Stripe never shares card data back with us)</td></tr>
-          <tr><td><strong>Expo / Apple / Google</strong></td><td>Push notifications</td><td>Device push token only</td></tr>
+          <tr><td><strong>Stripe</strong></td><td>Payment processing</td><td>Name, email, card token (card details stay within Stripe)</td></tr>
+          <tr><td><strong>Apple / Google</strong></td><td>Push notifications</td><td>Device push token only</td></tr>
           <tr><td><strong>OpenAI</strong></td><td>AI support chat</td><td>Your support chat messages (no account info)</td></tr>
-          <tr><td><strong>Resend</strong></td><td>Transactional email</td><td>Your email address and email content</td></tr>
+          <tr><td><strong>Resend</strong></td><td>Transactional email</td><td>Email address and email content</td></tr>
           <tr><td><strong>RevenueCat</strong></td><td>Subscription management</td><td>User ID and purchase receipts</td></tr>
         </tbody>
       </table>
-
       <h3>Legal requirements</h3>
-      <p>We may disclose information if required by law, court order, or to protect the safety of our users or the public. We will notify you of such requests where legally permitted.</p>
-
-      <h3>Business transfers</h3>
-      <p>If ResqRide is acquired or merges with another company, your data may be transferred. You will be notified before any transfer takes place.</p>
+      <p>We may disclose information if required by law or court order. We will notify you where legally permitted.</p>
     </section>
 
-    <!-- 6 Payments -->
+    <!-- 6 -->
     <section class="section" id="payments">
-      <h2><span class="num">6</span> Payments &amp; Stripe</h2>
-      <p>All payment card processing is handled by <strong>Stripe, Inc.</strong>, a PCI-DSS Level 1 certified payment processor. When you add a payment method:</p>
-      <ul>
-        <li>Your card number is entered directly into Stripe's secure form — it never passes through ResqRide's servers</li>
-        <li>ResqRide stores only your Stripe customer ID and the last four digits of your card for display purposes</li>
-        <li>Your full card number, CVV, and expiry are never visible to ResqRide employees or stored in our database</li>
-      </ul>
-      <p>For providers receiving payouts, Stripe Connect is used. Stripe handles identity verification and bank account storage in compliance with financial regulations. ResqRide stores only your Stripe account ID.</p>
+      <div class="section-head">
+        <div class="section-num">6</div>
+        <h2>Payments &amp; Stripe</h2>
+      </div>
+      <p>All payment card processing is handled by <strong>Stripe, Inc.</strong> (PCI-DSS Level 1). When you add a payment method, your card number goes directly into Stripe's secure form — it never passes through ResqRide's servers. We store only your Stripe customer ID and last four digits for display.</p>
+      <p>For providers receiving payouts, Stripe Connect handles identity verification and bank account storage. ResqRide stores only your Stripe account ID.</p>
     </section>
 
-    <!-- 7 Retention -->
+    <!-- 7 -->
     <section class="section" id="retention">
-      <h2><span class="num">7</span> Data Retention</h2>
-      <p>We keep your data for as long as your account is active. Specific retention periods:</p>
+      <div class="section-head">
+        <div class="section-num">7</div>
+        <h2>Data Retention</h2>
+      </div>
       <ul>
-        <li><strong>Account data:</strong> Retained until you delete your account, then permanently erased within 30 days</li>
-        <li><strong>Service records:</strong> Retained for 3 years for billing dispute resolution, then deleted</li>
+        <li><strong>Account data:</strong> Retained until you delete your account, then erased within 30 days</li>
+        <li><strong>Service records:</strong> Retained for 3 years for billing disputes, then deleted</li>
         <li><strong>Support chat:</strong> Retained for 12 months, then deleted</li>
-        <li><strong>Session tokens:</strong> Automatically expire after 30 days of inactivity</li>
-        <li><strong>Location data:</strong> Address of service stored with service record; raw GPS coordinates not retained beyond the active session</li>
+        <li><strong>Session tokens:</strong> Expire after 30 days of inactivity</li>
+        <li><strong>Location:</strong> Service address stored with the service record; raw GPS not retained beyond the active session</li>
       </ul>
     </section>
 
-    <!-- 8 Security -->
+    <!-- 8 -->
     <section class="section" id="security">
-      <h2><span class="num">8</span> Security</h2>
-      <p>We implement industry-standard security measures including:</p>
+      <div class="section-head">
+        <div class="section-num">8</div>
+        <h2>Security</h2>
+      </div>
       <ul>
         <li>Passwords hashed with <strong>scrypt</strong> — even ResqRide cannot read your password</li>
-        <li>All data transmitted over <strong>HTTPS/TLS</strong></li>
-        <li>Bearer tokens stored in device secure storage (Keychain on iOS, Keystore on Android)</li>
+        <li>All data transmitted over <strong>HTTPS / TLS</strong></li>
+        <li>Session tokens stored in device secure storage (Keychain on iOS, Keystore on Android)</li>
         <li>Database access restricted to server-side processes only</li>
         <li>Rate limiting on authentication endpoints to prevent brute-force attacks</li>
       </ul>
-      <p>No system is 100% secure. If you discover a vulnerability, please report it to <a href="mailto:privacy@resqride.co" style="color:var(--blue)">privacy@resqride.co</a>.</p>
+      <p>If you discover a security vulnerability, please report it to <a href="mailto:privacy@resqride.co">privacy@resqride.co</a>.</p>
     </section>
 
-    <!-- 9 Your rights -->
+    <!-- 9 -->
     <section class="section" id="rights">
-      <h2><span class="num">9</span> Your Rights</h2>
-
-      <div class="rights-grid">
-        <div class="right-card">
-          <strong>Access</strong>
-          <span>Request a copy of all personal data we hold about you.</span>
-        </div>
-        <div class="right-card">
-          <strong>Correction</strong>
-          <span>Update your name, email, or phone number directly in the app under Settings.</span>
-        </div>
-        <div class="right-card">
-          <strong>Deletion</strong>
-          <span>Delete your account and all associated data. We process deletion requests within 30 days.</span>
-        </div>
-        <div class="right-card">
-          <strong>Portability</strong>
-          <span>Request an export of your data in a machine-readable format.</span>
-        </div>
-        <div class="right-card">
-          <strong>Objection</strong>
-          <span>Object to any processing you believe is not necessary or lawful.</span>
-        </div>
-        <div class="right-card">
-          <strong>Withdraw Consent</strong>
-          <span>Turn off push notifications at any time in your device Settings.</span>
-        </div>
+      <div class="section-head">
+        <div class="section-num">9</div>
+        <h2>Your Rights</h2>
       </div>
-
+      <div class="rights-grid">
+        <div class="right-card"><strong>Access</strong><span>Request a copy of all personal data we hold about you.</span></div>
+        <div class="right-card"><strong>Correction</strong><span>Update your name, email, or phone in the app under Settings.</span></div>
+        <div class="right-card"><strong>Deletion</strong><span>Delete your account and all associated data within 30 days.</span></div>
+        <div class="right-card"><strong>Portability</strong><span>Request an export of your data in a machine-readable format.</span></div>
+        <div class="right-card"><strong>Objection</strong><span>Object to any processing you believe is not necessary or lawful.</span></div>
+        <div class="right-card"><strong>Withdraw Consent</strong><span>Turn off push notifications at any time in device Settings.</span></div>
+      </div>
       <h3>How to delete your account</h3>
-      <p>To delete your account and all your data, email <a href="mailto:privacy@resqride.co" style="color:var(--blue)">privacy@resqride.co</a> with the subject line "Delete My Account" from the email address on your account. We will confirm deletion within 30 days.</p>
-
-      <p>California residents have additional rights under the CCPA. European residents have additional rights under the GDPR. Contact us to exercise any right.</p>
+      <p>Email <a href="mailto:privacy@resqride.co">privacy@resqride.co</a> with "Delete My Account" from the email on your account. We confirm deletion within 30 days. California and EU residents have additional rights — contact us to exercise them.</p>
     </section>
 
-    <!-- 10 Children -->
+    <!-- 10 -->
     <section class="section" id="children">
-      <h2><span class="num">10</span> Children's Privacy</h2>
-      <p>The Service is not directed to anyone under the age of 18. We do not knowingly collect personal information from children. If you believe a child has provided us with personal information, please contact us and we will delete it promptly.</p>
+      <div class="section-head">
+        <div class="section-num">10</div>
+        <h2>Children's Privacy</h2>
+      </div>
+      <p>The Service is not directed to anyone under 18. We do not knowingly collect information from children. If you believe a child has provided us with data, contact us and we will delete it promptly.</p>
     </section>
 
-    <!-- 11 Changes -->
+    <!-- 11 -->
     <section class="section" id="changes">
-      <h2><span class="num">11</span> Changes to This Policy</h2>
-      <p>We may update this policy from time to time. When we make material changes, we will notify you via email and in-app notification at least 14 days before the changes take effect. The "Last updated" date at the top of this page reflects the most recent revision.</p>
-      <p>Continued use of the Service after changes take effect constitutes your acceptance of the revised policy.</p>
+      <div class="section-head">
+        <div class="section-num">11</div>
+        <h2>Changes to This Policy</h2>
+      </div>
+      <p>When we make material changes, we will notify you via email and in-app notification at least 14 days before the changes take effect. The "Last updated" date at the top reflects the most recent revision.</p>
     </section>
 
-    <!-- 12 Contact -->
+    <!-- 12 -->
     <section class="section" id="contact">
-      <h2><span class="num">12</span> Contact Us</h2>
-      <p>If you have questions, concerns, or requests regarding this Privacy Policy or your personal data, please contact us:</p>
+      <div class="section-head">
+        <div class="section-num">12</div>
+        <h2>Contact Us</h2>
+      </div>
+      <p>Questions, concerns, or data requests — we respond within 5 business days.</p>
       <div class="contact-card">
-        <div class="icon">✉️</div>
+        <div class="ci">
+          <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+          </svg>
+        </div>
         <div>
-          <strong>ResqRide Privacy Team</strong>
+          <strong>ResqRide Privacy</strong>
           <a href="mailto:privacy@resqride.co">privacy@resqride.co</a>
         </div>
       </div>
-      <p style="margin-top:16px;">We respond to all privacy-related inquiries within 5 business days.</p>
     </section>
-
   </main>
 </div>
 
 <footer>
-  <p>&copy; 2026 ResqRide &nbsp;·&nbsp; <a href="/privacy">Privacy Policy</a> &nbsp;·&nbsp; <a href="/data-safety">Data Safety</a> &nbsp;·&nbsp; <a href="/">Home</a></p>
+  <a href="/">Home</a>
+  <a href="/privacy">Privacy Policy</a>
+  <a href="/data-safety">Data Safety</a>
+  <a href="/terms">Terms of Service</a>
+  <br><br>
+  &copy; 2026 ResqRide. All rights reserved.
 </footer>
 
 </body>
