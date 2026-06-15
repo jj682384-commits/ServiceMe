@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { StyleSheet, Platform } from "react-native";
+import { StyleSheet, Platform, View } from "react-native";
 import { SplashAnimation } from "@/components/SplashAnimation";
 import { NavigationContainer, DefaultTheme, DarkTheme } from "@react-navigation/native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -112,18 +112,20 @@ export default function App() {
   if (!fontsLoaded) return null;
 
   return (
-    <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <SubscriptionProvider>
-          <AppProvider>
-            <AppInner stripePublishableKey={stripePublishableKey} />
-            {showSplash && (
-              <SplashAnimation onFinish={() => setShowSplash(false)} />
-            )}
-          </AppProvider>
-        </SubscriptionProvider>
-      </QueryClientProvider>
-    </ErrorBoundary>
+    <View style={styles.root}>
+      <ErrorBoundary>
+        <QueryClientProvider client={queryClient}>
+          <SubscriptionProvider>
+            <AppProvider>
+              <AppInner stripePublishableKey={stripePublishableKey} />
+            </AppProvider>
+          </SubscriptionProvider>
+        </QueryClientProvider>
+      </ErrorBoundary>
+      {showSplash && (
+        <SplashAnimation onFinish={() => setShowSplash(false)} />
+      )}
+    </View>
   );
 }
 
