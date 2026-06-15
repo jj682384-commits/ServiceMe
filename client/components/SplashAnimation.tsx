@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { StyleSheet, Dimensions } from "react-native";
+import * as SplashScreen from "expo-splash-screen";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -11,7 +12,7 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 
-const { width, height } = Dimensions.get("window");
+const { width } = Dimensions.get("window");
 
 interface Props {
   onFinish: () => void;
@@ -25,6 +26,10 @@ export function SplashAnimation({ onFinish }: Props) {
   const glowOpacity = useSharedValue(0);
 
   useEffect(() => {
+    // Hide the native splash screen the instant our custom animation
+    // is mounted — guarantees no gap between native splash and our screen.
+    SplashScreen.hideAsync().catch(() => {});
+
     logoOpacity.value = withTiming(1, { duration: 380 });
     logoScale.value = withSpring(1, { damping: 14, stiffness: 90, mass: 0.8 });
 
@@ -32,7 +37,7 @@ export function SplashAnimation({ onFinish }: Props) {
       260,
       withSequence(
         withTiming(0.55, { duration: 380, easing: Easing.out(Easing.quad) }),
-        withTiming(0.0, { duration: 440, easing: Easing.in(Easing.quad) })
+        withTiming(0.0,  { duration: 440, easing: Easing.in(Easing.quad) })
       )
     );
     glowScale.value = withDelay(
@@ -42,21 +47,19 @@ export function SplashAnimation({ onFinish }: Props) {
 
     containerOpacity.value = withDelay(
       980,
-      withTiming(0, { duration: 360, easing: Easing.in(Easing.quad) }, (finished) => {
-        if (finished) runOnJS(onFinish)();
-      })
+      withTiming(
+        0,
+        { duration: 360, easing: Easing.in(Easing.quad) },
+        (finished) => { if (finished) runOnJS(onFinish)(); }
+      )
     );
   }, []);
 
-  const containerStyle = useAnimatedStyle(() => ({
-    opacity: containerOpacity.value,
-  }));
-
+  const containerStyle = useAnimatedStyle(() => ({ opacity: containerOpacity.value }));
   const logoStyle = useAnimatedStyle(() => ({
     opacity: logoOpacity.value,
     transform: [{ scale: logoScale.value }],
   }));
-
   const glowStyle = useAnimatedStyle(() => ({
     opacity: glowOpacity.value,
     transform: [{ scale: glowScale.value }],
