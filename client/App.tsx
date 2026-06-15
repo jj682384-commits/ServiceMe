@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { StyleSheet } from "react-native";
+import { StyleSheet, Platform } from "react-native";
+import { SplashAnimation } from "@/components/SplashAnimation";
 import { NavigationContainer, DefaultTheme, DarkTheme } from "@react-navigation/native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -85,6 +86,7 @@ function AppInner({ stripePublishableKey }: { stripePublishableKey: string }) {
 
 export default function App() {
   const [stripePublishableKey, setStripePublishableKey] = useState<string>("");
+  const [showSplash, setShowSplash] = useState(Platform.OS !== "web");
   const [fontsLoaded] = useFonts({
     Exo2_400Regular,
     Exo2_400Regular_Italic,
@@ -115,6 +117,9 @@ export default function App() {
         <SubscriptionProvider>
           <AppProvider>
             <AppInner stripePublishableKey={stripePublishableKey} />
+            {showSplash && (
+              <SplashAnimation onFinish={() => setShowSplash(false)} />
+            )}
           </AppProvider>
         </SubscriptionProvider>
       </QueryClientProvider>
