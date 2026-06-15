@@ -87,7 +87,7 @@ function AppInner({ stripePublishableKey }: { stripePublishableKey: string }) {
 export default function App() {
   const [stripePublishableKey, setStripePublishableKey] = useState<string>("");
   const [showSplash, setShowSplash] = useState(Platform.OS !== "web");
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     Exo2_400Regular,
     Exo2_400Regular_Italic,
     Exo2_500Medium,
@@ -96,6 +96,14 @@ export default function App() {
     Exo2_700Bold_Italic,
   });
 
+  // Safety net: hide the native splash as soon as fonts are ready (or fail),
+  // so the app never freezes if SplashAnimation fails to mount for any reason.
+  useEffect(() => {
+    if (fontsLoaded || fontError) {
+      SplashScreen.hideAsync().catch(() => {});
+    }
+  }, [fontsLoaded, fontError]);
+
   useEffect(() => {
     fetch(new URL("/api/stripe/publishable-key", getApiUrl()).toString())
       .then((r) => r.json())
@@ -103,7 +111,7 @@ export default function App() {
       .catch(() => {});
   }, []);
 
-  if (!fontsLoaded) return null;
+  if (!fontsLoaded && !fontError) return null;
 
   return (
     <View style={styles.root}>
