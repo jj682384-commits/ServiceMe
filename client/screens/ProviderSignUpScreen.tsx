@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useMemo } from "react";
 import { View, StyleSheet, TextInput, Pressable, Alert, Platform, ScrollView, Keyboard, FlatList, Modal } from "react-native";
+import * as AppleAuthentication from "expo-apple-authentication";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, CommonActions, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -23,6 +24,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useApp, ServiceType, EVService } from "@/context/AppContext";
 import { apiRequest, setAuthToken } from "@/lib/query-client";
 import { saveAuthToken } from "@/lib/secureStorage";
+import { useGoogleAuth, GoogleUser } from "@/hooks/useGoogleAuth";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import {
@@ -447,6 +449,7 @@ export default function ProviderSignUpScreen() {
 
   const [step, setStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [ssoAuthenticated, setSsoAuthenticated] = useState(false);
 
   const [fullName, setFullName] = useState(linkedDriverAccount ? (authUser?.name ?? currentDriver?.name ?? "") : "");
   const [email, setEmail] = useState(linkedDriverAccount ? (authUser?.email ?? currentDriver?.email ?? "") : "");
@@ -540,9 +543,80 @@ export default function ProviderSignUpScreen() {
     setAcceptedDocs((prev) => ({ ...prev, [key]: !prev[key] }));
   }, []);
 
+  const applySSOResult = useCallback(async (data: { token: string; userId: string; name: string; email: string; phone: string }) => {
+    setAuthToken(data.token);
+    await saveAuthToken(data.token);
+    setAuthUser({ id: data.userId, name: data.name, email: data.email, phone: data.phone });
+    setIsAuthenticated(true);
+    setFullName(data.name);
+    setEmail(data.email);
+    if (data.phone) setPhone(data.phone);
+    setSsoAuthenticated(true);
+    setStep(1);
+  }, [setAuthUser, setIsAuthenticated]);
+
+  const handleAppleSignIn = useCallback(async () => {
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      const name = credential.fullName
+        ? [credential.fullName.givenName, credential.fullName.familyName].filter(Boolean).join(" ")
+        : "ResqRide User";
+      setIsLoading(true);
+      const res = await apiRequest("POST", "/api/auth/apple-signin", {
+        appleUserId: credential.user,
+        email: credential.email ?? undefined,
+        fullName: name,
+        role: "provider",
+      });
+      const data = await res.json() as { userId: string; token: string; name: string; email: string; phone: string };
+      await applySSOResult(data);
+    } catch (e: unknown) {
+      const err = e as { code?: string; message?: string };
+      if (err.code !== "ERR_REQUEST_CANCELED") {
+        Alert.alert("Apple Sign-In Failed", err.message || "Something went wrong. Please try again.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }, [applySSOResult]);
+
+  const handleGoogleProviderSuccess = useCallback(async (googleUser: GoogleUser) => {
+    try {
+      setIsLoading(true);
+      const res = await apiRequest("POST", "/api/auth/google-signin", {
+        googleId: googleUser.id,
+        email: googleUser.email,
+        name: googleUser.name,
+        role: "provider",
+      });
+      const data = await res.json() as { userId: string; token: string; name: string; email: string; phone: string };
+      await applySSOResult(data);
+    } catch {
+      Alert.alert("Google Sign-In Failed", "Something went wrong. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [applySSOResult]);
+
+  const handleGoogleError = useCallback((error: string) => {
+    if (error && !error.toLowerCase().includes("cancel")) {
+      Alert.alert("Google Sign-In Failed", error);
+    }
+  }, []);
+
+  const { signInWithGoogle, isConfigured: isGoogleConfigured } = useGoogleAuth({
+    onSuccess: handleGoogleProviderSuccess,
+    onError: handleGoogleError,
+  });
+
   const validateStep = (): boolean => {
     if (step === 0) {
-      if (linkedDriverAccount) return true;
+      if (linkedDriverAccount || ssoAuthenticated) return true;
       if (!fullName.trim() || !email.trim() || !phone.trim() || !password.trim() || !confirmPassword.trim()) {
         Alert.alert("Missing Information", "Please fill in all fields."); return false;
       }
@@ -599,8 +673,8 @@ export default function ProviderSignUpScreen() {
     try {
       let userId: string;
 
-      if (linkedDriverAccount) {
-        // Existing driver — use their current account, skip signup
+      if (linkedDriverAccount || ssoAuthenticated) {
+        // Existing account (driver linking or SSO) — skip signup
         userId = authUser?.id ?? currentDriver?.id ?? "";
         if (!userId) {
           Alert.alert("Error", "Could not find your account. Please sign in again.");
@@ -769,17 +843,56 @@ export default function ProviderSignUpScreen() {
       );
     }
 
+    const showApple = Platform.OS === "ios";
+    const showGoogle = Platform.OS === "web" && isGoogleConfigured;
+    const showSSOSection = showApple || showGoogle;
+
     return (
       <Animated.View entering={FadeInDown.duration(400)} key="step0" style={styles.stepContent}>
         <View style={styles.stepHeader}>
           <View style={[styles.stepHeaderIcon, { backgroundColor: iconBg }]}>
             <Feather name="user" size={24} color={isDark ? "#C0C0C0" : "#555555"} />
           </View>
-          <ThemedText type="h3" style={{ color: stepTitleColor, marginBottom: 4 }}>Personal Information</ThemedText>
+          <ThemedText type="h3" style={{ color: stepTitleColor, marginBottom: 4 }}>Create Your Account</ThemedText>
           <ThemedText type="small" style={{ color: stepSubColor, textAlign: "center", paddingHorizontal: 20 }}>
-            {isIndependent ? "Tell us about yourself" : "Owner/manager information"}
+            {isIndependent ? "Sign up to start earning as a provider" : "Register your roadside shop"}
           </ThemedText>
         </View>
+
+        {showSSOSection ? (
+          <View style={styles.ssoSection}>
+            {showApple ? (
+              <AppleAuthentication.AppleAuthenticationButton
+                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_UP}
+                buttonStyle={isDark
+                  ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
+                  : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                cornerRadius={14}
+                style={styles.appleButton}
+                onPress={handleAppleSignIn}
+              />
+            ) : null}
+            {showGoogle ? (
+              <Pressable
+                style={({ pressed }) => [styles.googleButton, { opacity: pressed ? 0.85 : 1 }]}
+                onPress={signInWithGoogle}
+              >
+                <View style={styles.googleIconWrap}>
+                  <ThemedText style={styles.googleIconText}>G</ThemedText>
+                </View>
+                <ThemedText type="body" style={styles.googleButtonText}>Continue with Google</ThemedText>
+              </Pressable>
+            ) : null}
+            <View style={styles.ssoDividerRow}>
+              <View style={[styles.ssoDividerLine, { backgroundColor: isDark ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.10)" }]} />
+              <ThemedText type="small" style={{ color: isDark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.35)", fontSize: 12 }}>
+                or sign up with email
+              </ThemedText>
+              <View style={[styles.ssoDividerLine, { backgroundColor: isDark ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.10)" }]} />
+            </View>
+          </View>
+        ) : null}
+
         <View style={styles.form}>
           <InputField label="Full Name" value={fullName} onChangeText={setFullName} placeholder="Enter your full name" icon="user" autoCapitalize="words" />
           <InputField label="Email Address" value={email} onChangeText={setEmail} placeholder="Enter your email" icon="mail" keyboardType="email-address" autoCapitalize="none" />
@@ -1164,6 +1277,14 @@ const styles = StyleSheet.create({
   stepItem: { flexDirection: "row", alignItems: "center" },
   stepDot: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center", borderWidth: 2 },
   stepLine: { width: 40, height: 2, marginHorizontal: 4 },
+  ssoSection: { gap: 12, marginBottom: 24 },
+  appleButton: { width: "100%", height: 52 },
+  googleButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12, paddingVertical: 14, borderRadius: 14, backgroundColor: "#FFF" },
+  googleIconWrap: { width: 24, height: 24, borderRadius: 12, backgroundColor: "#4285F4", alignItems: "center", justifyContent: "center" },
+  googleIconText: { color: "#FFF", fontWeight: "700", fontSize: 14 },
+  googleButtonText: { color: "#1A1A1A", fontWeight: "600", fontSize: 16 },
+  ssoDividerRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  ssoDividerLine: { flex: 1, height: 1 },
   stepContent: { marginBottom: Spacing.xl },
   stepHeader: { alignItems: "center", marginBottom: Spacing.xl },
   stepHeaderIcon: { width: 56, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center", marginBottom: Spacing.md },

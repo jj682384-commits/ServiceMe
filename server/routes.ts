@@ -757,39 +757,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ── Apple Sign-In ─────────────────────────────────────────────────────────
   app.post("/api/auth/apple-signin", authLimit, async (req: Request, res: Response) => {
-    const { appleUserId, email, fullName } = req.body as { appleUserId?: string; email?: string; fullName?: string };
+    const { appleUserId, email, fullName, role: requestedRole } = req.body as { appleUserId?: string; email?: string; fullName?: string; role?: string };
     if (!appleUserId) return res.status(400).json({ error: "Apple user ID is required" });
+    const accountRole = requestedRole === "provider" ? "provider" : "driver";
     try {
       const normalizedEmail = email?.toLowerCase().trim();
       let userId: string | null = null;
       let userName = fullName?.trim() || "ResqRide User";
       let userEmail = normalizedEmail || `apple_${appleUserId}@users.resqride.app`;
       let userPhone = "";
+      let existingRole = accountRole;
 
       if (normalizedEmail) {
-        const { rows } = await pool.query<{ id: string; name: string; phone: string }>(
-          "SELECT id, name, phone FROM auth_users WHERE email = $1", [normalizedEmail]
+        const { rows } = await pool.query<{ id: string; name: string; phone: string; role: string }>(
+          "SELECT id, name, phone, role FROM auth_users WHERE email = $1", [normalizedEmail]
         );
         if (rows.length) {
           userId = rows[0].id;
           userName = rows[0].name;
           userPhone = rows[0].phone || "";
+          existingRole = rows[0].role;
         }
       }
       if (!userId) {
         userId = `user_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
         await pool.query(
           "INSERT INTO auth_users (id, email, password_hash, name, phone, role) VALUES ($1, $2, $3, $4, $5, $6)",
-          [userId, userEmail, "APPLE_SSO_" + appleUserId, userName, userPhone, "driver"]
+          [userId, userEmail, "APPLE_SSO_" + appleUserId, userName, userPhone, accountRole]
         );
-        console.log(`[AUTH] apple-signin new user userId=${userId} email=${userEmail}`);
+        console.log(`[AUTH] apple-signin new user userId=${userId} email=${userEmail} role=${accountRole}`);
       } else {
-        console.log(`[AUTH] apple-signin existing user userId=${userId}`);
+        console.log(`[AUTH] apple-signin existing user userId=${userId} role=${existingRole}`);
       }
       const token = await createSession(userId);
-      res.json({ token, userId, name: userName, email: userEmail, phone: userPhone, role: "driver" });
+      res.json({ token, userId, name: userName, email: userEmail, phone: userPhone, role: existingRole });
     } catch (err) {
       console.error("[auth/apple-signin]", err);
+      res.status(500).json({ error: "Sign in failed" });
+    }
+  });
+
+  app.post("/api/auth/google-signin", authLimit, async (req: Request, res: Response) => {
+    const { googleId, email, name, role: requestedRole } = req.body as { googleId?: string; email?: string; name?: string; role?: string };
+    if (!googleId) return res.status(400).json({ error: "Google user ID is required" });
+    const accountRole = requestedRole === "provider" ? "provider" : "driver";
+    try {
+      const normalizedEmail = email?.toLowerCase().trim();
+      let userId: string | null = null;
+      let userName = name?.trim() || "ResqRide User";
+      let userEmail = normalizedEmail || `google_${googleId}@users.resqride.app`;
+      let userPhone = "";
+      let existingRole = accountRole;
+
+      if (normalizedEmail) {
+        const { rows } = await pool.query<{ id: string; name: string; phone: string; role: string }>(
+          "SELECT id, name, phone, role FROM auth_users WHERE email = $1", [normalizedEmail]
+        );
+        if (rows.length) {
+          userId = rows[0].id;
+          userName = rows[0].name;
+          userPhone = rows[0].phone || "";
+          existingRole = rows[0].role;
+        }
+      }
+      if (!userId) {
+        userId = `user_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
+        await pool.query(
+          "INSERT INTO auth_users (id, email, password_hash, name, phone, role) VALUES ($1, $2, $3, $4, $5, $6)",
+          [userId, userEmail, "GOOGLE_SSO_" + googleId, userName, userPhone, accountRole]
+        );
+        console.log(`[AUTH] google-signin new user userId=${userId} email=${userEmail} role=${accountRole}`);
+      } else {
+        console.log(`[AUTH] google-signin existing user userId=${userId} role=${existingRole}`);
+      }
+      const token = await createSession(userId);
+      res.json({ token, userId, name: userName, email: userEmail, phone: userPhone, role: existingRole });
+    } catch (err) {
+      console.error("[auth/google-signin]", err);
       res.status(500).json({ error: "Sign in failed" });
     }
   });
