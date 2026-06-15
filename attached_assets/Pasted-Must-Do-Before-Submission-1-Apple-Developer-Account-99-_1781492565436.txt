@@ -1,0 +1,63 @@
+Must-Do Before Submission
+1. Apple Developer Account — $99/year
+If not already enrolled: developer.apple.com/programs. You need this to generate signing certificates and create the App Store listing.
+
+2. Missing iOS permission strings in app.json
+The app uses the camera and photo library (document uploads, selfie for verification) but those usage descriptions are absent from infoPlist. Apple will reject without them:
+
+"infoPlist": {
+  "NSLocationWhenInUseUsageDescription": "ResqRide needs your location to find nearby mechanics and service providers.",
+  "NSCameraUsageDescription": "ResqRide uses your camera to capture photos of your documents for provider verification.",
+  "NSPhotoLibraryUsageDescription": "ResqRide accesses your photo library to upload identity documents and vehicle photos.",
+  "NSContactsUsageDescription": "ResqRide can access your contacts to set up emergency contacts for SOS alerts.",
+  "ITSAppUsesNonExemptEncryption": false
+}
+I can add those now — want me to?
+
+3. Privacy Policy — publicly hosted URL required
+Apple mandates a live, publicly accessible privacy policy URL. The app collects name, email, phone, location, payment info, camera/photos, and contacts. You'll need a page at resqride.co/privacy (or similar). You probably already have something — you'll paste the URL into App Store Connect when creating the listing.
+
+4. App Store Connect setup
+Go to appstoreconnect.apple.com, create a new app with bundle ID com.resqride.app. You'll fill in:
+
+Name: ResqRide
+Category: Travel (primary), Utilities (secondary) — or Navigation
+Description, Keywords, Support URL, Marketing URL
+Age Rating questionnaire (your app connects strangers and involves location sharing — likely 12+)
+5. App Store Screenshots — required sizes
+Because supportsTablet: true is set, Apple requires screenshots for both iPhone and iPad. The minimum required sets are:
+
+6.7" iPhone (iPhone 16 Plus / 15 Pro Max): 1290 × 2796 px — at least 1, up to 10
+12.9" iPad Pro: 2048 × 2732 px — at least 1, up to 10
+You can generate these by running the app in Xcode Simulator at those sizes and screenshotting, or use a design tool with the exact pixel dimensions.
+
+6. EAS Production Build
+Once the App Store listing exists, run:
+
+eas build --platform ios --profile production
+Then:
+
+eas submit --platform ios
+This submits the .ipa directly to App Store Connect.
+
+7. App Review test credentials
+Apple's reviewers need to be able to log in and use the app. Provide in the "Notes to Reviewer" section:
+
+A driver demo account (email + password)
+A provider demo account
+A brief explanation of the dual-role flow
+8. In-App Subscriptions (RevenueCat)
+If the Premium tier is live, every subscription product must be created in App Store Connect before submission, and RevenueCat must reference those App Store product IDs. If it's not ready, the subscription screen should clearly show "Coming Soon" rather than an active purchase flow — Apple will test it.
+
+9. App Privacy "Nutrition Label" in App Store Connect
+You'll declare every type of data you collect. For ResqRide that includes: precise location, name, email, phone number, payment info, photos/videos, and usage data. This is filled out in App Store Connect (not code).
+
+Already In Good Shape
+Bundle ID com.resqride.app — set ✓
+EAS project ID configured ✓
+Apple Sign In declared (usesAppleSignIn: true) ✓
+Location permission string ✓
+Encryption declaration (ITSAppUsesNonExemptEncryption: false) ✓
+Build number set ✓
+Portrait orientation locked ✓
+The two things I can fix in the code right now are the missing camera/photo/contacts permission strings in app.json. Everything else is external setup (Apple accounts, screenshots, App Store Connect). Want me to add those permission strings?
