@@ -4,228 +4,458 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Privacy Policy — ResqRide</title>
-  <meta name="description" content="ResqRide Privacy Policy — learn how we collect, use, and protect your personal information when you use our roadside assistance platform." />
+  <meta name="description" content="ResqRide Privacy Policy — learn how we collect, use, and protect your personal information." />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #0A0E27;
+      background: #04060E;
       color: #c8d8f0;
-      line-height: 1.7;
+      line-height: 1.75;
     }
-    .container {
-      max-width: 780px;
-      margin: 0 auto;
-      padding: 60px 24px 80px;
-    }
-    .logo-row {
+    .topbar {
+      background: rgba(255,255,255,0.04);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding: 16px 24px;
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 48px;
+      gap: 14px;
     }
-    .logo-icon {
-      width: 44px;
-      height: 44px;
-      background: linear-gradient(135deg, #00f5c4, #0088ff);
-      border-radius: 12px;
+    .topbar-logo {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #D92222, #0066FF);
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 22px;
+      font-size: 18px;
+      font-weight: 900;
+      color: #fff;
     }
-    .logo-text {
-      font-size: 22px;
+    .topbar-name {
+      font-size: 18px;
       font-weight: 800;
-      color: #ffffff;
-      letter-spacing: -0.3px;
+      color: #fff;
     }
-    h1 {
-      font-size: 36px;
-      font-weight: 800;
-      color: #ffffff;
-      letter-spacing: -0.5px;
-      margin-bottom: 8px;
+    .topbar-links {
+      margin-left: auto;
+      display: flex;
+      gap: 20px;
+    }
+    .topbar-links a {
+      color: rgba(255,255,255,0.5);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .topbar-links a:hover { color: #fff; }
+    .hero {
+      background: linear-gradient(180deg, rgba(0,102,255,0.12) 0%, transparent 100%);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      padding: 60px 24px 48px;
+      text-align: center;
+    }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(0,102,255,0.15);
+      border: 1px solid rgba(0,102,255,0.3);
+      color: #00AAFF;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      padding: 6px 16px;
+      border-radius: 20px;
+      margin-bottom: 20px;
+    }
+    .hero h1 {
+      font-size: 40px;
+      font-weight: 900;
+      color: #fff;
+      letter-spacing: -1px;
+      margin-bottom: 12px;
+    }
+    .hero p {
+      font-size: 16px;
+      color: rgba(255,255,255,0.5);
+      max-width: 500px;
+      margin: 0 auto 16px;
     }
     .updated {
+      font-size: 13px;
+      color: rgba(255,255,255,0.3);
+    }
+    .container {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 60px 24px 100px;
+    }
+    .toc {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 28px 32px;
+      margin-bottom: 52px;
+    }
+    .toc h3 {
       font-size: 14px;
-      color: #6a7fa8;
-      margin-bottom: 48px;
-    }
-    h2 {
-      font-size: 20px;
       font-weight: 700;
-      color: #ffffff;
-      margin-top: 40px;
-      margin-bottom: 12px;
+      color: rgba(255,255,255,0.4);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
     }
-    p, li {
-      font-size: 15px;
-      color: #a8bcd8;
-      margin-bottom: 12px;
-    }
-    ul {
-      padding-left: 22px;
-      margin-bottom: 12px;
-    }
-    li { margin-bottom: 6px; }
-    a { color: #00f5c4; text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    .section {
-      border-left: 3px solid #00f5c420;
+    .toc ol {
       padding-left: 20px;
+    }
+    .toc li {
       margin-bottom: 8px;
     }
-    .divider {
-      height: 1px;
-      background: #ffffff10;
-      margin: 40px 0;
+    .toc a {
+      color: #00AAFF;
+      text-decoration: none;
+      font-size: 15px;
+      font-weight: 500;
     }
+    .toc a:hover { text-decoration: underline; }
+    h2 {
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+      margin-top: 52px;
+      margin-bottom: 16px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    h2:first-of-type { border-top: none; margin-top: 0; }
+    p {
+      font-size: 15px;
+      color: rgba(200,216,240,0.85);
+      margin-bottom: 14px;
+    }
+    ul, ol {
+      padding-left: 22px;
+      margin-bottom: 14px;
+    }
+    li {
+      font-size: 15px;
+      color: rgba(200,216,240,0.85);
+      margin-bottom: 8px;
+    }
+    strong { color: #fff; font-weight: 600; }
+    a { color: #00AAFF; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .highlight-box {
+      background: rgba(0,102,255,0.08);
+      border: 1px solid rgba(0,102,255,0.2);
+      border-radius: 14px;
+      padding: 20px 24px;
+      margin: 20px 0;
+    }
+    .highlight-box p { margin-bottom: 0; color: rgba(200,216,240,0.9); }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .data-table th {
+      background: rgba(255,255,255,0.06);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      padding: 14px 16px;
+      text-align: left;
+    }
+    .data-table td {
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      padding: 13px 16px;
+      font-size: 14px;
+      color: rgba(200,216,240,0.8);
+      vertical-align: top;
+    }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+    .pill {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .pill-no { background: rgba(0,200,100,0.15); color: #00c864; }
+    .pill-yes { background: rgba(217,34,34,0.15); color: #ff6b6b; }
+    .pill-opt { background: rgba(255,165,0,0.15); color: #ffaa00; }
     .contact-box {
-      background: #ffffff08;
-      border: 1px solid #ffffff12;
-      border-radius: 16px;
-      padding: 24px;
-      margin-top: 48px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 18px;
+      padding: 32px;
+      margin-top: 60px;
+      text-align: center;
     }
     .contact-box h3 {
-      font-size: 17px;
+      font-size: 20px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 10px;
+    }
+    .contact-box p { margin-bottom: 18px; }
+    .contact-btn {
+      display: inline-block;
+      background: #0066FF;
+      color: #fff;
+      font-size: 15px;
       font-weight: 700;
-      color: #ffffff;
-      margin-bottom: 8px;
+      padding: 13px 30px;
+      border-radius: 12px;
+      text-decoration: none;
+    }
+    .contact-btn:hover { background: #0055dd; text-decoration: none; }
+    .footer {
+      text-align: center;
+      padding: 40px 24px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      color: rgba(255,255,255,0.3);
+      font-size: 13px;
+    }
+    .footer a { color: rgba(255,255,255,0.4); }
+    @media (max-width: 600px) {
+      .hero h1 { font-size: 28px; }
+      .topbar-links { display: none; }
+      .data-table { display: block; overflow-x: auto; }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="logo-row">
-      <div class="logo-icon">⚡</div>
-      <span class="logo-text">ResqRide</span>
-    </div>
 
+  <div class="topbar">
+    <div class="topbar-logo">R</div>
+    <span class="topbar-name">ResqRide</span>
+    <div class="topbar-links">
+      <a href="/">Home</a>
+      <a href="/terms">Terms of Service</a>
+      <a href="/data-safety">Data Safety</a>
+    </div>
+  </div>
+
+  <div class="hero">
+    <div class="hero-badge">LEGAL</div>
     <h1>Privacy Policy</h1>
-    <p class="updated">Last updated: March 15, 2026</p>
+    <p>We believe privacy is a right, not a feature. Here is exactly what we collect and why.</p>
+    <div class="updated">Last updated: June 14, 2026</div>
+  </div>
 
-    <div class="section">
-      <p>
-        ResqRide ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy
-        explains how we collect, use, disclose, and safeguard your information when you use our mobile
-        application and related services for on-demand roadside assistance.
-      </p>
+  <div class="container">
+
+    <div class="toc">
+      <h3>Table of Contents</h3>
+      <ol>
+        <li><a href="#collect">Information We Collect</a></li>
+        <li><a href="#location">Location Data — Detailed Explanation</a></li>
+        <li><a href="#use">How We Use Your Information</a></li>
+        <li><a href="#sharing">Sharing of Information</a></li>
+        <li><a href="#payments">Payment Data &amp; Security</a></li>
+        <li><a href="#smartcar">Vehicle Telematics (SmartCar)</a></li>
+        <li><a href="#retention">Data Retention</a></li>
+        <li><a href="#security">Security Measures</a></li>
+        <li><a href="#children">Children's Privacy</a></li>
+        <li><a href="#rights">Your Rights &amp; Choices</a></li>
+        <li><a href="#changes">Changes to This Policy</a></li>
+        <li><a href="#contact">Contact Us</a></li>
+      </ol>
     </div>
 
-    <div class="divider"></div>
+    <h2 id="collect">1. Information We Collect</h2>
+    <p>We only collect what we need to provide the service. Here is a full breakdown:</p>
 
-    <h2>1. Information We Collect</h2>
-    <p>We collect the following types of information:</p>
-    <ul>
-      <li><strong>Account Information:</strong> Name, email address, and phone number when you register.</li>
-      <li><strong>Location Data:</strong> GPS coordinates to connect you with nearby service providers. Location is collected while the app is in use.</li>
-      <li><strong>Vehicle Information:</strong> Make, model, year, and fuel type of vehicles you add to your profile.</li>
-      <li><strong>Vehicle Telematics (Optional):</strong> If you choose to connect your vehicle via SmartCar, we access battery level, estimated range, charge status, and odometer data. This data is only collected with your explicit consent.</li>
-      <li><strong>Service History:</strong> Records of roadside assistance requests you have made or fulfilled.</li>
-      <li><strong>Payment Information:</strong> Transaction amounts and tip data. Full payment card details are handled by our payment processor and are not stored on our servers.</li>
-      <li><strong>Communications:</strong> Messages exchanged between drivers and service providers within the app.</li>
-      <li><strong>Device Information:</strong> Push notification tokens and device type for delivering alerts.</li>
-    </ul>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Data Type</th>
+          <th>What We Collect</th>
+          <th>Sold?</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Account</strong></td>
+          <td>Name, email address, phone number, password (hashed — never stored in plain text)</td>
+          <td><span class="pill pill-no">Never</span></td>
+        </tr>
+        <tr>
+          <td><strong>Location</strong></td>
+          <td>GPS coordinates while the app is in use (foreground). Background location only during an active SOS emergency with your consent.</td>
+          <td><span class="pill pill-no">Never</span></td>
+        </tr>
+        <tr>
+          <td><strong>Vehicle Profile</strong></td>
+          <td>Year, make, model, and fuel type you manually enter. Used to match you with the right provider.</td>
+          <td><span class="pill pill-no">Never</span></td>
+        </tr>
+        <tr>
+          <td><strong>Service History</strong></td>
+          <td>Records of requests you've made or fulfilled — service type, date, cost, rating.</td>
+          <td><span class="pill pill-no">Never</span></td>
+        </tr>
+        <tr>
+          <td><strong>Payment</strong></td>
+          <td>Transaction amounts and tips. Card numbers are handled by Stripe — we never see or store them.</td>
+          <td><span class="pill pill-no">Never</span></td>
+        </tr>
+        <tr>
+          <td><strong>Photos / Documents</strong></td>
+          <td>Identity and vehicle photos uploaded during provider verification only. Not accessed otherwise.</td>
+          <td><span class="pill pill-no">Never</span></td>
+        </tr>
+        <tr>
+          <td><strong>Contacts</strong></td>
+          <td>Only accessed if you tap "Import from Contacts" when adding emergency contacts. We read only what you select.</td>
+          <td><span class="pill pill-no">Never</span></td>
+        </tr>
+        <tr>
+          <td><strong>Push Notifications</strong></td>
+          <td>A device token so we can send you service status updates and job alerts. No marketing without consent.</td>
+          <td><span class="pill pill-no">Never</span></td>
+        </tr>
+        <tr>
+          <td><strong>In-App Messages</strong></td>
+          <td>Chat between driver and provider during an active job. Stored for 12 months, then deleted.</td>
+          <td><span class="pill pill-no">Never</span></td>
+        </tr>
+        <tr>
+          <td><strong>Vehicle Telematics</strong></td>
+          <td>Battery, range, charge status via SmartCar — only if you connect your vehicle. Optional and revocable.</td>
+          <td><span class="pill pill-opt">Optional</span></td>
+        </tr>
+      </tbody>
+    </table>
 
-    <div class="divider"></div>
-
-    <h2>2. How We Use Your Information</h2>
-    <ul>
-      <li>To match drivers with nearby service providers based on location.</li>
-      <li>To display real-time vehicle data (battery, range, charge status) on your EV dashboard.</li>
-      <li>To process and track roadside assistance requests.</li>
-      <li>To facilitate communication between drivers and providers.</li>
-      <li>To send push notifications about service status, SOS alerts, and job requests.</li>
-      <li>To improve app performance, detect errors, and enhance user experience.</li>
-      <li>To manage premium subscription benefits.</li>
-    </ul>
-
-    <div class="divider"></div>
-
-    <h2>3. Vehicle Data via SmartCar</h2>
-    <div class="section">
-      <p>
-        ResqRide integrates with <strong>SmartCar</strong> to provide live vehicle telemetry data in the EV Mode
-        feature. When you choose to connect your vehicle:
-      </p>
-      <ul>
-        <li>You will be directed to SmartCar's secure authorization flow where you grant explicit permission.</li>
-        <li>We request only the minimum necessary data: battery level, estimated range, charging status, and odometer.</li>
-        <li>Vehicle data is displayed solely within your EV dashboard and is never sold or shared with third parties.</li>
-        <li>You can disconnect your vehicle at any time from the EV Mode screen, which immediately revokes our access.</li>
-        <li>SmartCar's own Privacy Policy applies to their handling of your authorization: <a href="https://smartcar.com/privacy" target="_blank">smartcar.com/privacy</a></li>
-      </ul>
+    <h2 id="location">2. Location Data — Detailed Explanation</h2>
+    <div class="highlight-box">
+      <p>Location is the most sensitive data we handle. We want to be completely transparent about how it works.</p>
     </div>
-
-    <div class="divider"></div>
-
-    <h2>4. Sharing of Information</h2>
-    <p>We do not sell your personal data. We share information only in these circumstances:</p>
+    <p><strong>When location is collected:</strong></p>
     <ul>
-      <li><strong>Between Users:</strong> Driver name and location are shared with a service provider when a job is accepted, and vice versa, to facilitate the service.</li>
-      <li><strong>Service Providers:</strong> Third-party services (SmartCar, push notification providers, payment processors) used to operate the app.</li>
-      <li><strong>Legal Requirements:</strong> If required by law or to protect the rights and safety of our users.</li>
+      <li><strong>Driver — Requesting service:</strong> Your location is collected when you open a service request so we can find providers near you. It is shared with your assigned provider only while the job is active.</li>
+      <li><strong>Provider — On duty:</strong> Your location is periodically updated so drivers can see your ETA and approach. It is only visible to a driver who has an active job with you.</li>
+      <li><strong>SOS Emergency Mode:</strong> If you activate the SOS feature, your location is shared continuously until you end the emergency. This is the only scenario where background location is used, and only with your explicit prior consent.</li>
+    </ul>
+    <p><strong>When location is NOT collected:</strong></p>
+    <ul>
+      <li>When the app is closed or in the background (except during an active SOS).</li>
+      <li>When you are signed in but not actively using a service or on duty.</li>
+      <li>We never track you passively or build a historical location profile.</li>
+    </ul>
+    <p><strong>Who sees your location:</strong></p>
+    <ul>
+      <li>Only the matched driver or provider for an active job — no one else.</li>
+      <li>Location data is never sold, shared with advertisers, or used for profiling.</li>
     </ul>
 
-    <div class="divider"></div>
+    <h2 id="use">3. How We Use Your Information</h2>
+    <ul>
+      <li>Match drivers with nearby, qualified service providers.</li>
+      <li>Display real-time provider location and ETA during a job.</li>
+      <li>Process and track roadside assistance requests end-to-end.</li>
+      <li>Facilitate secure in-app chat between drivers and providers.</li>
+      <li>Send push notifications for service status, SOS alerts, and job requests.</li>
+      <li>Manage premium membership benefits and billing.</li>
+      <li>Verify provider identity and professional credentials.</li>
+      <li>Improve app performance and fix errors using anonymized usage data.</li>
+    </ul>
+    <p>We do <strong>not</strong> use your data for advertising, sell it to data brokers, or share it with any third party for their own commercial purposes.</p>
 
-    <h2>5. Data Retention</h2>
+    <h2 id="sharing">4. Sharing of Information</h2>
+    <p>We share the minimum necessary data only in these circumstances:</p>
+    <ul>
+      <li><strong>Between matched users:</strong> Driver name, vehicle info, and approximate location are shared with an accepted provider. Provider name, vehicle, rating, and ETA are shared with the driver. This ends when the job completes.</li>
+      <li><strong>Payment processing:</strong> Stripe handles all payment card data under their own strict PCI-DSS compliance. We share only transaction amounts.</li>
+      <li><strong>Push notifications:</strong> Apple Push Notification Service (APNs) delivers alerts using your device token. Apple does not receive the content of the notification.</li>
+      <li><strong>AI support assistant:</strong> Support chat messages are sent to OpenAI to generate helpful responses. They are not used to train OpenAI models.</li>
+      <li><strong>Legal requirements:</strong> We may disclose information if required by law, court order, or to protect the safety of our users.</li>
+    </ul>
+
+    <h2 id="payments">5. Payment Data &amp; Security</h2>
     <p>
-      We retain your account information for as long as your account is active. Service history and chat
-      messages are stored for up to 12 months. Vehicle telemetry data is not permanently stored — it is
-      fetched on demand and displayed in real time. You may request deletion of your account and associated
-      data at any time by contacting us.
+      ResqRide uses <strong>Stripe</strong> for all payment processing. When you add a payment method:
     </p>
+    <ul>
+      <li>Your card number, CVV, and expiry are entered directly into Stripe's secure interface — we never see them.</li>
+      <li>We store only your Stripe Customer ID (a reference token) in our database.</li>
+      <li>Providers who choose to receive payouts connect a Stripe Express account — their bank details are held by Stripe, not us.</li>
+      <li>All transactions use HTTPS/TLS encryption in transit.</li>
+    </ul>
 
-    <div class="divider"></div>
+    <h2 id="smartcar">6. Vehicle Telematics (SmartCar)</h2>
+    <p>ResqRide optionally integrates with SmartCar to provide live vehicle data in the EV Mode feature.</p>
+    <ul>
+      <li>This is entirely opt-in — the app works fully without it.</li>
+      <li>You authorize access through SmartCar's own secure OAuth flow.</li>
+      <li>We request only: battery level, estimated range, charge status, and odometer.</li>
+      <li>This data is shown only on your EV dashboard and never sold or shared.</li>
+      <li>You can disconnect your vehicle at any time from the EV Mode screen, which immediately revokes our access.</li>
+    </ul>
+    <p>SmartCar's Privacy Policy: <a href="https://smartcar.com/privacy" target="_blank">smartcar.com/privacy</a></p>
 
-    <h2>6. Security</h2>
-    <p>
-      We use industry-standard security measures including encrypted connections (HTTPS/TLS), secure token
-      storage, and access controls. OAuth tokens for vehicle access are stored securely on our servers and
-      are never exposed to third parties.
-    </p>
+    <h2 id="retention">7. Data Retention</h2>
+    <ul>
+      <li><strong>Account data</strong> is retained for as long as your account is active.</li>
+      <li><strong>Service history and receipts</strong> are retained for 24 months, then anonymized.</li>
+      <li><strong>In-app chat messages</strong> are retained for 12 months.</li>
+      <li><strong>Provider location data</strong> is not stored — it is only held in memory while active and not written to our database.</li>
+      <li><strong>Vehicle telematics</strong> are fetched on demand in real time and never stored on our servers.</li>
+      <li>You may request deletion of your account and all associated data at any time by contacting us.</li>
+    </ul>
 
-    <div class="divider"></div>
+    <h2 id="security">8. Security Measures</h2>
+    <ul>
+      <li>All data in transit is protected with HTTPS/TLS encryption.</li>
+      <li>Passwords are hashed with scrypt — they are never stored in plain text and are not recoverable even by our team.</li>
+      <li>Session tokens are stored securely using device-level secure storage (iOS Keychain / Android Keystore).</li>
+      <li>Our PostgreSQL database is hosted in a private network with restricted access.</li>
+      <li>We conduct regular security reviews and patch vulnerabilities promptly.</li>
+    </ul>
 
-    <h2>7. Children's Privacy</h2>
+    <h2 id="children">9. Children's Privacy</h2>
     <p>
       ResqRide is not intended for users under the age of 16. We do not knowingly collect personal
       information from children. If you believe a child has provided us with personal data, please
-      contact us immediately.
+      contact us immediately and we will delete it.
     </p>
 
-    <div class="divider"></div>
-
-    <h2>8. Your Rights</h2>
-    <p>You have the right to:</p>
+    <h2 id="rights">10. Your Rights &amp; Choices</h2>
+    <p>You have full control over your data:</p>
     <ul>
-      <li>Access the personal data we hold about you.</li>
-      <li>Request correction of inaccurate data.</li>
-      <li>Request deletion of your account and associated data.</li>
-      <li>Revoke vehicle access permissions at any time through the app.</li>
-      <li>Opt out of push notifications through your device settings.</li>
+      <li><strong>Access:</strong> Request a copy of the data we hold about you.</li>
+      <li><strong>Correction:</strong> Update your name, phone, or email in the app at any time.</li>
+      <li><strong>Deletion:</strong> Request deletion of your account and all associated data by emailing us.</li>
+      <li><strong>Notification opt-out:</strong> Turn off push notifications in your device settings or inside the app.</li>
+      <li><strong>Location opt-out:</strong> Revoke location access in your device settings at any time (note: this limits core functionality).</li>
+      <li><strong>Vehicle disconnect:</strong> Disconnect SmartCar access from the EV Mode screen.</li>
+      <li><strong>Contacts:</strong> We never access your contacts without a direct action from you.</li>
     </ul>
 
-    <div class="divider"></div>
-
-    <h2>9. Changes to This Policy</h2>
+    <h2 id="changes">11. Changes to This Policy</h2>
     <p>
-      We may update this Privacy Policy from time to time. We will notify you of significant changes
-      through the app or via email. Continued use of the app after changes constitutes acceptance of
-      the updated policy.
+      We may update this Privacy Policy from time to time. When we do, we will update the "Last updated"
+      date at the top and notify you through the app for significant changes. Continued use of ResqRide
+      after changes constitutes your acceptance of the updated policy.
     </p>
 
     <div class="contact-box">
-      <h3>Contact Us</h3>
-      <p>
-        If you have questions about this Privacy Policy or how we handle your data, please contact us at:
-        <br /><br />
-        <a href="mailto:privacy@resqrideapp.com">privacy@resqrideapp.com</a>
-      </p>
+      <h3>Questions About Your Privacy?</h3>
+      <p>We're real people — not a bot. Reach out and we'll respond within 2 business days.</p>
+      <a href="mailto:privacy@resqride.co" class="contact-btn">privacy@resqride.co</a>
     </div>
+
   </div>
+
+  <div class="footer">
+    <p>&copy; 2026 ResqRide. All rights reserved. &nbsp;|&nbsp; <a href="/terms">Terms of Service</a> &nbsp;|&nbsp; <a href="/data-safety">Data Safety</a></p>
+  </div>
+
 </body>
 </html>

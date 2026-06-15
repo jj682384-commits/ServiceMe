@@ -1285,6 +1285,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/data-safety", (_req: Request, res: Response) => {
+    const page = path.resolve(process.cwd(), "server", "templates", "data-safety.html");
+    if (fs.existsSync(page)) {
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+      res.send(fs.readFileSync(page, "utf-8"));
+    } else {
+      res.status(404).send("Data safety page not found");
+    }
+  });
+
   function serveAdminPage(_req: Request, res: Response) {
     const adminPage = path.resolve(process.cwd(), "server", "templates", "admin.html");
     if (fs.existsSync(adminPage)) {
