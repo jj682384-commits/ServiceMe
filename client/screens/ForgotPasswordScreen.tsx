@@ -45,18 +45,13 @@ export default function ForgotPasswordScreen() {
     setIsLoading(true);
     try {
       const res = await apiRequest("POST", "/api/auth/forgot-password", { email: email.trim() });
-      const data = await res.json() as { success: boolean; reset_code?: string | null };
+      const data = await res.json() as { success: boolean };
       if (data.success) {
-        if (data.reset_code) {
-          setCode(data.reset_code);
-          Alert.alert(
-            "Your Reset Code",
-            `Your 6-digit code is:\n\n${data.reset_code}\n\nWe've filled it in for you — just set your new password below.`,
-            [{ text: "Continue", onPress: () => setStep("code") }]
-          );
-        } else {
-          setStep("code");
-        }
+        Alert.alert(
+          "Check Your Email",
+          `We sent a 6-digit reset code to ${email.trim()}. Check your inbox and enter the code below.`,
+          [{ text: "OK", onPress: () => setStep("code") }]
+        );
       }
     } catch {
       Alert.alert("Error", "Could not send reset code. Check your connection and try again.");

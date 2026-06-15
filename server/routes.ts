@@ -8,6 +8,7 @@ import * as path from "path";
 import { pool, rowToProvider, rowToJob, type ProviderRow, type JobRow } from "./db";
 import { hashPassword, verifyPassword, createSession, getUserByToken, deleteSession, extractToken } from "./auth";
 import { getUncachableStripeClient } from "./stripeClient";
+import { sendPasswordResetEmail, sendWelcomeEmail, sendReceiptEmail } from "./email";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -590,6 +591,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       const token = await createSession(userId);
       console.log(`[AUTH] signup userId=${userId} email=${email} role=${userRole}`);
+      sendWelcomeEmail(email.toLowerCase().trim(), name.trim(), userRole).catch(() => {});
       res.status(201).json({ userId, token, role: userRole, name: name.trim(), email: email.toLowerCase().trim(), phone: (phone || "").trim() });
     } catch (err) {
       console.error("[auth/signup]", err);
@@ -709,15 +711,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { rows } = await pool.query("SELECT id FROM auth_users WHERE email = $1", [normalizedEmail]);
       if (rows.length) {
         _resetCodes.set(normalizedEmail, { code, expiry });
-        console.log(`[FORGOT PASSWORD] Reset code for ${normalizedEmail}: ${code}`);
+        const userName = (await pool.query<{ name: string }>("SELECT name FROM auth_users WHERE email = $1", [normalizedEmail])).rows[0]?.name ?? "there";
+        const sent = await sendPasswordResetEmail(normalizedEmail, userName, code);
+        if (!sent) {
+          console.log(`[FORGOT PASSWORD] Email failed — reset code for ${normalizedEmail}: ${code}`);
+        }
       }
-      // No email service configured — return the code directly in the response.
-      // The app displays it on-screen so users can reset their password.
-      // TODO: replace with email delivery (SendGrid/Resend) once configured.
       res.json({
         success: true,
-        message: "If an account with that email exists, a reset code has been generated.",
-        reset_code: rows.length ? code : null,
+        message: "If an account with that email exists, a reset code has been sent.",
       });
     } catch (err) {
       console.error("[auth/forgot-password]", err);
@@ -2982,6 +2984,27 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:8px;font-size:15px}
           } catch (e: any) {
             console.error("[earnings/completion]", e.message);
           }
+        }
+      }
+
+      // On completion, send receipt email to driver
+      if (status === "completed") {
+        const driverObj = job.driver as Record<string, unknown> | undefined;
+        const driverEmail = driverObj?.email as string | undefined;
+        const driverName = driverObj?.name as string | undefined;
+        if (driverEmail) {
+          const locationObj = job.location as Record<string, unknown> | undefined;
+          const locationStr = (locationObj?.address as string) ?? "Unknown location";
+          const providerObj = job.provider as Record<string, unknown> | undefined;
+          sendReceiptEmail(driverEmail, driverName ?? "there", {
+            serviceType: job.serviceType ?? "roadside_assistance",
+            receiptNumber: job.receiptNumber ?? null,
+            location: locationStr,
+            totalCost: job.totalCost ?? null,
+            estimatedCost: job.estimatedCost ?? null,
+            providerName: (providerObj?.name as string) ?? null,
+            createdAt: job.createdAt ?? new Date().toISOString(),
+          }).catch(() => {});
         }
       }
 
